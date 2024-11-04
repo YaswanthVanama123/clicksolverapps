@@ -1,0 +1,9 @@
+node_modules/
+.expo/
+.DS_Store
+.env
+*.log
+*.lock
+android/app/build/
+ios/Pods/
+backend/serviceAccountKey.json
