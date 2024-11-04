@@ -6,4 +6,6 @@ node_modules/
 *.lock
 android/app/build/
 ios/Pods/
-backend/serviceAccountKey.json
+backend/firebaseAdmin.json
+partnermobileapp\android\.gradle\8.6\executionHistory\executionHistory.bin
+userapp1\android\.gradle\8.6\executionHistory\executionHistory.bin
