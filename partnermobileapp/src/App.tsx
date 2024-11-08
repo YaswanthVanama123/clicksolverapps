@@ -38,6 +38,7 @@ import Approval from './Components/Approval';
 import IndividualWorkerPending from './Components/IndividualWorkerPending';
 import ServiceBookingItem from './Components/ServiceBookingItem';
 import CashbackScreen from './Components/CashbackScreen';
+import CashbackScreen1 from './Components/CashbackScreen1';
 // Additional imports...
 
 const Stack = createNativeStackNavigator();
@@ -92,7 +93,7 @@ function TabNavigator() {
         <Tab.Screen name="Home" component={HelloWorld} options={{ headerShown: false }} />
         <Tab.Screen name="Bookings" component={RecentServices} options={{ headerShown: false }} />
         <Tab.Screen name="Tracking" component={ServiceTrackingListScreen} options={{ headerShown: false }} />
-        {/* <Tab.Screen name="Native" component={CashbackScreen} options={{ headerShown: false }} />    */}
+        <Tab.Screen name="Native" component={CashbackScreen1} options={{ headerShown: false }} />   
         <Tab.Screen name="Account" component={CashbackScreen} options={{ headerShown: false }} />
       </Tab.Navigator>
     </SafeAreaView> 
