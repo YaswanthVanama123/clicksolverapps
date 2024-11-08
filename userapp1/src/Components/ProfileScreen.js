@@ -21,7 +21,7 @@ const ProfileScreen = () => {
   const fetchProfileDetails = async () => {
     const jwtToken = await EncryptedStorage.getItem('cs_token');
     try {
-      const response = await axios.post(`${process.env.BACKENDAIPD}/api/user/profile`, {}, {
+      const response = await axios.post(`${process.env.BACKENDAIPE}/api/user/profile`, {}, {
         headers: { Authorization: `Bearer ${jwtToken}` },
       });
       const { name, email, phone_number } = response.data;

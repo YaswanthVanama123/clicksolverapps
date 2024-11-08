@@ -89,14 +89,14 @@ const WorkerNavigationScreen = () => {
 
   const checkCancellationStatus = async () => {
     try {
-      const response = await axios.get(`${process.env.BackendAPI5}/api/worker/cancelled/status`, {
+      const response = await axios.get(`${process.env.BackendAPI6}/api/worker/cancelled/status`, {
         params: { notification_id: decodedId },
       });
 
       if (response.data.notificationStatus === 'usercanceled') {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         await axios.post(
-          `${process.env.BackendAPI5}/api/worker/action`,
+          `${process.env.BackendAPI6}/api/worker/action`,
           {
             encodedId: '',
             screen: '',
@@ -134,7 +134,7 @@ const WorkerNavigationScreen = () => {
 
   const fetchAddressDetails = useCallback(async () => {
     try {
-      const response = await axios.get(`${process.env.BackendAPI5}/api/user/address/details`, {
+      const response = await axios.get(`${process.env.BackendAPI6}/api/user/address/details`, {
         params: { notification_id: decodedId },
       });
       setAddressDetails(response.data);
@@ -145,7 +145,7 @@ const WorkerNavigationScreen = () => {
 
   const fetchLocationDetails = async () => {
     try {
-      const response = await axios.post(`${process.env.BackendAPI5}/api/service/location/navigation`, {
+      const response = await axios.post(`${process.env.BackendAPI6}/api/service/location/navigation`, {
         notification_id: decodedId,
       });
 
@@ -240,6 +240,9 @@ const WorkerNavigationScreen = () => {
           </Mapbox.ShapeSource>
         )}
       </Mapbox.MapView>
+      <TouchableOpacity style={styles.cancelButton} onPress={openGoogleMaps}>
+        <Text style={styles.cancelText}>Cancel</Text>
+      </TouchableOpacity>
       <TouchableOpacity style={styles.googleMapsButton} onPress={openGoogleMaps}>
         <Text style={styles.googleMapsText}>Google Maps</Text>
         <MaterialCommunityIcons name="navigation-variant" size={20} color="#C1C1C1" />
@@ -372,6 +375,24 @@ const styles = StyleSheet.create({
   routeLine: {
     lineColor: '#0000ff',
     lineWidth: 5,
+  },
+  cancelButton: {
+    position: 'absolute',
+    top: 0.498 * screenHeight,
+    left: 5,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    width: 80,
+    height: 35,
+  },
+  cancelText: {
+    fontSize: 13,
+    color: '#4a4a4a',
+    fontWeight: 'bold',
   },
   googleMapsButton: {
     position: 'absolute',

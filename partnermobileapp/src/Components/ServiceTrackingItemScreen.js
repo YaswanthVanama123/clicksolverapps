@@ -16,7 +16,7 @@ const ServiceTrackingItemScreen = () => {
   const [titleColor, setTitleColor] = useState('#FFFFFF');
   const [swiped, setSwiped] = useState(false);
   const [details, setDetails] = useState({});
-  const [paymentDetails, setPaymentDetails] = useState({});
+  const [paymentDetails, setPaymentDetails] = useState({}); 
   const [serviceArray, setServiceArray] = useState([]);
   const [isEditVisible, setEditVisible] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('');
@@ -60,7 +60,7 @@ const ServiceTrackingItemScreen = () => {
 
   const applyStatusChange = async (newStatus) => {
     try {
-      await axios.post(`${process.env.BackendAPI5}/api/service/tracking/update/status`, {
+      await axios.post(`${process.env.BackendAPI6}/api/service/tracking/update/status`, {
         tracking_id,
         newStatus
       });
@@ -100,7 +100,7 @@ const ServiceTrackingItemScreen = () => {
     const fetchBookings = async () => {
       try {
         const { data: { data, paymentDetails } } = await axios.post(
-          `${process.env.BackendAPI5}/api/service/tracking/worker/item/details`,
+          `${process.env.BackendAPI6}/api/service/tracking/worker/item/details`,
           { tracking_id }
         );
         setDetails(data);

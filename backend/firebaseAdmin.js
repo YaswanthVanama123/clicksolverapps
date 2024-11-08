@@ -28,7 +28,7 @@ const serviceAccount = {
   "universe_domain": "googleapis.com"
 }
 
-; 
+;  
 
 
 admin.initializeApp({

@@ -8,7 +8,7 @@ import { Buffer } from 'buffer';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import Octicons from 'react-native-vector-icons/Octicons'
 import Mapbox from '@rnmapbox/maps';
-Mapbox.setAccessToken('pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY2x5Ymw5MXZpMWZseDJqcTJ3NXFlZnRnYyJ9._E8mIoaIlyGrgdeu71StDg');
+Mapbox.setAccessToken('pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw');
 
 
 const WaitingUser = () => {
@@ -22,7 +22,8 @@ const WaitingUser = () => {
   const [area, setArea] = useState(null);
   const [pincode, setPincode] = useState(null);
   const [alternatePhoneNumber, setAlternatePhoneNumber] = useState(null);
-  const [location,setLocation] = useState([])
+  const [location,setLocation] = useState([81.05078857408955,
+    16.699433706595414])
   const [service, setService] = useState(null);
   const [alternateName, setAlternateName] = useState(null);
   const [encodedData, setEncodedData] = useState(null);
@@ -39,6 +40,18 @@ const WaitingUser = () => {
       }
     }
   }, [encodedData]);
+
+  useEffect(() =>{
+    console.log("screnn params",route.params)
+    const { area, city, pincode, alternateName, alternatePhoneNumber, serviceBooked, location } = route.params;
+    setCity(city);
+    setArea(area);
+    setPincode(pincode);
+    setAlternatePhoneNumber(alternatePhoneNumber);
+    setAlternateName(alternateName);
+    setService(serviceBooked);
+    setLocation(location)
+  },[])
 
   const fetchData = async () => {
     const { area, city, pincode, alternateName, alternatePhoneNumber, serviceBooked, location } = route.params;
@@ -58,7 +71,7 @@ const WaitingUser = () => {
       } 
  
       const response = await axios.post(
-        `${process.env.BACKENDAIPD}/api/workers-nearby`,
+        `${process.env.BACKENDAIPE}/api/workers-nearby`,
         { area, city, pincode, alternateName, alternatePhoneNumber, serviceBooked },
         { headers: { Authorization: `Bearer ${jwtToken}` } }
       );
@@ -70,8 +83,8 @@ const WaitingUser = () => {
         console.log(encode)
         if (encode && encode !== 'No workers found within 2 km radius') {
           await axios.post(
-            `${process.env.BACKENDAIPD}/api/user/action`,
-            { encodedId: encode, screen: 'userwaiting', serviceBooked, area, city, pincode, alternateName, alternatePhoneNumber },
+            `${process.env.BACKENDAIPE}/api/user/action`,
+            { encodedId: encode, screen: 'userwaiting', serviceBooked, area, city, pincode, alternateName, alternatePhoneNumber,location },
             { headers: { Authorization: `Bearer ${jwtToken}` } }
           );
         }  
@@ -102,11 +115,11 @@ const WaitingUser = () => {
   const handleManualCancel = async () => {
     try {
       if (decodedId) {
-        await axios.post(`${process.env.BACKENDAIPD}/api/user/cancellation`, { user_notification_id: decodedId });
+        await axios.post(`${process.env.BACKENDAIPE}/api/user/cancellation`, { user_notification_id: decodedId });
 
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
-          `${process.env.BACKENDAIPD}/api/user/action/cancel`,
+          `${process.env.BACKENDAIPE}/api/user/action/cancel`,
           { encodedId: encodedData, screen: 'userwaiting' },
           { headers: { Authorization: `Bearer ${cs_token}` } } 
         );
@@ -147,7 +160,7 @@ const WaitingUser = () => {
 
     if (decodedId) {
       try {
-        await axios.post(`${process.env.BACKENDAIPD}/api/user/cancellation`, { user_notification_id: decodedId });
+        await axios.post(`${process.env.BACKENDAIPE}/api/user/cancellation`, { user_notification_id: decodedId });
       } catch (error) {
         console.error("Error cancelling previous request:", error);
       }
@@ -155,7 +168,7 @@ const WaitingUser = () => {
 
     const cs_token = await EncryptedStorage.getItem('cs_token');
     await axios.post(
-      `${process.env.BACKENDAIPD}/api/user/action/cancel`,
+      `${process.env.BACKENDAIPE}/api/user/action/cancel`,
       { encodedId: encodedData, screen: 'userwaiting' },
       { headers: { Authorization: `Bearer ${cs_token}` } }
     );
@@ -177,7 +190,7 @@ const WaitingUser = () => {
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const response = await axios.get(`${process.env.BACKENDAIPD}/api/checking/status`, {
+        const response = await axios.get(`${process.env.BACKENDAIPE}/api/checking/status`, {
           params: { user_notification_id: decodedId }
         });
     
@@ -197,13 +210,13 @@ const WaitingUser = () => {
           const cs_token = await EncryptedStorage.getItem('cs_token');
     
           await axios.post(
-            `${process.env.BACKENDAIPD}/api/user/action/cancel`,
+            `${process.env.BACKENDAIPE}/api/user/action/cancel`,
             { encodedId: encodedData, screen: 'userwaiting' },
             { headers: { Authorization: `Bearer ${cs_token}` } }
           );
 
           await axios.post(
-            `${process.env.BACKENDAIPD}/api/user/action`,
+            `${process.env.BACKENDAIPE}/api/user/action`,
             { encodedId: encodedNotificationId, screen: 'UserNavigation', serviceBooked: service },
             { headers: { Authorization: `Bearer ${cs_token}` } }
           );
@@ -226,7 +239,8 @@ const WaitingUser = () => {
     
     
 
-    if (decodedId) {
+    if (decodedId && decodedId !== "No workersverified found within 2 km radius") {
+      console.log(decodedId)
       // const intervalId = setInterval(checkStatus, 3000);
       // return () => clearInterval(intervalId);
       checkStatus()

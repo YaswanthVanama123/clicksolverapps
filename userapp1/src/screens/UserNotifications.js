@@ -23,7 +23,7 @@ const UserNotifications = () => {
     const userId = await EncryptedStorage.getItem('cs_token');
     const fcmToken = await EncryptedStorage.getItem('fcm_token'); 
     console.log(process.env.REACT_APP_API_URL)
-    const response = await axios.get(`${process.env.BACKENDAIPD}/api/user/notifications`, {
+    const response = await axios.get(`${process.env.BACKENDAIPE}/api/user/notifications`, {
       headers: {
         Authorization: `Bearer ${userId}`,
       },

@@ -27,7 +27,7 @@ const LoginScreen = () => {
   // Function to call the backend API for login
   const loginBackend = useCallback(async (phoneNumber) => {
     try {
-      const response = await axios.post(`${process.env.BACKENDAIPD}/api/user/login`, { phone_number: phoneNumber });
+      const response = await axios.post(`${process.env.BACKENDAIPE}/api/user/login`, { phone_number: phoneNumber });
       return response;
     } catch (error) {
       console.error('Error during backend login:', error);

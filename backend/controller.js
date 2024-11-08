@@ -1003,8 +1003,8 @@ const insertTracking = async (req, res) => {
     const screen = ""
     const encodedId = Buffer.from(notification_id.toString()).toString("base64")
 
-    createUserBackgroundAction(user_id, encodedId, screen, service_booked);
-    updateWorkerAction(worker_id,screen,screen)
+    await createUserBackgroundAction(user_id, encodedId, screen, service_booked);
+    await updateWorkerAction(worker_id,screen,screen)
 
     const fcmTokens = result.rows.map(row => row.fcm_token).filter(token => token); // Filter out any undefined tokens
     
@@ -1456,7 +1456,7 @@ const workerApprove = async (req, res) => {
 
 const getServiceByName = async (req, res) => { 
   const { serviceName } = req.body;  // Get the service name from the request body
-
+  console.log(serviceName)
   if (!serviceName) {
       return res.status(400).json({ error: 'Service name is required' });
   }
@@ -1492,6 +1492,7 @@ const getServiceByName = async (req, res) => {
 
 
       const result = await client.query(query, [serviceName]);
+      
 
       if (result.rows.length === 0) {
           return res.status(404).json({ error: 'Service not found' });
@@ -1794,7 +1795,7 @@ const getUserAllBookings = async (req, res) => {
     JOIN servicecall s ON n.notification_id = s.notification_id
     JOIN "user" w ON n.user_id = w.user_id
     WHERE n.user_id = $1
-    ORDER BY n.notification_id DESC
+    ORDER BY n.created_at DESC
     `;
 
     const { rows } = await client.query(query, [userId]);
@@ -2884,150 +2885,150 @@ const rejectRequest = async (req, res) => {
 };
 
 
-// const createUserBackgroundAction = async (userId, encodedId, screen, serviceBooked, userNotificationEncodedId = null) => {
-//   // console.log('Service Booked:', screen,encodedId,serviceBooked);
+const createUserBackgroundAction = async (userId, encodedId, screen, serviceBooked, userNotificationEncodedId = null) => {
+  // console.log('Service Booked:', screen,encodedId,serviceBooked);
   
+  try {
+    // Prepare the new action object if 'screen' is provided
+    const newAction = screen
+      ? {
+          screen,
+          encodedId,
+          serviceBooked
+        }
+      : null;
+
+    // Convert newAction to JSON string if it exists
+    const newActionJson = newAction ? JSON.stringify(newAction) : null;
+
+    // Prepare the initial track array for insertion
+    const initialTrack = newAction ? JSON.stringify([newAction]) : JSON.stringify([]);
+
+    // Define the UPSERT query with explicit casting for $4 and $5
+    const upsertQuery = `
+      INSERT INTO useraction (user_id, track)
+      VALUES ($1, $2::jsonb)
+      ON CONFLICT (user_id) DO UPDATE
+      SET track = (
+        SELECT 
+          COALESCE(jsonb_agg(item), '[]'::jsonb)
+        FROM 
+          jsonb_array_elements(useraction.track) AS item
+        WHERE 
+          item->>'encodedId' <> $3
+          AND ($4::text IS NULL OR item->>'encodedId' <> $4::text)
+      ) || (
+        CASE 
+          WHEN $5::jsonb IS NOT NULL THEN $6::jsonb 
+          ELSE '[]'::jsonb 
+        END
+      )
+      RETURNING *;
+    `;
+
+    // Parameters for the query
+    const params = [
+      userId,                       // $1: user_id
+      initialTrack,                 // $2: initial track array (JSONB)
+      encodedId,                    // $3: encodedId to remove
+      userNotificationEncodedId,    // $4: userNotificationEncodedId to remove (can be null)
+      newActionJson,                // $5: new action JSON (if screen is provided)
+      newActionJson ? `[${newActionJson}]` : '[]' // $6: new action as JSONB array or empty array
+    ];
+
+    // Execute the UPSERT query
+    const result = await client.query(upsertQuery, params);
+
+    // The result will contain the inserted or updated row
+    const updatedTrackScreen = result.rows[0];
+
+    // Return the updated user action data
+    return updatedTrackScreen;
+  } catch (error) {
+    console.error('Error inserting or updating user background action:', error);
+    throw error; // Re-throw the error after logging
+  }
+};
+
+
+
+
+// const createUserBackgroundAction = async (userId, encodedId, screen, serviceBooked, userNotificationEncodedId = null) => {
+//   console.log("call ayindhi",screen,encodedId,userId,serviceBooked);
 //   try {
-//     // Prepare the new action object if 'screen' is provided
-//     const newAction = screen
-//       ? {
+//     // Define the SQL query to get the existing user action
+//     const query = `
+//       SELECT * FROM useraction
+//       WHERE user_id = $1;
+//     `;
+
+//     // Execute the query to get the existing user action
+//     const result = await client.query(query, [userId]);
+//     const existingUserAction = result.rows[0];
+
+//     if (existingUserAction) {
+//       // Remove objects that match `encodedId` or, if present, `userNotificationEncodedId`
+//       let updatedTrack = existingUserAction.track.filter(item => {
+//         // Exclude items that match `encodedId` and, if `userNotificationEncodedId` is provided, also exclude those
+//         if (userNotificationEncodedId) {
+//           return item.encodedId !== encodedId && item.encodedId !== userNotificationEncodedId;
+//         }
+//         return item.encodedId !== encodedId;
+//       });
+
+//       // Add the new action if `screen` is provided (for adding or updating)
+//       if (screen) {
+//         const newAction = {
 //           screen,
 //           encodedId,
 //           serviceBooked
-//         }
-//       : null;
+//         };
 
-//     // Convert newAction to JSON string if it exists
-//     const newActionJson = newAction ? JSON.stringify(newAction) : null;
+//         updatedTrack.push(newAction);
+//       }
 
-//     // Prepare the initial track array for insertion
-//     const initialTrack = newAction ? JSON.stringify([newAction]) : JSON.stringify([]);
+//       // Update the user action with the new track array
+//       const updateQuery = `
+//         UPDATE useraction
+//         SET track = $1
+//         WHERE user_id = $2
+//         RETURNING *;
+//       `;
+//       const updateResult = await client.query(updateQuery, [JSON.stringify(updatedTrack), userId]);
+//       const updatedTrackScreen = updateResult.rows[0];
+//       console.log("update ayinadhi",updatedTrack)
 
-//     // Define the UPSERT query with explicit casting for $4 and $5
-//     const upsertQuery = `
-//       INSERT INTO useraction (user_id, track)
-//       VALUES ($1, $2::jsonb)
-//       ON CONFLICT (user_id) DO UPDATE
-//       SET track = (
-//         SELECT 
-//           COALESCE(jsonb_agg(item), '[]'::jsonb)
-//         FROM 
-//           jsonb_array_elements(useraction.track) AS item
-//         WHERE 
-//           item->>'encodedId' <> $3
-//           AND ($4::text IS NULL OR item->>'encodedId' <> $4::text)
-//       ) || (
-//         CASE 
-//           WHEN $5::jsonb IS NOT NULL THEN $6::jsonb 
-//           ELSE '[]'::jsonb 
-//         END
-//       )
-//       RETURNING *;
-//     `;
+//       // Respond with the updated user action data
+//       return updatedTrackScreen;
+//     } else {
+//       // If the user action does not exist, create a new one
+//       let newTrack = [];
 
-//     // Parameters for the query
-//     const params = [
-//       userId,                       // $1: user_id
-//       initialTrack,                 // $2: initial track array (JSONB)
-//       encodedId,                    // $3: encodedId to remove
-//       userNotificationEncodedId,    // $4: userNotificationEncodedId to remove (can be null)
-//       newActionJson,                // $5: new action JSON (if screen is provided)
-//       newActionJson ? `[${newActionJson}]` : '[]' // $6: new action as JSONB array or empty array
-//     ];
+//       if (screen) {
+//         const newAction = {
+//           screen,
+//           encodedId,
+//           serviceBooked
+//         };
 
-//     // Execute the UPSERT query
-//     const result = await client.query(upsertQuery, params);
+//         newTrack = [newAction];
+//       }
 
-//     // The result will contain the inserted or updated row
-//     const updatedTrackScreen = result.rows[0];
-
-//     // Return the updated user action data
-//     return updatedTrackScreen;
+//       const insertQuery = `
+//         INSERT INTO useraction (user_id, track)
+//         VALUES ($1, $2)
+//         RETURNING *;
+//       `;
+//       const insertResult = await client.query(insertQuery, [userId, JSON.stringify(newTrack)]);
+//       const updatedTrackScreen = insertResult.rows[0];
+//       console.log("create ayindhi",updatedTrackScreen)
+//       // Respond with the new user action data
+//       return updatedTrackScreen;
+//     }
 //   } catch (error) {
-//     console.error('Error inserting or updating user background action:', error);
-//     throw error; // Re-throw the error after logging
+//     console.error('Error inserting or updating user action:', error);
 //   }
 // };
-
-
-
-
-const createUserBackgroundAction = async (userId, encodedId, screen, serviceBooked, userNotificationEncodedId = null) => {
-  console.log("call ayindhi",screen,encodedId,userId,serviceBooked);
-  try {
-    // Define the SQL query to get the existing user action
-    const query = `
-      SELECT * FROM useraction
-      WHERE user_id = $1;
-    `;
-
-    // Execute the query to get the existing user action
-    const result = await client.query(query, [userId]);
-    const existingUserAction = result.rows[0];
-
-    if (existingUserAction) {
-      // Remove objects that match `encodedId` or, if present, `userNotificationEncodedId`
-      let updatedTrack = existingUserAction.track.filter(item => {
-        // Exclude items that match `encodedId` and, if `userNotificationEncodedId` is provided, also exclude those
-        if (userNotificationEncodedId) {
-          return item.encodedId !== encodedId && item.encodedId !== userNotificationEncodedId;
-        }
-        return item.encodedId !== encodedId;
-      });
-
-      // Add the new action if `screen` is provided (for adding or updating)
-      if (screen) {
-        const newAction = {
-          screen,
-          encodedId,
-          serviceBooked
-        };
-
-        updatedTrack.push(newAction);
-      }
-
-      // Update the user action with the new track array
-      const updateQuery = `
-        UPDATE useraction
-        SET track = $1
-        WHERE user_id = $2
-        RETURNING *;
-      `;
-      const updateResult = await client.query(updateQuery, [JSON.stringify(updatedTrack), userId]);
-      const updatedTrackScreen = updateResult.rows[0];
-      console.log("update ayinadhi",updatedTrack)
-
-      // Respond with the updated user action data
-      return updatedTrackScreen;
-    } else {
-      // If the user action does not exist, create a new one
-      let newTrack = [];
-
-      if (screen) {
-        const newAction = {
-          screen,
-          encodedId,
-          serviceBooked
-        };
-
-        newTrack = [newAction];
-      }
-
-      const insertQuery = `
-        INSERT INTO useraction (user_id, track)
-        VALUES ($1, $2)
-        RETURNING *;
-      `;
-      const insertResult = await client.query(insertQuery, [userId, JSON.stringify(newTrack)]);
-      const updatedTrackScreen = insertResult.rows[0];
-      console.log("create ayindhi",updatedTrackScreen)
-      // Respond with the new user action data
-      return updatedTrackScreen;
-    }
-  } catch (error) {
-    console.error('Error inserting or updating user action:', error);
-  }
-};
 
 
 
@@ -3320,7 +3321,6 @@ const acceptRequest = async (req, res) => {
 
     // **Check if someone already accepted the request**
     if (row.existing_notification_id) {
-      // Someone has already accepted this notification
       await client.query('ROLLBACK');
       return res.status(400).json({ message: "Someone already accepted the request." });
     }
@@ -3331,16 +3331,12 @@ const acceptRequest = async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(404).json({ message: "Notification not found." });
     }
-
-    // **Check if the notification has been canceled**
     if (row.cancel_status === "cancel") {
       await client.query('ROLLBACK');
       return res.status(400).json({ message: "Cannot accept request; it has been canceled." });
     }
 
     const insertedNotificationId = row.inserted_notification_id;
-
-    // **Fetch FCM tokens in a separate query**
     const fcmResult = await client.query(
       `SELECT uf.fcm_token
        FROM userfcm uf
@@ -3349,11 +3345,7 @@ const acceptRequest = async (req, res) => {
     );
 
     const fcmTokens = fcmResult.rows.map(r => r.fcm_token).filter(token => token);
-
-    // **Commit the transaction**
     await client.query('COMMIT');
-
-    // **Send FCM Notifications if tokens exist**
     if (fcmTokens.length > 0) {
       const multicastMessage = {
         tokens: fcmTokens,
@@ -3366,45 +3358,30 @@ const acceptRequest = async (req, res) => {
           screen: 'UserNavigation',
         },
       };
-
-      // Send the notification using Firebase Cloud Messaging
       const response = await getMessaging().sendEachForMulticast(multicastMessage);
-
-      // Log the responses for each token
       response.responses.forEach((resp, index) => {
         if (resp.success) {
-          // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
         } else {
           console.error(`Error sending message to token ${fcmTokens[index]}:`, resp.error);
         }
       });
-
-      // console.log('Success Count:', response.successCount);
-      // console.log('Failure Count:', response.failureCount);
     } else {
       console.error('No FCM tokens to send the message to.');
     }
-
-    // **Encode IDs for background action**
     const userNotificationEncodedId = Buffer.from(user_notification_id.toString()).toString("base64");
     const encodedId = Buffer.from(insertedNotificationId.toString()).toString("base64");
     const screen = "UserNavigation";
-
-    // **Ensure serviceBooked is correctly formatted (assuming it's JSON)**
     let parsedServiceBooked;
     if (typeof row.service_booked === 'string') {
       try {
         parsedServiceBooked = JSON.parse(row.service_booked);
       } catch (parseError) {
         console.error("Error parsing service_booked JSON:", parseError);
-        // Depending on requirements, decide whether to rollback or continue
         parsedServiceBooked = row.service_booked;
       }
     } else {
       parsedServiceBooked = row.service_booked;
     }
-
-    // **Update User Background Action**
     const backgroundActionResult = await createUserBackgroundAction(
       row.user_id,
       encodedId,
@@ -3412,16 +3389,13 @@ const acceptRequest = async (req, res) => {
       parsedServiceBooked,
       userNotificationEncodedId
     );
-
-    // **Respond with success**
     res.status(200).json({
       message: "Status updated to accept",
       notificationId: insertedNotificationId,
-      backgroundAction: backgroundActionResult, // Optionally include background action data
+      backgroundAction: backgroundActionResult, 
     });
 
   } catch (error) {
-    // Rollback the transaction in case of any errors
     try {
       await client.query('ROLLBACK');
     } catch (rollbackError) {
@@ -3435,341 +3409,349 @@ const acceptRequest = async (req, res) => {
 
 
 
-
-
-
-
-// main
-// const acceptRequest = async (req, res) => {
-//   const { user_notification_id } = req.body;
-//   const worker_id = req.worker.id;
-
+// const userNavigationCancel = async (req, res) => {
+//   const { notification_id } = req.body;
+//   const encodedUserNotificationId = Buffer.from(notification_id.toString()).toString("base64");
 
 //   try {
-//     // Start a transaction
-//     await client.query('BEGIN');
+//     // Combined UPDATE and SELECT using CTE
+//     const combinedQuery = await client.query(`
+//       WITH updated AS (
+//         UPDATE accepted
+//         SET user_navigation_cancel_status = 'usercanceled'
+//         WHERE notification_id = $1
+//           AND user_navigation_cancel_status IS NULL
+//         RETURNING worker_id, notification_id
+//       )
+//       SELECT w.worker_id, f.fcm_token
+//       FROM updated u
+//       JOIN workersverified w ON w.worker_id = u.worker_id
+//       JOIN fcm f ON f.worker_id = w.worker_id
+//     `, [notification_id]);
 
-//     // Check if any rows with the same user_notification_id have the status 'accept'
-//     const checkAcceptedResult = await client.query(
-//       "SELECT * FROM accepted WHERE user_notification_id = $1",
-//       [user_notification_id]
-//     );
-  
+//     console.log(combinedQuery.rows)
 
-//     if (checkAcceptedResult.rowCount > 0) {
-//       // Someone has already accepted this notification
-//       await client.query('ROLLBACK');
-//       return res.status(400).json({ message: "Someone already accepted the request." });
-//     }
+//     if (combinedQuery.rowCount > 0) {
+//       const fcmTokens = combinedQuery.rows.map(row => row.fcm_token);
 
-//     // Get notification details and FCM tokens in a single query using JOIN
-//     const cancelStatusAndTokenResult = await client.query(
-//       `SELECT n.cancel_status, n.user_id, n.notification_id, n.service_booked, n.longitude, n.latitude, 
-//               uf.fcm_token
-//        FROM notifications n
-//        LEFT JOIN userfcm uf ON n.user_id = uf.user_id
-//        WHERE n.user_notification_id = $1 `,
-//       [user_notification_id]
-//     );
+//       if (fcmTokens.length > 0) {
+//         // Create the multicast message object for FCM tokens
+//         const multicastMessage = {
+//           tokens: fcmTokens,
+//           notification: {
+//             title: "Click Solver",
+//             body: `Sorry for this, User cancelled the Service.`,
+//           },
+//           data: {
+//             notification_id: encodedUserNotificationId,
+//             screen: 'Home',
+//           },
+//         };
 
-    
+//         try {
+//           // Send the message to multiple tokens using sendEachForMulticast
+//           const response = await getMessaging().sendEachForMulticast(multicastMessage);
 
-//     if (cancelStatusAndTokenResult.rows.length === 0) {
-//       await client.query('ROLLBACK');
-//       return res.status(404).json({ message: "Notification not found." });
-//     }
+//           // Log the responses for each token
+//           response.responses.forEach((res, index) => {
+//             if (res.success) {
+//               // Optionally log successful sends
+//               // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
+//             } else {
+//               console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+//             }
+//           });
 
-//     const notificationData = cancelStatusAndTokenResult.rows[0];
-//     // console.log("cancel",notificationData)
-
-//     if (notificationData.cancel_status === "cancel") {
-//       await client.query('ROLLBACK');
-//       return res.status(400).json({ message: "Cannot accept request; it has been canceled." });
-//     }
-
-//     const serviceBooked = notificationData.service_booked;
-
-//     // If it's a JavaScript object or array, stringify it before insertion.
-//     // If it's already a JSON string or JSONB data from the DB, leave it as is.
-//     const jsonbServiceBooked = typeof serviceBooked === 'object' ? JSON.stringify(serviceBooked) : serviceBooked;
-    
-//     const insertResult = await client.query(
-//       `INSERT INTO accepted (user_notification_id, worker_id, notification_id, status, user_id, service_booked, pin, longitude, latitude)
-//        VALUES ($1, $2, $3, $4, $5, $6, FLOOR(RANDOM() * 9000) + 1000, $7, $8) RETURNING notification_id`,
-//       [
-//         user_notification_id,
-//         worker_id,
-//         notificationData.notification_id,  // Notification ID
-//         "accept",  // Status
-//         notificationData.user_id,          // User ID
-//         jsonbServiceBooked,                // Correctly formatted service_booked
-//         notificationData.longitude,
-//         notificationData.latitude
-//       ]
-//     );
-    
-
-//     // Commit the transaction
-//     await client.query('COMMIT');
-
-//     // Retrieve the inserted notification ID
-//     const notificationId = insertResult.rows[0].notification_id;
-
-//     // Delete the notification
-//     await client.query(
-//       "DELETE FROM notifications WHERE user_notification_id = $1",
-//       [user_notification_id]
-//     );
-
-//     // Extract FCM tokens (if any) from the query result
-//     const fcmTokens = cancelStatusAndTokenResult.rows.map(row => row.fcm_token).filter(token => token);
-
-//     if (fcmTokens.length > 0) {
-//       // Create a multicast message object for all tokens
-//       const multicastMessage = {
-//         tokens: fcmTokens,
-//         notification: {
-//           title: "Click Solver",
-//           body: `Commander has accepted your request; he will be there within 5 minutes.`,
-//         },
-//         data: {
-//           notification_id: notificationId.toString(),
-//           screen: 'UserNavigation',
-//         },
-//       };
-
-//       // Send the notification using Firebase Cloud Messaging
-//       const response = await getMessaging().sendEachForMulticast(multicastMessage);
-
-//       // Log the responses for each token
-//       response.responses.forEach((res, index) => {
-//         if (res.success) {
-//           // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
-//         } else {
-//           console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+//           // Optionally log success and failure counts
+//           // console.log('Success Count:', response.successCount);
+//           // console.log('Failure Count:', response.failureCount);
+//         } catch (error) {
+//           console.error('Error sending notifications:', error);
+//           // Optionally handle notification sending errors differently
 //         }
-//       });
 
-//       // console.log('Success Count:', response.successCount);
-//       // console.log('Failure Count:', response.failureCount);
+//         return res.status(200).json({ message: "Cancellation successful" });
+//       } else {
+//         console.error('No FCM tokens to send the message to.');
+//         return res.status(200).json({ message: "Cancellation successful, but no FCM tokens found." });
+//       }
 //     } else {
-//       console.error('No FCM tokens to send the message to.');
+//       // No rows updated implies either invalid notification_id or already canceled
+//       return res.status(205).json({ message: "Cancellation not performed. Either invalid ID or already canceled." });
 //     }
-//     const userNotificationEncodedId = Buffer.from(user_notification_id.toString()).toString("base64")
-//     const encodedId = Buffer.from(notificationData.notification_id.toString()).toString("base64")
-//     const screen = "UserNavigation"
-
-//     createUserBackgroundAction(notificationData.user_id, encodedId, screen, serviceBooked, userNotificationEncodedId)
-
-//     res.status(200).json({
-//       message: "Status updated to accept",
-//       notificationId: notificationId,
-//     });
 //   } catch (error) {
-//     // Rollback the transaction in case of any errors
-//     await client.query('ROLLBACK');
-//     console.error("Error updating status:", error);
-//     res.status(500).json({ message: "Internal server error" });
+//     console.error('Error processing request:', error);
+//     return res.status(500).json({ error: "Internal server error" });
 //   }
 // };
 
-// ***
 const userNavigationCancel = async (req, res) => {
   const { notification_id } = req.body;
   const encodedUserNotificationId = Buffer.from(notification_id.toString()).toString("base64");
 
   try {
-    // Use a single query with a JOIN to update the status and fetch worker_id and FCM tokens in one step
-    const query = await client.query(`
-      UPDATE accepted
-      SET user_navigation_cancel_status = 'usercanceled'
-      WHERE notification_id = $1
-        AND user_navigation_cancel_status IS NULL
-      RETURNING notification_id;
+    // Begin a transaction
+    await client.query('BEGIN');
+
+    // First query: UPDATE and INSERT operations
+    const combinedQuery = await client.query(`
+      WITH updated AS (
+        UPDATE accepted
+        SET user_navigation_cancel_status = 'usercanceled'
+        WHERE notification_id = $1
+        RETURNING 
+          accepted_id, 
+          notification_id, 
+          user_id, 
+          user_notification_id, 
+          longitude, 
+          latitude, 
+          created_at, 
+          worker_id, 
+          complete_status,
+          time
+      ),
+      inserted AS (
+        INSERT INTO completenotifications (
+          accepted_id, 
+          notification_id, 
+          user_id, 
+          user_notification_id, 
+          longitude, 
+          latitude, 
+          created_at, 
+          worker_id, 
+          complete_status,
+          service_booked, 
+          time
+        )
+        SELECT 
+          accepted_id, 
+          notification_id, 
+          user_id, 
+          user_notification_id, 
+          longitude, 
+          latitude, 
+          created_at, 
+          worker_id, 
+          'cancel', 
+          to_jsonb('service_booked'::text), 
+          time
+        FROM updated
+        RETURNING worker_id, notification_id
+      )
+      SELECT i.worker_id, f.fcm_token
+      FROM inserted i
+      JOIN workersverified w ON w.worker_id = i.worker_id
+      JOIN fcm f ON f.worker_id = w.worker_id;
     `, [notification_id]);
 
-    if (query.rowCount > 0) {
-      const workerTokenResult = await client.query(`
-        SELECT w.worker_id, f.fcm_token
-        FROM accepted n
-        JOIN workersverified w ON w.worker_id = n.worker_id
-        JOIN fcm f ON f.worker_id = w.worker_id
-        WHERE n.notification_id = $1
-      `, [notification_id]);
+    // Second query: DELETE operation
+    const deleteResult = await client.query(`
+      DELETE FROM accepted
+      WHERE notification_id = $1
+      RETURNING *;
+    `, [notification_id]);
 
-      if (workerTokenResult.rows.length > 0) {
-        const fcmTokens = workerTokenResult.rows.map(row => row.fcm_token);
-        // console.log(fcmTokens);
+    // Commit the transaction
+    await client.query('COMMIT');
 
-        if (fcmTokens.length > 0) {
-          // Create the multicast message object for FCM tokens
-          const multicastMessage = {
-            tokens: fcmTokens,
-            notification: {
-              title: "Click Solver",
-              body: `Sorry for this, User cancelled the Service.`,
-            },
-            data: {
-              notification_id: encodedUserNotificationId.toString(),
-              screen: 'Home',
-            },
-          };
+    if (combinedQuery.rowCount > 0) {
+      const workerId = combinedQuery.rows[0].worker_id;
+      const fcmTokens = combinedQuery.rows.map(row => row.fcm_token);
 
-          try {
-            // Send the message to multiple tokens using sendEachForMulticast
-            const response = await getMessaging().sendEachForMulticast(multicastMessage);
+      if (fcmTokens.length > 0) {
+        // Create the multicast message object for FCM tokens
+        const multicastMessage = {
+          tokens: fcmTokens,
+          notification: {
+            title: "Click Solver",
+            body: `Sorry for this, User cancelled the Service.`,
+          },
+          data: {
+            notification_id: encodedUserNotificationId,
+            screen: 'Home',
+          },
+        };
 
-            // Log the responses for each token
-            response.responses.forEach((res, index) => {
-              if (res.success) {
-                // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
-              } else {
-                console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
-              }
-            });
+        try {
+          // Send the message to multiple tokens using sendEachForMulticast
+          const response = await getMessaging().sendEachForMulticast(multicastMessage);
 
-            // console.log('Success Count:', response.successCount);
-            // console.log('Failure Count:', response.failureCount);
-          } catch (error) {
-            console.error('Error sending notifications:', error);
-          }
-        } else {
-          console.error('No FCM tokens to send the message to.');
+          // Log the responses for each token
+          response.responses.forEach((res, index) => {
+            if (res.success) {
+              // Optionally log successful sends
+              // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
+            } else {
+              console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+            }
+          });
+        } catch (error) {
+          console.error('Error sending notifications:', error);
         }
 
-        res.status(200).json({ message: "Cancellation successful" });
+        const screen = "";
+        const encodedId = Buffer.from(notification_id.toString()).toString("base64");
+        await updateWorkerAction(workerId, encodedId, screen);
+
+        return res.status(200).json({ message: "Cancellation successful" });
       } else {
-        res.status(205).json({ message: "Nothing sent" });
+        const screen = "";
+        const encodedId = Buffer.from(notification_id.toString()).toString("base64");
+        await updateWorkerAction(workerId, encodedId, screen);
+        console.error('No FCM tokens to send the message to.');
+        return res.status(200).json({ message: "Cancellation successful, but no FCM tokens found." });
       }
     } else {
-      res.status(205).json({ message: "Time up" });
+      return res.status(205).json({ message: "Cancellation not performed. Either invalid ID or already canceled." });
     }
   } catch (error) {
+    // Rollback the transaction in case of error
+    await client.query('ROLLBACK');
     console.error('Error processing request:', error);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
-// ***
 
-// const acceptRequest = async (req, res) => {
-//   const { user_notification_id } = req.body;
-//   const worker_id = req.worker.id;
+
+
+// const userNavigationCancel = async (req, res) => {
+//   const { notification_id } = req.body;
+//   const encodedUserNotificationId = Buffer.from(notification_id.toString()).toString("base64");
 
 //   try {
-//     // Start a transaction
+//     // Begin a transaction
 //     await client.query('BEGIN');
 
-//     // Check if any rows with the same user_notification_id have the status 'accept'
-//     const checkAcceptedResult = await client.query(
-//       "SELECT * FROM accepted WHERE user_notification_id = $1",
-//       [user_notification_id]
-//     );
+//     // Combined UPDATE, INSERT, DELETE using CTEs
+// // Combined UPDATE, INSERT, DELETE using CTEs
+// const combinedQuery = await client.query(`
+//   WITH updated AS (
+//    UPDATE accepted
+//    SET user_navigation_cancel_status = 'usercanceled'
+//    WHERE notification_id = $1
+//    RETURNING 
+//      accepted_id, 
+//      notification_id, 
+//      user_id, 
+//      user_notification_id, 
+//      longitude, 
+//      latitude, 
+//      created_at, 
+//      worker_id, 
+//      complete_status,
+//      time
+//  ),
+//  inserted AS (
+//    INSERT INTO completenotifications (
+//      accepted_id, 
+//      notification_id, 
+//      user_id, 
+//      user_notification_id, 
+//      longitude, 
+//      latitude, 
+//      created_at, 
+//      worker_id, 
+//      complete_status,
+//      service_booked, 
+//      time
+//    )
+//    SELECT 
+//      accepted_id, 
+//      notification_id, 
+//      user_id, 
+//      user_notification_id, 
+//      longitude, 
+//      latitude, 
+//      created_at, 
+//      worker_id, 
+//      'cancel', 
+//      to_jsonb('service_booked'::text), 
+//      time
+//    FROM updated
+//    RETURNING worker_id, notification_id
+//  ),
+//       deleted_accepted_data AS (
+//         DELETE FROM accepted
+//         WHERE notification_id = $1
+//         RETURNING *
+//       ),
+//  SELECT w.worker_id, f.fcm_token
+//  FROM inserted i
+//  JOIN workersverified w ON w.worker_id = i.worker_id
+//  JOIN fcm f ON f.worker_id = w.worker_id
+//  `, [notification_id]);
+ 
 
-//     if (checkAcceptedResult.rowCount > 0) {
-//       // Someone has already accepted this notification
-//       await client.query('ROLLBACK'); // Rollback the transaction
-//       return res.status(400).json({ message: "Someone already accepted the request." });
-//     }
-
-//     // Check the cancel_status in the notifications table
-//     const cancelStatusResult = await client.query(
-//       "SELECT cancel_status, user_id, notification_id, service, longitude, latitude FROM notifications WHERE user_notification_id = $1 AND worker_id = $2",
-//       [user_notification_id, worker_id]
-//     );
-
-//     if (cancelStatusResult.rows.length === 0) {
-//       // No matching notification found
-//       await client.query('ROLLBACK'); // Rollback the transaction
-//       return res.status(404).json({ message: "Notification not found." });
-//     }
-
-//     if (cancelStatusResult.rows[0].cancel_status === "cancel") {
-//       // The request has been canceled
-//       await client.query('ROLLBACK'); // Rollback the transaction
-//       return res.status(400).json({ message: "Cannot accept request; it has been canceled." });
-//     }
-
-//     // Insert into accepted table
-//     const insertResult = await client.query(
-//       `INSERT INTO accepted (user_notification_id, worker_id, notification_id, status, user_id, service, pin, longitude, latitude)
-//        VALUES ($1, $2, $3, $4, $5, $6, FLOOR(RANDOM() * 9000) + 1000, $7, $8) RETURNING notification_id`,
-//       [
-//         user_notification_id,
-//         worker_id,
-//         cancelStatusResult.rows[0].notification_id,  // Notification ID
-//         "accept",  // Status
-//         cancelStatusResult.rows[0].user_id,          // User ID
-//         cancelStatusResult.rows[0].service,
-//         cancelStatusResult.rows[0].longitude,
-//         cancelStatusResult.rows[0].latitude        
-//       ]
-//     );
 
 //     // Commit the transaction
 //     await client.query('COMMIT');
 
-//     // Retrieve the inserted notification ID
-//     const notificationId = insertResult.rows[0].notification_id; // Use the notification_id from insertResult
+//     if (combinedQuery.rowCount > 0) {
+//       const workerId = combinedQuery.rows[0].worker_id;
+//       const fcmTokens = combinedQuery.rows.map(row => row.fcm_token);
 
-//     // Delete the notification
-//     await client.query(
-//       "DELETE FROM notifications WHERE user_notification_id = $1",
-//       [user_notification_id]
-//     );
+//       if (fcmTokens.length > 0) {
+//         // Create the multicast message object for FCM tokens
+//         const multicastMessage = {
+//           tokens: fcmTokens,
+//           notification: {
+//             title: "Click Solver",
+//             body: `Sorry for this, User cancelled the Service.`,
+//           },
+//           data: {
+//             notification_id: encodedUserNotificationId,
+//             screen: 'Home',
+//           },
+//         };
 
-//     // Fetch FCM tokens for the user from userfcm table
-//     const fcmTokenResult = await client.query(
-//       "SELECT fcm_token FROM userfcm WHERE user_id = $1",
-//       [cancelStatusResult.rows[0].user_id]  // Use the correct user ID
-//     );
+//         try {
+//           // Send the message to multiple tokens using sendEachForMulticast
+//           const response = await getMessaging().sendEachForMulticast(multicastMessage);
 
-//     const fcmTokens = fcmTokenResult.rows.map(row => row.fcm_token);
+//           // Log the responses for each token
+//           response.responses.forEach((res, index) => {
+//             if (res.success) {
+//               // Optionally log successful sends
+//               // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
+//             } else {
+//               console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+//             }
+//           });
 
-//     if (fcmTokens.length > 0) {
-//       // Create a multicast message object for all tokens
-//       const multicastMessage = {
-//         tokens: fcmTokens,
-//         notification: {
-//           title: "Click Solver",
-//           body: `Commander has accepted your request; he will be there within 5 minutes.`,
-//         },
-//         data: {
-//           notification_id: notificationId.toString(),
-//           screen: 'UserNavigation',
-//           service: cancelStatusResult.rows[0].service, // Ensure this is correctly referenced
-//         },
-//       };
-
-//       // Send the notification using Firebase Cloud Messaging
-//       const response = await getMessaging().sendEachForMulticast(multicastMessage);
-      
-//       // Log the responses for each token
-//       response.responses.forEach((res, index) => {
-//         if (res.success) {
-//           // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
-//         } else {
-//           console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+//           // Optionally log success and failure counts
+//           // console.log('Success Count:', response.successCount);
+//           // console.log('Failure Count:', response.failureCount);
+//         } catch (error) {
+//           console.error('Error sending notifications:', error);
+//           // Optionally handle notification sending errors differently
 //         }
-//       });
 
-//       // console.log('Success Count:', response.successCount);
-//       // console.log('Failure Count:', response.failureCount);
+//         const screen = "";
+//         const encodedId = Buffer.from(notification_id.toString()).toString("base64");
+//         await updateWorkerAction(workerId, encodedId, screen);
+
+//         return res.status(200).json({ message: "Cancellation successful" });
+//       } else {
+//         console.error('No FCM tokens to send the message to.');
+//         return res.status(200).json({ message: "Cancellation successful, but no FCM tokens found." });
+//       }
 //     } else {
-//       console.error('No FCM tokens to send the message to.');
+//       // No rows updated implies either invalid notification_id or already canceled
+//       return res.status(205).json({ message: "Cancellation not performed. Either invalid ID or already canceled." });
 //     }
-
-//     res.status(200).json({
-//       message: "Status updated to accept",
-//       notificationId: notificationId,
-//     });
 //   } catch (error) {
-//     // Rollback the transaction in case of any errors
+//     // Rollback the transaction in case of error
 //     await client.query('ROLLBACK');
-//     console.error("Error updating status:", error);
-//     res.status(500).json({ message: "Internal server error" });
+//     console.error('Error processing request:', error);
+//     return res.status(500).json({ error: "Internal server error" });
 //   }
-//  };
+// };
+
+
+
 
 const workCompletedRequest = async (req, res) => {
   const { notification_id } = req.body;
@@ -5178,7 +5160,7 @@ const workerVerifyOtp = async (req, res) => {
 
     // Execute the query with parameters
     const queryResult = await client.query(query, [notification_id, otp]);
-
+    console.log(notification_id)
     // Check if any records were returned
     if (queryResult.rows.length === 0) {
       return res.status(404).json({ message: "OTP is incorrect or notification not found" });
@@ -5232,7 +5214,7 @@ const workerVerifyOtp = async (req, res) => {
 
     const screen = "worktimescreen";
     const encodedId = Buffer.from(notification_id.toString()).toString("base64");
-    createUserBackgroundAction(row.user_id, encodedId, screen, row.service_booked);
+    await createUserBackgroundAction(row.user_id, encodedId, screen, row.service_booked);
 
     // Respond with success
     return res.status(200).json({ status: 'Verification successful', timeResult: timeResult });
@@ -6744,6 +6726,14 @@ const processPayment = async (req, res) => {
           u.fcm_token 
         FROM userfcm u
         JOIN update_accepted ua ON u.user_id = ua.user_id
+      ),
+      update_workerlife AS (
+        UPDATE workerlife wl
+        SET 
+          cashback_approved_times = COALESCE(service_counts / 6, 0)
+        FROM update_accepted ua
+        WHERE wl.worker_id = ua.worker_id
+        RETURNING wl.worker_id, wl.cashback_approved_times
       )
       SELECT 
         ua.user_id, 
@@ -6810,7 +6800,7 @@ const processPayment = async (req, res) => {
     // Create a background action for the user
     const screen = "";
     const encodedNotificationId = Buffer.from(decodedId.toString()).toString("base64");
-    createUserBackgroundAction(user_id, encodedNotificationId, screen, service_booked);
+    await createUserBackgroundAction(user_id, encodedNotificationId, screen, service_booked);
 
     // Respond with success
     return res.status(200).json({ message: 'Payment processed successfully' });
@@ -6820,94 +6810,6 @@ const processPayment = async (req, res) => {
     return res.status(500).json({ error: 'An error occurred while processing the payment' });
   }
 };
-
-
-
-// const processPayment = async (req, res) => {
-//   const { totalAmount, paymentMethod, decodedId } = req.body;
-
-//   try {
-//     // Single query to update payment details and retrieve user_id, worker_id, fcm_token
-//     const combinedQuery = `
-//       WITH update_servicecall AS (
-//         UPDATE servicecall
-//         SET payment = $1, payment_type = $2
-//         WHERE notification_id = $3
-//         RETURNING notification_id
-//       )
-//       SELECT 
-//         cn.user_id, 
-//         cn.service_booked,
-//         cn.worker_id, 
-//         u.fcm_token 
-//       FROM 
-//         accepted cn
-//       JOIN 
-//         servicecall sc ON cn.notification_id = sc.notification_id
-//       LEFT JOIN 
-//         userfcm u ON cn.user_id = u.user_id
-//       WHERE 
-//         cn.notification_id = $3
-//     `;
-
-//     const combinedResult = await client.query(combinedQuery, [totalAmount, paymentMethod, decodedId]);
-
-//     if (combinedResult.rows.length === 0) {
-//       return res.status(404).json({ error: "Notification not found" });
-//     }
-
-//     const userId = combinedResult.rows[0].user_id;
-//     const serviceBooked = combinedResult.rows[0].service_booked;
-//     const workerId = combinedResult.rows[0].worker_id;
-//     const fcmTokens = combinedResult.rows.map(row => row.fcm_token).filter(token => token); // Filter out any undefined tokens
-
-//     // Update worker life details
-//     const serviceResult = await updateWorkerLifeDetails(workerId, totalAmount);
-    
-//     if (fcmTokens.length > 0) {
-//       // Create a multicast message object for all tokens
-//       const multicastMessage = {
-//         tokens: fcmTokens, // An array of tokens to send the same message to
-//         notification: {
-//           title: "Click Solver",
-//           body: `Your payment has been successfully processed.`,
-//         },
-//         data: {
-//           notification_id: decodedId.toString(),
-//           screen: 'Home'
-//         },
-//       };
-
-//       try {
-//         // Use sendEachForMulticast to send the same message to multiple tokens
-//         const response = await getMessaging().sendEachForMulticast(multicastMessage);
-
-//         // Log the responses for each token
-//         response.responses.forEach((res, index) => {
-//           if (res.success) {
-//             // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
-//           } else {
-//             console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
-//           }
-//         });
-//       } catch (error) {
-//         console.error('Error sending notifications:', error);
-//       }
-//     } else {
-//       console.error('No FCM tokens to send the message to.');
-//     }
-
-//     const encodedId = Buffer.from(decodedId.toString()).toString("base64");
-//     const screen = "";
-
-//     createUserBackgroundAction(userId, encodedId, screen, serviceBooked);
-
-//     res.status(200).json({ message: 'Payment processed successfully' });
-//   } catch (error) {
-//     console.error('Error processing payment:', error);
-//     res.status(500).json({ error: 'An error occurred while processing the payment' });
-//   }
-// };
 
 
 
@@ -7091,80 +6993,80 @@ const getServiceCompletedDetails = async (req, res) => {
     // Combine all steps into a single query with a transaction
     const query = `
       WITH retrieved_data AS (
-        SELECT 
-          n.accepted_id,
-          n.notification_id, 
-          n.user_notification_id,
-          n.service_booked, 
-          n.longitude, 
-          n.latitude, 
-          n.worker_id,
-          un.user_id,
-          sc.payment, 
-          sc.payment_type, 
-          un.city, 
-          un.pincode, 
-          un.area, 
-          u.name,
-          n.time -- Added time column
-        FROM 
-          accepted n
-        JOIN 
-          servicecall sc ON n.notification_id = sc.notification_id
-        JOIN 
-          usernotifications un ON n.user_notification_id = un.user_notification_id
-        JOIN 
-          "user" u ON un.user_id = u.user_id
-        WHERE 
-          n.notification_id = $1
+          SELECT 
+              n.accepted_id,
+              n.notification_id, 
+              n.user_notification_id,
+              n.service_booked, 
+              n.longitude, 
+              n.latitude, 
+              n.worker_id,
+              un.user_id,
+              sc.payment, 
+              sc.payment_type, 
+              un.city, 
+              un.pincode, 
+              un.area, 
+              u.name,
+              n.time -- Added time column
+          FROM 
+              accepted n
+          JOIN 
+              servicecall sc ON n.notification_id = sc.notification_id
+          JOIN 
+              usernotifications un ON n.user_notification_id = un.user_notification_id
+          JOIN 
+              "user" u ON un.user_id = u.user_id
+          WHERE 
+              n.notification_id = $1
       ),
       inserted_data AS (
-        INSERT INTO completenotifications (
-          accepted_id,
-          notification_id,
-          user_id,
-          user_notification_id,
-          service_booked,
-          longitude,
-          latitude,
-          worker_id,
-          time -- Added time column
-        )
-        SELECT 
-          accepted_id,
-          notification_id,
-          user_id,
-          user_notification_id,
-          service_booked,
-          longitude,
-          latitude,
-          worker_id,
-          time -- Included time data
-        FROM retrieved_data
-        RETURNING *
+          INSERT INTO completenotifications (
+              accepted_id,
+              notification_id,
+              user_id,
+              user_notification_id,
+              service_booked,
+              longitude,
+              latitude,
+              worker_id,
+              time
+          )
+          SELECT 
+              accepted_id,
+              notification_id,
+              user_id,
+              user_notification_id,
+              service_booked,
+              longitude,
+              latitude,
+              worker_id,
+              time
+          FROM retrieved_data
+          ON CONFLICT (accepted_id) DO NOTHING
+          RETURNING *
       ),
       deleted_accepted_data AS (
-        DELETE FROM accepted
-        WHERE notification_id = $1
-        RETURNING *
+          DELETE FROM accepted
+          WHERE notification_id = $1
+          RETURNING *
       ),
       deleted_service_tracking_data AS (
-        DELETE FROM servicetracking
-        WHERE notification_id = $1
-        RETURNING *
+          DELETE FROM servicetracking
+          WHERE notification_id = $1
+          RETURNING *
       )
       SELECT 
-        r.payment, 
-        r.payment_type, 
-        r.service_booked, 
-        r.longitude, 
-        r.latitude, 
-        r.area, 
-        r.city, 
-        r.pincode, 
-        r.name
+          r.payment, 
+          r.payment_type, 
+          r.service_booked, 
+          r.longitude, 
+          r.latitude, 
+          r.area, 
+          r.city, 
+          r.pincode, 
+          r.name
       FROM retrieved_data r;
-
     `;
 
     const result = await client.query(query, [notification_id]);
@@ -7340,76 +7242,230 @@ function convertToDateString(isoDate) {
 }
 
 const getWorkerEarnings = async (req, res) => {
-  const { date } = req.body;
-  const workerid = req.worker.id;
+  const { date, startDate, endDate } = req.body;
+  const workerId = req.worker.id;
 
-  // Convert the selectedDate to the required format or return a response if invalid
-  const selectDate = convertToDateString(date);
-  // console.log(selectDate)
+  let selectStartDate;
+  let selectEndDate;
 
-  if (!selectDate) {
-    return res.status(400).json({ error: 'Invalid date format' });
+  if (startDate && endDate) {
+    selectStartDate = convertToDateString(startDate);
+    selectEndDate = convertToDateString(endDate);
+
+    if (!selectStartDate || !selectEndDate) {
+      return res.status(400).json({ error: 'Invalid startDate or endDate format' });
+    }
+
+    if (new Date(selectStartDate) > new Date(selectEndDate)) {
+      return res.status(400).json({ error: 'startDate cannot be after endDate' });
+    }
+  } else if (date) {
+    selectStartDate = convertToDateString(date);
+    selectEndDate = selectStartDate;
+
+    if (!selectStartDate) {
+      return res.status(400).json({ error: 'Invalid date format' });
+    }
+  } else {
+    return res.status(400).json({ error: 'No date provided' });
   }
 
   try {
-  const query = `
-    SELECT 
-      SUM(payment) AS total_payment, 
-      SUM(CASE WHEN payment_type = 'cash' THEN payment ELSE 0 END) AS cash_payment, 
-      COUNT(*) AS payment_count,
-      (SELECT SUM(payment) 
-      FROM servicecall 
-      WHERE worker_id = $1
-        AND payment IS NOT NULL
-      ) AS lifeEarnings, 
-      (SELECT AVG(rating) 
-      FROM feedback 
-      WHERE worker_id = $1
-      ) AS avgRating, 
-      (SELECT COUNT(*) 
-      FROM notifications 
-      WHERE worker_id = $1
-        AND status = 'reject'
-        AND DATE(created_at) BETWEEN DATE($2) AND DATE(CURRENT_DATE)
-      ) AS rejectedCount, -- Subquery for counting 'rejected' statuses
-      (SELECT COUNT(*) 
-      FROM notifications 
-      WHERE worker_id = $1
-        AND status = 'pending'
-        AND DATE(created_at) BETWEEN DATE($2) AND DATE(CURRENT_DATE)
-      ) AS pendingCount, -- Subquery for counting 'pending' statuses
-      (SELECT EXTRACT(EPOCH FROM SUM(CAST(time_worked AS INTERVAL))) / 3600
-      FROM servicecall
-      WHERE worker_id = $1
-        AND time_worked IS NOT NULL
-        AND DATE(end_time) BETWEEN DATE($2) AND DATE(CURRENT_DATE) -- Filter for time_worked within date range
-      ) AS total_time_worked_hours -- Subquery for summing time_worked in hours
-    FROM (
+    const query = `
       SELECT 
-        payment, 
-        payment_type, 
-        ROW_NUMBER() OVER (ORDER BY RANDOM()) AS row_num
-      FROM servicecall
+        SUM(payment) AS total_payment, 
+        SUM(CASE WHEN payment_type = 'cash' THEN payment ELSE 0 END) AS cash_payment, 
+        COUNT(*) AS payment_count,
+        (SELECT SUM(payment) 
+          FROM servicecall 
+          WHERE worker_id = $1
+            AND payment IS NOT NULL
+        ) AS life_earnings, 
+        (SELECT AVG(rating) 
+          FROM feedback 
+          WHERE worker_id = $1
+        ) AS avg_rating, 
+        (SELECT COUNT(*) 
+          FROM notifications 
+          WHERE worker_id = $1
+            AND status = 'reject'
+            AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
+        ) AS rejected_count,
+        (SELECT COUNT(*) 
+          FROM notifications 
+          WHERE worker_id = $1
+            AND status = 'pending'
+            AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
+        ) AS pending_count,
+        (SELECT EXTRACT(EPOCH FROM SUM(CAST(time_worked AS INTERVAL))) / 3600
+          FROM servicecall
+          WHERE worker_id = $1
+            AND time_worked IS NOT NULL
+            AND DATE(end_time) BETWEEN DATE($2) AND DATE($3)
+        ) AS total_time_worked_hours,
+        (SELECT service_counts FROM workerlife WHERE worker_id = $1) AS service_counts,
+        (SELECT cashback_approved_times FROM workerlife WHERE worker_id = $1) AS cashback_approved_times,
+        (SELECT cashback_gain FROM workerlife WHERE worker_id = $1) AS cashback_gain
+      FROM servicecall s
       WHERE worker_id = $1
         AND payment IS NOT NULL
-        AND DATE(end_time) BETWEEN DATE($2) AND DATE(CURRENT_DATE)
-    ) s;
-  `;
+        AND DATE(end_time) BETWEEN DATE($2) AND DATE($3);
+    `;
 
-    const result = await client.query(query, [workerid, selectDate]);
-    // console.log(result.rows[0])
+    const result = await client.query(query, [workerId, selectStartDate, selectEndDate]);
+
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Notification or related data not found' });
+      return res.status(404).json({ error: 'No earnings data found' });
     }
-    const { total_payment,payment_count,cash_payment,average_rating,lifeearnings,avgrating,rejectedcount,pendingcount,total_time_worked_hours } = result.rows[0];
 
-    // Return the worker's name and service
-    res.json({ total_payment, cash_payment,payment_count,average_rating,lifeearnings,avgrating,rejectedcount,pendingcount,total_time_worked_hours});
+    const {
+      total_payment,
+      cash_payment,
+      payment_count,
+      life_earnings,
+      avg_rating,
+      rejected_count,
+      pending_count,
+      total_time_worked_hours,
+      service_counts,
+      cashback_approved_times,
+      cashback_gain
+    } = result.rows[0];
+
+    res.json({ 
+      total_payment: Number(total_payment) || 0, 
+      cash_payment: Number(cash_payment) || 0, 
+      payment_count: Number(payment_count) || 0, 
+      life_earnings: Number(life_earnings) || 0, 
+      avg_rating: Number(avg_rating) || 0, 
+      rejected_count: Number(rejected_count) || 0, 
+      pending_count: Number(pending_count) || 0, 
+      total_time_worked_hours: Number(total_time_worked_hours) || 0,
+      service_counts: Number(service_counts) || 0,
+      cashback_approved_times: Number(cashback_approved_times) || 0,
+      cashback_gain: Number(cashback_gain) || 0
+    });
+
   } catch (error) {
-    console.error('Error checking worker details:', error);
+    console.error('Error fetching worker earnings:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+
+
+// const getWorkerEarnings = async (req, res) => {
+//   // Destructure the possible date parameters from the request body
+//   const { date, startDate, endDate } = req.body;
+//   const workerId = req.worker.id;
+
+//   let selectStartDate;
+//   let selectEndDate;
+
+//   // Determine whether to use a single date or a date range
+//   if (startDate && endDate) {
+//     // Convert and validate the startDate and endDate
+//     selectStartDate = convertToDateString(startDate);
+//     selectEndDate = convertToDateString(endDate);
+
+//     if (!selectStartDate || !selectEndDate) {
+//       return res.status(400).json({ error: 'Invalid startDate or endDate format' });
+//     }
+
+//     // Ensure that startDate is not after endDate
+//     if (new Date(selectStartDate) > new Date(selectEndDate)) {
+//       return res.status(400).json({ error: 'startDate cannot be after endDate' });
+//     }
+//   } else if (date) {
+//     // If only a single date is provided, use it for both start and end dates
+//     selectStartDate = convertToDateString(date);
+//     selectEndDate = selectStartDate;
+
+//     if (!selectStartDate) {
+//       return res.status(400).json({ error: 'Invalid date format' });
+//     }
+//   } else {
+//     // If neither date nor date range is provided, return an error
+//     return res.status(400).json({ error: 'No date provided' });
+//   }
+
+//   try {
+//     // Define the SQL query with placeholders for parameters
+//     const query = `
+//       SELECT 
+//         SUM(payment) AS total_payment, 
+//         SUM(CASE WHEN payment_type = 'cash' THEN payment ELSE 0 END) AS cash_payment, 
+//         COUNT(*) AS payment_count,
+//         (SELECT SUM(payment) 
+//           FROM servicecall 
+//           WHERE worker_id = $1
+//             AND payment IS NOT NULL
+//         ) AS life_earnings, 
+//         (SELECT AVG(rating) 
+//           FROM feedback 
+//           WHERE worker_id = $1
+//         ) AS avg_rating, 
+//         (SELECT COUNT(*) 
+//           FROM notifications 
+//           WHERE worker_id = $1
+//             AND status = 'reject'
+//             AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
+//         ) AS rejected_count, -- Count of 'rejected' statuses
+//         (SELECT COUNT(*) 
+//           FROM notifications 
+//           WHERE worker_id = $1
+//             AND status = 'pending'
+//             AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
+//         ) AS pending_count, -- Count of 'pending' statuses
+//         (SELECT EXTRACT(EPOCH FROM SUM(CAST(time_worked AS INTERVAL))) / 3600
+//           FROM servicecall
+//           WHERE worker_id = $1
+//             AND time_worked IS NOT NULL
+//             AND DATE(end_time) BETWEEN DATE($2) AND DATE($3)
+//         ) AS total_time_worked_hours -- Total time worked in hours
+//       FROM servicecall s
+//       WHERE worker_id = $1
+//         AND payment IS NOT NULL
+//         AND DATE(end_time) BETWEEN DATE($2) AND DATE($3);
+//     `;
+
+//     // Execute the SQL query with the appropriate parameters
+//     const result = await client.query(query, [workerId, selectStartDate, selectEndDate]);
+
+//     // If no records are found, return a 404 error
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({ error: 'No earnings data found' });
+//     }
+
+//     // Destructure the results, ensuring consistent naming
+//     const {
+//       total_payment,
+//       cash_payment,
+//       payment_count,
+//       life_earnings,
+//       avg_rating,
+//       rejected_count,
+//       pending_count,
+//       total_time_worked_hours,
+//     } = result.rows[0];
+
+//     // Send the response with the earnings data, ensuring numerical values
+//     res.json({ 
+//       total_payment: Number(total_payment) || 0, 
+//       cash_payment: Number(cash_payment) || 0, 
+//       payment_count: Number(payment_count) || 0, 
+//       life_earnings: Number(life_earnings) || 0, 
+//       avg_rating: Number(avg_rating) || 0, 
+//       rejected_count: Number(rejected_count) || 0, 
+//       pending_count: Number(pending_count) || 0, 
+//       total_time_worked_hours: Number(total_time_worked_hours) || 0 
+//     });
+
+//   } catch (error) {
+//     console.error('Error fetching worker earnings:', error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
 
 
 const getWorkDetails = async (req, res) => {
@@ -7438,7 +7494,25 @@ const getWorkDetails = async (req, res) => {
 
     if (result.rows.length > 0) {
       const workDetails = result.rows[0];
-      res.status(200).json(workDetails);
+      const service_booked = result.rows[0].service_booked
+
+      const gstRate = 0.05;
+      const discountRate = 0.05;
+  
+      const fetchedTotalAmount = service_booked.reduce((total, service) => total + (service.cost || 0), 0);
+  
+      const gstAmount = fetchedTotalAmount * gstRate;
+      const cgstAmount = fetchedTotalAmount * gstRate;
+      const discountAmount = fetchedTotalAmount * discountRate;
+      const fetchedFinalTotalAmount = fetchedTotalAmount + gstAmount + cgstAmount - discountAmount;
+  
+      const paymentDetails = {
+        gstAmount,
+        cgstAmount,
+        discountAmount,
+        fetchedFinalTotalAmount,
+      };
+      res.status(200).json({workDetails,paymentDetails});
     } else {
       res.status(404).json({ error: 'Notification not found' });
     }

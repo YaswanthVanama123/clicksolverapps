@@ -20,7 +20,7 @@ const SingleService = () => {
 
   const fetchDetails = useCallback(async () => {
     try {
-      const response = await axios.post(`${process.env.BACKENDAIPD}/api/single/service`, {
+      const response = await axios.post(`${process.env.BACKENDAIPE}/api/single/service`, {
         serviceName,
       });
       const { relatedServices } = response.data;

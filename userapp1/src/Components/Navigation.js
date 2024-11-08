@@ -53,13 +53,13 @@ const Navigation = () => {
   const handleCancelBooking = useCallback(async () => {
     try {
       const response = await axios.post(
-        `${process.env.BACKENDAIPD}/api/user/work/cancel`,
+        `${process.env.BACKENDAIPE}/api/user/work/cancel`,
         { notification_id: decodedId }
       );
 
       if (response.status === 200) {
         const cs_token = await EncryptedStorage.getItem('cs_token');
-        await axios.post(`${process.env.BACKENDAIPD}/api/user/action`, {
+        await axios.post(`${process.env.BACKENDAIPE}/api/user/action`, {
           encodedId: encodedData,
           screen: ''
         }, {
@@ -84,13 +84,13 @@ const Navigation = () => {
     const checkVerificationStatus = async () => {
       try {
         const response = await axios.get(
-          `${process.env.BACKENDAIPD}/api/worker/verification/status`,
+          `${process.env.BACKENDAIPE}/api/worker/verification/status`,
           { params: { notification_id: decodedId } }
         );
 
         if (response.data === 'true') {
           const cs_token = await EncryptedStorage.getItem('cs_token');
-          await axios.post(`${process.env.BACKENDAIPD}/api/user/action`, {
+          await axios.post(`${process.env.BACKENDAIPE}/api/user/action`, {
             encodedId: encodedData,
             screen: 'worktimescreen'
           }, {
@@ -117,7 +117,7 @@ const Navigation = () => {
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       try {
         const response = await axios.post(
-          `${process.env.BACKENDAIPD}/api/worker/navigation/details`,
+          `${process.env.BACKENDAIPE}/api/worker/navigation/details`,
           { notificationId: decodedId },
           { headers: { Authorization: `Bearer ${jwtToken}` } }
         );
@@ -152,7 +152,7 @@ const Navigation = () => {
     const fetchLocationDetails = async () => {
       try {
         const response = await axios.get(
-          `${process.env.BACKENDAIPD}/api/user/location/navigation`,
+          `${process.env.BACKENDAIPE}/api/user/location/navigation`,
           { params: { notification_id: decodedId } }
         );
 
@@ -262,7 +262,9 @@ const Navigation = () => {
           </Mapbox.ShapeSource>
         )}
       </Mapbox.MapView>
-  
+      <TouchableOpacity style={styles.cancelButton} onPress={handleCancelBooking}>
+        <Text style={styles.cancelText}>Cancel</Text>
+      </TouchableOpacity>
       <View style={styles.detailsContainer}>
         <View style={styles.minimumChargesContainer}>
           <Text style={styles.serviceFare}>Commander on the way</Text>
@@ -395,6 +397,24 @@ const styles = StyleSheet.create({
   routeLine: {
     lineColor: '#0000ff',
     lineWidth: 5,
+  },
+  cancelButton: {
+    position: 'absolute',
+    top: 0.572 * screenHeight,
+    left: 5,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    width: 80,
+    height: 35,
+  },
+  cancelText: {
+    fontSize: 13,
+    color: '#4a4a4a',
+    fontWeight: 'bold',
   },
   pinContainer: {
     flexDirection: 'row',

@@ -5,7 +5,7 @@ import { useNavigation, CommonActions } from "@react-navigation/native";
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import Feather from 'react-native-vector-icons/Feather';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 
 const dummyTransactions = [
@@ -92,6 +92,7 @@ const BalanceScreen = () => {
   const [balance, setBalance] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [activeCard, setActiveCard] = useState('ServiceHistory');
+  const [isMessageVisible, setIsMessageVisible] = useState(false);
 
   const backToHome = () => {
     navigation.dispatch(
@@ -108,7 +109,7 @@ const BalanceScreen = () => {
       if (!pcs_token) throw new Error('pcs_token not found');
 
       const response = await axios.post(
-        `${process.env.BackendAPI5}/api/balance/ammount`,
+        `${process.env.BackendAPI6}/api/balance/ammount`,
         {},
         { headers: { Authorization: `Bearer ${pcs_token}` } }
       );
@@ -157,8 +158,20 @@ const BalanceScreen = () => {
           </TouchableOpacity>
         </View>
         <View style={styles.balanceContainer}>
-          <Text style={styles.balanceTitle}>Balance</Text>
-          <Text style={[styles.balanceAmount, isBalanceNegative && styles.negativeBalance]}>₹{balance ?? -200}</Text>
+          <View style={styles.balanceTitleContainer}>
+            <Text style={styles.balanceTitle}>Balance </Text>
+            <TouchableOpacity onPress={() => setIsMessageVisible(!isMessageVisible)}>
+              <Feather name={isMessageVisible ? 'eye-off' : 'eye'} size={20} color='#4a4a4a' />
+            </TouchableOpacity>
+          </View>
+          <Text style={[styles.balanceAmount, isBalanceNegative && styles.negativeBalance]}>
+            ₹{balance ?? -200}
+          </Text>
+          {isMessageVisible && (
+            <View style={styles.messageBox}>
+              <Text style={styles.messageText}>The total service charge and payment history</Text>
+            </View>
+          )}
         </View>
         <View style={styles.cardContainer}>
           <TouchableOpacity
@@ -209,6 +222,22 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 10,
     top: 10,
+  },
+  balanceTitleContainer: {
+    flexDirection: 'row',
+    gap:5,
+    alignItems: 'center',
+  },
+  messageBox: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#f3f3f3',
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  messageText: { 
+    fontSize: 14,
+    color: '#4a4a4a',
   },
   balanceContainer: {
     alignItems: 'center',

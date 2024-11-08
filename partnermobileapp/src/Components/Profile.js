@@ -19,7 +19,7 @@ const Profile = () => {
           return; // Exit early
         }
 
-        const response = await axios.get(`${process.env.BackendAPI5}/api/worker/profile/details`, {
+        const response = await axios.get(`${process.env.BackendAPI6}/api/worker/profile/details`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

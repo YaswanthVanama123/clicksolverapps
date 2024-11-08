@@ -58,7 +58,7 @@ const BankAccountScreen = () => {
           navigation.replace('Login');
         }
         const response = await axios.post(
-          `${process.env.BackendAPI5}/api/account/submit`,
+          `${process.env.BackendAPI6}/api/account/submit`,
           bankAccountDetails, 
           {
             headers: {

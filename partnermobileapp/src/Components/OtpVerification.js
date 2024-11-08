@@ -42,14 +42,14 @@ const OTPVerification = ({ route }) => {
 
   const checkCancellationStatus = async () => {
     try {
-      const { data } = await axios.get(`${process.env.BackendAPI5}/api/worker/cancelled/status`, {
+      const { data } = await axios.get(`${process.env.BackendAPI6}/api/worker/cancelled/status`, {
         params: { notification_id: decodedId },
       });
 
       if (data.notificationStatus === "usercanceled") {
         const pcs_token = await EncryptedStorage.getItem("pcs_token");
         await axios.post(
-          `${process.env.BackendAPI5}/api/worker/action`,
+          `${process.env.BackendAPI6}/api/worker/action`,
           { encodedId: "", screen: "" },
           { headers: { Authorization: `Bearer ${pcs_token}` } }
         );
@@ -80,7 +80,7 @@ const OTPVerification = ({ route }) => {
     try {
       const jwtToken = await EncryptedStorage.getItem("pcs_token");
       const { data, status } = await axios.post(
-        `${process.env.BackendAPI5}/api/pin/verification`,
+        `${process.env.BackendAPI6}/api/pin/verification`,
         { notification_id: decodedId, otp: enteredOtp },
         { headers: { Authorization: `Bearer ${jwtToken}` } }
       );
@@ -90,7 +90,7 @@ const OTPVerification = ({ route }) => {
         await EncryptedStorage.setItem("start_time", data.timeResult);
 
         await axios.post(
-          `${process.env.BackendAPI5}/api/worker/action`,
+          `${process.env.BackendAPI6}/api/worker/action`,
           { encodedId, screen: "TimingScreen" },
           { headers: { Authorization: `Bearer ${pcs_token}` } }
         );

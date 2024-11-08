@@ -64,7 +64,7 @@ function ServiceApp() {
     try {
       const cs_token = await EncryptedStorage.getItem('cs_token');
       if (cs_token) {
-        const response = await axios.get(`${process.env.BACKENDAIPD}/api/user/track/details`, {
+        const response = await axios.get(`${process.env.BACKENDAIPE}/api/user/track/details`, {
           headers: { Authorization: `Bearer ${cs_token}` },
         });
     
@@ -99,11 +99,11 @@ function ServiceApp() {
     setGreeting(greetingMessage);
     setGreetingIcon(icon);
   };
-
+ 
   const fetchServices = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${process.env.BACKENDAIPD}/api/servicecategories`);
+      const response = await axios.get(`${process.env.BACKENDAIPE}/api/servicecategories`);
       const servicesWithIds = response.data.map(service => ({ ...service, id: uuid.v4() }));
       setServices(servicesWithIds);
     } catch (error) {

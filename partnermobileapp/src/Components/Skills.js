@@ -147,7 +147,7 @@ const RegistrationScreen = () => {
         navigation.replace('Login');
       }
       const response = await axios.post(
-        `${process.env.BackendAPI5}/api/registration/submit`,
+        `${process.env.BackendAPI6}/api/registration/submit`,
         formData,
         {
           headers: {
@@ -171,7 +171,7 @@ const RegistrationScreen = () => {
         navigation.replace('Login');
       }
       const response = await axios.get( 
-        `${process.env.BackendAPI5}/api/service/categories`,
+        `${process.env.BackendAPI6}/api/service/categories`,
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
@@ -248,7 +248,7 @@ const RegistrationScreen = () => {
     if (field === 'skillCategory') {
       try {
         const response = await axios.post(
-          `${process.env.BackendAPI5}/api/subservice/checkboxes`,
+          `${process.env.BackendAPI6}/api/subservice/checkboxes`,
           {
             selectedService: value,
           }
@@ -275,7 +275,7 @@ const RegistrationScreen = () => {
         navigation.replace('Login');
       }
       const response = await axios.get(
-        `${process.env.BackendAPI5}/api/profile/detsils`,
+        `${process.env.BackendAPI6}/api/profile/detsils`,
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,

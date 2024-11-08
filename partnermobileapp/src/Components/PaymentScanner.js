@@ -32,7 +32,7 @@ const PaymentScanner = ({ route }) => {
     const fetchPaymentDetails = async () => {
       if (decodedId) {
         try {
-          const response = await axios.post(`${process.env.BackendAPI5}/api/worker/payment/scanner/details`, {
+          const response = await axios.post(`${process.env.BackendAPI6}/api/worker/payment/scanner/details`, {
             notification_id: decodedId,
           });
 
@@ -69,13 +69,13 @@ const PaymentScanner = ({ route }) => {
     try {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       const numberAmmount = Number(totalAmount)
-      await axios.post(`${process.env.BackendAPI5}/api/user/payed`, {
+      await axios.post(`${process.env.BackendAPI6}/api/user/payed`, {
         totalAmount:numberAmmount,
         paymentMethod,
         decodedId,
       });
 
-      await axios.post(`${process.env.BackendAPI5}/api/worker/action`, {
+      await axios.post(`${process.env.BackendAPI6}/api/worker/action`, {
         encodedId,
         screen: '',
       }, { 

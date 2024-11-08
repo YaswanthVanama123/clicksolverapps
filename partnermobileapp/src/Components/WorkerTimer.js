@@ -107,7 +107,7 @@ const WorkerTimer = () => {
               
               try {
               
-                const response = await axios.post(`${process.env.BackendAPI5}/api/add/tracking`, { notification_id: decodedId });
+                const response = await axios.post(`${process.env.BackendAPI6}/api/add/tracking`, { notification_id: decodedId });
                 console.log("yes pressed",response)
                 if (response.status === 200) {
                   console.log("Finished");
@@ -149,7 +149,7 @@ const WorkerTimer = () => {
             }
           }
 
-          const response = await axios.post(`${process.env.BackendAPI5}/api/work/time/started`, {
+          const response = await axios.post(`${process.env.BackendAPI6}/api/work/time/started`, {
             notification_id: decodedId,
           });
 

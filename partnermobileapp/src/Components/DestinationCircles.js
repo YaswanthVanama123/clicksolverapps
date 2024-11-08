@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 
 const DestinationCircles = ({ complete }) => {
-  complete=4;
   const totalDestinations = 6;
   const activeColor = '#FF5722'; // Color for completed destinations
   const defaultColor = '#212121'; // Default color for destinations

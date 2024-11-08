@@ -22,7 +22,7 @@ const SignUpScreen = () => {
 
   const handleSignUp = async () => {
     try {
-      const response = await axios.post(`${process.env.BackendAPI5}/api/worker/signup`, {
+      const response = await axios.post(`${process.env.BackendAPI6}/api/worker/signup`, {
         fullName,
         email,
         phoneNumber,

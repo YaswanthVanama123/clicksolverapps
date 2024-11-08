@@ -22,7 +22,7 @@ const ServiceTrackingListScreen = () => {
         const token = await EncryptedStorage.getItem('cs_token'); 
         if (!token) throw new Error("Token not found");
 
-        const response = await axios.get(`${process.env.BACKENDAIPD}/api/user/tracking/services`, {
+        const response = await axios.get(`${process.env.BACKENDAIPE}/api/user/tracking/services`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

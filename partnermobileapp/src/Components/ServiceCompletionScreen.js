@@ -5,7 +5,6 @@ import Mapbox from '@rnmapbox/maps';
 import Octicons from 'react-native-vector-icons/Octicons';
 import axios from 'axios';
 import { useNavigation, useRoute, CommonActions, useFocusEffect } from "@react-navigation/native";
-import EncryptedStorage from 'react-native-encrypted-storage';
 
 // Set Mapbox access token
 Mapbox.setAccessToken('pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY2x5Ymw5MXZpMWZseDJqcTJ3NXFlZnRnYyJ9._E8mIoaIlyGrgdeu71StDg');
@@ -28,7 +27,7 @@ const ServiceCompletionScreen = () => {
     if (decodedId) {
       const fetchPaymentDetails = async () => {
         try {
-          const response = await axios.post(`${process.env.BackendAPI5}/api/worker/payment/service/completed/details`, {
+          const response = await axios.post(`${process.env.BackendAPI6}/api/worker/payment/service/completed/details`, {
             notification_id: decodedId,
           });
       
@@ -97,7 +96,7 @@ const ServiceCompletionScreen = () => {
 
       <View style={styles.amountContainer}>
         <Text style={styles.amount}>₹{totalAmount}</Text>
-        <Feather name='check-circle' size={30} color='#4CAF50' />
+        <Feather name='check-circle' size={22} color='#4CAF50' />
       </View>
 
       <Text style={styles.date}>26/04/2023 05:45 PM</Text>
@@ -140,7 +139,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#fafafa',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -185,19 +184,20 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   amount: {
-    fontSize: 40,
+    fontSize: 35,
     fontWeight: 'bold',
     color: '#000',
   },
   date: {
     fontSize: 14,
     color: '#757575',
-    marginBottom: 5,
+    paddingBottom:20
   },
   serviceType: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#212121',
+    paddingBottom:20
   },
   locationContainer: {
     flexDirection: 'row',

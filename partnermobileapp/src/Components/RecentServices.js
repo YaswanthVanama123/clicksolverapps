@@ -50,7 +50,7 @@ const RecentServices = () => {
         const token = await EncryptedStorage.getItem('pcs_token');
         if (!token) throw new Error("Token not found");
 
-        const response = await axios.get(`${process.env.BackendAPI5}/api/worker/bookings`, {
+        const response = await axios.get(`${process.env.BackendAPI6}/api/worker/bookings`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

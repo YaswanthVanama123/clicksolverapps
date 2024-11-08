@@ -12,7 +12,7 @@ import Octicons from 'react-native-vector-icons/Octicons';
 import { Places,Routing } from 'ola-maps'; // Import Ola Maps Places module
 
 // Set Mapbox access token
-Mapbox.setAccessToken('pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY2x5Ymw5MXZpMWZseDJqcTJ3NXFlZnRnYyJ9._E8mIoaIlyGrgdeu71StDg');
+Mapbox.setAccessToken('pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw');
 
 const placesClient = new Places("iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT");
 const UserLocation = () => {
@@ -218,7 +218,7 @@ const UserLocation = () => {
         return;
       }
       const response = await axios.post(
-        `${process.env.BACKENDAIPD}/api/user/location`,
+        `${process.env.BACKENDAIPE}/api/user/location`,
         { longitude: String(longitude), latitude: String(latitude) },
         {
           headers: {
@@ -228,10 +228,10 @@ const UserLocation = () => {
       );
 
       if (response.status === 200) {
-        console.log('User location sent to BACKENDAIPD successfully');
+        console.log('User location sent to BACKENDAIPE successfully');
       }
     } catch (error) {
-      console.error('Failed to send user location to BACKENDAIPD:', error);
+      console.error('Failed to send user location to BACKENDAIPE:', error);
     }
   }, []);
 
@@ -258,7 +258,7 @@ const UserLocation = () => {
         console.error('No token found');
         return;
       }
-      const response = await axios.get(`${process.env.BACKENDAIPD}/api/get/user`, {
+      const response = await axios.get(`${process.env.BACKENDAIPE}/api/get/user`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

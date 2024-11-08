@@ -37,6 +37,7 @@ import TrackingConfirmation from './Components/TrackingConfirmation';
 import Approval from './Components/Approval';
 import IndividualWorkerPending from './Components/IndividualWorkerPending';
 import ServiceBookingItem from './Components/ServiceBookingItem';
+import CashbackScreen from './Components/CashbackScreen';
 // Additional imports...
 
 const Stack = createNativeStackNavigator();
@@ -50,44 +51,9 @@ const TabIcons = {
   Maps: MaterialIcons,
 };
 
-// const TabIcons = {
-//   Home: 'home-outline',
-//   Services: 'clipboard-list-outline', // Similar to "Bookings"
-//   Notification: 'wallet-outline',    // Similar to "Rewards"
-//   Account: 'account-outline',
-//   Maps: 'shopping-outline',          // Similar to "Native"
-// };
-
 function TabNavigator() {
   return (
     <SafeAreaView style={styles.container}>
-      {/* <Tab.Navigator
-        screenOptions={({ route }) => ({
-          tabBarIcon: ({ focused, color, size }) => {
-            const Icon = TabIcons[route.name];
-            const iconName = {
-              Home: 'home',
-              Services: 'bookmark',
-              Notification: 'notification',
-              Account: 'account-outline',
-              Maps: 'app-registration',
-            }[route.name];
-            return <Icon name={iconName} size={size} color={color} />;
-          },
-          tabBarActiveTintColor: 'tomato',
-          tabBarInactiveTintColor: 'gray',
-          tabBarStyle: styles.tabBarStyle,
-          tabBarLabelStyle: styles.tabBarLabelStyle,
-        })}
-      >
-        <Tab.Screen name="Home" component={HelloWorld} options={{ headerShown: false }} />
-        <Tab.Screen name="Services" component={RecentServices} options={{ headerShown: false }} />
-        <Tab.Screen name="Notification" component={Notifications} options={{ headerShown: false }} />
-        <Tab.Screen name="Account" component={skills} options={{ headerShown: false }} />
-        <Tab.Screen name="Maps" component={UPIIdDetailsScreen} options={{ headerShown: false }} />
-      </Tab.Navigator> */}
-
-
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
@@ -126,8 +92,8 @@ function TabNavigator() {
         <Tab.Screen name="Home" component={HelloWorld} options={{ headerShown: false }} />
         <Tab.Screen name="Bookings" component={RecentServices} options={{ headerShown: false }} />
         <Tab.Screen name="Tracking" component={ServiceTrackingListScreen} options={{ headerShown: false }} />
-        {/* <Tab.Screen name="Native" component={SwipeButton} options={{ headerShown: false }} />    */}
-        <Tab.Screen name="Account" component={skills} options={{ headerShown: false }} />
+        {/* <Tab.Screen name="Native" component={CashbackScreen} options={{ headerShown: false }} />    */}
+        <Tab.Screen name="Account" component={CashbackScreen} options={{ headerShown: false }} />
       </Tab.Navigator>
     </SafeAreaView> 
   );
@@ -240,7 +206,7 @@ function App(): React.JSX.Element {
         <Stack.Screen name='OtpVerification' component={OTPVerification} options={{ title: 'OtpVerification', headerShown: false}} />
         <Stack.Screen name='PaymentScreen' component={PaymentScanner} options={{title: 'PaymentScreen', headerShown: false}} />
         <Stack.Screen name='ServiceCompleted' component={ServiceCompletionScreen} options={{title: 'PaymentCompleted', headerShown: false}} />
-        <Stack.Screen name='TaskConfirmation' component={TaskConfirmation} options={{title: 'TaskConfirmation'}} />
+        <Stack.Screen name='TaskConfirmation' component={TaskConfirmation} options={{title: 'TaskConfirmation', headerShown: false}} />
         <Stack.Screen name='Profile' component={Profile} options={{title: 'Profile'}} />
         <Stack.Screen name='Earnings' component={EarningsScreen} options={{headerShown: false}} />
         <Stack.Screen name='RatingsScreen' component={RatingsScreen} options={{headerShown: false}} />
@@ -251,8 +217,8 @@ function App(): React.JSX.Element {
         <Stack.Screen name='ApprovalScreen' component={Approval} options={{title: 'Approval', headerShown: false}} />
         <Stack.Screen name='ServiceTrackingItem' component={ServiceTrackingItemScreen} options={{title: 'ServiceTrackingItem', headerShown: false}} />
         <Stack.Screen name='TrackingConfirmation' component={TrackingConfirmation} options={{title: 'TrackingConfirmation', headerShown: false}} />
-        <Stack.Screen name='IndividualWorkerPending' component={IndividualWorkerPending} options={{title: 'TrackingConfirmation', headerShown: false}} />
-        <Stack.Screen name='WorkerProfile' component={skills} options={{title: 'TrackingConfirmation', headerShown: false}} />
+        <Stack.Screen name='IndividualWorkerPending' component={IndividualWorkerPending} options={{title: 'IndividualWorkerPending', headerShown: false}} />
+        <Stack.Screen name='WorkerProfile' component={skills} options={{title: 'WorkerProfile', headerShown: false}} />
         <Stack.Screen name='serviceBookingItem' component={ServiceBookingItem} options={{title: 'serviceBookingItem', headerShown: false}} />
         
         {/* Additional screens here */}

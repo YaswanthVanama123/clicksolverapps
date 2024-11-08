@@ -33,7 +33,7 @@ const ApprovalStatusScreen = () => {
         }
   
         const response = await axios.post(
-          `${process.env.BackendAPI5}/api/check/approval/verification/status`,
+          `${process.env.BackendAPI6}/api/check/approval/verification/status`,
           {},
           {
             headers: {

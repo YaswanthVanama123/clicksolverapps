@@ -19,6 +19,7 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import Octicons from 'react-native-vector-icons/Octicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Foundation from 'react-native-vector-icons/Foundation'
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   useNavigation,
@@ -30,6 +31,9 @@ import messaging from '@react-native-firebase/messaging';
 import PushNotification from 'react-native-push-notification';
 import Feather from 'react-native-vector-icons/Feather';
 import { Buffer } from 'buffer';
+import Icon from 'react-native-vector-icons/Ionicons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import FontAwesome from 'react-native-vector-icons/FontAwesome'
 
 const HelloWorld = () => {
   const [center, setCenter] = useState([0, 0]);
@@ -42,6 +46,8 @@ const HelloWorld = () => {
   const [params, setParams] = useState(null);
   const [messageBoxDisplay, setMessageBoxDisplay] = useState(false);
   const [isEnabled, setIsEnabled] = useState(false);
+  const [greeting, setGreeting] = useState('');
+  const [greetingIcon, setGreetingIcon] = useState(null);
 
   // Function to fetch notifications and update state
   const fetchNotifications = useCallback(async () => {
@@ -87,7 +93,7 @@ const HelloWorld = () => {
 
       if (pcs_token) {
         const response = await axios.get(
-          `${process.env.BackendAPI5}/api/worker/track/details`,
+          `${process.env.BackendAPI6}/api/worker/track/details`,
           {
             headers: { Authorization: `Bearer ${pcs_token}` },
           }
@@ -360,7 +366,7 @@ const HelloWorld = () => {
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const response = await axios.post(
-        `${process.env.BackendAPI5}/api/accept/request`,
+        `${process.env.BackendAPI6}/api/accept/request`,
         { user_notification_id: decodedId },
         { headers: { Authorization: `Bearer ${jwtToken}` } }
       );
@@ -373,7 +379,7 @@ const HelloWorld = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `${process.env.BackendAPI5}/api/worker/action`,
+          `${process.env.BackendAPI6}/api/worker/action`,
           {
             encodedId: encodedNotificationId,
             screen: 'WorkerNavigation',
@@ -400,7 +406,7 @@ const HelloWorld = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `${process.env.BackendAPI5}/api/worker/action`,
+          `${process.env.BackendAPI6}/api/worker/action`,
           {
             encodedId: '',
             screen: '',
@@ -483,7 +489,7 @@ const HelloWorld = () => {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
       await axios.post(
-        `${process.env.BackendAPI5}/api/worker/store-fcm-token`,
+        `${process.env.BackendAPI6}/api/worker/store-fcm-token`,
         { fcmToken: token },
         { headers: { Authorization: `Bearer ${pcs_token}` } }
       );
@@ -531,7 +537,7 @@ const HelloWorld = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         const fcmToken = await EncryptedStorage.getItem('fcm_token');
         await axios.post(
-          `${process.env.BackendAPI5}/api/worker/store-notification`,
+          `${process.env.BackendAPI6}/api/worker/store-notification`,
           { notification, fcmToken },
           { headers: { Authorization: `Bearer ${pcs_token}` } }
         );
@@ -822,11 +828,39 @@ const HelloWorld = () => {
         }
       });
 
+
+
     return () => {
       unsubscribeOnMessage();
       unsubscribeOnNotificationOpenedApp();
+      
     };
   }, []);
+
+  const setGreetingBasedOnTime = () => {
+    const currentHour = new Date().getHours();
+    let greetingMessage = 'Good Day';
+    let icon = <Icon name="sunny-sharp" size={14} color="#ff5722" />;
+
+    if (currentHour < 12) {
+      greetingMessage = 'Good Morning';
+      icon = <Icon name="sunny-sharp" size={16} color="#ff5722" />;
+    } else if (currentHour < 17) {
+      greetingMessage = 'Good Afternoon';
+      icon = <Feather name="sunset" size={16} color="#ff5722" />;
+    } else {
+      greetingMessage = 'Good Evening'; 
+      icon = <MaterialIcons name="nights-stay" size={16} color="#F24E1E" />;
+    }
+
+    setGreeting(greetingMessage);
+    setGreetingIcon(icon);
+  };
+
+  useEffect(() =>{
+    setGreetingBasedOnTime();
+  },[])
+
 
   const balanceScreen = () => {
     navigation.push('BalanceScreen');
@@ -874,9 +908,16 @@ const HelloWorld = () => {
             </TouchableOpacity>
           </View>
         </View>
+        <View style={styles.greeting}>
+            <Text style={styles.greetingText} >
+              {greeting} <Text style={styles.greetingIcon}>{greetingIcon}</Text>
+            </Text>
+            <Text style={styles.userName}>Yaswanth</Text>
+          </View>
         <View style={styles.moneyContainer}>
           <TouchableOpacity onPress={balanceScreen}>
             <View style={styles.balanceContainer}>
+              <MaterialCommunityIcons name='bank-outline' size={20} color='#4a4a4a' />
               <Text style={styles.balanceText}>Balance</Text>
               <Entypo
                 name="chevron-small-down"
@@ -888,6 +929,7 @@ const HelloWorld = () => {
           </TouchableOpacity>
           <TouchableOpacity onPress={earningsScreen}>
             <View style={styles.balanceContainer}>
+              <FontAwesome name='money' size={20} color='#4a4a4a'/>
               <Text style={styles.balanceText}>Earnings</Text>
               <Entypo
                 name="chevron-small-down"
@@ -1011,14 +1053,20 @@ const HelloWorld = () => {
           style={styles.messageBoxContainer}
           onPress={() => navigation.replace(screenName, params)}
         >
+          {console.log("screen params",params)}
           <View style={styles.messageBox1}>
             <View style={styles.timeContainer}>
-              <Image
-                source={{
-                  uri: 'https://i.postimg.cc/jSJS7rDH/1727646707169dp7gkvhw.png',
-                }}
-                style={styles.workerImage}
-              />
+              {screenName === 'PaymentScreen' ? (
+                <Foundation name="paypal" size={24} color="#ffffff" />
+              ) : screenName === 'WorkerNavigation' ? (
+                <MaterialCommunityIcons name="truck" size={24} color="#ffffff" />
+              ) : screenName === 'OtpVerification' ? (
+                <Feather name="shield" size={24} color="#ffffff" />
+              ) : screenName === 'TimingScreen' ? (
+                <MaterialCommunityIcons name="hammer" size={24} color="#ffffff" />
+              ) : (
+                <Feather name="alert-circle" size={24} color="#000" />
+              )}
             </View>
             <View>
               <Text style={styles.textContainerText}>
@@ -1050,6 +1098,7 @@ const HelloWorld = () => {
           </View>
         </TouchableOpacity>
       )}
+
     </SafeAreaView>
   );
 };
@@ -1083,10 +1132,13 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   timeContainer: {
-    //backgroundColor: '#28a745',  // Green background like in the example
-    borderRadius: 5,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
+    width: 50,
+    height: 50,
+    backgroundColor: '#ff5722',
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
   timeContainerText: {
     color: '#ffffff',
@@ -1197,6 +1249,29 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 16,
     color: '#333',
+  },
+  greeting: {
+    flexDirection: 'column',
+    alignItems:'center',
+    color: '#333',
+    marginVertical:10
+  },
+  greetingText: {
+    fontSize: 14,
+    fontFamily: 'Roboto',
+    lineHeight: 18.75,
+    fontStyle: 'italic',
+    color: '#808080',
+    fontWeight: 'bold',
+  },
+  greetingIcon: {
+    fontSize: 17,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#4A4A4A',
+    lineHeight: 21.09,
   },
   moneyContainer:{
     padding:10,

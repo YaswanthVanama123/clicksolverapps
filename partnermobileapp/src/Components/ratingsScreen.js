@@ -51,7 +51,7 @@ const RatingsScreen = () => {
         const token = await EncryptedStorage.getItem('pcs_token');
         if (!token) throw new Error("Token not found");
 
-        const response = await axios.get(`${process.env.BackendAPI5}/api/worker/ratings`, {
+        const response = await axios.get(`${process.env.BackendAPI6}/api/worker/ratings`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

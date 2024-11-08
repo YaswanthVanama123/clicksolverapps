@@ -1,9 +1,14 @@
 import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import Icon from 'react-native-vector-icons/FontAwesome';
+import React, { useEffect, useState, useMemo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import FontAwesome6 from 'react-native-vector-icons/FontAwesome6'
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import EncryptedStorage from "react-native-encrypted-storage";
+import SwipeButton from 'rn-swipe-button';
+import Feather from 'react-native-vector-icons/Feather';
+import Entypo from 'react-native-vector-icons/Entypo'
 
 const TaskConfirmation = () => {
   const route = useRoute();
@@ -17,7 +22,10 @@ const TaskConfirmation = () => {
     pincode: null,
     service: null,
   });
-
+  const [paymentDetails,setPaymentDetails] = useState({})
+  const [titleColor, setTitleColor] = useState('#FFFFFF');
+  const [swiped, setSwiped] = useState(false);
+  const [serviceArray, setServiceArray] = useState([])
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -27,21 +35,37 @@ const TaskConfirmation = () => {
     }
   }, [encodedId]);
 
+  const ThumbIcon = useMemo(() => () => (
+    <View style={styles.thumbContainer}>
+      <Text>
+        {swiped ? (
+          <Entypo name="check" size={20} color="#ff4500" style={styles.checkIcon} />
+        ) : (
+          <FontAwesome6 name="arrow-right-long" size={15} color="#ff4500" />
+        )}
+      </Text>
+    </View>
+  ), [swiped]);
+
   useEffect(() => {
     if (decodedId) {
       const fetchPaymentDetails = async () => {
         try {
-          const response = await axios.post(`${process.env.BackendAPI5}/api/worker/details`, {
+          const response = await axios.post(`${process.env.BackendAPI6}/api/worker/details`, {
             notification_id: decodedId,
           });
+          console.log(response.data)
+          const {workDetails,paymentDetails} = response.data
           setDetails({
-            city: response.data.city,
-            area: response.data.area,
-            pincode: response.data.pincode,
-            alternateName: response.data.alternate_name,
-            alternatePhoneNumber: response.data.alternate_phone_number,
-            service: response.data.service_booked,
+            city: workDetails.city,
+            area: workDetails.area,
+            pincode: workDetails.pincode,
+            alternateName: workDetails.alternate_name,
+            alternatePhoneNumber: workDetails.alternate_phone_number,
+            service: workDetails.service_booked,
           });
+          setPaymentDetails(paymentDetails)
+          setServiceArray(workDetails.service_booked)
         } catch (error) {
           console.error('Error fetching payment details:', error);
         }
@@ -53,7 +77,7 @@ const TaskConfirmation = () => {
   const handleComplete = async () => {
     const encoded = btoa(decodedId);
     try {
-      const response = await axios.post(`${process.env.BackendAPI5}/api/worker/confirm/completed`, {
+      const response = await axios.post(`${process.env.BackendAPI6}/api/worker/confirm/completed`, {
         notification_id: decodedId, 
         encodedId: encoded,
       });
@@ -61,7 +85,7 @@ const TaskConfirmation = () => {
       if (response.status === 200) {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         
-        await axios.post(`${process.env.BackendAPI5}/api/worker/action`, {
+        await axios.post(`${process.env.BackendAPI6}/api/worker/action`, {
           encodedId: encoded,
           screen: 'PaymentScreen',
         }, {
@@ -94,16 +118,110 @@ const TaskConfirmation = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.confirmationContainer}>
+      <View style={styles.headerContainer}>
+        <MaterialIcons name="arrow-back" size={24} color="#000" />
+        <Text style={styles.headerTitle}>Service Tracking</Text>
+        <TouchableOpacity onPress={() => setIsFilterVisible(!isFilterVisible)}>
+          <MaterialIcons name="filter-list" size={24} color="#000" />
+        </TouchableOpacity>
+      </View>
+      
+      <View style={styles.cardContainer}>
+        <View style={styles.iconContainer}>
+          <FontAwesome5 name='hammer' size={20} color="#FFFFFF" />
+        </View>
+        <View>
+          <Text style={styles.completionText}>Work Completion request</Text>
+          <Text style={styles.timeText}>Oct 25 2024 9:00PM</Text>
+        </View>
+      </View>
+
+      <View style={styles.successContainer}>
+        <View style={styles.successIcon}>
+          <FontAwesome6 name="check" size={25} color="#FFFFFF" style={styles.checkIcon} />
+        </View>
+        <Text style={styles.completeText}>Completed</Text>
+      </View>
+
+      <View style={styles.detailsContainer}> 
+        <View style={styles.detailsCard}>
+          <View>
+            <Feather name='user' size={20} color='#4a4a4a' />
+          </View>
+          <View>
+            <Text style={styles.completionText}>Yaswanth</Text>
+          </View>
+        </View>
+        <View>
+          <Text style={styles.location}>
+           {details.area}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.paymentDetails}>
+        <Text style={styles.detailsText}>Payment Details</Text>
+      </View>
+      <View style={styles.sectionContainer}>
+          <View style={styles.PaymentItemContainer}>
+            {serviceArray.map((service, index) => (
+              <View key={index} style={styles.paymentRow}>
+                <Text style={styles.paymentLabel}>{service.serviceName}</Text>
+                <Text style={styles.paymentValue}>₹{service.cost}.00</Text>
+              </View>
+            ))}
+            <View style={styles.paymentRow}>
+              <Text style={styles.paymentLabel}>SGST (5%)</Text>
+              <Text style={styles.paymentValue}>₹{paymentDetails.cgstAmount}.00</Text>
+            </View>
+            <View style={styles.paymentRow}>
+              <Text style={styles.paymentLabel}>CGST (5%)</Text>
+              <Text style={styles.paymentValue}>₹{paymentDetails.gstAmount}.00</Text>
+            </View>
+            <View style={styles.paymentRow}>
+              <Text style={styles.paymentLabel}>Cashback (5%)</Text>
+              <Text style={styles.paymentValue}>₹{paymentDetails.discountAmount}.00</Text>
+            </View>
+            <View style={styles.paymentRow}>
+              <Text style={styles.paymentLabel}>Pay Via Scan</Text>
+              <Text style={styles.paymentValue}>Grand Total ₹{paymentDetails.fetchedFinalTotalAmount}.00</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.swipeButton}>
+          <SwipeButton
+            title="Completed"
+            titleStyles={{ color: titleColor, fontSize: 16, fontWeight: '500' }}
+            railBackgroundColor="#FF5722"
+            railBorderColor="#FF5722"
+            height={40}
+            railStyles={{ borderRadius: 20, backgroundColor: '#FF572200', borderColor: '#FF572200' }}
+            thumbIconComponent={ThumbIcon}
+            thumbIconBackgroundColor="#FFFFFF"
+            thumbIconBorderColor="#FFFFFF"
+            thumbIconWidth={40}
+            thumbIconStyles={{ height: 30, width: 30, borderRadius: 20 }}
+            onSwipeStart={() => setTitleColor('#B0B0B0')}
+            onSwipeSuccess={() => {
+              handleComplete();
+              setTitleColor('#FFFFFF');
+              setSwiped(true);
+            }}
+            onSwipeFail={() => setTitleColor('#FFFFFF')}
+          />
+        </View>
+
+      {/* <View style={styles.confirmationContainer}>
         <View style={styles.taskHeader}>
           <Text style={styles.headerText}>Task Completion Confirmation</Text>
           <Text style={styles.subHeaderText}>Please confirm if you have completed the assigned task.</Text>
         </View>
-                <Text style={styles.taskText}>Task: {' '}
-                    {details.service && details.service.length > 0
-                      ? details.service.map(service => service.serviceName).join(', ')
-                      : 'Switch board & Socket repairing'}
-                  </Text>
+        <Text style={styles.taskText}>Task: {' '}
+          {details.service && details.service.length > 0
+            ? details.service.map(service => service.serviceName).join(', ')
+            : 'Switch board & Socket repairing'}
+          </Text>
         <Text style={styles.taskText}>Location: {details.area}</Text>
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={[styles.button, styles.completedButton]} onPress={handleComplete}>
@@ -118,7 +236,7 @@ const TaskConfirmation = () => {
         <Text style={styles.responseText}>
           Your response has been recorded and will be reviewed by your supervisor.
         </Text>
-      </View>
+      </View> */}
     </View>
   );
 };
@@ -126,9 +244,37 @@ const TaskConfirmation = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
-    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  headerContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    backgroundColor: '#ffffff',
+    zIndex: 1, // Ensure header is above other components
+  },
+  completionText:{
+    color:'#212121',
+    fontWeight:'bold'
+  },
+  timeText:{
+    color:'#9e9e9e'
+  },
+  swipeButton:{
+    marginHorizontal:20,
+    marginBottom:10
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000',
   },
   confirmationContainer: {
     backgroundColor: '#fff',
@@ -141,6 +287,94 @@ const styles = StyleSheet.create({
     padding: 10,
     width: '90%',
   },
+  detailsContainer:{
+    flexDirection: 'column',
+    gap:10,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    backgroundColor: '#ffffff',
+    zIndex: 1, 
+    margin:20,
+    padding:10,
+    borderRadius:10
+  },
+  detailsCard:{
+    flexDirection:'row',
+    gap:10
+  },
+  detailsText:{
+    color:'#212121',
+    fontSize:15,
+    fontWeight:'bold'
+  },
+  paymentDetails:{
+    padding:10,
+    paddingHorizontal:30,
+    backgroundColor:'#f5f5f5',
+    marginBottom:10
+  },
+  paymentLabel: {
+    fontSize: 14,
+    color: '#212121',
+  },
+  paymentValue: {
+    fontSize: 14,
+    color: '#212121',
+    fontWeight:'bold'
+  },
+  paymentRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  PaymentItemContainer:{
+    paddingLeft:16,
+    flexDirection:'column',
+    gap:5
+  },
+  sectionContainer: {
+    marginBottom: 16,
+    paddingLeft:16,
+    paddingRight:16,
+    width:'95%'
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#212121',
+    marginBottom: 8,
+    paddingBottom:15
+  },
+  sectionBookedTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#212121',
+    marginBottom: 8,
+  },
+  location:{
+    color:'#9e9e9e'
+  },
+  successContainer:{
+    flexDirection:'column',
+    alignItems:'center'
+  },
+  successIcon:{
+    width:60,
+    height:60,
+    backgroundColor:'#4CAF50',
+    borderRadius:30,
+    alignItems:'center',
+    justifyContent:'center'
+  },
+  completeText:{
+    color:'#212121',
+    fontWeight:'bold'
+  },
   taskHeader: {
     marginBottom: 30,
   },
@@ -152,6 +386,15 @@ const styles = StyleSheet.create({
   subHeaderText: {
     fontSize: 14,
     color: '#666',
+  },
+  iconContainer:{
+    height:50,
+    width:50,
+    backgroundColor:'#ff5722',
+    borderRadius:25,
+    flexDirection:'column',
+    justifyContent:'center',
+    alignItems:'center'
   },
   taskText: {
     fontSize: 16,
@@ -174,6 +417,23 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 1,
     borderColor: '#ccc',
+  },
+  cardContainer:{
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap:10,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    backgroundColor: '#ffffff',
+    zIndex: 1, 
+    margin:20,
+    padding:10,
+    borderRadius:10
   },
   completedButton: {
     backgroundColor: '#000',

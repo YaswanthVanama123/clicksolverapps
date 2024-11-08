@@ -45,10 +45,9 @@ const PaintingServices = () => {
   const fetchServices = useCallback(async (serviceObject) => {
     setLoading(true);
     try {
-      const response = await axios.post(`${process.env.BACKENDAIPD}/api/individual/service`, {
+      const response = await axios.post(`${process.env.BACKENDAIPE}/api/individual/service`, {
         serviceObject: serviceObject,
       }); 
-
       const servicesWithIds = response.data.map(service => ({
         ...service,
         id: uuid.v4(),
@@ -102,7 +101,7 @@ const PaintingServices = () => {
     try {
       const cs_token = await EncryptedStorage.getItem('cs_token');
       if (cs_token) {
-        const response = await axios.get(`${process.env.BACKENDAIPD}/api/user/track/details`, {
+        const response = await axios.get(`${process.env.BACKENDAIPE}/api/user/track/details`, {
           headers: { Authorization: `Bearer ${cs_token}` },
         });
 

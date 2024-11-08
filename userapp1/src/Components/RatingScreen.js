@@ -47,7 +47,7 @@ const Rating = () => {
       console.log(process.env.REACT_APP_URL)
       const fetchPaymentDetails = async () => {
         try {
-          const response = await axios.post(`${process.env.BACKENDAIPD}/url/worker/details/rating`, {
+          const response = await axios.post(`${process.env.BACKENDAIPE}/url/worker/details/rating`, {
             notification_id: decodedId,
           });
           console.log(response)
@@ -69,7 +69,7 @@ const Rating = () => {
   const handleSubmit = async () => {
     console.log(process.env.REACT_APP_URL)
     try {
-      const response = await axios.post(`${process.env.BACKENDAIPD}/url/user/feedback`, {
+      const response = await axios.post(`${process.env.BACKENDAIPE}/url/user/feedback`, {
         notification_id: decodedId,
         rating,
         comments,

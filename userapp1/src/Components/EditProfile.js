@@ -40,7 +40,7 @@ const EditProfile = () => {
       }
 
       console.log("Sending request to update profile with name:", fullName, email, phone); // Debug log
-      const response = await axios.post(`${process.env.BACKENDAIPD}/api/user/details/update`, 
+      const response = await axios.post(`${process.env.BACKENDAIPE}/api/user/details/update`, 
         { name: fullName, email, phone }, {
         headers: { Authorization: `Bearer ${jwtToken}` }
       });

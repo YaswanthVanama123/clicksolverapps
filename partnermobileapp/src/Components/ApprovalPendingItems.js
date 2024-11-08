@@ -55,7 +55,7 @@ const ApprovalPendingItems = () => {
     const fetchPendingItems = async () => {  
       try {
         const response = await axios.get(
-            `${process.env.BackendAPI5}/api/workers/pending/verification`
+            `${process.env.BackendAPI6}/api/workers/pending/verification`
           );
           const data = response.data.data; // Assuming the response structure is { data: [...] }
           console.log(JSON.stringify(data, null, 2));

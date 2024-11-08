@@ -82,7 +82,7 @@ const SearchItem = () => {
       setIsFocused(true);
       setLoading(true);
       try {
-        const response = await axios.get(`${process.env.BACKENDAIPD}/api/services?search=${query}`);
+        const response = await axios.get(`${process.env.BACKENDAIPE}/api/services?search=${query}`);
         setSuggestions(response.data);
       } catch (error) {
         console.error('Error fetching search suggestions:', error);
