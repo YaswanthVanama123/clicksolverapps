@@ -1,0 +1,522 @@
+[33mcommit b2e14f381ab1a1096b8d5bd3b9ab7eaf0728f955[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m
+Author: YaswanthVanama123 <vanamayaswanth1@gmail.com>
+Date:   Fri Nov 8 10:39:20 2024 +0530
+
+    updated changes in nov8 10:40
+
+[1mdiff --git a/backend/controller.js b/backend/controller.js[m
+[1mindex 109b1b7..b3fbcff 100644[m
+[1m--- a/backend/controller.js[m
+[1m+++ b/backend/controller.js[m
+[36m@@ -1003,8 +1003,8 @@[m [mconst insertTracking = async (req, res) => {[m
+     const screen = ""[m
+     const encodedId = Buffer.from(notification_id.toString()).toString("base64")[m
+ [m
+[31m-    createUserBackgroundAction(user_id, encodedId, screen, service_booked);[m
+[31m-    updateWorkerAction(worker_id,screen,screen)[m
+[32m+[m[32m    await createUserBackgroundAction(user_id, encodedId, screen, service_booked);[m
+[32m+[m[32m    await updateWorkerAction(worker_id,screen,screen)[m
+ [m
+     const fcmTokens = result.rows.map(row => row.fcm_token).filter(token => token); // Filter out any undefined tokens[m
+     [m
+[36m@@ -1456,7 +1456,7 @@[m [mconst workerApprove = async (req, res) => {[m
+ [m
+ const getServiceByName = async (req, res) => { [m
+   const { serviceName } = req.body;  // Get the service name from the request body[m
+[31m-[m
+[32m+[m[32m  console.log(serviceName)[m
+   if (!serviceName) {[m
+       return res.status(400).json({ error: 'Service name is required' });[m
+   }[m
+[36m@@ -1492,6 +1492,7 @@[m [mconst getServiceByName = async (req, res) => {[m
+ [m
+ [m
+       const result = await client.query(query, [serviceName]);[m
+[32m+[m[41m      [m
+ [m
+       if (result.rows.length === 0) {[m
+           return res.status(404).json({ error: 'Service not found' });[m
+[36m@@ -1794,7 +1795,7 @@[m [mconst getUserAllBookings = async (req, res) => {[m
+     JOIN servicecall s ON n.notification_id = s.notification_id[m
+     JOIN "user" w ON n.user_id = w.user_id[m
+     WHERE n.user_id = $1[m
+[31m-    ORDER BY n.notification_id DESC[m
+[32m+[m[32m    ORDER BY n.created_at DESC[m
+     `;[m
+ [m
+     const { rows } = await client.query(query, [userId]);[m
+[36m@@ -2884,150 +2885,150 @@[m [mconst rejectRequest = async (req, res) => {[m
+ };[m
+ [m
+ [m
+[31m-// const createUserBackgroundAction = async (userId, encodedId, screen, serviceBooked, userNotificationEncodedId = null) => {[m
+[31m-//   // console.log('Service Booked:', screen,encodedId,serviceBooked);[m
+[32m+[m[32mconst createUserBackgroundAction = async (userId, encodedId, screen, serviceBooked, userNotificationEncodedId = null) => {[m
+[32m+[m[32m  // console.log('Service Booked:', screen,encodedId,serviceBooked);[m
+   [m
+[31m-//   try {[m
+[31m-//     // Prepare the new action object if 'screen' is provided[m
+[31m-//     const newAction = screen[m
+[31m-//       ? {[m
+[31m-//           screen,[m
+[31m-//           encodedId,[m
+[31m-//           serviceBooked[m
+[31m-//         }[m
+[31m-//       : null;[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    // Prepare the new action object if 'screen' is provided[m
+[32m+[m[32m    const newAction = screen[m
+[32m+[m[32m      ? {[m
+[32m+[m[32m          screen,[m
+[32m+[m[32m          encodedId,[m
+[32m+[m[32m          serviceBooked[m
+[32m+[m[32m        }[m
+[32m+[m[32m      : null;[m
+ [m
+[31m-//     // Convert newAction to JSON string if it exists[m
+[31m-//     const newActionJson = newAction ? JSON.stringify(newAction) : null;[m
+[32m+[m[32m    // Convert newAction to JSON string if it exists[m
+[32m+[m[32m    const newActionJson = newAction ? JSON.stringify(newAction) : null;[m
+ [m
+[31m-//     // Prepare the initial track array for insertion[m
+[31m-//     const initialTrack = newAction ? JSON.stringify([newAction]) : JSON.stringify([]);[m
+[32m+[m[32m    // Prepare the initial track array for insertion[m
+[32m+[m[32m    const initialTrack = newAction ? JSON.stringify([newAction]) : JSON.stringify([]);[m
+ [m
+[31m-//     // Define the UPSERT query with explicit casting for $4 and $5[m
+[31m-//     const upsertQuery = `[m
+[31m-//       INSERT INTO useraction (user_id, track)[m
+[31m-//       VALUES ($1, $2::jsonb)[m
+[31m-//       ON CONFLICT (user_id) DO UPDATE[m
+[31m-//       SET track = ([m
+[31m-//         SELECT [m
+[31m-//           COALESCE(jsonb_agg(item), '[]'::jsonb)[m
+[31m-//         FROM [m
+[31m-//           jsonb_array_elements(useraction.track) AS item[m
+[31m-//         WHERE [m
+[31m-//           item->>'encodedId' <> $3[m
+[31m-//           AND ($4::text IS NULL OR item->>'encodedId' <> $4::text)[m
+[31m-//       ) || ([m
+[31m-//         CASE [m
+[31m-//           WHEN $5::jsonb IS NOT NULL THEN $6::jsonb [m
+[31m-//           ELSE '[]'::jsonb [m
+[31m-//         END[m
+[31m-//       )[m
+[31m-//       RETURNING *;[m
+[31m-//     `;[m
+[32m+[m[32m    // Define the UPSERT query with explicit casting for $4 and $5[m
+[32m+[m[32m    const upsertQuery = `[m
+[32m+[m[32m      INSERT INTO useraction (user_id, track)[m
+[32m+[m[32m      VALUES ($1, $2::jsonb)[m
+[32m+[m[32m      ON CONFLICT (user_id) DO UPDATE[m
+[32m+[m[32m      SET track = ([m
+[32m+[m[32m        SELECT[m[41m [m
+[32m+[m[32m          COALESCE(jsonb_agg(item), '[]'::jsonb)[m
+[32m+[m[32m        FROM[m[41m [m
+[32m+[m[32m          jsonb_array_elements(useraction.track) AS item[m
+[32m+[m[32m        WHERE[m[41m [m
+[32m+[m[32m          item->>'encodedId' <> $3[m
+[32m+[m[32m          AND ($4::text IS NULL OR item->>'encodedId' <> $4::text)[m
+[32m+[m[32m      ) || ([m
+[32m+[m[32m        CASE[m[41m [m
+[32m+[m[32m          WHEN $5::jsonb IS NOT NULL THEN $6::jsonb[m[41m [m
+[32m+[m[32m          ELSE '[]'::jsonb[m[41m [m
+[32m+[m[32m        END[m
+[32m+[m[32m      )[m
+[32m+[m[32m      RETURNING *;[m
+[32m+[m[32m    `;[m
+ [m
+[31m-//     // Parameters for the query[m
+[31m-//     const params = [[m
+[31m-//       userId,                       // $1: user_id[m
+[31m-//       initialTrack,                 // $2: initial track array (JSONB)[m
+[31m-//       encodedId,                    // $3: encodedId to remove[m
+[31m-//       userNotificationEncodedId,    // $4: userNotificationEncodedId to remove (can be null)[m
+[31m-//       newActionJson,                // $5: new action JSON (if screen is provided)[m
+[31m-//       newActionJson ? `[${newActionJson}]` : '[]' // $6: new action as JSONB array or empty array[m
+[31m-//     ];[m
+[32m+[m[32m    // Parameters for the query[m
+[32m+[m[32m    const params = [[m
+[32m+[m[32m      userId,                       // $1: user_id[m
+[32m+[m[32m      initialTrack,                 // $2: initial track array (JSONB)[m
+[32m+[m[32m      encodedId,                    // $3: encodedId to remove[m
+[32m+[m[32m      userNotificationEncodedId,    // $4: userNotificationEncodedId to remove (can be null)[m
+[32m+[m[32m      newActionJson,                // $5: new action JSON (if screen is provided)[m
+[32m+[m[32m      newActionJson ? `[${newActionJson}]` : '[]' // $6: new action as JSONB array or empty array[m
+[32m+[m[32m    ];[m
+ [m
+[31m-//     // Execute the UPSERT query[m
+[31m-//     const result = await client.query(upsertQuery, params);[m
+[32m+[m[32m    // Execute the UPSERT query[m
+[32m+[m[32m    const result = await client.query(upsertQuery, params);[m
+ [m
+[31m-//     // The result will contain the inserted or updated row[m
+[31m-//     const updatedTrackScreen = result.rows[0];[m
+[32m+[m[32m    // The result will contain the inserted or updated row[m
+[32m+[m[32m    const updatedTrackScreen = result.rows[0];[m
+ [m
+[31m-//     // Return the updated user action data[m
+[31m-//     return updatedTrackScreen;[m
+[31m-//   } catch (error) {[m
+[31m-//     console.error('Error inserting or updating user background action:', error);[m
+[31m-//     throw error; // Re-throw the error after logging[m
+[31m-//   }[m
+[31m-// };[m
+[32m+[m[32m    // Return the updated user action data[m
+[32m+[m[32m    return updatedTrackScreen;[m
+[32m+[m[32m  } catch (error) {[m
+[32m+[m[32m    console.error('Error inserting or updating user background action:', error);[m
+[32m+[m[32m    throw error; // Re-throw the error after logging[m
+[32m+[m[32m  }[m
+[32m+[m[32m};[m
+ [m
+ [m
+ [m
+ [m
+[31m-const createUserBackgroundAction = async (userId, encodedId, screen, serviceBooked, userNotificationEncodedId = null) => {[m
+[31m-  console.log("call ayindhi",screen,encodedId,userId,serviceBooked);[m
+[31m-  try {[m
+[31m-    // Define the SQL query to get the existing user action[m
+[31m-    const query = `[m
+[31m-      SELECT * FROM useraction[m
+[31m-      WHERE user_id = $1;[m
+[31m-    `;[m
+[32m+[m[32m// const createUserBackgroundAction = async (userId, encodedId, screen, serviceBooked, userNotificationEncodedId = null) => {[m
+[32m+[m[32m//   console.log("call ayindhi",screen,encodedId,userId,serviceBooked);[m
+[32m+[m[32m//   try {[m
+[32m+[m[32m//     // Define the SQL query to get the existing user action[m
+[32m+[m[32m//     const query = `[m
+[32m+[m[32m//       SELECT * FROM useraction[m
+[32m+[m[32m//       WHERE user_id = $1;[m
+[32m+[m[32m//     `;[m
+ [m
+[31m-    // Execute the query to get the existing user action[m
+[31m-    const result = await client.query(query, [userId]);[m
+[31m-    const existingUserAction = result.rows[0];[m
+[32m+[m[32m//     // Execute the query to get the existing user action[m
+[32m+[m[32m//     const result = await client.query(query, [userId]);[m
+[32m+[m[32m//     const existingUserAction = result.rows[0];[m
+ [m
+[31m-    if (existingUserAction) {[m
+[31m-      // Remove objects that match `encodedId` or, if present, `userNotificationEncodedId`[m
+[31m-      let updatedTrack = existingUserAction.track.filter(item => {[m
+[31m-        // Exclude items that match `encodedId` and, if `userNotificationEncodedId` is provided, also exclude those[m
+[31m-        if (userNotificationEncodedId) {[m
+[31m-          return item.encodedId !== encodedId && item.encodedId !== userNotificationEncodedId;[m
+[31m-        }[m
+[31m-        return item.encodedId !== encodedId;[m
+[31m-      });[m
+[32m+[m[32m//     if (existingUserAction) {[m
+[32m+[m[32m//       // Remove objects that match `encodedId` or, if present, `userNotificationEncodedId`[m
+[32m+[m[32m//       let updatedTrack = existingUserAction.track.filter(item => {[m
+[32m+[m[32m//         // Exclude items that match `encodedId` and, if `userNotificationEncodedId` is provided, also exclude those[m
+[32m+[m[32m//         if (userNotificationEncodedId) {[m
+[32m+[m[32m//           return item.encodedId !== encodedId && item.encodedId !== userNotificationEncodedId;[m
+[32m+[m[32m//         }[m
+[32m+[m[32m//         return item.encodedId !== encodedId;[m
+[32m+[m[32m//       });[m
+ [m
+[31m-      // Add the new action if `screen` is provided (for adding or updating)[m
+[31m-      if (screen) {[m
+[31m-        const newAction = {[m
+[31m-          screen,[m
+[31m-          encodedId,[m
+[31m-          serviceBooked[m
+[31m-        };[m
+[32m+[m[32m//       // Add the new action if `screen` is provided (for adding or updating)[m
+[32m+[m[32m//       if (screen) {[m
+[32m+[m[32m//         const newAction = {[m
+[32m+[m[32m//           screen,[m
+[32m+[m[32m//           encodedId,[m
+[32m+[m[32m//           serviceBooked[m
+[32m+[m[32m//         };[m
+ [m
+[31m-        updatedTrack.push(newAction);[m
+[31m-      }[m
+[32m+[m[32m//         updatedTrack.push(newAction);[m
+[32m+[m[32m//       }[m
+ [m
+[31m-      // Update the user action with the new track array[m
+[31m-      const updateQuery = `[m
+[31m-        UPDATE useraction[m
+[31m-        SET track = $1[m
+[31m-        WHERE user_id = $2[m
+[31m-        RETURNING *;[m
+[31m-      `;[m
+[31m-      const updateResult = await client.query(updateQuery, [JSON.stringify(updatedTrack), userId]);[m
+[31m-      const updatedTrackScreen = updateResult.rows[0];[m
+[31m-      console.log("update ayinadhi",updatedTrack)[m
+[32m+[m[32m//       // Update the user action with the new track array[m
+[32m+[m[32m//       const updateQuery = `[m
+[32m+[m[32m//         UPDATE useraction[m
+[32m+[m[32m//         SET track = $1[m
+[32m+[m[32m//         WHERE user_id = $2[m
+[32m+[m[32m//         RETURNING *;[m
+[32m+[m[32m//       `;[m
+[32m+[m[32m//       const updateResult = await client.query(updateQuery, [JSON.stringify(updatedTrack), userId]);[m
+[32m+[m[32m//       const updatedTrackScreen = updateResult.rows[0];[m
+[32m+[m[32m//       console.log("update ayinadhi",updatedTrack)[m
+ [m
+[31m-      // Respond with the updated user action data[m
+[31m-      return updatedTrackScreen;[m
+[31m-    } else {[m
+[31m-      // If the user action does not exist, create a new one[m
+[31m-      let newTrack = [];[m
+[32m+[m[32m//       // Respond with the updated user action data[m
+[32m+[m[32m//       return updatedTrackScreen;[m
+[32m+[m[32m//     } else {[m
+[32m+[m[32m//       // If the user action does not exist, create a new one[m
+[32m+[m[32m//       let newTrack = [];[m
+ [m
+[31m-      if (screen) {[m
+[31m-        const newAction = {[m
+[31m-          screen,[m
+[31m-          encodedId,[m
+[31m-          serviceBooked[m
+[31m-        };[m
+[32m+[m[32m//       if (screen) {[m
+[32m+[m[32m//         const newAction = {[m
+[32m+[m[32m//           screen,[m
+[32m+[m[32m//           encodedId,[m
+[32m+[m[32m//           serviceBooked[m
+[32m+[m[32m//         };[m
+ [m
+[31m-        newTrack = [newAction];[m
+[31m-      }[m
+[32m+[m[32m//         newTrack = [newAction];[m
+[32m+[m[32m//       }[m
+ [m
+[31m-      const insertQuery = `[m
+[31m-        INSERT INTO useraction (user_id, track)[m
+[31m-        VALUES ($1, $2)[m
+[31m-        RETURNING *;[m
+[31m-      `;[m
+[31m-      const insertResult = await client.query(insertQuery, [userId, JSON.stringify(newTrack)]);[m
+[31m-      const updatedTrackScreen = insertResult.rows[0];[m
+[31m-      console.log("create ayindhi",updatedTrackScreen)[m
+[31m-      // Respond with the new user action data[m
+[31m-      return updatedTrackScreen;[m
+[31m-    }[m
+[31m-  } catch (error) {[m
+[31m-    console.error('Error inserting or updating user action:', error);[m
+[31m-  }[m
+[31m-};[m
+[32m+[m[32m//       const insertQuery = `[m
+[32m+[m[32m//         INSERT INTO useraction (user_id, track)[m
+[32m+[m[32m//         VALUES ($1, $2)[m
+[32m+[m[32m//         RETURNING *;[m
+[32m+[m[32m//       `;[m
+[32m+[m[32m//       const insertResult = await client.query(insertQuery, [userId, JSON.stringify(newTrack)]);[m
+[32m+[m[32m//       const updatedTrackScreen = insertResult.rows[0];[m
+[32m+[m[32m//       console.log("create ayindhi",updatedTrackScreen)[m
+[32m+[m[32m//       // Respond with the new user action data[m
+[32m+[m[32m//       return updatedTrackScreen;[m
+[32m+[m[32m//     }[m
+[32m+[m[32m//   } catch (error) {[m
+[32m+[m[32m//     console.error('Error inserting or updating user action:', error);[m
+[32m+[m[32m//   }[m
+[32m+[m[32m// };[m
+ [m
+ [m
+ [m
+[36m@@ -3320,7 +3321,6 @@[m [mconst acceptRequest = async (req, res) => {[m
+ [m
+     // **Check if someone already accepted the request**[m
+     if (row.existing_notification_id) {[m
+[31m-      // Someone has already accepted this notification[m
+       await client.query('ROLLBACK');[m
+       return res.status(400).json({ message: "Someone already accepted the request." });[m
+     }[m
+[36m@@ -3331,16 +3331,12 @@[m [mconst acceptRequest = async (req, res) => {[m
+       await client.query('ROLLBACK');[m
+       return res.status(404).json({ message: "Notification not found." });[m
+     }[m
+[31m-[m
+[31m-    // **Check if the notification has been canceled**[m
+     if (row.cancel_status === "cancel") {[m
+       await client.query('ROLLBACK');[m
+       return res.status(400).json({ message: "Cannot accept request; it has been canceled." });[m
+     }[m
+ [m
+     const insertedNotificationId = row.inserted_notification_id;[m
+[31m-[m
+[31m-    // **Fetch FCM tokens in a separate query**[m
+     const fcmResult = await client.query([m
+       `SELECT uf.fcm_token[m
+        FROM userfcm uf[m
+[36m@@ -3349,11 +3345,7 @@[m [mconst acceptRequest = async (req, res) => {[m
+     );[m
+ [m
+     const fcmTokens = fcmResult.rows.map(r => r.fcm_token).filter(token => token);[m
+[31m-[m
+[31m-    // **Commit the transaction**[m
+     await client.query('COMMIT');[m
+[31m-[m
+[31m-    // **Send FCM Notifications if tokens exist**[m
+     if (fcmTokens.length > 0) {[m
+       const multicastMessage = {[m
+         tokens: fcmTokens,[m
+[36m@@ -3366,45 +3358,30 @@[m [mconst acceptRequest = async (req, res) => {[m
+           screen: 'UserNavigation',[m
+         },[m
+       };[m
+[31m-[m
+[31m-      // Send the notification using Firebase Cloud Messaging[m
+       const response = await getMessaging().sendEachForMulticast(multicastMessage);[m
+[31m-[m
+[31m-      // Log the responses for each token[m
+       response.responses.forEach((resp, index) => {[m
+         if (resp.success) {[m
+[31m-          // console.log(`Message sent successfully to token ${fcmTokens[index]}`);[m
+         } else {[m
+           console.error(`Error sending message to token ${fcmTokens[index]}:`, resp.error);[m
+         }[m
+       });[m
+[31m-[m
+[31m-      // console.log('Success Count:', response.successCount);[m
+[31m-      // console.log('Failure Count:', response.failureCount);[m
+     } else {[m
+       console.error('No FCM tokens to send the message to.');[m
+     }[m
+[31m-[m
+[31m-    // **Encode IDs for background action**[m
+     const userNotificationEncodedId = Buffer.from(user_notification_id.toString()).toString("base64");[m
+     const encodedId = Buffer.from(insertedNotificationId.toString()).toString("base64");[m
+     const screen = "UserNavigation";[m
+[31m-[m
+[31m-    // **Ensure serviceBooked is correctly formatted (assuming it's JSON)**[m
+     let parsedServiceBooked;[m
+     if (typeof row.service_booked === 'string') {[m
+       try {[m
+         parsedServiceBooked = JSON.parse(row.service_booked);[m
+       } catch (parseError) {[m
+         console.error("Error parsing service_booked JSON:", parseError);[m
+[31m-        // Depending on requirements, decide whether to rollback or continue[m
+         parsedServiceBooked = row.service_booked;[m
+       }[m
+     } else {[m
+       parsedServiceBooked = row.service_booked;[m
+     }[m
+[31m-[m
+[31m-    // **Update User Background Action**[m
+     const backgroundActionResult = await createUserBackgroundAction([m
+       row.user_id,[m
+       encodedId,[m
+[36m@@ -3412,16 +3389,13 @@[m [mconst acceptRequest = async (req, res) => {[m
+       parsedServiceBooked,[m
+       userNotificationEncodedId[m
+     );[m
+[31m-[m
+[31m-    // **Respond with success**[m
+     res.status(200).json({[m
+       message: "Status updated to accept",[m
+       notificationId: insertedNotificationId,[m
+[31m-      backgroundAction: backgroundActionResult, // Optionally include background action data[m
+[32m+[m[32m      backgroundAction: backgroundActionResult,[m[41m [m
+     });[m
+ [m
+   } catch (error) {[m
+[31m-    // Rollback the transaction in case of any errors[m
+     try {[m
+       await client.query('ROLLBACK');[m
+     } catch (rollbackError) {[m
+[36m@@ -3435,341 +3409,349 @@[m [mconst acceptRequest = async (req, res) => {[m
+ [m
+ [m
+ [m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-// main[m
+[31m-// const acceptRequest = async (req, res) => {[m
+[31m-//   const { user_notification_id } = req.body;[m
+[31m-//   const worker_id = req.worker.id;[m
+[31m-[m
+[32m+[m[32m// const userNavigationCancel = async (req, res) => {[m
+[32m+[m[32m//   const { notification_id } = req.body;[m
+[32m+[m[32m//   const encodedUserNotificationId = Buffer.from(notification_id.toString()).toString("base64");[m
+ [m
+ //   try {[m
+[31m-//     // Start a transaction[m
+[31m-//     await client.query('BEGIN');[m
+[31m-[m
+[31m-//     // Check if any rows with the same user_notification_id have the status 'accept'[m
+[31m-//     const checkAcceptedResult = await client.query([m
+[31m-//       "SELECT * FROM accepted WHERE user_notification_id = $1",[m
+[31m-//       [user_notification_id][m
+[31m-//     );[m
+[31m-  [m
+[31m-[m
+[31m-//     if (checkAcceptedResult.rowCount > 0) {[m
+[31m-//       // Someone has already accepted this notification[m
+[31m-//       await client.query('ROLLBACK');[m
+[31m-//       return res.status(400).json({ message: "Someone already accepted the request." });[m
+[31m-//     }[m
+[31m-[m
+[31m-//     // Get notification details and FCM tokens in a single query using JOIN[m
+[31m-//     const cancelStatusAndTokenResult = await client.query([m
+[31m-//       `SELECT n.cancel_status, n.user_id, n.notification_id, n.service_booked, n.longitude, n.latitude, [m
+[31m-//               uf.fcm_token[m
+[31m-//        FROM notifications n[m
+[31m-//        LEFT JOIN userfcm uf ON n.user_id = uf.user_id[m
+[31m-//        WHERE n.user_notification_id = $1 `,[m
+[31m-//       [user_notification_id][m
+[31m-//     );[m
+[31m-[m
+[31m-    [m
+[31m-[m
+[31m-//     if (cancelStatusAndTokenResult.rows.length === 0) {[m
+[31m-//       await client.query('ROLLBACK');[m
+[31m-//       return res.status(404).json({ message: "Notification not found." });[m
+[31m-//     }[m
+[31m-[m
+[31m-//     const notificationData = cancelStatusAndTokenResult.rows[0];[m
+[31m-//     // console.log("cancel",notificationData)[m
+[31m-[m
+[31m-//     if (notificationData.cancel_status === "cancel") {[m
+[31m-//       await client.query('ROLLBACK');[m
+[31m-//       return res.status(400).json({ message: "Cannot accept request; it has been canceled." });[m
+[31m-//     }[m
+[31m-[m
+[31m-//     const serviceBooked = notificationData.service_booked;[m
+[31m-[m
+[31m-//     // If it's a JavaScript object or array, stringify it before insertion.[m
+[31m-//     // If it's already a JSON string or JSONB data from the DB, leave it as is.[m
+[31m-//     const jsonbServiceBooked = typeof serviceBooked === 'object' ? JSON.stringify(serviceBooked) : serviceBooked;[m
+[31m-    [m
+[31m-//     const insertResult = await client.query([m
+[31m-//       `INSERT INTO accepted (user_notification_id, worker_id, notification_id, status, user_id, service_booked, pin, longitude, latitude)[m
+[31m-//        VALUES ($1, $2, $3, $4, $5, $6, FLOOR(RANDOM() * 9000) + 1000, $7, $8) RETURNING notification_id`,[m
+[31m-//       [[m
+[31m-//         user_notification_id,[m
+[31m-//         worker_id,[m
+[31m-//         notificationData.notification_id,  // Notification ID[m
+[31m-//         "accept",  // Status[m
+[31m-//         notificationData.user_id,          // User ID[m
+[31m-//         jsonbServiceBooked,                // Correctly formatted service_booked[m
+[31m-//         notificationData.longitude,[m
+[31m-//         notificationData.latitude[m
+[31m-//       ][m
+[31m-//     );[m
+[31m-    [m
+[31m-[m
+[31m-//     // Commit the transaction[m
+[31m-//     await client.query('COMMIT');[m
+[32m+[m[32m//     // Combined UPDATE and SELECT using CTE[m
+[32m+[m[32m//     const combinedQuery = await client.query(`[m
+[32m+[m[32m//       WITH updated AS ([m
+[32m+[m[32m//         UPDATE accepted[m
+[32m+[m[32m//         SET user_navigation_cancel_status = 'usercanceled'[m
+[32m+[m[32m//         WHERE notification_id = $1[m
+[32m+[m[32m//           AND user_navigation_cancel_status IS NULL[m
+[32m+[m[32m//         RETURNING worker_id, notification_id[m
+[32m+[m[32m//       )[m
+[32m+[m[32m//       SELECT w.worker_id, f.fcm_token[m
+[32m+[m[32m//       FROM updated u[m
+[32m+[m[32m//       JOIN workersverified w ON w.worker_id = u.worker_id[m
+[32m+[m[32m//       JOIN fcm f ON f.worker_id = w.worker_id[m
+[32m+[m[32m//     `, [notification_id]);[m
+ [m
+[31m-//     // Retrieve the inserted notification ID[m
+[31m-//     const notification
