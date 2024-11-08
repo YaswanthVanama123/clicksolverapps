@@ -7,7 +7,11 @@ import uuid from 'react-native-uuid';
 import { useNavigation } from "@react-navigation/native";
 
 const PendingCashbackWorkers = () => {
-  const [serviceData, setServiceData] = useState([]);
+  const [serviceData, setServiceData] = useState([
+    {id:1,name:"Yaswanth",profession:"Electrician",pending:200,created_at:"Oct 31 2024"},
+    {id:2,name:"Gandhi",profession:"Plumber",pending:200,created_at:"Oct 31 2024"},
+    {id:3,name:"Yaswanth",profession:"Electrician",pending:200,created_at:"Oct 31 2024"},
+  ]);
   const [filteredData, setFilteredData] = useState([]);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState([]);
@@ -16,16 +20,10 @@ const PendingCashbackWorkers = () => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const token = await EncryptedStorage.getItem('pcs_token'); 
-        if (!token) throw new Error("Token not found");
-
-        const response = await axios.get(`${process.env.BackendAPI6}/api/worker/tracking/services`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        const response = await axios.get(`${process.env.BackendAPI6}/api/workers/pending/cashback`, {
         });
-        setServiceData(response.data);
-        setFilteredData(response.data);
+        console.log(response.data)
+        setServiceData(response.data)
       } catch (error) {
         console.error('Error fetching bookings data:', error);
       }
@@ -39,15 +37,20 @@ const PendingCashbackWorkers = () => {
     return `${String(date.getDate()).padStart(2, '0')} ${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
   };
 
+  const handleCardPress = (worker_id) => {
+    console.log(worker_id)
+    navigation.push('WorkerPendingCashback', { worker_id: worker_id });
+  };
+
   const renderItem = ({ item }) => (
-    <TouchableOpacity style={styles.itemContainer}>
-      <Image source={{ uri: "http://postimage.png" }} style={styles.profile} />
+    <TouchableOpacity style={styles.itemContainer} onPress={() => handleCardPress(item.worker_id)}>
+      <Image source={{ uri: item.profile }} style={styles.profile} />
       <View style={styles.itemTextContainer}>
-        <Text style={styles.itemTitle}>Yaswanth</Text>
-        <Text style={styles.itemSubtitle}>Electrician</Text>
+        <Text style={styles.itemTitle}>{item.name}</Text>
+        <Text style={styles.itemSubtitle}>{item.service}</Text>
       </View>
       <View style={styles.amountContainer}>
-        <Text style={styles.amountText}>200</Text>
+        <Text style={styles.amountText}>{item.pending_cashback * 100}</Text>
         <Text style={styles.dateText}>{formatDate(item.created_at)}</Text>
       </View>
     </TouchableOpacity>
@@ -69,13 +72,14 @@ const PendingCashbackWorkers = () => {
             {/* Filter options go here */}
           </View>
         )}
-
+        <View style={styles.contentContainer}>
         <FlatList
-          data={filteredData}
+          data={serviceData}
           renderItem={renderItem}
-          keyExtractor={() => uuid.v4()}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContainer}
         />
+        </View>
       </View>
     </TouchableWithoutFeedback>
   );
@@ -93,9 +97,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     backgroundColor: '#ffffff',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
@@ -130,6 +131,10 @@ const styles = StyleSheet.create({
   itemTextContainer: {
     flex: 1,
   },
+  contentContainer:{
+    flex:1,
+    paddingTop:20
+  },
   itemTitle: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -145,7 +150,7 @@ const styles = StyleSheet.create({
   amountText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#212121',
+    color: '#ff5722',
   },
   dateText: {
     fontSize: 12,

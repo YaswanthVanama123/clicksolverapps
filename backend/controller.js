@@ -840,7 +840,46 @@ const balanceAmmountToPay = async (req, res) => {
   }
 };
 
+const getWorkerCashbackDetails = async (req, res) => {
+  try {
+    const { worker_id } = req.body; // Get worker_id from the request body
+    console.log(worker_id)
+    const query = `
+      SELECT 
+        servicecall.payment, 
+        servicecall.payment_type, 
+        servicecall.notification_id, 
+        servicecall.end_time, 
+        completenotifications.*, 
+        "user".name,
+        workerlife.cashback_history,
+        workerlife.cashback_approved_times,
+        workerlife.cashback_gain
+      FROM servicecall
+      LEFT JOIN completenotifications 
+        ON servicecall.notification_id = completenotifications.notification_id
+      LEFT JOIN "user" 
+        ON completenotifications.user_id = "user".user_id
+      LEFT JOIN workerlife 
+        ON servicecall.worker_id = workerlife.worker_id
+      WHERE servicecall.worker_id = $1 
+        AND servicecall.payment IS NOT NULL;
+    `;
+
+    const values = [worker_id];
+    const result = await client.query(query, values);
+    
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Error fetching worker cashback details:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
 // Function to insert data into the 'relatedservices' table
+
+
+
 const insertRelatedService = async (req, res) => {
   const { service, service_category, related_services } = req.body;
 
@@ -887,59 +926,6 @@ const insertTracking = async (req, res) => {
     // Set service_status as "Commander collected the service item"
     const serviceStatus = "Collected Item";
 
-    // Select from accepted table and insert into servicetracking table in a single query
-    // const query = `
-    // WITH selected AS (
-    //   SELECT
-    //     a.accepted_id,
-    //     a.notification_id,
-    //     a.user_notification_id,
-    //     a.longitude,
-    //     a.latitude,
-    //     a.worker_id,
-    //     a.service_booked,
-    //     a.user_id,
-    //     u.fcm_token
-    //   FROM accepted a
-    //   JOIN userfcm u ON a.user_id = u.user_id
-    //   WHERE a.notification_id = $1
-    // )
-    // , inserted AS (
-    //   INSERT INTO servicetracking (
-    //     accepted_id,
-    //     notification_id,
-    //     user_notification_id,
-    //     longitude,
-    //     latitude,
-    //     worker_id,
-    //     service_booked,
-    //     user_id,
-    //     created_at,
-    //     tracking_pin,
-    //     tracking_key,
-    //     service_status
-    //   )
-    //   SELECT
-    //     selected.accepted_id,
-    //     selected.notification_id,
-    //     selected.user_notification_id,
-    //     selected.longitude,
-    //     selected.latitude,
-    //     selected.worker_id,
-    //     selected.service_booked,
-    //     selected.user_id,
-    //     NOW(),
-    //     $2,
-    //     $3,
-    //     $4
-    //   FROM selected
-    //   RETURNING *
-    // )
-    // DELETE FROM accepted
-    // WHERE accepted_id IN (SELECT accepted_id FROM inserted)
-    // RETURNING *,
-    //   (SELECT fcm_token FROM selected); -- Use a subquery to get the fcm_token from the CTE
-    // `;
     const query = `
       WITH selected AS (
         SELECT
@@ -1449,7 +1435,77 @@ const workerApprove = async (req, res) => {
   }
 };
 
+const getWorkersPendingCashback = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        w.worker_id,
+        w.cashback_approved_times - w.cashback_gain AS pending_cashback,
+        v.name,
+        v.created_at,
+        s.service,
+        s.profile
+      FROM workerlife AS w
+      JOIN workersverified AS v ON w.worker_id = v.worker_id
+      JOIN workerskills AS s ON w.worker_id = s.worker_id
+      WHERE (w.cashback_approved_times - w.cashback_gain) > 0;
+    `;
 
+    const result = await client.query(query);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Error fetching pending cashback for workers:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+const workerCashbackPayed = async (req, res) => {
+  const { worker_id, cashbackCount, cashbackPayed } = req.body;
+  console.log(worker_id,cashbackPayed,cashbackCount)
+  try {
+    const currentTime = new Date().toISOString();
+
+    const query = `
+      WITH updated_worker AS (
+        UPDATE workerlife
+        SET cashback_gain = cashback_gain + $1,
+            cashback_history = cashback_history || $2::jsonb
+        WHERE worker_id = $3
+        RETURNING cashback_gain, cashback_history
+      )
+      SELECT * FROM updated_worker;
+    `;
+
+    // Construct the new cashback history entry as a JSON object
+    const newHistoryEntry = JSON.stringify([{
+      amount: cashbackPayed,
+      time: currentTime,
+      paid: "paid by Click Solver",
+      count: cashbackCount
+    }]);
+
+    // Execute the query with parameters
+    const { rows } = await client.query(query, [
+      cashbackCount,
+      newHistoryEntry,
+      worker_id
+    ]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Worker not found' });
+    }
+
+    // Send the updated cashback information as response
+    res.status(200).json({
+      message: 'Cashback updated successfully',
+      cashback_gain: rows[0].cashback_gain,
+      cashback_history: rows[0].cashback_history
+    });
+  } catch (error) {
+    console.error('Error updating cashback:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
 
 
 // optimized functions
@@ -7634,5 +7690,8 @@ module.exports = {
   updateApproveStatus,
   checkApprovalVerificationStatus,
   workerApprove,
-  getServiceBookingItemDetails
+  getServiceBookingItemDetails,
+  getWorkersPendingCashback,
+  getWorkerCashbackDetails,
+  workerCashbackPayed
 };

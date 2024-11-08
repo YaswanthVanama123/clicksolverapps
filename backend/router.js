@@ -111,7 +111,10 @@ const {
   updateApproveStatus,
   checkApprovalVerificationStatus,
   workerApprove,
-  getServiceBookingItemDetails
+  getServiceBookingItemDetails,
+  getWorkersPendingCashback,
+  getWorkerCashbackDetails,
+  workerCashbackPayed
 } = require("./controller.js");
 
 const router = express.Router();
@@ -213,6 +216,8 @@ router.post("/add/worker", async (req, res) => {
 router.post("/subservice/checkboxes", subservices);
 
 router.post("/balance/ammount",authenticateWorkerToken,balanceAmmountToPay);
+
+router.post("/worker/cashback/payed",workerCashbackPayed);
 
 router.get('/worker/verification/status', getVerificationStatus);
 
@@ -490,6 +495,10 @@ router.get("/locations",getAllLocations)
 router.get("/user/login/status",authenticateToken,loginStatus)
 
 router.get("/worker/tracking/services",authenticateWorkerToken,getWorkerTrackingServices)
+
+router.get("/workers/pending/cashback",getWorkersPendingCashback);
+
+router.post("/worker/pending/cashback",getWorkerCashbackDetails)
 
 router.get("/user/tracking/services",authenticateToken,getUserTrackingServices)
 
