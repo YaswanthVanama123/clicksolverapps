@@ -139,7 +139,7 @@ const PaintingServices = () => {
         <Text style={styles.headerTitle}>{name}</Text>
       </View>
 
-      {/* Banner */}
+
       <View style={styles.banner}>
         <View style={styles.bannerText}>
           <View style={styles.bannerDetails}>
@@ -272,15 +272,17 @@ const styles = StyleSheet.create({
   },
   serviceItem: {
     flexDirection: 'row',
-    gap: 25,
-    marginBottom: 15,
-    borderRadius: 8,
-    overflow: 'hidden',
+    alignItems: 'center',
+    gap: 10,
+    padding: 10,
+    borderRadius: 10,
     backgroundColor: '#fff',
+    marginBottom: 10,
   },
   serviceImage: {
-    width: 181,
-    height: 115,
+    width: 165,
+    height: 105,
+    borderRadius: 10,
   },
   serviceInfo: {
     flex: 1,
@@ -288,9 +290,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   serviceTitle: {
-    fontSize: 17,
-    color: '#4A4A4A',
-    lineHeight: 23,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
   },
   bookNow: {
     flexDirection: 'row',
@@ -303,7 +305,8 @@ const styles = StyleSheet.create({
     marginTop: 10,
     width: 110,
     height: 32,
-    opacity: 0.88
+    opacity: 0.88,
+    elevation:5
   },
   bookNowText: {
     color: '#FFF',

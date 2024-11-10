@@ -504,6 +504,7 @@ const styles = StyleSheet.create({
   serviceName: {
     fontSize: 15,
     color: '#212121',
+    width:80,
     fontWeight: '500',
     flex: 1,  // Ensures the service name takes remaining space
     textAlign: 'left',  // Aligns the service name to the left

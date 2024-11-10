@@ -42,7 +42,7 @@ const LoginScreen = () => {
     try {
       const response = await loginBackend(phoneNumber);
       const { status, data } = response;
-
+      console.log("status",status)
       if (status === 200) {
         // Worker already signed up
         const { token } = data;

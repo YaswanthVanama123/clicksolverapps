@@ -262,9 +262,9 @@ const Navigation = () => {
           </Mapbox.ShapeSource>
         )}
       </Mapbox.MapView>
-      <TouchableOpacity style={styles.cancelButton} onPress={handleCancelBooking}>
+      {/* <TouchableOpacity style={styles.cancelButton} onPress={handleCancelBooking}>
         <Text style={styles.cancelText}>Cancel</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
       <View style={styles.detailsContainer}>
         <View style={styles.minimumChargesContainer}>
           <Text style={styles.serviceFare}>Commander on the way</Text>
@@ -310,7 +310,12 @@ const Navigation = () => {
                       </View>
                     ))}
                   </View>
-                </View>           
+                </View>   
+                <View style={styles.cancelbuttonContainer}>
+                  <TouchableOpacity style={styles.cancelButton} onPress={handleCancelBooking}>
+                    <Text style={styles.cancelText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
             </View>
           <View style={styles.workerDetailsContainer}>
             <View>
@@ -321,9 +326,11 @@ const Navigation = () => {
               <TouchableOpacity style={styles.actionButton}>
                 <MaterialIcons name="call" size={18} color="#FF5722" />
               </TouchableOpacity>
+     
               <TouchableOpacity style={styles.actionButton}>
                 <AntDesign name="message1" size={18} color="#FF5722" />
               </TouchableOpacity>
+         
             </View>
           </View>
         </View>
@@ -408,6 +415,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 5,
+    width: 80,
+    height: 35,
+  },
+  cancelbuttonContainer:{
+    flexDirection:'row',
+    justifyContent:'center',
+   
+  },
+  cancelButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 1,
     width: 80,
     height: 35,
   },

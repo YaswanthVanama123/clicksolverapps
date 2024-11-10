@@ -171,7 +171,9 @@ const SingleService = () => {
 
         <View style={styles.recomendedContainer}>
           {services.map((service) => (
+            
             <TouchableOpacity key={service.main_service_id} style={styles.recomendedCard}>
+              {console.log("name to service",service)}
               <View style={styles.recomendedCardDetails}>
                 <Text style={styles.recomendedCardDetailsHead}>{service.service_tag}</Text>
                 <Text style={styles.recomendedCardDetailsDescription} numberOfLines={2}>
@@ -453,10 +455,11 @@ const styles = StyleSheet.create({
   },
   bookButton: {
     backgroundColor: '#ff4500',
-    width: '100%',
+    width: '50%',
     padding: 8,
     alignItems: 'center',
-    borderRadius: 10
+    borderRadius: 10,
+    elevation:5
   },
   Sparetext: {
     color: '#4a4a4a',

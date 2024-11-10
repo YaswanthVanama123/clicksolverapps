@@ -48,6 +48,7 @@ const HelloWorld = () => {
   const [isEnabled, setIsEnabled] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [greetingIcon, setGreetingIcon] = useState(null);
+  const [cumulativeDistance, setCumulativeDistance] = useState(0);
 
   // Function to fetch notifications and update state
   const fetchNotifications = useCallback(async () => {
@@ -126,6 +127,8 @@ const HelloWorld = () => {
         BackgroundGeolocation.start();
       } else {
         BackgroundGeolocation.stop();
+        updateFirestoreLocation(0, 0); // Send (0, 0) when tracking is turned off
+        setCumulativeDistance(0); // Reset cumulative distance
       }
 
       EncryptedStorage.setItem(
@@ -138,6 +141,7 @@ const HelloWorld = () => {
       return newEnabledState;
     });
   };
+
 
   const fetchTrackingState = async () => {
     try {
@@ -210,154 +214,199 @@ const HelloWorld = () => {
     }
 };
 
-  const updateFirestoreLocation = async (latitude, longitude) => {
-    try {
-      const Item = await EncryptedStorage.getItem('unique');
-      if (Item) {
-        const locationsCollection = firestore().collection('locations');
-        const locationData = {
-          location: new firestore.GeoPoint(latitude, longitude),
-          timestamp: moment()
-            .tz('Asia/Kolkata')
-            .format('YYYY-MM-DD HH:mm:ss'),
-          worker_id: parseInt(Item, 10),
-        };
-        const snapshot = await locationsCollection
-          .where('worker_id', '==', locationData.worker_id)
-          .limit(1)
-          .get();
-        if (!snapshot.empty) {
-          const docId = snapshot.docs[0].id;
-          await locationsCollection.doc(docId).update({
-            location: locationData.location,
-            timestamp: locationData.timestamp,
-          });
-        } else {
-          await locationsCollection.add(locationData);
-        }
+const updateFirestoreLocation = async (latitude, longitude) => {
+  try {
+    const Item = await EncryptedStorage.getItem('unique');
+    if (Item) {
+      const locationsCollection = firestore().collection('locations');
+      const locationData = {
+        location: new firestore.GeoPoint(latitude, longitude),
+        timestamp: moment()
+          .tz('Asia/Kolkata')
+          .format('YYYY-MM-DD HH:mm:ss'),
+        worker_id: parseInt(Item, 10),
+      };
+      const snapshot = await locationsCollection
+        .where('worker_id', '==', locationData.worker_id)
+        .limit(1)
+        .get();
+      if (!snapshot.empty) {
+        const docId = snapshot.docs[0].id;
+        await locationsCollection.doc(docId).update({
+          location: locationData.location,
+          timestamp: locationData.timestamp,
+        });
+      } else {
+        await locationsCollection.add(locationData);
       }
-    } catch (error) {
-      console.error('Error sending location data to Firestore:', error);
     }
-  };
+  } catch (error) {
+    console.error('Error sending location data to Firestore:', error);
+  }
+};
 
-  const initializeGeolocation = () => {
-    let onLocationSubscription;
-    let onGeofenceSubscription;
-  
-    const setupGeolocation = async () => {
-      const pcsToken = await EncryptedStorage.getItem('pcs_token');
-  
-      if (pcsToken) {
-        const geofences = [
-          {
-            identifier: 'Gampalagudem',
-            radius: 10000, // in meters
-            latitude: 16.998121,
-            longitude: 80.5230137,
-            notifyOnEntry: true,
-            notifyOnExit: true,
-            notifyOnDwell: false, // Optional, set to true if you want to detect when the user stays within the area
-            loiteringDelay: 30000 // Optional, required if notifyOnDwell is true (in milliseconds)
-          },
-          // Add more geofences if needed
-        ];
-  
-        onLocationSubscription = BackgroundGeolocation.onLocation(
-          async (location) => {
-            const { latitude, longitude } = location.coords;
-            setCenter([longitude, latitude]);
-            setWorkerLocation([latitude,longitude]);
-  
-            const previousLocation = await EncryptedStorage.getItem(
-              'workerPreviousLocation'
-            );
-  
-            // If no previous location, only store if in geofence
-            if (!previousLocation && isInGeofence(latitude, longitude)) {
+
+const initializeGeolocation = () => {
+  let onLocationSubscription;
+  let onGeofenceSubscription;
+
+  const setupGeolocation = async () => {
+    const pcsToken = await EncryptedStorage.getItem('pcs_token');
+
+    if (pcsToken) {
+      const geofences = [
+        {
+          identifier: 'Gampalagudem',
+          radius: 10000, // in meters
+          latitude: 16.998121,
+          longitude: 80.5230137,
+          notifyOnEntry: true,
+          notifyOnExit: true,
+          notifyOnDwell: false,
+          loiteringDelay: 30000,
+        },
+        // Add more geofences if needed
+      ];
+
+      onLocationSubscription = BackgroundGeolocation.onLocation(
+        async (location) => {
+          const { latitude, longitude } = location.coords;
+          setCenter([longitude, latitude]);
+          setWorkerLocation([latitude, longitude]);
+
+          const previousLocation = await EncryptedStorage.getItem(
+            'workerPreviousLocation'
+          );
+
+          let locationData = previousLocation
+            ? JSON.parse(previousLocation)
+            : null;
+
+          if (locationData) {
+            const previousCoords = {
+              latitude: locationData.latitude,
+              longitude: locationData.longitude,
+            };
+            const currentCoords = { latitude, longitude };
+
+            // Calculate distance using Haversine formula
+            const distance = haversine(previousCoords, currentCoords, {
+              unit: 'km',
+            });
+
+            // Update cumulative distance
+            const newCumulativeDistance = cumulativeDistance + distance;
+            setCumulativeDistance(newCumulativeDistance);
+
+            // Check if cumulative distance is equal or exceeds 1 km
+            if (newCumulativeDistance >= 1) {
+              await updateFirestoreLocation(latitude, longitude);
+              setCumulativeDistance(0); // Reset cumulative distance
               await EncryptedStorage.setItem(
                 'workerPreviousLocation',
                 JSON.stringify({ latitude, longitude })
               );
-              await updateFirestoreLocation(latitude, longitude);
-            } else if (previousLocation) {
-              const locationData = JSON.parse(previousLocation);
-              const distance = haversine(
-                {
-                  latitude: locationData.latitude,
-                  longitude: locationData.longitude,
-                },
-                {
-                  latitude,
-                  longitude,
-                },
-                { unit: 'km' }
+            } else {
+              // Update previous location without resetting cumulative distance
+              await EncryptedStorage.setItem(
+                'workerPreviousLocation',
+                JSON.stringify({ latitude, longitude })
               );
-  
-              if (distance >= 1) {
+            }
+          } else {
+            // First time setting previous location
+            await EncryptedStorage.setItem(
+              'workerPreviousLocation',
+              JSON.stringify({ latitude, longitude })
+            );
+            setCumulativeDistance(0); // Initialize cumulative distance
+          }
+        }
+      );
+
+      onGeofenceSubscription = BackgroundGeolocation.onGeofence(
+        async (geofence) => {
+          if (geofence.action === 'ENTER') {
+            console.log(
+              `Worker has entered the geofence: ${geofence.identifier}`
+            );
+            // Get current location and send to Firebase
+            BackgroundGeolocation.getCurrentPosition()
+              .then(async (location) => {
+                const { latitude, longitude } = location.coords;
                 await updateFirestoreLocation(latitude, longitude);
+                setCumulativeDistance(0); // Reset cumulative distance
                 await EncryptedStorage.setItem(
                   'workerPreviousLocation',
                   JSON.stringify({ latitude, longitude })
                 );
-              }
-            }
+              })
+              .catch((error) => {
+                console.error('Error getting current position:', error);
+              });
+            BackgroundGeolocation.start();
+          } else if (geofence.action === 'EXIT') {
+            console.log(
+              `Worker has exited the geofence: ${geofence.identifier}`
+            );
+            await updateFirestoreLocation(0, 0); // Send (0, 0) coordinates
+            BackgroundGeolocation.stop();
+            setCumulativeDistance(0); // Reset cumulative distance
+            await EncryptedStorage.setItem(
+              'workerPreviousLocation',
+              JSON.stringify(null)
+            );
           }
-        );
-  
-        onGeofenceSubscription = BackgroundGeolocation.onGeofence(
-          async (geofence) => {
-            if (geofence.action === 'ENTER') {
-              console.log(`Worker has entered the geofence: ${geofence.identifier}`);
-              BackgroundGeolocation.start();
-            } else if (geofence.action === 'EXIT') {
-              console.log(`Worker has exited the geofence: ${geofence.identifier}`);
-              await updateFirestoreLocation(0, 0);
-              BackgroundGeolocation.stop();
-              await EncryptedStorage.setItem(
-                'workerPreviousLocation',
-                JSON.stringify(null)
-              );
-            }
-          }
-        );
-  
-        BackgroundGeolocation.ready({
-          desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_HIGH,
-          distanceFilter: 1,
-          stopTimeout: 5,
-          debug: false,
-          logLevel: BackgroundGeolocation.LOG_LEVEL_OFF,
-          stopOnTerminate: false,
-          startOnBoot: true,
-          batchSync: false,
-          autoSync: true,
-        }).then(() => {
-          geofences.forEach((geofence) => {
-            BackgroundGeolocation.addGeofence(geofence).catch((error) => {
-              console.error(
-                `Failed to add geofence for ${geofence.identifier}: `,
-                error
-              );
-            });
+        }
+      );
+
+      // Listen for location provider changes
+      BackgroundGeolocation.onProviderChange(async (event) => {
+        if (!event.enabled) {
+          // Location services are disabled
+          await updateFirestoreLocation(0, 0); // Send (0, 0) coordinates
+          BackgroundGeolocation.stop();
+        }
+      });
+
+      BackgroundGeolocation.ready({
+        desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_HIGH,
+        distanceFilter: 1,
+        stopTimeout: 5,
+        debug: false,
+        logLevel: BackgroundGeolocation.LOG_LEVEL_OFF,
+        stopOnTerminate: false,
+        startOnBoot: true,
+        batchSync: false,
+        autoSync: true,
+      }).then(() => {
+        geofences.forEach((geofence) => {
+          BackgroundGeolocation.addGeofence(geofence).catch((error) => {
+            console.error(
+              `Failed to add geofence for ${geofence.identifier}: `,
+              error
+            );
           });
         });
-      } else {
-        console.log('pcs_token is not available, skipping location tracking.');
-      }
-    };
-  
-    setupGeolocation();
-  
-    return () => {
-      if (onLocationSubscription) {
-        onLocationSubscription.remove();
-      }
-      if (onGeofenceSubscription) {
-        onGeofenceSubscription.remove();
-      }
-    };
+      });
+    } else {
+      console.log(
+        'pcs_token is not available, skipping location tracking.'
+      );
+    }
   };
+
+  setupGeolocation();
+
+  return () => {
+    if (onLocationSubscription) {
+      onLocationSubscription.remove();
+    }
+    if (onGeofenceSubscription) {
+      onGeofenceSubscription.remove();
+    }
+  };
+};
   
   
 
@@ -519,6 +568,24 @@ const HelloWorld = () => {
     }
   }, [isEnabled]);
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
   useEffect(() => {
     PushNotification.createChannel(
       {

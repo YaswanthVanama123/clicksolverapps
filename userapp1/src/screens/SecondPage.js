@@ -9,6 +9,7 @@ import axios from 'axios';
 import uuid from 'react-native-uuid';
 import QuickSearch from '../Components/QuickSearch';
 import LottieView from 'lottie-react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 
 function ServiceApp() {
   const [services, setServices] = useState([]);
@@ -23,6 +24,7 @@ function ServiceApp() {
   const scrollViewRef = useRef(null);
   const itemWidth = screenWidth * 0.95; 
   const navigation = useNavigation();
+  const messageBoxWidth = trackScreen.length > 1 ? screenWidth * 0.8 : screenWidth * 0.9
 
   const specialOffers = useMemo(() => [
     {
@@ -114,7 +116,7 @@ function ServiceApp() {
   };
 
   const handleNotification = () => {
-    navigation.push('Tabs', { screen: 'Notification' });
+    navigation.push("Notifications");
   };
 
   const handleHelp = () => {
@@ -209,7 +211,7 @@ function ServiceApp() {
         </View>
       </ScrollView>
 
-      {messageBoxDisplay && (
+      {/* {messageBoxDisplay && (
         <ScrollView
           horizontal
           ref={scrollViewRef}
@@ -235,7 +237,7 @@ function ServiceApp() {
               }
             >
               <View style={styles.messageBox}>
-                {/* Icon Container */}
+               
                 {console.log(item.serviceBooked)}
                 <View style={styles.iconContainer}>
                   <Image
@@ -244,7 +246,7 @@ function ServiceApp() {
                   />
                 </View>
 
-                {/* Service Info Container */}
+           
                 <View style={styles.serviceInfoContainer}>
                   <Text style={styles.serviceTitle}>
                     {item.serviceBooked && item.serviceBooked.length > 0
@@ -264,7 +266,6 @@ function ServiceApp() {
                   </Text>
                 </View>
 
-                {/* Arrow Icon */}
                 <View style={styles.rightIcon}>
                   <Feather name="chevrons-right" size={18} color="#9e9e9e" />
                 </View>
@@ -272,7 +273,81 @@ function ServiceApp() {
             </TouchableOpacity>
           ))}
         </ScrollView>
-      )}
+      )} */}
+
+{messageBoxDisplay && (
+  <ScrollView
+    horizontal
+    ref={scrollViewRef}
+    contentContainerStyle={styles.scrollViewHorizontal}
+    showsHorizontalScrollIndicator={false}
+    style={styles.absoluteMessageBox}
+  >
+    {trackScreen.map((item, index) => (
+      <TouchableOpacity
+        key={index}
+        style={[styles.messageBoxContainer, { width: messageBoxWidth }]} // Apply dynamic width here
+        onPress={() =>
+          navigation.replace(item.screen, {
+            encodedId: item.encodedId,
+            area: item.area,
+            city: item.city,
+            pincode: item.pincode,
+            alternateName: item.alternateName,
+            alternatePhoneNumber: item.alternatePhoneNumber,
+            serviceBooked: item.serviceBooked,
+            location: item.location,
+          })
+        }
+      >
+        <View style={styles.messageBox1}>
+          <View style={styles.timeContainer}>
+            {console.log(item.screen)}
+            {item.screen === 'PaymentScreen' ? (
+              <Foundation name="paypal" size={24} color="#ffffff" />
+            ) : item.screen === 'UserNavigation' ? (
+              <MaterialCommunityIcons name="truck" size={24} color="#ffffff" />
+            ) : item.screen === 'userwaiting' ? (
+              <Feather name="search" size={24} color="#ffffff" />
+            )
+            : item.screen === 'OtpVerification' ? (
+              <Feather name="shield" size={24} color="#ffffff" />
+            ) : item.screen === 'TimingScreen' ? (
+              <MaterialCommunityIcons name="hammer" size={24} color="#ffffff" />
+            ) : (
+              <Feather name="alert-circle" size={24} color="#000" />
+            )}
+          </View>
+
+          <View>
+            <Text style={styles.textContainerText}>
+              {item.serviceBooked && item.serviceBooked.length > 0
+                ? item.serviceBooked.map(service => service.serviceName).join(', ')
+                : 'Switch board & Socket repairing'}
+            </Text>
+            <Text style={styles.textContainerTextCommander}>
+              {item.screen === 'PaymentScreen'
+                ? 'Payment in progress'
+                : item.screen === 'UserNavigation'
+                ? 'Commander is on the way'
+                : item.screen === 'OtpVerification'
+                ? 'User is waiting for your help'
+                : item.screen === 'TimingScreen'
+                ? 'Work in progress'
+                : 'Nothing'}
+            </Text>
+          </View>
+
+          <View style={styles.rightIcon}>
+            <Feather name="chevrons-right" size={18} color="#9e9e9e" />
+          </View>
+        </View>
+      </TouchableOpacity>
+    ))}
+  </ScrollView>
+)}
+
+
 
 
 
@@ -281,6 +356,8 @@ function ServiceApp() {
     </View>
   );
 }
+
+const screenWidth = Dimensions.get('window').width; // Get screen width
 
 const styles = StyleSheet.create({
   container: {
@@ -413,20 +490,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   serviceImg: {
-    width: 181,
-    height: 115,
+    width: 165,
+    height: 105,
     borderRadius: 10,
   },
   serviceDetails: {
     flex: 1,
     justifyContent: 'center',
     paddingLeft: 10,
-  },
-  serviceTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#4a4a4a',
-    lineHeight: 21.09,
   },
   bookButton: {
     flexDirection: 'row',
@@ -447,34 +518,58 @@ const styles = StyleSheet.create({
   },
   absoluteMessageBox: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 8,
     left: 0,
     right: 0,
-    paddingHorizontal: 10,
   },
   scrollViewHorizontal: {
-    flexDirection: 'row',
+    paddingHorizontal: 10, // Add padding to give space on the left and right
     alignItems: 'center',
   },
   messageBoxContainer: {
-    marginHorizontal: 5,
-    borderRadius: 15,
-    overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
-    borderWidth:1.5,
-    borderColor:'#EFDCCB',
-    shadowColor: '#ff4500',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  messageBox: {
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
     flexDirection: 'row',
-    width:'100%',
-    alignItems: 'center',
-    justifyContent:'center',
     padding: 10,
+    marginHorizontal: 5,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    elevation: 3,
+    width: screenWidth * 0.9, // Set width to 80% of screen width for peek effect
+  },
+
+  
+  messageBox1: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  timeContainer: {
+    width: 50,
+    height: 50,
+    backgroundColor: '#ff5722',
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  
+  textContainerText: {
+    fontSize: 13,
+    paddingBottom: 5,
+    fontWeight: 'bold',
+    color: '#212121',
+    marginLeft: 10,
+  },
+  textContainerTextCommander: {
+    fontSize: 12,
+    color: '#9e9e9e',
+    marginLeft: 10,
+  },
+  
+  rightIcon: {
+    marginLeft: 8,
   },
   iconContainer: {
     marginRight: 10,

@@ -210,7 +210,8 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   trackingItems: {
-    flex:1
+    flex: 1,
+    paddingTop: 16, // Add space between the header and list items
   },
   serviceIconContainer: {
     width: 50,

@@ -34,6 +34,7 @@ import Olamaps from './screens/Olamaps'
 import ServiceTrackingItemScreen from './Components/ServiceTrackingItemScreen';
 import ServiceTrackingListScreen from './Components/ServiceTrackingListScreen';
 import ServiceBookingItem from './Components/ServiceBookingItem';
+import UserNotifications from './screens/UserNotifications';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -353,9 +354,10 @@ function App() {
         <Stack.Screen name="EditProfile" component={EditProfile} options={{ headerShown: false }} />
         <Stack.Screen name="ServiceTrackingItem" component={ServiceTrackingItemScreen} options={{ headerShown: false }} />
         <Stack.Screen name="serviceBookingItem" component={ServiceBookingItem} options={{ headerShown: false }} />
+        <Stack.Screen name="Notifications" component={UserNotifications} options={{ headerShown: false }} />
         <Stack.Screen name="Help" component={Help} options={{ headerShown: false }} />
       </Stack.Navigator>
-    </NavigationContainer>
+    </NavigationContainer> 
   );
 }
 

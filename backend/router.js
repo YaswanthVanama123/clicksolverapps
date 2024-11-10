@@ -114,7 +114,8 @@ const {
   getServiceBookingItemDetails,
   getWorkersPendingCashback,
   getWorkerCashbackDetails,
-  workerCashbackPayed
+  workerCashbackPayed,
+  userCompleteSignUp
 } = require("./controller.js");
 
 const router = express.Router();
@@ -230,6 +231,8 @@ router.post("/worker/login", Partnerlogin);
 router.post("/user/login", login);
 
 router.post("/worker/signup",workerCompleteSignUp);
+
+router.post("/user/signup",userCompleteSignUp);
 
 router.get("/step-status",authenticateWorkerToken,checkOnboardingStatus)
 

@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   },
   suggestionImage: {
     width: 70,
-    height: 70,
+    height: 65,
     borderRadius: 5,
     marginRight: 10,
   },

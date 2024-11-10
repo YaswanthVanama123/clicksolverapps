@@ -155,6 +155,44 @@ const accountDetailsUpdate = async (req, res) => {
   }
 };
 
+const userCompleteSignUp = async (req, res) => {
+  const { fullName, email, phoneNumber } = req.body;
+
+  if (!fullName || !email || !phoneNumber) {
+    return res.status(400).json({ message: "Full name, email, and phone number are required" });
+  }
+
+  try {
+    // Insert the data into the `user` table
+    const insertQuery = `
+      INSERT INTO "user" (name, phone_number, email)
+      VALUES ($1, $2, $3)
+      RETURNING *;
+    `;
+    const values = [fullName, phoneNumber, email];
+
+    const result = await client.query(insertQuery, values);
+    const user = result.rows[0];
+
+    // Generate a token for the new user
+    const token = generateToken(user);
+
+    // Set the token as an HTTP-only cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+    });
+
+    // Send the token in the response
+    return res.json({ token });
+  } catch (error) {
+    console.error('Error in userCompleteSignUp:', error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
 
 // const workerCompleteSignUp = async (req, res) => {
 //   const { fullName, email = null, phoneNumber } = req.body; // Set default value of email to null
@@ -2425,7 +2463,7 @@ const login = async (req, res) => {
       return res.json({ token });
     } else {
       // Return unauthorized if user not found
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(205).json({ message: "Invalid credentials" });
     }
   } catch (error) {
     console.error("Error during login:", error);
@@ -7693,5 +7731,6 @@ module.exports = {
   getServiceBookingItemDetails,
   getWorkersPendingCashback,
   getWorkerCashbackDetails,
-  workerCashbackPayed
+  workerCashbackPayed,
+  userCompleteSignUp
 };
