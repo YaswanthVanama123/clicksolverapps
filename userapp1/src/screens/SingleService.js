@@ -35,7 +35,7 @@ const SingleService = () => {
     const fetchStoredCart = async () => {
       try {
         const storedCart = await EncryptedStorage.getItem(serviceName);
-        console.log("stored", storedCart);
+        // console.log("stored", storedCart);
         if (storedCart) {
           const parsedCart = JSON.parse(storedCart);
           if (Array.isArray(parsedCart)) {
@@ -99,7 +99,7 @@ const SingleService = () => {
       const storeCart = async () => {
         try {
           await EncryptedStorage.setItem(serviceName, JSON.stringify(booked));
-          console.log("Cart stored successfully:", booked);
+          // console.log("Cart stored successfully:", booked);
         } catch (error) {
           console.error('Error storing cart:', error);
         }
@@ -171,9 +171,7 @@ const SingleService = () => {
 
         <View style={styles.recomendedContainer}>
           {services.map((service) => (
-            
             <TouchableOpacity key={service.main_service_id} style={styles.recomendedCard}>
-              {console.log("name to service",service)}
               <View style={styles.recomendedCardDetails}>
                 <Text style={styles.recomendedCardDetailsHead}>{service.service_tag}</Text>
                 <Text style={styles.recomendedCardDetailsDescription} numberOfLines={2}>
@@ -231,9 +229,8 @@ const SingleService = () => {
                   <View key={index} style={styles.itemContainer}>
                     {service.url ? <Image source={{ uri: service.url }} style={styles.recomendedModalImage} resizeMode="stretch" />: 
                     <Image source={{ uri: "https://postimage.png" }} style={styles.recomendedModalImage} resizeMode="stretch" />}
-                   
                     <View style={styles.descriptionContainer}>
-                      <Text style={styles.recomendedCardDetailsHead}>{service.name}</Text>
+                      <Text style={styles.recomendedCardDetailsHead}>{service.serviceName}</Text>
                       <Text style={styles.recomendedCardDetailsDescription} numberOfLines={2}>{service.description}</Text>
                       <View style={styles.addButton}>
                         <TouchableOpacity onPress={() => handleQuantityChange(service.main_service_id, -1)}>
@@ -327,7 +324,7 @@ const styles = StyleSheet.create({
   recomendedCardDetailsHead: {
     color: '#212121',
     fontWeight: '500',
-    fontSize: 17,
+    fontSize: 16,
     paddingBottom: 5,
   },
   recomendedCardDetails: {

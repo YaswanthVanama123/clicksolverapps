@@ -24,7 +24,7 @@ function ServiceApp() {
   const scrollViewRef = useRef(null);
   const itemWidth = screenWidth * 0.95; 
   const navigation = useNavigation();
-  const messageBoxWidth = trackScreen.length > 1 ? screenWidth * 0.8 : screenWidth * 0.9
+  const messageBoxWidth = trackScreen.length > 1 ? screenWidth * 0.85 : screenWidth * 0.9
 
   const specialOffers = useMemo(() => [
     {
@@ -211,7 +211,7 @@ function ServiceApp() {
         </View>
       </ScrollView>
 
-      {/* {messageBoxDisplay && (
+      {messageBoxDisplay && (
         <ScrollView
           horizontal
           ref={scrollViewRef}
@@ -222,7 +222,7 @@ function ServiceApp() {
           {trackScreen.map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={[styles.messageBoxContainer, { width: itemWidth }]}
+              style={[styles.messageBoxContainer, { width: messageBoxWidth }]} // Apply dynamic width here
               onPress={() =>
                 navigation.replace(item.screen, {
                   encodedId: item.encodedId,
@@ -236,34 +236,46 @@ function ServiceApp() {
                 })
               }
             >
-              <View style={styles.messageBox}>
-               
-                {console.log(item.serviceBooked)}
-                <View style={styles.iconContainer}>
-                  <Image
-                    source={{ uri: 'https://i.postimg.cc/jSJS7rDH/1727646707169dp7gkvhw.png' }}
-                    style={styles.iconImage}
-                  />
-                </View>
-
-           
-                <View style={styles.serviceInfoContainer}>
-                  <Text style={styles.serviceTitle}>
-                    {item.serviceBooked && item.serviceBooked.length > 0
-                      ? item.serviceBooked.map(service => service.serviceName).join(', ')
-                      : 'Switch board & Socket repairing'}
-                  </Text>
-                  <Text style={styles.waitingText}>
-                    {item.screen === 'userwaiting'
-                      ? 'Looking for commander for your problem'
-                      : item.screen === 'worktimescreen'
-                      ? 'Commander on progress'
-                      : item.screen === 'Paymentscreen'
-                      ? 'Payment in progress'
-                      : item.screen === 'UserNavigation'
-                      ? 'Commander on the way'
-                      : 'User is waiting for your help'}
-                  </Text>
+              <View style={styles.messageBox1}>
+                <View style={styles.startingContainer}>
+                  <View style={styles.timeContainer}>
+                    {console.log(item.screen)}
+                    {item.screen === 'PaymentScreen' ? (
+                      <Foundation name="paypal" size={24} color="#ffffff" />
+                    ) : item.screen === 'UserNavigation' ? (
+                      <MaterialCommunityIcons name="truck" size={24} color="#ffffff" />
+                    ) : item.screen === 'userwaiting' ? (
+                      <Feather name="search" size={24} color="#ffffff" />
+                    )
+                    : item.screen === 'OtpVerification' ? (
+                      <Feather name="shield" size={24} color="#ffffff" />
+                    ) : item.screen === 'worktimescreen' ? (
+                      <MaterialCommunityIcons name="hammer" size={24} color="#ffffff" />
+                    ) : (
+                      <Feather name="alert-circle" size={24} color="#000" />
+                    )}
+                  </View>
+                  <View>
+                    <Text style={styles.textContainerText}>
+                      {item.serviceBooked && item.serviceBooked.length > 0
+                        ? item.serviceBooked
+                            .slice(0, 2) // Take only the first 2 items
+                            .map(service => service.serviceName)
+                            .join(', ') + (item.serviceBooked.length > 2 ? '...' : '') // Add "..." if there are more than 2 items
+                        : 'Switch board & Socket repairing'}
+                    </Text>
+                    <Text style={styles.textContainerTextCommander}>
+                      {item.screen === 'PaymentScreen'
+                        ? 'Payment in progress'
+                        : item.screen === 'UserNavigation'
+                        ? 'Commander is on the way'
+                        : item.screen === 'OtpVerification'
+                        ? 'User is waiting for your help'
+                        : item.screen === 'worktimescreen'
+                        ? 'Work in progress'
+                        : 'Nothing'}
+                    </Text>
+                  </View>
                 </View>
 
                 <View style={styles.rightIcon}>
@@ -273,79 +285,7 @@ function ServiceApp() {
             </TouchableOpacity>
           ))}
         </ScrollView>
-      )} */}
-
-{messageBoxDisplay && (
-  <ScrollView
-    horizontal
-    ref={scrollViewRef}
-    contentContainerStyle={styles.scrollViewHorizontal}
-    showsHorizontalScrollIndicator={false}
-    style={styles.absoluteMessageBox}
-  >
-    {trackScreen.map((item, index) => (
-      <TouchableOpacity
-        key={index}
-        style={[styles.messageBoxContainer, { width: messageBoxWidth }]} // Apply dynamic width here
-        onPress={() =>
-          navigation.replace(item.screen, {
-            encodedId: item.encodedId,
-            area: item.area,
-            city: item.city,
-            pincode: item.pincode,
-            alternateName: item.alternateName,
-            alternatePhoneNumber: item.alternatePhoneNumber,
-            serviceBooked: item.serviceBooked,
-            location: item.location,
-          })
-        }
-      >
-        <View style={styles.messageBox1}>
-          <View style={styles.timeContainer}>
-            {console.log(item.screen)}
-            {item.screen === 'PaymentScreen' ? (
-              <Foundation name="paypal" size={24} color="#ffffff" />
-            ) : item.screen === 'UserNavigation' ? (
-              <MaterialCommunityIcons name="truck" size={24} color="#ffffff" />
-            ) : item.screen === 'userwaiting' ? (
-              <Feather name="search" size={24} color="#ffffff" />
-            )
-            : item.screen === 'OtpVerification' ? (
-              <Feather name="shield" size={24} color="#ffffff" />
-            ) : item.screen === 'TimingScreen' ? (
-              <MaterialCommunityIcons name="hammer" size={24} color="#ffffff" />
-            ) : (
-              <Feather name="alert-circle" size={24} color="#000" />
-            )}
-          </View>
-
-          <View>
-            <Text style={styles.textContainerText}>
-              {item.serviceBooked && item.serviceBooked.length > 0
-                ? item.serviceBooked.map(service => service.serviceName).join(', ')
-                : 'Switch board & Socket repairing'}
-            </Text>
-            <Text style={styles.textContainerTextCommander}>
-              {item.screen === 'PaymentScreen'
-                ? 'Payment in progress'
-                : item.screen === 'UserNavigation'
-                ? 'Commander is on the way'
-                : item.screen === 'OtpVerification'
-                ? 'User is waiting for your help'
-                : item.screen === 'TimingScreen'
-                ? 'Work in progress'
-                : 'Nothing'}
-            </Text>
-          </View>
-
-          <View style={styles.rightIcon}>
-            <Feather name="chevrons-right" size={18} color="#9e9e9e" />
-          </View>
-        </View>
-      </TouchableOpacity>
-    ))}
-  </ScrollView>
-)}
+      )}
 
 
 
@@ -518,7 +458,7 @@ const styles = StyleSheet.create({
   },
   absoluteMessageBox: {
     position: 'absolute',
-    bottom: 8,
+    bottom: 4,
     left: 0,
     right: 0,
   },
@@ -537,8 +477,10 @@ const styles = StyleSheet.create({
     elevation: 3,
     width: screenWidth * 0.9, // Set width to 80% of screen width for peek effect
   },
-
-  
+  startingContainer:{
+    flexDirection:'row',
+    alignItems:'center'
+  },
   messageBox1: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -552,15 +494,15 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
   },
   
   textContainerText: {
-    fontSize: 13,
+    fontSize: 14,
     paddingBottom: 5,
     fontWeight: 'bold',
     color: '#212121',
     marginLeft: 10,
+    width:'95%'
   },
   textContainerTextCommander: {
     fontSize: 12,
