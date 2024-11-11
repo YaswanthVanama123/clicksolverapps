@@ -15,6 +15,8 @@ const WorkerTimer = () => {
   const navigation = useNavigation();
   const [decodedId, setDecodedId] = useState(null);
   const [startTime, setStartTime] = useState(null);
+  const [reasonModalVisible, setReasonModalVisible] = useState(false);
+  const [confirmationModalVisible, setConfirmationModalVisible] = useState(false);
   
   // Create animated values for current and previous seconds
   const animatedValue = useRef(new Animated.Value(0)).current; 
@@ -43,6 +45,23 @@ const WorkerTimer = () => {
       return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
     }, [])
   );
+
+  const workPlaceShift = () => {
+    setReasonModalVisible(true); // Open reason modal when "Work in my place" is clicked
+  };
+
+  const closeReasonModal = () => {
+    setReasonModalVisible(false);
+  };
+
+  const openConfirmationModal = () => {
+    setReasonModalVisible(false);
+    setConfirmationModalVisible(true);
+  };
+
+  const closeConfirmationModal = () => {
+    setConfirmationModalVisible(false);
+  };
 
   const getCurrentTimestamp = (dateString) => {
     const date = dateString ? new Date(dateString) : new Date();
@@ -91,38 +110,38 @@ const WorkerTimer = () => {
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   };
 
-  const workPlaceShift = async () => {
-    try {
-      Alert.alert(
-        "Confirmation",
-        "Are you sure you need to work in your place?",
-        [
-          {
-            text: "Cancel",
-            style: "cancel",
-          },
-          {
-            text: "Yes",
-            onPress: async () => {
+  // const workPlaceShift = async () => {
+  //   try {
+  //     Alert.alert(
+  //       "Confirmation",
+  //       "Are you sure you need to work in your place?",
+  //       [
+  //         {
+  //           text: "Cancel",
+  //           style: "cancel",
+  //         },
+  //         {
+  //           text: "Yes",
+  //           onPress: async () => {
               
-              try {
+  //             try {
               
-                const response = await axios.post(`${process.env.BackendAPI6}/api/add/tracking`, { notification_id: decodedId });
-                console.log("yes pressed",response)
-                if (response.status === 200) {
-                  console.log("Finished");
-                }
-              } catch (error) {
-                console.error("Error posting work shift: ", error);
-              }
-            },
-          },
-        ]
-      );
-    } catch (error) {
-      console.error("Error initiating work shift: ", error);
-    }
-  };
+  //               const response = await axios.post(`${process.env.BackendAPI6}/api/add/tracking`, { notification_id: decodedId });
+  //               console.log("yes pressed",response)
+  //               if (response.status === 200) {
+  //                 console.log("Finished");
+  //               }
+  //             } catch (error) {
+  //               console.error("Error posting work shift: ", error);
+  //             }
+  //           },
+  //         },
+  //       ]
+  //     );
+  //   } catch (error) {
+  //     console.error("Error initiating work shift: ", error);
+  //   }
+  // };
 
   useEffect(() => {
     const startTiming = async () => {

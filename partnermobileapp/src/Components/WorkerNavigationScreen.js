@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   Easing,
   Dimensions,
+  Modal
 } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import EncryptedStorage from 'react-native-encrypted-storage';
@@ -41,6 +42,8 @@ const WorkerNavigationScreen = () => {
   const [addressDetails, setAddressDetails] = useState(null);
   const [titleColor, setTitleColor] = useState('#FFFFFF');
   const [swiped, setSwiped] = useState(false);
+  const [reasonModalVisible, setReasonModalVisible] = useState(false);
+  const [confirmationModalVisible, setConfirmationModalVisible] = useState(false);
 
   useEffect(() => {
     const { encodedId } = route.params;
@@ -189,6 +192,23 @@ const WorkerNavigationScreen = () => {
     navigation.push('OtpVerification', { encodedId: encodedNotificationId });
   };
 
+  const handleCancelModal = () => {
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
+  };
+
+  const openConfirmationModal = () => {
+    setConfirmationModalVisible(true);
+  };
+
+  const closeConfirmationModal = () => {
+    setConfirmationModalVisible(false);
+
+  };
+
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -240,13 +260,79 @@ const WorkerNavigationScreen = () => {
           </Mapbox.ShapeSource>
         )}
       </Mapbox.MapView>
-      <TouchableOpacity style={styles.cancelButton} onPress={openGoogleMaps}>
+      <TouchableOpacity style={styles.cancelButton} onPress={handleCancelBooking}>
         <Text style={styles.cancelText}>Cancel</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.googleMapsButton} onPress={openGoogleMaps}>
         <Text style={styles.googleMapsText}>Google Maps</Text>
         <MaterialCommunityIcons name="navigation-variant" size={20} color="#C1C1C1" />
       </TouchableOpacity>
+      {/* Reason Selection Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={reasonModalVisible}
+        onRequestClose={closeReasonModal}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity onPress={closeReasonModal} style={styles.backButtonContainer}>
+            <AntDesign name="arrowleft" size={20} color="black" />
+          </TouchableOpacity>
+
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>What is the reason for your cancellation?</Text>
+            <Text style={styles.modalSubtitle}>Could you let us know why you're canceling?</Text>
+
+            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
+              <Text style={styles.reasonText}>Found a better price</Text>
+              <AntDesign name="right" size={16} color="#4a4a4a" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
+              <Text style={styles.reasonText}>Wrong work location</Text>
+              <AntDesign name="right" size={16} color="#4a4a4a" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
+              <Text style={styles.reasonText}>Wrong service booked</Text>
+              <AntDesign name="right" size={16} color="#4a4a4a" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
+              <Text style={styles.reasonText}>More time to assign a commander</Text>
+              <AntDesign name="right" size={16} color="#4a4a4a" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
+              <Text style={styles.reasonText}>Others</Text>
+              <AntDesign name="right" size={16} color="#4a4a4a" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Confirmation Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={confirmationModalVisible}
+        onRequestClose={closeConfirmationModal}
+      >
+        <View style={styles.modalOverlay}>
+        <View style={styles.crossContainer}>
+          <TouchableOpacity onPress={closeConfirmationModal} style={styles.backButtonContainer}>
+            <Entypo name="cross" size={20} color="black" />
+          </TouchableOpacity>
+          </View>
+
+          <View style={styles.confirmationModalContainer}>
+            <Text style={styles.confirmationTitle}>Are you sure you want to cancel this ride?</Text>
+            <Text style={styles.confirmationSubtitle}>
+            The user is waiting for your help to solve their issue. Please avoid clicking cancel and assist them as soon as possible
+            </Text>
+
+            <TouchableOpacity style={styles.confirmButton} onPress={closeConfirmationModal}>
+              <Text style={styles.confirmButtonText}>Cancel my service</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {addressDetails && (
         <View style={styles.detailsContainer}>
@@ -471,6 +557,123 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  backButtonContainer: {
+    width:40,
+    height:40,     
+    flexDirection:'column',
+    alignItems:'center',
+    justifyContent:'center',      // Distance from the left side of the screen
+      backgroundColor: 'white', // Background color for the circular container
+      borderRadius: 50,    // Rounds the container to make it circular
+          // Padding to make the icon container larger
+      elevation: 5,        // Elevation for shadow effect (Android)
+      shadowColor: '#000', // Shadow color (iOS)
+      shadowOffset: { width: 0, height: 2 }, // Shadow offset (iOS)
+      shadowOpacity: 0.2,  // Shadow opacity (iOS)
+      shadowRadius: 4,     // Shadow radius (iOS)
+      zIndex: 1,   
+      marginHorizontal:10,        // Ensures the icon is above other elements,
+      marginBottom:5
+  },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'flex-end',
+    },
+    modalContainer: {
+      backgroundColor: 'white',
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: 20,
+      paddingBottom: 30,
+    },
+    backButton: {
+      alignSelf: 'flex-start',
+      marginBottom: 10,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      textAlign:'center',
+      marginBottom: 5,
+      color: '#000',
+    },
+    modalSubtitle: {
+      fontSize: 14,
+      color: '#666',
+      textAlign:'center',
+      marginBottom: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: '#eee',
+      paddingBottom:10
+    },
+    reasonButton: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: '#eee',
+    },
+    reasonText: {
+      fontSize: 16,
+      color: '#333',
+    },
+    closeButton: {
+      marginTop: 15,
+      padding: 10,
+      backgroundColor: '#ddd',
+      borderRadius: 5,
+    },
+    closeText: {
+      fontSize: 16,
+      color: '#555',
+    },
+  
+  
+    crossContainer:{
+      flexDirection:'row',
+      justifyContent:'flex-end'
+    },
+    confirmationModalContainer: {
+      backgroundColor: 'white',
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      paddingTop: 40,
+      paddingBottom: 30,
+      paddingHorizontal: 20,
+      alignItems: 'center',
+    },
+    confirmationTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      textAlign: 'center',
+      paddingBottom: 10,
+      marginBottom:5,
+      color: '#000',
+      borderBottomWidth: 1,
+      borderBottomColor: '#eee',
+    },
+    confirmationSubtitle: {
+      fontSize: 14,
+      color: '#666',
+      textAlign: 'center',
+      marginBottom: 20,
+      paddingBottom:10,
+      paddingTop:10
+    },
+    confirmButton: {
+      backgroundColor: '#FF4500',
+      borderRadius: 40,
+      paddingVertical: 15,
+      paddingHorizontal: 40,
+      alignItems: 'center',
+    },
+    confirmButtonText: {
+      color: 'white',
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
 });
 
 export default WorkerNavigationScreen;

@@ -8,6 +8,7 @@ import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import polyline from '@mapbox/polyline';
+import Entypo from 'react-native-vector-icons/Entypo'
 
 Mapbox.setAccessToken('pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw');
 
@@ -22,6 +23,7 @@ const Navigation = () => {
   const [pin, setPin] = useState('');
   const [serviceArray, setServiceArray] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [confirmationModalVisible, setConfirmationModalVisible] = useState(false);
 
   useEffect(() => {
     const { encodedId } = route.params;
@@ -51,35 +53,37 @@ const Navigation = () => {
     }, [navigation])
   );
 
-  // const handleCancelBooking = useCallback(async () => {
-  //   try {
-  //     const response = await axios.post(
-  //       `${process.env.BACKENDAIPE}/api/user/work/cancel`,
-  //       { notification_id: decodedId }
-  //     );
+  const handleCancelBooking = useCallback(async () => {
+    setConfirmationModalVisible(false);
+    setModalVisible(false)
+    try {
+      const response = await axios.post(
+        `${process.env.BACKENDAIPE}/api/user/work/cancel`,
+        { notification_id: decodedId }
+      );
 
-  //     if (response.status === 200) {
-  //       const cs_token = await EncryptedStorage.getItem('cs_token');
-  //       await axios.post(`${process.env.BACKENDAIPE}/api/user/action`, {
-  //         encodedId: encodedData,
-  //         screen: ''
-  //       }, {
-  //         headers: { Authorization: `Bearer ${cs_token}` }
-  //       });
+      if (response.status === 200) {
+        const cs_token = await EncryptedStorage.getItem('cs_token');
+        await axios.post(`${process.env.BACKENDAIPE}/api/user/action`, {
+          encodedId: encodedData,
+          screen: ''
+        }, {
+          headers: { Authorization: `Bearer ${cs_token}` }
+        });
 
-  //       navigation.dispatch(
-  //         CommonActions.reset({
-  //           index: 0,
-  //           routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }]
-  //         })
-  //       );
-  //     } else {
-  //       Alert.alert('Cancellation failed', 'Your cancellation time of 2 minutes is over.');
-  //     }
-  //   } catch (error) {
-  //     Alert.alert('Error', 'There was an error processing your cancellation.');
-  //   }
-  // }, [decodedId, encodedData, navigation]);
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }]
+          })
+        );
+      } else {
+        Alert.alert('Cancellation failed', 'Your cancellation time of 2 minutes is over.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'There was an error processing your cancellation.');
+    }
+  }, [decodedId, encodedData, navigation]);
 
   useEffect(() => {
     const checkVerificationStatus = async () => {
@@ -231,12 +235,21 @@ const Navigation = () => {
     }
   }, [decodedId]);
 
-  const handleCancelBooking = () => {
+  const handleCancelModal = () => {
     setModalVisible(true);
   };
 
   const closeModal = () => {
     setModalVisible(false);
+  };
+
+  const openConfirmationModal = () => {
+    setConfirmationModalVisible(true);
+  };
+
+  const closeConfirmationModal = () => {
+    setConfirmationModalVisible(false);
+
   };
 
 
@@ -321,7 +334,7 @@ const Navigation = () => {
                     ))}
                   </View>
                 </View>   
-                <TouchableOpacity style={styles.cancelButton} onPress={handleCancelBooking}>
+                <TouchableOpacity style={styles.cancelButton} onPress={handleCancelModal}>
         <Text style={styles.cancelText}>Cancel</Text>
       </TouchableOpacity>
 
@@ -341,31 +354,59 @@ const Navigation = () => {
             {/* Title and Subtitle */}
             <Text style={styles.modalTitle}>What is the reason for your cancellation?</Text>
             <Text style={styles.modalSubtitle}>Could you let us know why you're canceling?</Text>
-
+            
             {/* Cancellation Reasons */}
-            <TouchableOpacity style={styles.reasonButton} onPress={closeModal}>
+            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
               <Text style={styles.reasonText}>Found a better price</Text>
               <AntDesign name="right" size={16} color="#4a4a4a" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.reasonButton} onPress={closeModal}>
+            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
               <Text style={styles.reasonText}>Wrong work location</Text>
               <AntDesign name="right" size={16} color="#4a4a4a" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.reasonButton} onPress={closeModal}>
+            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
               <Text style={styles.reasonText}>Wrong service booked</Text>
               <AntDesign name="right" size={16} color="#4a4a4a" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.reasonButton} onPress={closeModal}>
+            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
               <Text style={styles.reasonText}>More time to assign a commander</Text>
               <AntDesign name="right" size={16} color="#4a4a4a" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.reasonButton} onPress={closeModal}>
+            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
               <Text style={styles.reasonText}>Others</Text>
               <AntDesign name="right" size={16} color="#4a4a4a" />
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
+
+      {/* Confirmation Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={confirmationModalVisible}
+        onRequestClose={closeConfirmationModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.crossContainer}>
+          <TouchableOpacity onPress={closeConfirmationModal} style={styles.backButtonContainer}>
+            <Entypo name="cross" size={20} color="black" />
+          </TouchableOpacity>
+          </View>
+
+          <View style={styles.confirmationModalContainer}>
+            <Text style={styles.confirmationTitle}>Are you sure you want to cancel this Service?</Text>
+            <Text style={styles.confirmationSubtitle}>
+              Please avoid canceling – we’re working to connect you with the best expert to solve your problem.
+            </Text>
+
+            <TouchableOpacity style={styles.confirmButton} onPress={handleCancelBooking}>
+              <Text style={styles.confirmButtonText}>Cancel my service</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
             </View>
           <View style={styles.workerDetailsContainer}>
             <View>
@@ -614,7 +655,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,  // Shadow opacity (iOS)
     shadowRadius: 4,     // Shadow radius (iOS)
     zIndex: 1,   
-    margin:10        // Ensures the icon is above other elements
+    marginHorizontal:10,        // Ensures the icon is above other elements,
+    marginBottom:5
 },
   modalOverlay: {
     flex: 1,
@@ -643,7 +685,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     textAlign:'center',
-    marginBottom: 20,
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    paddingBottom:10
   },
   reasonButton: {
     flexDirection: 'row',
@@ -666,6 +711,51 @@ const styles = StyleSheet.create({
   closeText: {
     fontSize: 16,
     color: '#555',
+  },
+
+
+  crossContainer:{
+    flexDirection:'row',
+    justifyContent:'flex-end'
+  },
+  confirmationModalContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 40,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  confirmationTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    paddingBottom: 10,
+    marginBottom:5,
+    color: '#000',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  confirmationSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+    paddingBottom:10,
+    paddingTop:10
+  },
+  confirmButton: {
+    backgroundColor: '#FF4500',
+    borderRadius: 40,
+    paddingVertical: 15,
+    paddingHorizontal: 40,
+    alignItems: 'center',
+  },
+  confirmButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
