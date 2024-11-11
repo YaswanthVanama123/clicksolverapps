@@ -488,8 +488,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   timeContainer: {
-    width: 50,
-    height: 50,
+    width: 45,
+    height: 45,
     backgroundColor: '#ff5722',
     borderRadius: 50,
     justifyContent: 'center',

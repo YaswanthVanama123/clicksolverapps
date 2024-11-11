@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, StyleSheet, Text, Alert, BackHandler, Image, Dimensions, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, Alert, BackHandler, Image, Dimensions, TouchableOpacity, Modal } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
@@ -21,6 +21,7 @@ const Navigation = () => {
   const [encodedData, setEncodedData] = useState(null);
   const [pin, setPin] = useState('');
   const [serviceArray, setServiceArray] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     const { encodedId } = route.params;
@@ -50,35 +51,35 @@ const Navigation = () => {
     }, [navigation])
   );
 
-  const handleCancelBooking = useCallback(async () => {
-    try {
-      const response = await axios.post(
-        `${process.env.BACKENDAIPE}/api/user/work/cancel`,
-        { notification_id: decodedId }
-      );
+  // const handleCancelBooking = useCallback(async () => {
+  //   try {
+  //     const response = await axios.post(
+  //       `${process.env.BACKENDAIPE}/api/user/work/cancel`,
+  //       { notification_id: decodedId }
+  //     );
 
-      if (response.status === 200) {
-        const cs_token = await EncryptedStorage.getItem('cs_token');
-        await axios.post(`${process.env.BACKENDAIPE}/api/user/action`, {
-          encodedId: encodedData,
-          screen: ''
-        }, {
-          headers: { Authorization: `Bearer ${cs_token}` }
-        });
+  //     if (response.status === 200) {
+  //       const cs_token = await EncryptedStorage.getItem('cs_token');
+  //       await axios.post(`${process.env.BACKENDAIPE}/api/user/action`, {
+  //         encodedId: encodedData,
+  //         screen: ''
+  //       }, {
+  //         headers: { Authorization: `Bearer ${cs_token}` }
+  //       });
 
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }]
-          })
-        );
-      } else {
-        Alert.alert('Cancellation failed', 'Your cancellation time of 2 minutes is over.');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'There was an error processing your cancellation.');
-    }
-  }, [decodedId, encodedData, navigation]);
+  //       navigation.dispatch(
+  //         CommonActions.reset({
+  //           index: 0,
+  //           routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }]
+  //         })
+  //       );
+  //     } else {
+  //       Alert.alert('Cancellation failed', 'Your cancellation time of 2 minutes is over.');
+  //     }
+  //   } catch (error) {
+  //     Alert.alert('Error', 'There was an error processing your cancellation.');
+  //   }
+  // }, [decodedId, encodedData, navigation]);
 
   useEffect(() => {
     const checkVerificationStatus = async () => {
@@ -230,6 +231,15 @@ const Navigation = () => {
     }
   }, [decodedId]);
 
+  const handleCancelBooking = () => {
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
+  };
+
+
   return (
     <View style={styles.container}>
       <Mapbox.MapView style={styles.map}>
@@ -311,11 +321,51 @@ const Navigation = () => {
                     ))}
                   </View>
                 </View>   
-                <View style={styles.cancelbuttonContainer}>
-                  <TouchableOpacity style={styles.cancelButton} onPress={handleCancelBooking}>
-                    <Text style={styles.cancelText}>Cancel</Text>
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity style={styles.cancelButton} onPress={handleCancelBooking}>
+        <Text style={styles.cancelText}>Cancel</Text>
+      </TouchableOpacity>
+
+      {/* Modal for Cancellation Reasons */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity onPress={closeModal} style={styles.backButtonContainer}>
+            <AntDesign name="arrowleft" size={20} color="black" />
+          </TouchableOpacity>
+
+          <View style={styles.modalContainer}>
+            {/* Title and Subtitle */}
+            <Text style={styles.modalTitle}>What is the reason for your cancellation?</Text>
+            <Text style={styles.modalSubtitle}>Could you let us know why you're canceling?</Text>
+
+            {/* Cancellation Reasons */}
+            <TouchableOpacity style={styles.reasonButton} onPress={closeModal}>
+              <Text style={styles.reasonText}>Found a better price</Text>
+              <AntDesign name="right" size={16} color="#4a4a4a" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.reasonButton} onPress={closeModal}>
+              <Text style={styles.reasonText}>Wrong work location</Text>
+              <AntDesign name="right" size={16} color="#4a4a4a" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.reasonButton} onPress={closeModal}>
+              <Text style={styles.reasonText}>Wrong service booked</Text>
+              <AntDesign name="right" size={16} color="#4a4a4a" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.reasonButton} onPress={closeModal}>
+              <Text style={styles.reasonText}>More time to assign a commander</Text>
+              <AntDesign name="right" size={16} color="#4a4a4a" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.reasonButton} onPress={closeModal}>
+              <Text style={styles.reasonText}>Others</Text>
+              <AntDesign name="right" size={16} color="#4a4a4a" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
             </View>
           <View style={styles.workerDetailsContainer}>
             <View>
@@ -534,6 +584,88 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  cancelButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 1,
+    width: 80,
+    height: 35,
+  },
+  cancelText: {
+    fontSize: 13,
+    color: '#4a4a4a',
+    fontWeight: 'bold',
+  },
+  backButtonContainer: {
+  width:40,
+  height:40,     
+  flexDirection:'column',
+  alignItems:'center',
+  justifyContent:'center',      // Distance from the left side of the screen
+    backgroundColor: 'white', // Background color for the circular container
+    borderRadius: 50,    // Rounds the container to make it circular
+        // Padding to make the icon container larger
+    elevation: 5,        // Elevation for shadow effect (Android)
+    shadowColor: '#000', // Shadow color (iOS)
+    shadowOffset: { width: 0, height: 2 }, // Shadow offset (iOS)
+    shadowOpacity: 0.2,  // Shadow opacity (iOS)
+    shadowRadius: 4,     // Shadow radius (iOS)
+    zIndex: 1,   
+    margin:10        // Ensures the icon is above other elements
+},
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 30,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    marginBottom: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign:'center',
+    marginBottom: 5,
+    color: '#000',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign:'center',
+    marginBottom: 20,
+  },
+  reasonButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  reasonText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  closeButton: {
+    marginTop: 15,
+    padding: 10,
+    backgroundColor: '#ddd',
+    borderRadius: 5,
+  },
+  closeText: {
+    fontSize: 16,
+    color: '#555',
   },
 });
 
