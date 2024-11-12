@@ -915,9 +915,6 @@ const getWorkerCashbackDetails = async (req, res) => {
 };
 
 // Function to insert data into the 'relatedservices' table
-
-
-
 const insertRelatedService = async (req, res) => {
   const { service, service_category, related_services } = req.body;
 
@@ -950,10 +947,139 @@ const insertRelatedService = async (req, res) => {
   }
 };
 
+
+
+// const insertTracking = async (req, res) => {
+//   try {
+//     const { notification_id,  } = req.body;
+//     // console.log("inserting tracking",notification_id)
+
+//     // Generate a 4-digit random number for tracking_pin
+//     const trackingPin = Math.floor(1000 + Math.random() * 9000);
+
+//     // Generate a tracking_key: #cs followed by 13 random digits
+//     const trackingKey = `#cs${Math.floor(1000000000000 + Math.random() * 9000000000000)}`;
+
+//     // Set service_status as "Commander collected the service item"
+//     const serviceStatus = "Collected Item";
+
+//     const query = `
+//       WITH selected AS (
+//         SELECT
+//           a.accepted_id,
+//           a.notification_id,
+//           a.user_notification_id,
+//           a.longitude,
+//           a.latitude,
+//           a.worker_id,
+//           a.service_booked,
+//           a.user_id,
+//           u.fcm_token
+//         FROM accepted a
+//         JOIN userfcm u ON a.user_id = u.user_id
+//         WHERE a.notification_id = $1
+//       )
+//       INSERT INTO servicetracking (
+//         accepted_id,
+//         notification_id,
+//         user_notification_id,
+//         longitude,
+//         latitude,
+//         worker_id,
+//         service_booked,
+//         user_id,
+//         created_at,
+//         tracking_pin,
+//         tracking_key,
+//         service_status
+//       )
+//       SELECT
+//         selected.accepted_id,
+//         selected.notification_id,
+//         selected.user_notification_id,
+//         selected.longitude,
+//         selected.latitude,
+//         selected.worker_id,
+//         selected.service_booked,
+//         selected.user_id,
+//         NOW(),
+//         $2,
+//         $3,
+//         $4
+//       FROM selected
+//       RETURNING *,
+//         (SELECT fcm_token FROM selected);
+
+//     `;
+    
+    
+  
+//     const values = [notification_id, trackingPin, trackingKey, serviceStatus];
+
+//     const result = await client.query(query, values);
+
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({ message: "Accepted record not found" });
+//     }
+
+//     const {user_id,service_booked,worker_id} = result.rows[0];
+//     const screen = ""
+//     const encodedId = Buffer.from(notification_id.toString()).toString("base64")
+
+//     await createUserBackgroundAction(user_id, encodedId, screen, service_booked);
+//     await updateWorkerAction(worker_id,screen,screen)
+
+//     const fcmTokens = result.rows.map(row => row.fcm_token).filter(token => token); // Filter out any undefined tokens
+    
+//     if (fcmTokens.length > 0) {
+//       // Create a multicast message object for all tokens
+//       const multicastMessage = {
+//         tokens: fcmTokens, // An array of tokens to send the same message to
+//         notification: {
+//           title: "Click Solver",
+//           body: `Commander collected your Item to repair in his location.`,
+//         },
+//         data: {
+//           notification_id: notification_id.toString(),
+//           screen: 'Home'
+//         },
+//       };
+
+//       try {
+//         // Use sendEachForMulticast to send the same message to multiple tokens
+//         const response = await getMessaging().sendEachForMulticast(multicastMessage);
+
+//         // Log the responses for each token
+//         response.responses.forEach((res, index) => {
+//           if (res.success) {
+//             // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
+//           } else {
+//             console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+//           }
+//         });
+
+//         // console.log('Success Count:', response.successCount);
+//         // console.log('Failure Count:', response.failureCount);
+//       } catch (error) {
+//         console.error('Error sending notifications:', error);
+//       }
+//     } else {
+//       console.error('No FCM tokens to send the message to.');
+//     }
+
+
+
+
+//     res.status(201).json({ message: "Tracking inserted successfully", data: result.rows[0] });
+//   } catch (error) {
+//     console.error("Error inserting tracking: ", error);
+//     res.status(500).json({ message: "Failed to insert tracking", error: error.message });
+//   }
+// };
+
 const insertTracking = async (req, res) => {
   try {
-    const { notification_id } = req.body;
-    // console.log("inserting tracking",notification_id)
+    const { notification_id, details } = req.body; // Add details to the request body
 
     // Generate a 4-digit random number for tracking_pin
     const trackingPin = Math.floor(1000 + Math.random() * 9000);
@@ -992,7 +1118,8 @@ const insertTracking = async (req, res) => {
         created_at,
         tracking_pin,
         tracking_key,
-        service_status
+        service_status,
+        details
       )
       SELECT
         selected.accepted_id,
@@ -1006,16 +1133,14 @@ const insertTracking = async (req, res) => {
         NOW(),
         $2,
         $3,
-        $4
+        $4,
+        $5
       FROM selected
       RETURNING *,
         (SELECT fcm_token FROM selected);
-
     `;
-    
-    
-  
-    const values = [notification_id, trackingPin, trackingKey, serviceStatus];
+
+    const values = [notification_id, trackingPin, trackingKey, serviceStatus, details];
 
     const result = await client.query(query, values);
 
@@ -1023,44 +1148,35 @@ const insertTracking = async (req, res) => {
       return res.status(404).json({ message: "Accepted record not found" });
     }
 
-    const {user_id,service_booked,worker_id} = result.rows[0];
-    const screen = ""
-    const encodedId = Buffer.from(notification_id.toString()).toString("base64")
+    const { user_id, service_booked, worker_id } = result.rows[0];
+    const screen = "";
+    const encodedId = Buffer.from(notification_id.toString()).toString("base64");
 
     await createUserBackgroundAction(user_id, encodedId, screen, service_booked);
-    await updateWorkerAction(worker_id,screen,screen)
+    await updateWorkerAction(worker_id, screen, screen);
 
-    const fcmTokens = result.rows.map(row => row.fcm_token).filter(token => token); // Filter out any undefined tokens
-    
+    const fcmTokens = result.rows.map(row => row.fcm_token).filter(token => token);
+
     if (fcmTokens.length > 0) {
-      // Create a multicast message object for all tokens
       const multicastMessage = {
-        tokens: fcmTokens, // An array of tokens to send the same message to
+        tokens: fcmTokens,
         notification: {
           title: "Click Solver",
           body: `Commander collected your Item to repair in his location.`,
         },
         data: {
           notification_id: notification_id.toString(),
-          screen: 'Home'
+          screen: 'Home',
         },
       };
 
       try {
-        // Use sendEachForMulticast to send the same message to multiple tokens
         const response = await getMessaging().sendEachForMulticast(multicastMessage);
-
-        // Log the responses for each token
         response.responses.forEach((res, index) => {
-          if (res.success) {
-            // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
-          } else {
+          if (!res.success) {
             console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
           }
         });
-
-        // console.log('Success Count:', response.successCount);
-        // console.log('Failure Count:', response.failureCount);
       } catch (error) {
         console.error('Error sending notifications:', error);
       }
@@ -1068,15 +1184,13 @@ const insertTracking = async (req, res) => {
       console.error('No FCM tokens to send the message to.');
     }
 
-
-
-
     res.status(201).json({ message: "Tracking inserted successfully", data: result.rows[0] });
   } catch (error) {
     console.error("Error inserting tracking: ", error);
     res.status(500).json({ message: "Failed to insert tracking", error: error.message });
   }
 };
+
 
 const getWorkerTrackingServices = async (req, res) => {
   try {

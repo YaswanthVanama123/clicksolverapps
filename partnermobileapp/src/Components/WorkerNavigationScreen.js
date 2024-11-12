@@ -193,11 +193,11 @@ const WorkerNavigationScreen = () => {
   };
 
   const handleCancelModal = () => {
-    setModalVisible(true);
+    setReasonModalVisible(true);
   };
 
-  const closeModal = () => {
-    setModalVisible(false);
+  const closeReasonModal = () => {
+    setReasonModalVisible(false);
   };
 
   const openConfirmationModal = () => {
@@ -260,7 +260,7 @@ const WorkerNavigationScreen = () => {
           </Mapbox.ShapeSource>
         )}
       </Mapbox.MapView>
-      <TouchableOpacity style={styles.cancelButton} onPress={handleCancelBooking}>
+      <TouchableOpacity style={styles.cancelButton} onPress={handleCancelModal}>
         <Text style={styles.cancelText}>Cancel</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.googleMapsButton} onPress={openGoogleMaps}>
