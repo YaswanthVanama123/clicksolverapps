@@ -504,22 +504,25 @@ const serviceTrackingUpdateStatus = async (req, res) => {
 
 const getWorkerDetails = async (notificationId) => {
   try {
-      const query = `
-          SELECT 
-              accepted.service_booked, 
-              workersverified.name, 
-              usernotifications.area, 
-              usernotifications.city, 
-              usernotifications.pincode
-          FROM 
-              accepted
-          INNER JOIN 
-              workersverified ON accepted.worker_id = workersverified.worker_id
-          INNER JOIN 
-              usernotifications ON accepted.user_notification_id = usernotifications.user_notification_id
-          WHERE 
-              accepted.notification_id = $1;
-      `;
+    const query = `
+    SELECT 
+        accepted.service_booked, 
+        workersverified.name, 
+        usernotifications.area, 
+        usernotifications.city, 
+        usernotifications.pincode,
+        workerskills.profile -- Assuming 'skill_name' is a column in 'workskills' for skill description
+    FROM 
+        accepted
+    INNER JOIN 
+        workersverified ON accepted.worker_id = workersverified.worker_id
+    INNER JOIN 
+        usernotifications ON accepted.user_notification_id = usernotifications.user_notification_id
+    INNER JOIN 
+        workerskills ON accepted.worker_id = workerskills.worker_id -- Join workerskills table on worker_id
+    WHERE 
+        accepted.notification_id = $1;
+`;
 
       const result = await client.query(query, [notificationId]);
 
@@ -527,7 +530,7 @@ const getWorkerDetails = async (notificationId) => {
           return { error: "No worker details found for the provided notification ID." };
       }
 
-      const { service_booked, name, area, city, pincode } = result.rows[0];
+      const { service_booked, name, area, city, pincode, profile } = result.rows[0];
       let gstAmount = 0;
       let cgstAmount = 0;
       let discountAmount = 0;
@@ -548,11 +551,12 @@ const getWorkerDetails = async (notificationId) => {
       }, 0);
 
       const fetchedFinalTotalAmount = calculatePayment(fetchedTotalAmount);
-
+      console.log(profile)
       return { 
           service_booked, 
           name, 
           area, 
+          profile,
           city, 
           pincode,
           gstAmount, 
@@ -3822,9 +3826,6 @@ const userNavigationCancel = async (req, res) => {
   }
 };
 
-
-
-
 // const userNavigationCancel = async (req, res) => {
 //   const { notification_id } = req.body;
 //   const encodedUserNotificationId = Buffer.from(notification_id.toString()).toString("base64");
@@ -3958,7 +3959,136 @@ const userNavigationCancel = async (req, res) => {
 //   }
 // };
 
+const workerNavigationCancel = async (req, res) => {
+  const { notification_id } = req.body;
+  const encodedUserNotificationId = Buffer.from(notification_id.toString()).toString("base64");
 
+  try {
+    // Begin a transaction
+    await client.query('BEGIN');
+
+    // First query: UPDATE and INSERT operations
+    const combinedQuery = await client.query(`
+      WITH updated AS (
+        UPDATE accepted
+        SET user_navigation_cancel_status = 'workercanceled'
+        WHERE notification_id = $1
+        RETURNING 
+          accepted_id, 
+          notification_id, 
+          user_id, 
+          user_notification_id, 
+          longitude, 
+          latitude, 
+          created_at, 
+          worker_id, 
+          complete_status,
+          time
+      ),
+      inserted AS (
+        INSERT INTO completenotifications (
+          accepted_id, 
+          notification_id, 
+          user_id, 
+          user_notification_id, 
+          longitude, 
+          latitude, 
+          created_at, 
+          worker_id, 
+          complete_status,
+          service_booked, 
+          time
+        )
+        SELECT 
+          accepted_id, 
+          notification_id, 
+          user_id, 
+          user_notification_id, 
+          longitude, 
+          latitude, 
+          created_at, 
+          worker_id, 
+          'cancel', 
+          to_jsonb('service_booked'::text), 
+          time
+        FROM updated
+        RETURNING user_id, notification_id, service_booked
+      )
+      SELECT i.user_id, f.fcm_token
+      FROM inserted i
+      JOIN "user" w ON w.user_id = i.user_id
+      JOIN userfcm f ON f.user_id = w.user_id;
+    `, [notification_id]);
+
+    // Second query: DELETE operation
+    const deleteResult = await client.query(`
+      DELETE FROM accepted
+      WHERE notification_id = $1
+      RETURNING *;
+    `, [notification_id]);
+
+    // Commit the transaction
+    await client.query('COMMIT');
+
+    if (combinedQuery.rowCount > 0) {
+      const userId = combinedQuery.rows[0].user_id;
+      const serviceBooked = combinedQuery.rows[0].service_booked;
+
+      const fcmTokens = combinedQuery.rows.map(row => row.fcm_token);
+
+      if (fcmTokens.length > 0) {
+        // Create the multicast message object for FCM tokens
+        const multicastMessage = {
+          tokens: fcmTokens,
+          notification: {
+            title: "Click Solver",
+            body: `Sorry for this, User cancelled the Service.`,
+          },
+          data: {
+            notification_id: encodedUserNotificationId,
+            screen: 'Home',
+          },
+        };
+
+        try {
+          // Send the message to multiple tokens using sendEachForMulticast
+          const response = await getMessaging().sendEachForMulticast(multicastMessage);
+
+          // Log the responses for each token
+          response.responses.forEach((res, index) => {
+            if (res.success) {
+              // Optionally log successful sends
+              // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
+            } else {
+              console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+            }
+          });
+        } catch (error) {
+          console.error('Error sending notifications:', error);
+        }
+
+        const screen = "";
+        const encodedId = Buffer.from(notification_id.toString()).toString("base64");
+        await createUserBackgroundAction(userId, encodedId, screen, serviceBooked);
+
+        return res.status(200).json({ message: "Cancellation successful" });
+      } else {
+        const screen = "";
+        const encodedId = Buffer.from(notification_id.toString()).toString("base64");
+        await createUserBackgroundAction(userId, encodedId, screen, serviceBooked);
+        console.error('No FCM tokens to send the message to.');
+        return res.status(200).json({ message: "Cancellation successful, but no FCM tokens found." });
+      }
+    } else {
+      return res.status(205).json({ message: "Cancellation not performed. Either invalid ID or already canceled." });
+    }
+  } catch (error) {
+    // Rollback the transaction in case of error
+    await client.query('ROLLBACK');
+    console.error('Error processing request:', error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
 
 
 const workCompletedRequest = async (req, res) => {
@@ -7814,6 +7944,7 @@ module.exports = {
   getWorkerEarnings,
   getUserAndWorkerLocation,
   userNavigationCancel,
+  workerNavigationCancel,
   workerCompleteSignUp,
   checkOnboardingStatus,
   getServicesPhoneNumber,

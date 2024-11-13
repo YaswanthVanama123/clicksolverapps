@@ -162,6 +162,55 @@ const WorkerNavigationScreen = () => {
     }
   };
 
+  const handleCancelBooking = async () => {
+    setConfirmationModalVisible(false);
+    setReasonModalVisible(false);
+  
+    try {
+      const response = await axios.post(
+        `${process.env.BackendAPI6}/api/worker/work/cancel`,
+        { notification_id: decodedId }
+      );
+  
+      console.log(response)
+      if (response.status === 200) {
+        const pcs_token = await EncryptedStorage.getItem('pcs_token'); 
+  
+        if (!pcs_token) {
+          Alert.alert('Error', 'User token not found.');
+          return;
+        }
+  
+        // Send data to the backend
+        await axios.post(
+          `${process.env.BackendAPI6}/api/worker/action`, 
+          {
+            encodedId: '',
+            screen: ''
+          }, 
+          { 
+            headers: {
+              Authorization: `Bearer ${pcs_token}`
+            }
+          }
+        );
+  
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }]
+          })
+        );
+      } else {
+        Alert.alert('Cancellation failed', 'Your cancellation time of 2 minutes is over.');
+      }
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+      Alert.alert('Error', 'There was an error processing your cancellation.');
+    }
+  };
+  
+
   useEffect(() => {
     if (locationDetails.startPoint && locationDetails.endPoint) {
       const fetchRoute = async () => {
@@ -191,7 +240,7 @@ const WorkerNavigationScreen = () => {
     const encodedNotificationId = btoa(decodedId);
     navigation.push('OtpVerification', { encodedId: encodedNotificationId });
   };
-
+ 
   const handleCancelModal = () => {
     setReasonModalVisible(true);
   };
@@ -284,19 +333,19 @@ const WorkerNavigationScreen = () => {
             <Text style={styles.modalSubtitle}>Could you let us know why you're canceling?</Text>
 
             <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
-              <Text style={styles.reasonText}>Found a better price</Text>
+              <Text style={styles.reasonText}>Accidentally clicked</Text>
               <AntDesign name="right" size={16} color="#4a4a4a" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
-              <Text style={styles.reasonText}>Wrong work location</Text>
+              <Text style={styles.reasonText}>Health Issue</Text>
               <AntDesign name="right" size={16} color="#4a4a4a" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
-              <Text style={styles.reasonText}>Wrong service booked</Text>
+              <Text style={styles.reasonText}>Another Work get</Text>
               <AntDesign name="right" size={16} color="#4a4a4a" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
-              <Text style={styles.reasonText}>More time to assign a commander</Text>
+              <Text style={styles.reasonText}>Problem to my vehicle</Text>
               <AntDesign name="right" size={16} color="#4a4a4a" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
@@ -322,12 +371,12 @@ const WorkerNavigationScreen = () => {
           </View>
 
           <View style={styles.confirmationModalContainer}>
-            <Text style={styles.confirmationTitle}>Are you sure you want to cancel this ride?</Text>
+            <Text style={styles.confirmationTitle}>Are you sure you want to cancel this Service?</Text>
             <Text style={styles.confirmationSubtitle}>
             The user is waiting for your help to solve their issue. Please avoid clicking cancel and assist them as soon as possible
             </Text>
 
-            <TouchableOpacity style={styles.confirmButton} onPress={closeConfirmationModal}>
+            <TouchableOpacity style={styles.confirmButton} onPress={handleCancelBooking}>
               <Text style={styles.confirmButtonText}>Cancel my service</Text>
             </TouchableOpacity>
           </View>

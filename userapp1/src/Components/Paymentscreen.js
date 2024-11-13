@@ -1,21 +1,43 @@
+// Payment.js
+
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity, ScrollView, BackHandler, Linking } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, TextInput, Image, BackHandler } from "react-native";
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, CommonActions, useFocusEffect } from '@react-navigation/native';
 import axios from "axios";
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import FontAwesome6 from 'react-native-vector-icons/FontAwesome6'
+import Entypo from 'react-native-vector-icons/Entypo'
 
 const Payment = ({ route }) => {
+
     const [paymentMethod, setPaymentMethod] = useState('');
+    
     const [couponCode, setCouponCode] = useState('');
     const [totalAmount, setTotalAmount] = useState(0);
     const [gstAmount, setGstAmount] = useState(0);
     const [cgstAmount, setCgstAmount] = useState(0);
     const [cashback, setCashback] = useState(0);
     const [grandTotal, setGrandTotal] = useState(0);
-    const [paymentDetails, setPaymentDetails] = useState({});
     const navigation = useNavigation();
     const [serviceArray, setServiceArray] = useState([]);
     const { encodedId } = route.params;
+    const [vocherModal, setVocherModal] = useState(false)
+    const [paymentModal,setPaymentModal] = useState(false)
+    const [isFocused, setIsFocused] = useState(false);
+
+    const [value,setValue] = useState("")
+    const [paymentDetails, setPaymentDetails] = useState({
+        name: 'Hanitha',
+        profile: 'https://i.postimg.cc/mZnDzdqJ/IMG-20240929-WA0024.jpg',
+        date: 'October 09, 2024',
+        services: ['AC repairing', 'AC repairing', 'AC repairing'],
+        area: '2-142 RTC workshop road, Bhavanipuram, Vijayawada 521403',
+        acCost: 500,
+        gst: 25,
+        cgst: 25,
+        cashback: -25,
+        grandTotal: 525,
+    });
 
     useEffect(() => {
         if (encodedId) {
@@ -29,23 +51,27 @@ const Payment = ({ route }) => {
             const response = await axios.post(`${process.env.BACKENDAIPE}/api/payment/details`, {
                 notification_id: decodedId,
             });
-            const { start_time, end_time, time_worked, service_booked, name, area, city, pincode, gstAmount, cgstAmount, discountAmount, fetchedFinalTotalAmount } = response.data;
+            const { start_time, end_time, time_worked, service_booked, name, area, city, pincode, gstAmount, cgstAmount, discountAmount, fetchedFinalTotalAmount, profile } = response.data;
 
             const startTime = formatTime(start_time);
             const endTime = formatTime(end_time);
             const timeWorked = convertTimeStringToReadableFormat(time_worked);
             const completedTime = convertISODateToReadableFormat(end_time);
+            
+            console.log(response.data)
 
             setPaymentDetails({
                 start_time: startTime,
                 end_time: endTime,
                 time_worked: timeWorked,
-                completedTime,
+                date: completedTime,
                 city,
                 area,
-                pincode,
-                name
-            });
+                pincode,   
+                name, 
+                profile
+            }); 
+            
             setGstAmount(gstAmount);
             setCgstAmount(cgstAmount);
             setCashback(discountAmount);
@@ -106,17 +132,6 @@ const Payment = ({ route }) => {
         }
     };
 
-    const openPhonePeScanner = useCallback(() => {
-        const url = 'phonepe://scan';
-        Linking.openURL(url)
-            .then(() => {
-                console.log('PhonePe scanner opened successfully');
-            })
-            .catch((err) => {
-                console.error('Failed to open PhonePe scanner:', err);
-                Linking.openURL('https://play.google.com/store/apps/details?id=com.phonepe.app');
-            });
-    }, []);
 
     const handlePayment = useCallback(async () => {
         try {
@@ -143,239 +158,255 @@ const Payment = ({ route }) => {
         }
     }, [encodedId, grandTotal, paymentMethod, navigation]);
 
+    const toggleVocher = () => {
+        setVocherModal(!vocherModal)
+    }
+
+    const togglePayment = () => {
+        setPaymentModal(!paymentModal)
+    }
+
+    const openPhonePeScanner = () => {
+        const url = 'phonepe://scan';
+        Linking.openURL(url).catch(() => {
+            Linking.openURL('https://play.google.com/store/apps/details?id=com.phonepe.app');
+        });
+    };
+
     return (
+        <View style={styles.mainContainer}>
         <ScrollView style={styles.container}>
+            {/* Service Summary Section */}
             <View style={styles.header}>
-                <View>
-                    <Text style={styles.serviceId}>Service #1293087879</Text>
-                    <Text style={styles.duration}>Duration, {paymentDetails.time_worked}</Text>
+                <FontAwesome6 name="arrow-left-long" size={20} color="#212121" />
+                <Text style={styles.headerTitle}>Payment Screen</Text>
+            </View>
+            <View style={styles.serviceSummary}>
+            <Text style={styles.summaryTitle}>Service Summary</Text>
+                <View style={styles.profileContainer}>
+                    <Image source={{uri: paymentDetails.profile}} style={styles.profileImage}/>
+                    <View>
+                        <Text style={styles.nameText}>{paymentDetails.name}</Text>
+                        <Text style={styles.dateText}>{paymentDetails.date}</Text>
+                    </View>
                 </View>
-                <TouchableOpacity>
-                    <Text style={styles.helpText}>HELP</Text>
+                <View style={styles.detailsBox}>
+                    <View style={styles.rowContainer}>
+                        <View>
+                            <Text style={styles.detailsTitle}>Commander Name</Text>
+                            <Text style={styles.commanderName}>{paymentDetails.name}</Text>
+                        </View>
+                        <View>
+                            <Text style={styles.detailsTitle}>Services</Text>
+                            {serviceArray.map((service, index) => (
+                                <Text key={index} style={styles.serviceName}>{service.serviceName}</Text>
+                            ))}
+                        </View>
+                    </View>
+                    <Text style={styles.detailsTitle}>Location</Text>
+                    <Text style={styles.locationText}>{paymentDetails.area}</Text>
+                </View>
+            </View>
+
+            {/* Payment Summary Section */}
+            <View style={styles.paymentSummary}>
+                <View style={styles.paymentSummaryContainer}>
+                    <Text style={styles.summaryTitle}>Payment Summary</Text>
+                    <TouchableOpacity onPress={togglePayment}>
+                            <Entypo name="chevron-small-right" size={20} color="#d5d5d5" />
+                    </TouchableOpacity>
+                </View>
+                {paymentModal ? (    <>
+        <View style={styles.breakdownColumnContainer}>
+            {serviceArray.map((service, index) => (
+                <View key={index} style={styles.breakdownContainer}> 
+                 
+                    <Text style={styles.breakdownItem}>{service.serviceName}</Text>
+                    <Text style={styles.breakdownPrice}>₹ {service.cost.toFixed(2)}</Text>
+                </View>
+            ))}
+        </View>
+        <View style={styles.breakdownContainer}>
+            <Text style={styles.breakdownItem}>GST (5%)</Text>
+            <Text style={styles.breakdownPrice}>₹ {gstAmount.toFixed(2)}</Text>
+        </View>
+        <View style={styles.breakdownContainer}>
+            <Text style={styles.breakdownItem}>CGST (5%)</Text>
+            <Text style={styles.breakdownPrice}>₹ {cgstAmount.toFixed(2)}</Text>
+        </View>
+        <View style={styles.breakdownContainer}>
+            <Text style={styles.breakdownItem}>Cashback</Text>
+            <Text style={styles.breakdownPrice}>- ₹ {cashback.toFixed(2)}</Text>
+        </View>
+        <View style={styles.separatorLine} />
+        <View style={styles.grandTotalContainer}>
+            <Text style={styles.paidViaText}>Paid Via Scan</Text>
+            <Text style={styles.grandTotalText}>Grand Total ₹ {grandTotal.toFixed(2)}</Text>
+        </View>
+    </>) : <>
+                <View style={styles.paymentSummaryContainer}>
+                    <View style={styles.HideContainer}>
+                        <View style={styles.iconContainer}>
+                            <FontAwesome6 name="indian-rupee-sign" size={15} color="#FFFFFF" />
+                        </View>
+                        <View>
+                            <Text style={styles.payText}>To Pay ₹ {grandTotal}</Text>
+                        </View>
+                    </View>
+
+                </View>
+                </>
+}
+ 
+            </View>
+
+            {/* Voucher Section */}
+            <View style={styles.voucherContainer} >
+                <View style={styles.backIconContainer}>
+                    <View style={styles.voucherIconContainer}>
+                        <Icon name="ticket-outline" size={24} color="#6E6E6E" />
+                        <Text style={styles.voucherText}>Add Coupon to get cashback</Text>
+                    </View>
+                    <TouchableOpacity onPress={toggleVocher}>
+                        <Entypo name="chevron-small-right" size={20} color="#d5d5d5" />
+                    </TouchableOpacity>
+                </View>
+                {vocherModal && (
+                    <View style={styles.vocherAddContainer}>
+                        <View style={styles.inputContainer}>
+                        <TextInput
+                            style={[styles.input, isFocused ? styles.inputFocused : styles.inputUnfocused]}
+                            value={value}
+                            onChangeText={(text) => setValue(text)}
+                            placeholder="Enter voucher code"
+                            placeholderTextColor="#A0A0A0"
+                            onFocus={() => setIsFocused(true)}
+                            onBlur={() => setIsFocused(false)}
+                        />
+                        <TouchableOpacity
+                            style={[
+                                styles.applyButton,
+                                value ? styles.applyButtonActive : styles.applyButtonInactive
+                            ]}
+                            disabled={!value}
+                            onPress={() => console.log("Apply Voucher")}
+                        >
+                            <Text
+                                style={[
+                                    styles.applyButtonText,
+                                    value ? styles.applyButtonTextActive : styles.applyButtonTextInactive
+                                ]}
+                            >
+                                {value ? "APPLY" : "APPLY"}
+                            </Text>
+                        </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
+
+            </View>
+            <View style={styles.noticeTextContainer}>
+                        <Icon name="alert-circle-outline" size={16} color="#212121" />
+                        <Text style={styles.noticeText}>Spare parts are not included in this payment</Text>
+                    </View>
+
+
+            {/* Pay Button */}
+
+        </ScrollView>
+            {/* Notice Section */}
+            <View style={styles.buttonAmmountContainer}>
+                 <View>
+                    <Text style={styles.serviceCostText}>Service cost</Text>
+                    <Text style={styles.cost}>₹ {grandTotal}</Text>
+                </View>
+                <TouchableOpacity style={styles.payButton} onPress={openPhonePeScanner}>
+                    <Text style={styles.payButtonText}>Pay Now</Text>
                 </TouchableOpacity>
             </View>
-
-            <View style={styles.locationContainer}>
-                <Icon name="map-marker" size={24} color="#4a4a4a" />
-                <View style={{ marginLeft: 8 }}>
-                    <Text style={styles.locationTitle}>{paymentDetails.area}</Text>
-                    
-                </View>
-            </View>
-
-            <View style={styles.timeContainer}>
-                <Text style={styles.timeText}>{paymentDetails.start_time}</Text>
-                <View style={styles.dottedLine} />
-                <Text style={styles.timeText}>{paymentDetails.end_time}</Text>
-                <View style={styles.horizantalLine} />
-            </View>
-
-            <View style={styles.completionContainer}>
-                <Icon name="check-circle-outline" size={20} color="#2DA44E" />
-                <Text style={styles.completionText}>
-                    Service completed on {paymentDetails.completedTime}, {paymentDetails.end_time} by {paymentDetails.name}
-                </Text>
-            </View>
-
-            <View style={styles.detailsContainer}>
-                <Text style={styles.detailsTitle}>DETAILS</Text>
-            </View>
-            <View style={styles.paymentDetails}>
-                {serviceArray.map((service) => (
-                    <View style={styles.breakdownContainer} key={service.id}>
-                        <Text style={styles.breakdownItem}>
-                            {typeof service.serviceName === 'string' ? service.serviceName : 'Service Name Unavailable'}
-                        </Text>
-                        <Text style={styles.breakdownPrice}>
-                            {typeof service.cost === 'number' ? `₹${service.cost.toFixed(2)}` : 'Cost Unavailable'}
-                        </Text>
-                    </View>
-                ))}
-
-                <View style={styles.breakdownContainer}>
-                    <Text style={styles.breakdownItem}>GST (5%)</Text>
-                    <Text style={styles.breakdownPrice}>₹{gstAmount.toFixed(2)}</Text>
-                </View>
-
-                <View style={styles.breakdownContainer}>
-                    <Text style={styles.breakdownItem}>CGST (5%)</Text>
-                    <Text style={styles.breakdownPrice}>₹{cgstAmount.toFixed(2)}</Text>
-                </View>
-
-                <View style={styles.breakdownContainer}>
-                    <Text style={styles.breakdownItem}>Cashback</Text>
-                    <Text style={styles.breakdownPrice}>-₹{cashback.toFixed(2)}</Text>
-                </View>
-
-                <View style={styles.horizantalLastLine} />
-            </View>
-
-            <View style={styles.paymentMethod}>
-                <View style={styles.serviceRow}>
-                    <Icon name="line-scan" size={20} color="#4F4F4F" />
-                    <Text style={styles.paymentText}>Paid Via Scan</Text>
-                </View>
-                <Text style={styles.grandTotal}>Grand Total ₹{grandTotal.toFixed(2)}</Text>
-            </View>
-
-            <View style={styles.noticeContainer}>
-                <Icon name="information-outline" size={16} color="#6E6E6E" />
-                <Text style={styles.noticeText}>
-                    Spare parts are not included in this payment
-                </Text>
-            </View>
-
-            <TouchableOpacity style={styles.payButton} onPress={openPhonePeScanner}>
-                <Text style={styles.payButtonText}>PAY</Text>
-            </TouchableOpacity>
-        </ScrollView>
+    </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#FFFFFF',
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 16,
-        marginTop: 10,
-        backgroundColor: '#FFFFFF',
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.3,
-                shadowRadius: 4,
-            },
-            android: { elevation: 1 },
-        }),
-    },
-    serviceId: {
-        fontWeight: 'bold',
-        fontSize: 16,
-        color: '#212121',
-    },
-    duration: {
-        color: '#4a4a4a',
-    },
-    helpText: {
-        color: '#ff4500',
-        fontWeight: '400',
-    },
-    locationContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        width:'95%',
-        padding: 16,
-    },
-    locationTitle: {
-        fontWeight: '400',
-        fontSize: 12,
-        color: '#4a4a4a',
-    },
-    locationSubText: {
-        color: '#6E6E6E',
-    },
-    timeContainer: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-    },
-    timeText: {
-        fontSize: 16,
-        color: '#4a4a4a',
-    },
-    dottedLine: {
-        height: 20,
-        borderLeftWidth: 1,
-        borderColor: '#6E6E6E',
-        marginVertical: 4,
-    },
-    horizantalLine: {
-        height: 1,
-        backgroundColor: '#9e9e9e',
-        marginVertical: 10,
-    },
-    completionContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        marginBottom: 10
-    },
-    completionText: {
-        marginLeft: 8,
-        color: '#4a4a4a',
-    },
-    detailsContainer: {
-        backgroundColor: '#f5f5f5',
-        padding: 16,
-    },
-    paymentDetails: {
-        padding: 16,
-    },
-    detailsTitle: {
-        fontWeight: 'bold',
-        fontSize: 16,
-        color: '#4a4a4a',
-    },
-    breakdownContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 8,
-    },
-    breakdownItem: {
-        color: '#6E6E6E',
-    },
-    breakdownPrice: {
-        fontWeight: 'bold',
-        color: '#212121',
-    },
-    horizantalLastLine: {
-        height: 1,
-        backgroundColor: '#9e9e9e',
-    },
-    paymentMethod: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        flexDirection: 'row',
-        justifyContent: 'space-between'
-    },
-    serviceRow:{
-        flexDirection:'row',
-        alignItems:'center'
-    },
-    paymentText: {
-        marginLeft: 8,
-        color: '#6E6E6E',
-    },
-    grandTotal: {
-        fontWeight: 'bold',
-        color: '#212121',
-    },
-    noticeContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-    },
-    noticeText: {
-        marginLeft: 8,
-        color: '#6E6E6E',
-    },
-    payButton: {
-        backgroundColor: '#ff4500',
+    mainContainer: {flex:1},
+    iconContainer:{backgroundColor:'#ff4500', width:30, height:30, flexDirection:'column', alignItems:'center', justifyContent:'center',borderRadius:15},
+    container: { flex: 1, backgroundColor: '#F5F5F5' },
+    header:{padding:10, flexDirection:'row',gap:15, alignItems:'center'},
+    headerTitle:{color:'#212121',fontWeight:'bold',fontSize:16 },
+    serviceSummary: {  padding: 16, backgroundColor: '#FFF', margin: 16, borderRadius: 10 },
+    nameText: { fontSize: 18, fontWeight: 'bold', marginTop: 8, color: '#212121' },
+    dateText: { color: '#6E6E6E', marginBottom: 16 },
+    detailsBox: { backgroundColor: '#F9F9F9', padding: 10, borderRadius: 8, width: '100%' },
+    detailsTitle: { fontWeight: 'bold', color: '#4a4a4a', marginTop: 10 },
+    paymentSummary: { backgroundColor: '#FFF', margin: 16, padding: 16, borderRadius: 10 },
+    summaryTitle: { fontWeight: 'bold', fontSize: 16, color: '#4a4a4a', marginBottom: 10 },
+    breakdownColumnContainer:{flexDirection:'column'},
+    breakdownContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+    breakdownItem: { color: '#6E6E6E' },
+    breakdownPrice: { fontWeight: 'bold', color: '#212121' },
+    separatorLine: { height: 1, backgroundColor: '#EEE', marginVertical: 10 },
+    grandTotalContainer: { flexDirection: 'row', justifyContent: 'space-between' },
+    paidViaText: { color: '#4a4a4a', fontWeight: '500' },
+    grandTotalText: { fontWeight: 'bold', fontSize: 16, color: '#212121' },
+    voucherContainer: { backgroundColor: '#FFF', padding: 16, margin: 16, borderRadius: 10, marginBottom:0 },
+    backIconContainer:{flexDirection:'row',justifyContent:'space-between'},
+    voucherIconContainer: {flexDirection:'row', alignItems:'center' },
+    voucherText: { marginLeft: 8, color: '#6E6E6E' },
+    noticeContainer: { flexDirection: 'column', alignItems: 'center', backgroundColor: '#ff4500',  borderTopLeftRadius: 10, borderTopRightRadius:10 },
+    noticeText: { marginLeft: 8, color: '#212121' },
+    payButton: { backgroundColor: '#ff4500', padding: 16, borderRadius: 25, alignItems: 'center' },
+    payButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: 15 },
+    commanderName: {color:'#212121'},
+    profileImage:{height:50, width:50, borderRadius:25},
+    serviceName: {color:'#212121'},
+    locationText:{color:'#212121'},
+    rowContainer:{flexDirection:'row',justifyContent:'space-between'},
+    profileContainer:{flexDirection:'row',alignItems:'center', gap:10},
+    applyContainer: {backgroundColor:"#212121", padding:10, borderRadius:5, flexDirection:'row', alignItems:'center',justifyContent:'center'},
+   
+    vocherAddContainer: {flexDirection:'row',justifyContent:'space-around', marginTop:10},
+    buttonAmmountContainer: {backgroundColor:'#FFFFFF',width:'100%',flexDirection:'row',padding:16,borderTopLeftRadius:15, borderTopRightRadius:15, justifyContent:'space-between',elevation:2},
+    vocherAddContainer: {
         margin: 16,
-        paddingVertical: 12,
-        borderRadius: 8,
+    },
+    HideContainer:{flexDirection:'row',gap:5,alignItems:'center'},
+    payText:{color:'#212121'},
+
+    paymentSummaryContainer:{flexDirection:'row',justifyContent:'space-between',marginBottom:10},
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E0E0E0',
+        borderRadius: 5,
+        overflow: 'hidden',
+    },
+    input: {
+        height: 40,
+        flex: 1,
+        paddingHorizontal: 10,
+        color: '#212121',
+    },
+    applyButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 15,
+        borderTopRightRadius: 5,
+        borderBottomRightRadius: 5,
+        justifyContent: 'center',
         alignItems: 'center',
     },
-    payButtonText: {
-        color: '#FFFFFF',
-        fontWeight: 'bold',
-        fontSize: 16,
+    applyButtonText: {
+        color: '#9e9e9e',
+        fontWeight:'bold',
+        fontSize:13
     },
+    applyButtonTextActive:{color:'#ff4500'},
+      noticeTextContainer:{
+        flexDirection:'row', alignItems:"center", gap:5,margin:15
+      },
+      serviceCostText:{color:'#212121',fontSize:14},
+      cost:{color:'#212121', fontWeight:'bold',fontSize:15}
 });
 
 export default Payment;

@@ -115,7 +115,8 @@ const {
   getWorkersPendingCashback,
   getWorkerCashbackDetails,
   workerCashbackPayed,
-  userCompleteSignUp
+  userCompleteSignUp,
+  workerNavigationCancel
 } = require("./controller.js");
 
 const router = express.Router();
@@ -293,7 +294,7 @@ router.post('/payment/details', async (req, res) => {
       return res.status(404).json({ message: workerDetails.error });
   }
 
-  const { name, area, city, pincode, service_booked, gstAmount, cgstAmount, discountAmount, fetchedFinalTotalAmount } = workerDetails;
+  const { name, area, city, pincode, service_booked, gstAmount, cgstAmount, discountAmount, fetchedFinalTotalAmount, profile } = workerDetails;
 
   res.json({
       start_time,
@@ -308,7 +309,8 @@ router.post('/payment/details', async (req, res) => {
       gstAmount,
       cgstAmount,
       discountAmount,
-      fetchedFinalTotalAmount
+      fetchedFinalTotalAmount,
+      profile
   });
 });
 
@@ -567,6 +569,8 @@ router.post("/user/tryping/cancel", userCancelNavigation);
 
 // Define the route for cancelling the navigation
 router.post("/user/work/cancel", userNavigationCancel);
+
+router.post("/worker/work/cancel", workerNavigationCancel);
 
 router.post("/registration/status",authenticateWorkerToken,registrationStatus);
 
