@@ -11,6 +11,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Feather from 'react-native-vector-icons/Feather';
 import { Calendar } from 'react-native-calendars';
@@ -25,12 +26,13 @@ const DashboardScreen = () => {
   const [endDate, setEndDate] = useState(null);
   const [greeting, setGreeting] = useState('');
   const [greetingIcon, setGreetingIcon] = useState(null);
+  const navigation = useNavigation()
 
   const dashboardItems = [
-    { id: 1, label: 'Service Tracking', icon: 'chart-bar', color: '#ff4500' },
-    { id: 2, label: 'Worker Approval Pendings', icon: 'user-check', color: '#ff4500' },
-    { id: 3, label: 'Pending Cashback', icon: 'tag', color: '#ff4500' },
-    { id: 4, label: 'Pending Balance', icon: 'wallet', color: '#ff4500' },
+    { id: 1, label: 'Service Tracking', icon: 'chart-bar', color: '#ff4500', screen:'AdministratorAllTrackings' },
+    { id: 2, label: 'Worker Approval Pendings', icon: 'user-check', color: '#ff4500', screen:'ApprovalPendingItems' },
+    { id: 3, label: 'Pending Cashback', icon: 'tag', color: '#ff4500' ,screen : "PendingCashbackWorkers"},
+    { id: 4, label: 'Pending Balance', icon: 'wallet', color: '#ff4500', screen: "PendingBalanceWorkers" },
   ];
 
   const statsItems = [
@@ -47,6 +49,10 @@ const DashboardScreen = () => {
     { id: 11, label: 'Pending Balance', value: 50 },
     { id: 12, label: 'Pending Balance workers', value: 50 },
   ];
+
+  const handleAdministratorScreen = (screen) =>{
+    navigation.push(screen)
+  }
 
   useEffect(() => {
     setGreetingBasedOnTime()
@@ -69,16 +75,17 @@ const DashboardScreen = () => {
         endDate: endOfWeek.toISOString().split('T')[0],
       });
     } else if (period === 'Specific Date') {
-      setShowCalendar(true);
+      setShowCalendar(true); 
     }
-  };
+  }; 
 
   const sendDataToBackend = async (payload) => {
+    console.log("date",payload)
     try {
-      const response = await axios.post('/administrator/service/date/details', payload);
+      const response = await axios.post(`${process.env.BackendAPI6}/api/administrator/service/date/details`, payload);
       console.log(response.data);
     } catch (error) {
-      console.error('Error sending data:', error);
+      console.error('Error sending data:', error); 
     }
   };
 
@@ -158,7 +165,11 @@ const DashboardScreen = () => {
         </View>
         <View style={styles.dashboardContainer}>
           {dashboardItems.map((item) => (
-            <TouchableOpacity key={item.id} style={styles.iconButton}>
+            <TouchableOpacity 
+            key={item.id} 
+            style={styles.iconButton} 
+            onPress={() => handleAdministratorScreen(item.screen)}
+          >
               <FontAwesome5 name={item.icon} size={25} color={item.color} />
               <Text style={styles.buttonText}>{item.label}</Text>
             </TouchableOpacity>
@@ -202,8 +213,8 @@ const DashboardScreen = () => {
                     style={styles.radioOption}
                     onPress={() => handleSortSelection(period)}
                   >
-                    <Feather
-                      name={selectedPeriod === period ? 'check-circle' : 'circle'}
+                    <Icon
+                      name={selectedPeriod === period ? 'radio-button-on' : 'radio-button-off'}
                       size={20}
                       color={selectedPeriod === period ? '#FF5722' : '#4a4a4a'}
                     />

@@ -882,10 +882,50 @@ const balanceAmmountToPay = async (req, res) => {
   }
 };
 
+// const getWorkerCashbackDetails = async (req, res) => {
+//   try {
+//     const { worker_id } = req.body; // Get worker_id from the request body
+//     console.log(worker_id)
+//     const query = `
+//       SELECT 
+//         servicecall.payment, 
+//         servicecall.payment_type, 
+//         servicecall.notification_id, 
+//         servicecall.end_time, 
+//         completenotifications.*, 
+//         "user".name,
+//         workerlife.cashback_history,
+//         workerlife.cashback_approved_times,
+//         workerlife.cashback_gain
+//       FROM servicecall
+//       LEFT JOIN completenotifications 
+//         ON servicecall.notification_id = completenotifications.notification_id
+//       LEFT JOIN "user" 
+//         ON completenotifications.user_id = "user".user_id
+//       LEFT JOIN workerlife 
+//         ON servicecall.worker_id = workerlife.worker_id
+//       WHERE servicecall.worker_id = $1 
+//         AND servicecall.payment IS NOT NULL;
+//     `;
+
+//     const values = [worker_id];
+//     const result = await client.query(query, values);
+    
+//     res.status(200).json(result.rows);
+//   } catch (error) {
+//     console.error('Error fetching worker cashback details:', error);
+//     res.status(500).json({ error: 'Internal Server Error' });
+//   }
+// };
+
+// Function to insert data into the 'relatedservices' table
+
+
 const getWorkerCashbackDetails = async (req, res) => {
   try {
     const { worker_id } = req.body; // Get worker_id from the request body
-    console.log(worker_id)
+    console.log(worker_id);
+
     const query = `
       SELECT 
         servicecall.payment, 
@@ -896,7 +936,11 @@ const getWorkerCashbackDetails = async (req, res) => {
         "user".name,
         workerlife.cashback_history,
         workerlife.cashback_approved_times,
-        workerlife.cashback_gain
+        workerlife.cashback_gain,
+        (
+          SELECT jsonb_agg(history)
+          FROM jsonb_array_elements(workerlife.cashback_history) AS history
+        ) AS cashback_history
       FROM servicecall
       LEFT JOIN completenotifications 
         ON servicecall.notification_id = completenotifications.notification_id
@@ -918,7 +962,86 @@ const getWorkerCashbackDetails = async (req, res) => {
   }
 };
 
-// Function to insert data into the 'relatedservices' table
+
+const pendingBalanceWorkers = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        wl.balance_amount,
+        wl.balance_payment_history,
+        wl.worker_id,
+        ws.profile,
+        ws.service,
+        wv.name
+      FROM workerlife wl
+      LEFT JOIN workerskills ws ON wl.worker_id = ws.worker_id
+      LEFT JOIN workersverified wv ON wl.worker_id = wv.worker_id
+      WHERE wl.balance_amount != 0.00;
+    `;
+
+    const result = await client.query(query);
+    
+    // Send the results as JSON
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Error fetching pending balance worker details:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+
+const getDashboardDetails = async (req, res) => {
+  try {
+    const { date, startDate, endDate } = req.body;
+
+    // Prepare the query and values based on the input
+    let dateCondition;
+    const values = [];
+
+    if (date) {
+      // Single date condition
+      dateCondition = `= $1`;
+      values.push(date);
+    } else if (startDate && endDate) {
+      // Date range condition
+      dateCondition = `BETWEEN $1 AND $2`;
+      values.push(startDate, endDate);
+    } else {
+      return res.status(400).json({ error: "Please provide either 'date' or both 'startDate' and 'endDate'." });
+    }
+
+    const query = `
+      SELECT 
+        -- Count of worker_id in workersverified within date range
+        (SELECT COUNT(worker_id) FROM workersverified WHERE DATE(created_at) ${dateCondition}) AS worker_count,
+        
+        -- Count of user_id in "user" within date range
+        (SELECT COUNT(user_id) FROM "user" WHERE DATE(created_at) ${dateCondition}) AS user_count,
+        
+        -- Count of completed services in completenotifications within date range
+        (SELECT COUNT(*) FROM completenotifications WHERE DATE(created_at) ${dateCondition} ) AS services,
+        
+        -- Count of canceled services in completenotifications within date range
+        (SELECT COUNT(*) FROM completenotifications WHERE DATE(created_at) ${dateCondition} AND complete_status = 'cancel') AS cancel_services,
+        
+        -- Sum of all balance_amount in workerlife
+        (SELECT COALESCE(SUM(balance_amount), 0) FROM workerlife) AS total_balance_amount,
+        
+        -- Count of rows in workerlife where balance_amount is not 0.00
+        (SELECT COUNT(*) FROM workerlife WHERE balance_amount != 0.00) AS non_zero_balance_count
+    `;
+
+    const result = await client.query(query, values);
+
+    // Return results as JSON response
+    res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error fetching dashboard details:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+
 const insertRelatedService = async (req, res) => {
   const { service, service_category, related_services } = req.body;
 
@@ -1217,6 +1340,37 @@ const getWorkerTrackingServices = async (req, res) => {
 
     // Execute the query
     const result = await client.query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "No tracking services found for the given notification ID" });
+    }
+
+    res.status(200).json(result.rows );
+  } catch (error) {
+    console.error("Error fetching worker tracking services: ", error);
+    res.status(500).json({ message: "Failed to fetch worker tracking services", error: error.message });
+  }
+};
+
+const getAllTrackingServices = async (req, res) => {
+  try {
+    console.log("Hi")
+    // SQL query to fetch service_status, created_at, tracking_id from servicetracking
+    // and join with workerskills table to get service
+    const query = `
+    SELECT
+      st.service_status,
+      st.created_at,
+      st.tracking_id,
+      ws.service
+    FROM servicetracking st
+    LEFT JOIN workerskills ws ON st.worker_id = ws.worker_id
+  `;
+  
+
+
+    // Execute the query
+    const result = await client.query(query);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "No tracking services found for the given notification ID" });
@@ -7037,57 +7191,63 @@ const processPayment = async (req, res) => {
   try {
     const end_time = new Date();
 
-    // Single query using CTEs to update servicecall and accepted tables
+    // Single query to update servicecall, accepted, and workerlife tables
     const combinedQuery = `
-      WITH update_servicecall AS (
-        UPDATE servicecall
-        SET 
-          payment = $1, 
-          payment_type = $2
-        WHERE notification_id = $3
-        RETURNING notification_id
-      ),
-      update_accepted AS (
-        UPDATE accepted a
-        SET 
-          time = jsonb_set(
-            COALESCE(a.time, '{}'::jsonb),
-            '{paymentCompleted}',
-            to_jsonb(to_char($4::timestamp, 'YYYY-MM-DD HH24:MI:SS'))
-          )
-        FROM update_servicecall us
-        WHERE a.notification_id = us.notification_id
-        RETURNING a.user_id, a.service_booked, a.worker_id
-      ),
-      fetch_fcm AS (
-        SELECT 
-          u.fcm_token 
-        FROM userfcm u
-        JOIN update_accepted ua ON u.user_id = ua.user_id
-      ),
-      update_workerlife AS (
-        UPDATE workerlife wl
-        SET 
-          cashback_approved_times = COALESCE(service_counts / 6, 0)
-        FROM update_accepted ua
-        WHERE wl.worker_id = ua.worker_id
-        RETURNING wl.worker_id, wl.cashback_approved_times
-      )
-      SELECT 
-        ua.user_id, 
-        ua.service_booked,
-        ua.worker_id, 
-        ARRAY_AGG(fcm.fcm_token) AS fcm_tokens
+    WITH update_servicecall AS (
+      UPDATE servicecall
+      SET 
+        payment = $1, 
+        payment_type = $2
+      WHERE notification_id = $3
+      RETURNING notification_id
+    ),
+    update_accepted AS (
+      UPDATE accepted a
+      SET 
+        time = jsonb_set(
+          COALESCE(a.time, '{}'::jsonb),
+          '{paymentCompleted}',
+          to_jsonb(to_char($4::timestamp, 'YYYY-MM-DD HH24:MI:SS'))
+        )
+      FROM update_servicecall us
+      WHERE a.notification_id = us.notification_id
+      RETURNING a.user_id, a.service_booked, a.worker_id
+    ),
+    -- Update balance_amount, money_earned, and cashback_approved_times in workerlife
+    update_workerlife AS (
+      UPDATE workerlife wl
+      SET 
+        service_counts = wl.service_counts + 1,                -- Increment service_counts by 1
+        money_earned = wl.money_earned + $6,                   -- Increment money_earned by totalAmount
+        balance_amount = CASE                                  -- Update balance_amount based on paymentMethod
+          WHEN $5 = 'cash' THEN wl.balance_amount - ($6 * 0.12)
+          ELSE wl.balance_amount + ($6 * 0.88)
+        END,
+        cashback_approved_times = COALESCE((wl.service_counts + 1) / 6, 0) -- Calculate cashback_approved_times based on updated service_counts
       FROM update_accepted ua
-      LEFT JOIN fetch_fcm fcm ON TRUE
-      GROUP BY ua.user_id, ua.service_booked, ua.worker_id;
-    `;
+      WHERE wl.worker_id = ua.worker_id
+      RETURNING wl.worker_id, wl.balance_amount, wl.cashback_approved_times, wl.service_counts
+    ),
+    fetch_fcm AS (
+      SELECT 
+        u.fcm_token 
+      FROM userfcm u
+      JOIN update_accepted ua ON u.user_id = ua.user_id
+    )
+    SELECT 
+      ua.user_id, 
+      ua.service_booked,
+      ua.worker_id, 
+      ARRAY_AGG(fcm.fcm_token) AS fcm_tokens
+    FROM update_accepted ua
+    LEFT JOIN fetch_fcm fcm ON TRUE
+    GROUP BY ua.user_id, ua.service_booked, ua.worker_id;
+  `;
+  
+  const values = [totalAmount, paymentMethod, decodedId, end_time, paymentMethod, totalAmount];
+  const combinedResult = await client.query(combinedQuery, values);
+  
 
-    const values = [totalAmount, paymentMethod, decodedId, end_time];
-
-    const combinedResult = await client.query(combinedQuery, values);
-
-    // Check if any records were returned
     if (combinedResult.rows.length === 0) {
       return res.status(404).json({ error: "Notification not found." });
     }
@@ -7095,34 +7255,24 @@ const processPayment = async (req, res) => {
     const row = combinedResult.rows[0];
     const { user_id, service_booked, worker_id, fcm_tokens } = row;
 
-    // Update worker life details
-    const serviceResult = await updateWorkerLifeDetails(worker_id, totalAmount);
-
     // Proceed to send notifications if FCM tokens are available
     if (fcm_tokens.length > 0) {
-      // Create a multicast message object for all tokens
       const multicastMessage = {
-        tokens: fcm_tokens, // An array of tokens to send the same message to
+        tokens: fcm_tokens,
         notification: {
           title: "Click Solver",
           body: `Your payment of ₹${totalAmount} has been successfully processed via ${paymentMethod}.`,
         },
         data: {
           notification_id: decodedId.toString(),
-          screen: 'Home'
+          screen: 'Home',
         },
       };
 
       try {
-        // Use sendEachForMulticast to send the same message to multiple tokens
         const response = await getMessaging().sendEachForMulticast(multicastMessage);
-
-        // Log the responses for each token
         response.responses.forEach((resItem, index) => {
-          if (resItem.success) {
-            // Optionally log successful sends
-            // console.log(`Message sent successfully to token ${fcm_tokens[index]}`);
-          } else {
+          if (!resItem.success) {
             console.error(`Error sending message to token ${fcm_tokens[index]}:`, resItem.error);
           }
         });
@@ -7130,9 +7280,6 @@ const processPayment = async (req, res) => {
         console.error('Error sending notifications:', error);
         return res.status(500).json({ error: 'Error sending notifications.' });
       }
-    } else {
-      console.error('No FCM tokens to send the message to.');
-      // Optionally, decide whether to proceed or not. Here, we'll proceed.
     }
 
     // Create a background action for the user
@@ -7140,7 +7287,6 @@ const processPayment = async (req, res) => {
     const encodedNotificationId = Buffer.from(decodedId.toString()).toString("base64");
     await createUserBackgroundAction(user_id, encodedNotificationId, screen, service_booked);
 
-    // Respond with success
     return res.status(200).json({ message: 'Payment processed successfully' });
 
   } catch (error) {
@@ -7148,6 +7294,131 @@ const processPayment = async (req, res) => {
     return res.status(500).json({ error: 'An error occurred while processing the payment' });
   }
 };
+
+
+
+// const processPayment = async (req, res) => {
+//   const { totalAmount, paymentMethod, decodedId } = req.body;
+
+//   // Input Validation
+//   if (!totalAmount || !paymentMethod || !decodedId) {
+//     return res.status(400).json({ error: 'Missing required fields: totalAmount, paymentMethod, and decodedId.' });
+//   }
+
+//   try {
+//     const end_time = new Date();
+
+//     // Single query using CTEs to update servicecall and accepted tables
+//     const combinedQuery = `
+//       WITH update_servicecall AS (
+//         UPDATE servicecall
+//         SET 
+//           payment = $1, 
+//           payment_type = $2
+//         WHERE notification_id = $3
+//         RETURNING notification_id
+//       ),
+//       update_accepted AS (
+//         UPDATE accepted a
+//         SET 
+//           time = jsonb_set(
+//             COALESCE(a.time, '{}'::jsonb),
+//             '{paymentCompleted}',
+//             to_jsonb(to_char($4::timestamp, 'YYYY-MM-DD HH24:MI:SS'))
+//           )
+//         FROM update_servicecall us
+//         WHERE a.notification_id = us.notification_id
+//         RETURNING a.user_id, a.service_booked, a.worker_id
+//       ),
+//       fetch_fcm AS (
+//         SELECT 
+//           u.fcm_token 
+//         FROM userfcm u
+//         JOIN update_accepted ua ON u.user_id = ua.user_id
+//       ),
+//       update_workerlife AS (
+//         UPDATE workerlife wl
+//         SET 
+//           cashback_approved_times = COALESCE(service_counts / 6, 0)
+//         FROM update_accepted ua
+//         WHERE wl.worker_id = ua.worker_id
+//         RETURNING wl.worker_id, wl.cashback_approved_times
+//       )
+//       SELECT 
+//         ua.user_id, 
+//         ua.service_booked,
+//         ua.worker_id, 
+//         ARRAY_AGG(fcm.fcm_token) AS fcm_tokens
+//       FROM update_accepted ua
+//       LEFT JOIN fetch_fcm fcm ON TRUE
+//       GROUP BY ua.user_id, ua.service_booked, ua.worker_id;
+//     `;
+
+//     const values = [totalAmount, paymentMethod, decodedId, end_time];
+
+//     const combinedResult = await client.query(combinedQuery, values);
+
+//     // Check if any records were returned
+//     if (combinedResult.rows.length === 0) {
+//       return res.status(404).json({ error: "Notification not found." });
+//     }
+
+//     const row = combinedResult.rows[0];
+//     const { user_id, service_booked, worker_id, fcm_tokens } = row;
+
+//     // Update worker life details
+//     const serviceResult = await updateWorkerLifeDetails(worker_id, totalAmount);
+
+//     // Proceed to send notifications if FCM tokens are available
+//     if (fcm_tokens.length > 0) {
+//       // Create a multicast message object for all tokens
+//       const multicastMessage = {
+//         tokens: fcm_tokens, // An array of tokens to send the same message to
+//         notification: {
+//           title: "Click Solver",
+//           body: `Your payment of ₹${totalAmount} has been successfully processed via ${paymentMethod}.`,
+//         },
+//         data: {
+//           notification_id: decodedId.toString(),
+//           screen: 'Home'
+//         },
+//       };
+
+//       try {
+//         // Use sendEachForMulticast to send the same message to multiple tokens
+//         const response = await getMessaging().sendEachForMulticast(multicastMessage);
+
+//         // Log the responses for each token
+//         response.responses.forEach((resItem, index) => {
+//           if (resItem.success) {
+//             // Optionally log successful sends
+//             // console.log(`Message sent successfully to token ${fcm_tokens[index]}`);
+//           } else {
+//             console.error(`Error sending message to token ${fcm_tokens[index]}:`, resItem.error);
+//           }
+//         });
+//       } catch (error) {
+//         console.error('Error sending notifications:', error);
+//         return res.status(500).json({ error: 'Error sending notifications.' });
+//       }
+//     } else {
+//       console.error('No FCM tokens to send the message to.');
+//       // Optionally, decide whether to proceed or not. Here, we'll proceed.
+//     }
+
+//     // Create a background action for the user
+//     const screen = "";
+//     const encodedNotificationId = Buffer.from(decodedId.toString()).toString("base64");
+//     await createUserBackgroundAction(user_id, encodedNotificationId, screen, service_booked);
+
+//     // Respond with success
+//     return res.status(200).json({ message: 'Payment processed successfully' });
+
+//   } catch (error) {
+//     console.error('Error processing payment:', error);
+//     return res.status(500).json({ error: 'An error occurred while processing the payment' });
+//   }
+// };
 
 
 
@@ -7977,5 +8248,8 @@ module.exports = {
   getWorkersPendingCashback,
   getWorkerCashbackDetails,
   workerCashbackPayed,
-  userCompleteSignUp
+  userCompleteSignUp,
+  getAllTrackingServices,
+  pendingBalanceWorkers,
+  getDashboardDetails
 };

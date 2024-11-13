@@ -37,10 +37,12 @@ import TrackingConfirmation from './Components/TrackingConfirmation';
 import Approval from './Components/Approval';
 import IndividualWorkerPending from './Components/IndividualWorkerPending';
 import ServiceBookingItem from './Components/ServiceBookingItem';
-import CashbackScreen from './Components/CashbackScreen';
 import CashbackScreen1 from './Components/CashbackScreen1';
 import PendingCashbackWorkers from './Components/PendingCashbackWorkers';
 import AdministratorDashboard from './Components/AdministratorDashboard';
+import AdministratorAllTrackings from './Components/AdministratorAllTrackings';
+import ApprovalPendingItems from './Components/ApprovalPendingItems';
+import PendingBalanceWorkers from './Components/PendingBalanceWorkers';
 // Additional imports...
 
 const Stack = createNativeStackNavigator();
@@ -224,7 +226,11 @@ function App(): React.JSX.Element {
         <Stack.Screen name='WorkerProfile' component={skills} options={{title: 'WorkerProfile', headerShown: false}} />
         <Stack.Screen name='serviceBookingItem' component={ServiceBookingItem} options={{title: 'serviceBookingItem', headerShown: false}} />
         <Stack.Screen name='WorkerPendingCashback' component={CashbackScreen1} options={{title: 'WorkerPendingCashback', headerShown: false}} />
+        <Stack.Screen name='AdministratorAllTrackings' component={AdministratorAllTrackings} options={{title: 'AdministratorAllTrackings', headerShown: false}} />
         <Stack.Screen name='AdministratorDashboard' component={AdministratorDashboard} options={{title: 'AdministratorDashboard', headerShown: false}} />
+        <Stack.Screen name='ApprovalPendingItems' component={ApprovalPendingItems} options={{title: 'ApprovalPendingItems', headerShown: false}} />
+        <Stack.Screen name='PendingCashbackWorkers' component={PendingCashbackWorkers} options={{title: 'PendingCashbackWorkers', headerShown: false}} />
+        <Stack.Screen name='PendingBalanceWorkers' component={PendingBalanceWorkers} options={{title: 'PendingBalanceWorkers', headerShown: false}} />
         {/* Additional screens here */}
       </Stack.Navigator> 
     </NavigationContainer>

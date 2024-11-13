@@ -28,7 +28,7 @@ const CashbackScreen1 = () => {
   const [swiped, setSwiped] = useState(false);
   const navigation = useNavigation();
   const { worker_id } = useRoute().params;
-
+ 
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -56,6 +56,9 @@ const CashbackScreen1 = () => {
             name: transaction.name,
           };
         });
+        const data = response.data[0]
+        const {cashback_history} = data;
+        setShowCashbackHistoryArray(cashback_history)
         setShowServiceChargeHistoryArray(serviceBalanceHistory);
         const { cashback_approved_times, cashback_gain } = response.data[0];
         
@@ -127,18 +130,27 @@ const CashbackScreen1 = () => {
     </View>
   );
 
+  const formatDate = (created_at) => {
+    const date = new Date(created_at);
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+    return `${monthNames[date.getMonth()]} ${String(date.getDate()).padStart(2, '0')}, ${date.getFullYear()}`;
+  };
+
   const renderCashbackHistoryItem = ({ item }) => (
     <View style={styles.historyItem}>
       <View style={styles.iconContainer}>
         <MaterialCommunityIcons name="arrow-top-right" size={20} color="#ffffff" />
       </View>
       <View style={styles.historyDetails}>
-        <Text style={styles.historyTitle}>{item.type}</Text>
+        <Text style={styles.historyTitle}>Paid by</Text>
         <Text style={styles.historyTitle}>Click Solver</Text>
       </View>
       <View>
         <Text style={styles.amount}>{item.amount}</Text>
-        <Text style={styles.date}>{item.date}</Text>
+        <Text style={styles.date}>{formatDate(item.time)}</Text>
       </View>
     </View>
   );

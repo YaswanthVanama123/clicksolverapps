@@ -116,7 +116,10 @@ const {
   getWorkerCashbackDetails,
   workerCashbackPayed,
   userCompleteSignUp,
-  workerNavigationCancel
+  workerNavigationCancel,
+  getAllTrackingServices,
+  pendingBalanceWorkers,
+  getDashboardDetails
 } = require("./controller.js");
 
 const router = express.Router();
@@ -499,11 +502,17 @@ router.get("/locations",getAllLocations)
  
 router.get("/user/login/status",authenticateToken,loginStatus)
 
-router.get("/worker/tracking/services",authenticateWorkerToken,getWorkerTrackingServices)
+router.get("/worker/tracking/services",authenticateWorkerToken,getWorkerTrackingServices);
+
+router.get("/all/tracking/services",getAllTrackingServices);
+
+router.post("/administrator/service/date/details",getDashboardDetails)
 
 router.get("/workers/pending/cashback",getWorkersPendingCashback);
 
-router.post("/worker/pending/cashback",getWorkerCashbackDetails)
+router.post("/worker/pending/cashback",getWorkerCashbackDetails);
+
+router.get("/pending/balance/workers",pendingBalanceWorkers)
 
 router.get("/user/tracking/services",authenticateToken,getUserTrackingServices)
 

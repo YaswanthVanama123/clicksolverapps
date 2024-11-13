@@ -28,6 +28,7 @@ const IndividualWorkerPending = () => {
   const [isEditVisible, setEditVisible] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('');
   const { workerId } = useRoute().params;
+  console.log(workerId)
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [issues, setIssues] = useState([]); // Array to store multiple issues
   const [currentIssueCategory, setCurrentIssueCategory] = useState(null);
