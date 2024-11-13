@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
 } from "react-native";
 import axios from "axios";
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';

@@ -9,6 +9,7 @@ import axios from 'axios';
 import uuid from 'react-native-uuid';
 import QuickSearch from '../Components/QuickSearch';
 import LottieView from 'lottie-react-native';
+import Foundation from 'react-native-vector-icons/Foundation';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 
 function ServiceApp() {
@@ -24,7 +25,7 @@ function ServiceApp() {
   const scrollViewRef = useRef(null);
   const itemWidth = screenWidth * 0.95; 
   const navigation = useNavigation();
-  const messageBoxWidth = trackScreen.length > 1 ? screenWidth * 0.85 : screenWidth * 0.9
+  const messageBoxWidth = trackScreen.length > 1 ? screenWidth * 0.85 : screenWidth * 0.90
 
   const specialOffers = useMemo(() => [
     {
@@ -195,7 +196,7 @@ function ServiceApp() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Special Offers</Text>
-            <Text style={styles.seeAll}>See All</Text>
+            {/* <Text style={styles.seeAll}>See All</Text> */}
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.offersScrollView}>
             {renderSpecialOffers()}
@@ -205,7 +206,7 @@ function ServiceApp() {
         <View style={styles.Servicessection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Services</Text>
-            <Text style={styles.seeAll}>See All</Text>
+            {/* <Text style={styles.seeAll}>See All</Text> */}
           </View>
           {renderServices()}
         </View>
@@ -240,7 +241,7 @@ function ServiceApp() {
                 <View style={styles.startingContainer}>
                   <View style={styles.timeContainer}>
                     {console.log(item.screen)}
-                    {item.screen === 'PaymentScreen' ? (
+                    {item.screen === 'Paymentscreen' ? (
                       <Foundation name="paypal" size={24} color="#ffffff" />
                     ) : item.screen === 'UserNavigation' ? (
                       <MaterialCommunityIcons name="truck" size={24} color="#ffffff" />
@@ -265,7 +266,7 @@ function ServiceApp() {
                         : 'Switch board & Socket repairing'}
                     </Text>
                     <Text style={styles.textContainerTextCommander}>
-                      {item.screen === 'PaymentScreen'
+                      {item.screen === 'Paymentscreen'
                         ? 'Payment in progress'
                         : item.screen === 'UserNavigation'
                         ? 'Commander is on the way'

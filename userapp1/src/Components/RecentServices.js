@@ -144,7 +144,7 @@ const RecentServices = () => {
 const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f5f5f5',
   },
   headerContainer: {
     flexDirection: 'row',

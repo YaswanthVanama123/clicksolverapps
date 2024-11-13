@@ -40,6 +40,7 @@ import ServiceBookingItem from './Components/ServiceBookingItem';
 import CashbackScreen from './Components/CashbackScreen';
 import CashbackScreen1 from './Components/CashbackScreen1';
 import PendingCashbackWorkers from './Components/PendingCashbackWorkers';
+import AdministratorDashboard from './Components/AdministratorDashboard';
 // Additional imports...
 
 const Stack = createNativeStackNavigator();
@@ -95,7 +96,7 @@ function TabNavigator() {
         <Tab.Screen name="Bookings" component={RecentServices} options={{ headerShown: false }} />
         <Tab.Screen name="Tracking" component={ServiceTrackingListScreen} options={{ headerShown: false }} />
         {/* <Tab.Screen name="Native" component={CashbackScreen1} options={{ headerShown: false }} />    */}
-        <Tab.Screen name="Account" component={PendingCashbackWorkers} options={{ headerShown: false }} />
+        <Tab.Screen name="Account" component={AdministratorDashboard} options={{ headerShown: false }} />
       </Tab.Navigator>
     </SafeAreaView> 
   );
@@ -223,6 +224,7 @@ function App(): React.JSX.Element {
         <Stack.Screen name='WorkerProfile' component={skills} options={{title: 'WorkerProfile', headerShown: false}} />
         <Stack.Screen name='serviceBookingItem' component={ServiceBookingItem} options={{title: 'serviceBookingItem', headerShown: false}} />
         <Stack.Screen name='WorkerPendingCashback' component={CashbackScreen1} options={{title: 'WorkerPendingCashback', headerShown: false}} />
+        <Stack.Screen name='AdministratorDashboard' component={AdministratorDashboard} options={{title: 'AdministratorDashboard', headerShown: false}} />
         {/* Additional screens here */}
       </Stack.Navigator> 
     </NavigationContainer>

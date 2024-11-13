@@ -29,6 +29,9 @@ import Entypo from 'react-native-vector-icons/Entypo';
 
 // Set your Mapbox access token here
 Mapbox.setAccessToken('pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw');
+const startMarker = require('./assets/start-marker.png');
+const endMarker = require('./assets/end-marker.png');
+
 
 const WorkerNavigationScreen = () => {
   const route = useRoute();
@@ -290,25 +293,25 @@ const WorkerNavigationScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Mapbox.MapView style={styles.map}>
-        <Mapbox.Camera zoomLevel={14} centerCoordinate={locationDetails.startPoint} />
+<Mapbox.MapView style={styles.map}>
+      <Mapbox.Camera zoomLevel={14} centerCoordinate={locationDetails.startPoint} />
 
-        {/* Marker for Start Point */}
-        <Mapbox.PointAnnotation id="start-point" coordinate={locationDetails.startPoint}>
-          <FontAwesome6 name="location-dot" size={25} color="#4CAF50" />
-        </Mapbox.PointAnnotation>
+      {/* Marker for Start Point */}
+      <Mapbox.PointAnnotation id="start-point" coordinate={locationDetails.startPoint}>
+        <Image source={require('../../assets/start-marker.png')} style={styles.markerImage} />
+      </Mapbox.PointAnnotation>
 
-        {/* Marker for End Point */}
-        <Mapbox.PointAnnotation id="end-point" coordinate={locationDetails.endPoint}>
-          <FontAwesome6 name="location-dot" size={25} color="#ff4500" />
-        </Mapbox.PointAnnotation>
+      {/* Marker for End Point */}
+      <Mapbox.PointAnnotation id="end-point" coordinate={locationDetails.endPoint}>
+        <Image source={require('../../assets/end-marker.png')} style={styles.markerImage} />
+      </Mapbox.PointAnnotation>
 
-        {routeData && (
-          <Mapbox.ShapeSource id="routeSource" shape={routeData}>
-            <Mapbox.LineLayer id="routeLine" style={styles.routeLine} />
-          </Mapbox.ShapeSource>
-        )}
-      </Mapbox.MapView>
+      {routeData && (
+        <Mapbox.ShapeSource id="routeSource" shape={routeData}>
+          <Mapbox.LineLayer id="routeLine" style={styles.routeLine} />
+        </Mapbox.ShapeSource>
+      )}
+    </Mapbox.MapView>
       <TouchableOpacity style={styles.cancelButton} onPress={handleCancelModal}>
         <Text style={styles.cancelText}>Cancel</Text>
       </TouchableOpacity>
@@ -395,7 +398,7 @@ const WorkerNavigationScreen = () => {
           <View style={styles.locationContainer}>
             <Image
               source={{
-                uri: 'https://i.postimg.cc/rpb2czKR/1000051859-removebg-preview.png',
+                uri: 'https://i.postimg.cc/qvJw8Kzy/Screenshot-2024-11-13-170828-removebg-preview.png',
               }}
               style={styles.locationPinImage}
             />
@@ -463,6 +466,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  markerImage: {
+    width: 25, // Adjust size as needed
+    height: 50, // Adjust size as needed
+    resizeMode: 'contain',
+  },
   serviceText: {
     color: '#212121',
     fontWeight: 'bold',
@@ -508,8 +516,8 @@ const styles = StyleSheet.create({
     minHeight: 0.35 * screenHeight,
   },
   routeLine: {
-    lineColor: '#0000ff',
-    lineWidth: 5,
+    lineColor: '#212121',
+    lineWidth: 3,
   },
   cancelButton: {
     position: 'absolute',

@@ -321,7 +321,7 @@ const WaitingUser = () => {
           {/* Center Marker on the Map */}
           <Mapbox.MarkerView coordinate={location}>
             <Image
-              source={{ uri: 'https://i.postimg.cc/Y00Xwk5f/1000049891-removebg-preview.png' }} // Marker image URL
+              source={{ uri: 'https://i.postimg.cc/ZRdQkj5d/Screenshot-2024-11-13-164652-removebg-preview.png' }} // Marker image URL
               style={styles.markerImage}
             />
           </Mapbox.MarkerView>

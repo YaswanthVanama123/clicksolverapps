@@ -255,36 +255,44 @@ const Navigation = () => {
 
   return (
     <View style={styles.container}>
-      <Mapbox.MapView style={styles.map}>
-        <Mapbox.Camera
-          zoomLevel={14}
-          centerCoordinate={locationDetails.startPoint}
+    <Mapbox.MapView style={styles.map}>
+      <Mapbox.Camera
+        zoomLevel={14}
+        centerCoordinate={locationDetails.startPoint}
+      />
+
+      {/* Start Location Marker */}
+      <Mapbox.PointAnnotation
+        id="start-point"
+        coordinate={locationDetails.startPoint}
+      >
+        <Image
+          source={{uri:'https://i.postimg.cc/Pxwby5tW/Screenshot-2024-11-13-165554-removebg-preview.png'}} // Replace with your start location image
+          style={styles.markerImage}
         />
-  
+      </Mapbox.PointAnnotation>
 
-        <Mapbox.PointAnnotation
-          id="start-point"
-          coordinate={locationDetails.startPoint}
-        >
-          <FontAwesome6 name='location-dot' size={25} color='#4CAF50' />
-        </Mapbox.PointAnnotation>
+      {/* End Location Marker */}
+      <Mapbox.PointAnnotation 
+        id="end-point"
+        coordinate={locationDetails.endPoint}
+      >
+        <Image
+          source={{uri:'https://i.postimg.cc/ZRdQkj5d/Screenshot-2024-11-13-164652-removebg-preview.png'}} // Replace with your start location image
+          style={styles.markerImage}
+        />
+      </Mapbox.PointAnnotation>
 
-        <Mapbox.PointAnnotation
-          id="end-point"
-          coordinate={locationDetails.endPoint}
-        >
-          <FontAwesome6 name='location-dot' size={25} color='#ff4500' />
-        </Mapbox.PointAnnotation>
-  
-        {routeData && (
-          <Mapbox.ShapeSource id="routeSource" shape={routeData}>
-            <Mapbox.LineLayer
-              id="routeLine"
-              style={styles.routeLine}
-            />
-          </Mapbox.ShapeSource>
-        )}
-      </Mapbox.MapView>
+      {/* Route Line */}
+      {routeData && (
+        <Mapbox.ShapeSource id="routeSource" shape={routeData}>
+          <Mapbox.LineLayer
+            id="routeLine"
+            style={styles.routeLine}
+          />
+        </Mapbox.ShapeSource>
+      )}
+    </Mapbox.MapView>
       {/* <TouchableOpacity style={styles.cancelButton} onPress={handleCancelBooking}>
         <Text style={styles.cancelText}>Cancel</Text>
       </TouchableOpacity> */}
@@ -298,7 +306,7 @@ const Navigation = () => {
             {/* Service Location */}
             <View style={styles.locationContainer}>
               <Image
-                source={{ uri: 'https://i.postimg.cc/rpb2czKR/1000051859-removebg-preview.png' }}
+                source={{ uri: 'https://i.postimg.cc/qvJw8Kzy/Screenshot-2024-11-13-170828-removebg-preview.png' }}
                 style={styles.locationPinImage}
               />
               <View style={styles.locationDetails}>
@@ -436,6 +444,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  markerImage: {
+    width: 25, // Adjust size as needed
+    height: 50, // Adjust size as needed
+    resizeMode: 'contain',
+  },
   serviceText: {
     color: '#212121',
     fontWeight: 'bold',
@@ -493,8 +506,8 @@ const styles = StyleSheet.create({
     minHeight: 0.45 * screenHeight,
   },
   routeLine: {
-    lineColor: '#0000ff',
-    lineWidth: 5,
+    lineColor: '#212121',
+    lineWidth: 3,
   },
   cancelButton: {
     position: 'absolute',
