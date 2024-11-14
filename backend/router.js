@@ -120,7 +120,7 @@ const {
   getAllTrackingServices,
   pendingBalanceWorkers,
   getDashboardDetails,
-  userWorkerInProgressDetails
+  userWorkerInProgressDetails,
 } = require("./controller.js");
 
 const router = express.Router();
@@ -130,25 +130,32 @@ const {
 } = require("./src/middlewares/authworkerMiddleware.js");
 
 // Define the route for getting service details
-router.post('/single/service', getServiceByName);
+router.post("/single/service", getServiceByName);
 
-router.post('/individual/worker/pending/verification',getPendingWorkerDetails)
+router.post("/individual/worker/pending/verification", getPendingWorkerDetails);
 
-router.get('/workers/pending/verification',getPendingWorkers)
+router.get("/workers/pending/verification", getPendingWorkers);
 
-router.post('/service/tracking/delivery/verification',serviceDeliveryVerification)
+router.post(
+  "/service/tracking/delivery/verification",
+  serviceDeliveryVerification
+);
 
-router.post('/relatedservices', insertRelatedService);
+router.post("/relatedservices", insertRelatedService);
 
-router.post('/update/worker/issues',updateIssues)
+router.post("/update/worker/issues", updateIssues);
 
-router.post('/aprove/tracking/update/status',updateApproveStatus);
+router.post("/aprove/tracking/update/status", updateApproveStatus);
 
-router.post("/check/approval/verification/status",authenticateWorkerToken,checkApprovalVerificationStatus);
+router.post(
+  "/check/approval/verification/status",
+  authenticateWorkerToken,
+  checkApprovalVerificationStatus
+);
 
-router.post('/worker/approved',workerApprove)
+router.post("/worker/approved", workerApprove);
 
-router.post("/service/location/navigation",getUserAndWorkerLocation); 
+router.post("/service/location/navigation", getUserAndWorkerLocation);
 
 // Route to fetch location details and initiate /canceled/timeup
 router.get("/user/location/navigation", async (req, res) => {
@@ -178,22 +185,28 @@ router.get("/user/location/navigation", async (req, res) => {
   }
 });
 
-router.post("/service/tracking/update/status",serviceTrackingUpdateStatus)
+router.post("/service/tracking/update/status", serviceTrackingUpdateStatus);
 
-router.post("/service/tracking/worker/item/details",getServiceTrackingWorkerItemDetails)
+router.post(
+  "/service/tracking/worker/item/details",
+  getServiceTrackingWorkerItemDetails
+);
 
-router.post("/service/tracking/user/item/details",getServiceTrackingUserItemDetails)
+router.post(
+  "/service/tracking/user/item/details",
+  getServiceTrackingUserItemDetails
+);
 
-router.post("/service/booking/item/details",getServiceBookingItemDetails)
+router.post("/service/booking/item/details", getServiceBookingItemDetails);
 
 // Define the route for processing payment
-router.post('/user/payed', processPayment);
+router.post("/user/payed", processPayment);
 
-router.post('/add/tracking',insertTracking);
+router.post("/add/tracking", insertTracking);
 
-router.post('/user/details/update',authenticateToken,accountDetailsUpdate)
+router.post("/user/details/update", authenticateToken, accountDetailsUpdate);
 
-router.post('/user/profile',authenticateToken,userProfileDetails)
+router.post("/user/profile", authenticateToken, userProfileDetails);
 
 // Route to add a new user
 router.post("/add/worker", async (req, res) => {
@@ -204,7 +217,6 @@ router.post("/add/worker", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-
 
 // router.post('/login', async (req,res) => {
 //     try {
@@ -221,29 +233,33 @@ router.post("/add/worker", async (req, res) => {
 
 router.post("/subservice/checkboxes", subservices);
 
-router.post("/balance/ammount",authenticateWorkerToken,balanceAmmountToPay);
+router.post("/balance/ammount", authenticateWorkerToken, balanceAmmountToPay);
 
-router.post("/worker/cashback/payed",workerCashbackPayed);
+router.post("/worker/cashback/payed", workerCashbackPayed);
 
-router.get('/worker/verification/status', getVerificationStatus);
+router.get("/worker/verification/status", getVerificationStatus);
 
 router.post("/login", login);
 
-router.post("/pin/verification",authenticateToken, workerVerifyOtp);
+router.post("/pin/verification", authenticateToken, workerVerifyOtp);
 
 router.post("/worker/login", Partnerlogin);
- 
+
 router.post("/user/login", login);
 
-router.post("/worker/signup",workerCompleteSignUp);
+router.post("/worker/signup", workerCompleteSignUp);
 
-router.post("/user/signup",userCompleteSignUp);
+router.post("/user/signup", userCompleteSignUp);
 
-router.get("/step-status",authenticateWorkerToken,checkOnboardingStatus)
+router.get("/step-status", authenticateWorkerToken, checkOnboardingStatus);
 
-router.get("/profile/detsils",authenticateWorkerToken,getWorkerProfileDetails)
+router.get(
+  "/profile/detsils",
+  authenticateWorkerToken,
+  getWorkerProfileDetails
+);
 
-router.post('/timer/value', getTimerValue);
+router.post("/timer/value", getTimerValue);
 
 // router.post('/payment/details', async (req, res) => {
 //   const {notification_id} = req.body
@@ -259,31 +275,36 @@ router.post('/timer/value', getTimerValue);
 //   });
 // });
 
-
-router.post('/worker/payment/scanner/details', async (req, res) => {
-  const {notification_id} = req.body
-  console.log(notification_id)
-  const { start_time, end_time} = await paymentDetails(notification_id);
-  console.log(start_time)
-  const {time_worked} = getTimeDifferenceInIST(start_time,end_time)
+router.post("/worker/payment/scanner/details", async (req, res) => {
+  const { notification_id } = req.body;
+  console.log(notification_id);
+  const { start_time, end_time } = await paymentDetails(notification_id);
+  console.log(start_time);
+  const { time_worked } = getTimeDifferenceInIST(start_time, end_time);
   const totalAmount = calculatePayment(time_worked);
-  const {name,service} = await getPaymentDetails(notification_id)
-  const {service_booked,gstAmount, cgstAmount, discountAmount, fetchedFinalTotalAmount} = await getWorkerDetails(notification_id)
+  const { name, service } = await getPaymentDetails(notification_id);
+  const {
+    service_booked,
+    gstAmount,
+    cgstAmount,
+    discountAmount,
+    fetchedFinalTotalAmount,
+  } = await getWorkerDetails(notification_id);
   res.json({
-       totalAmount:fetchedFinalTotalAmount,
-       name,
-       service,
-       
+    totalAmount: fetchedFinalTotalAmount,
+    name,
+    service,
   });
 });
 
-router.post('/worker/payment/service/completed/details', getServiceCompletedDetails);
+router.post(
+  "/worker/payment/service/completed/details",
+  getServiceCompletedDetails
+);
 
-router.post('/worker/earnings',authenticateWorkerToken, getWorkerEarnings);
+router.post("/worker/earnings", authenticateWorkerToken, getWorkerEarnings);
 
-
-
-router.post('/payment/details', async (req, res) => {
+router.post("/payment/details", async (req, res) => {
   const { notification_id } = req.body;
 
   const { start_time, end_time } = await paymentDetails(notification_id);
@@ -292,49 +313,58 @@ router.post('/payment/details', async (req, res) => {
   const totalAmount = calculatePayment(time_worked);
 
   const workerDetails = await getWorkerDetails(notification_id);
-  console.log(workerDetails)
-  
+  console.log(workerDetails);
+
   if (workerDetails.error) {
-      return res.status(404).json({ message: workerDetails.error });
+    return res.status(404).json({ message: workerDetails.error });
   }
 
-  const { name, area, city, pincode, service_booked, gstAmount, cgstAmount, discountAmount, fetchedFinalTotalAmount, profile } = workerDetails;
+  const {
+    name,
+    area,
+    city,
+    pincode,
+    service_booked,
+    gstAmount,
+    cgstAmount,
+    discountAmount,
+    fetchedFinalTotalAmount,
+    profile,
+  } = workerDetails;
 
   res.json({
-      start_time,
-      end_time,
-      time_worked,
-      totalAmount,
-      service_booked,
-      name,
-      area,
-      city,
-      pincode,
-      gstAmount,
-      cgstAmount,
-      discountAmount,
-      fetchedFinalTotalAmount,
-      profile
+    start_time,
+    end_time,
+    time_worked,
+    totalAmount,
+    service_booked,
+    name,
+    area,
+    city,
+    pincode,
+    gstAmount,
+    cgstAmount,
+    discountAmount,
+    fetchedFinalTotalAmount,
+    profile,
   });
 });
 
-router.post('/worker/details/rating', async (req, res) => {
+router.post("/worker/details/rating", async (req, res) => {
   const { notification_id } = req.body;
 
   await workerDetails(req, res, notification_id);
 });
 
-router.post('/user/feedback', submitFeedback);
+router.post("/user/feedback", submitFeedback);
 
 router.post("/work/time/started", CheckStartTime);
 
 //router.post("/worker/details/rating",workerDetails)
 
+router.post("/worker/navigation/details", getWorkerNavigationDetails);
 
-
-router.post("/worker/navigation/details",getWorkerNavigationDetails);
-
-router.post("/individual/service",getIndividualServices);
+router.post("/individual/service", getIndividualServices);
 
 router.post("/work/time/completed", async (req, res) => {
   const { notification_id } = req.body;
@@ -347,19 +377,20 @@ router.post("/work/time/completed", async (req, res) => {
     const totalAmount = calculatePayment(time_worked);
 
     // Update worker life details
-    const updatedWorkerLife = await updateWorkerLifeDetails(workerId, totalAmount);
+    const updatedWorkerLife = await updateWorkerLifeDetails(
+      workerId,
+      totalAmount
+    );
 
     res.status(200).json({
-      message: 'Worker life details updated successfully',
-      updatedWorkerLife
+      message: "Worker life details updated successfully",
+      updatedWorkerLife,
     });
   } catch (error) {
-    console.error('Error processing work time completion:', error);
+    console.error("Error processing work time completion:", error);
     res.status(500).json({ error: error.message });
   }
 });
-
-
 
 router.post("/work/time/start", async (req, res) => {
   const { notification_id } = req.body;
@@ -377,8 +408,6 @@ router.post("/work/time/start", async (req, res) => {
     res.status(500).json({ error: "Failed to start stopwatch" });
   }
 });
-
-
 
 // Route to get electrician services
 router.get("/electrician/services", async (req, res) => {
@@ -460,33 +489,40 @@ router.get("/servicecategories", async (req, res) => {
   }
 });
 
-router.get("/service/categories", authenticateWorkerToken,getServicesPhoneNumber)
-
-
+router.get(
+  "/service/categories",
+  authenticateWorkerToken,
+  getServicesPhoneNumber
+);
 
 router.post("/validate-token", authenticateToken, (req, res) => {
   res.json({ isValid: true });
 });
 
-router.post("/registration/submit",authenticateWorkerToken,registrationSubmit)
+router.post(
+  "/registration/submit",
+  authenticateWorkerToken,
+  registrationSubmit
+);
 
-router.post("/account/submit",authenticateWorkerToken,addBankAccount)
+router.post("/account/submit", authenticateWorkerToken, addBankAccount);
 
-router.post("/upi/submit",authenticateWorkerToken,addUpiId)
+router.post("/upi/submit", authenticateWorkerToken, addUpiId);
 
-router.post("/onboarding/step-status",authenticateWorkerToken,onboardingSteps)
+router.post(
+  "/onboarding/step-status",
+  authenticateWorkerToken,
+  onboardingSteps
+);
 
 // Route to send OTP
 // router.post("/phonenumber", sendOtp);
 
 // POST request to send OTP
-router.post('/otp/send', sendOtp);
+router.post("/otp/send", sendOtp);
 
 // GET request to validate OTP
-router.get('/validate', validateOtp);
-
-
-
+router.get("/validate", validateOtp);
 
 // Route to verify OTP
 router.post("/otp-verify", verifyOTP);
@@ -497,44 +533,54 @@ router.get("/location/navigation", getLocationDetails);
 // Set to store ongoing intervals
 const intervalSetForNotifications = new Set();
 
+router.get("/locations", getAllLocations);
 
+router.get("/user/login/status", authenticateToken, loginStatus);
 
-router.get("/locations",getAllLocations)
- 
-router.get("/user/login/status",authenticateToken,loginStatus)
+router.get(
+  "/worker/tracking/services",
+  authenticateWorkerToken,
+  getWorkerTrackingServices
+);
 
-router.get("/worker/tracking/services",authenticateWorkerToken,getWorkerTrackingServices);
+router.get("/all/tracking/services", getAllTrackingServices);
 
-router.get("/all/tracking/services",getAllTrackingServices);
+router.post("/user/work/progress/details", userWorkerInProgressDetails);
 
-router.post("/user/work/progress/details",userWorkerInProgressDetails)
+router.post("/administrator/service/date/details", getDashboardDetails);
 
-router.post("/administrator/service/date/details",getDashboardDetails)
+router.get("/workers/pending/cashback", getWorkersPendingCashback);
 
-router.get("/workers/pending/cashback",getWorkersPendingCashback);
+router.post("/worker/pending/cashback", getWorkerCashbackDetails);
 
-router.post("/worker/pending/cashback",getWorkerCashbackDetails);
+router.get("/pending/balance/workers", pendingBalanceWorkers);
 
-router.get("/pending/balance/workers",pendingBalanceWorkers)
-
-router.get("/user/tracking/services",authenticateToken,getUserTrackingServices)
+router.get(
+  "/user/tracking/services",
+  authenticateToken,
+  getUserTrackingServices
+);
 
 router.get("/get/user", authenticateToken, getUserById);
- 
+
 // router.get('/user/bookings',authenticateToken, getUserBookings);
 
 // Route to send SMS verification
-router.post('/send-sms', sendSMSVerification);
+router.post("/send-sms", sendSMSVerification);
 
-router.get('/worker/bookings',authenticateWorkerToken, getWorkerBookings);
+router.get("/worker/bookings", authenticateWorkerToken, getWorkerBookings);
 
-router.get('/user/bookings',authenticateToken, getUserAllBookings);
+router.get("/user/bookings", authenticateToken, getUserAllBookings);
 
-router.get('/worker/profile/details',authenticateWorkerToken, getWorkerProfleDetails);
+router.get(
+  "/worker/profile/details",
+  authenticateWorkerToken,
+  getWorkerProfleDetails
+);
 
-router.get('/worker/ratings',authenticateWorkerToken, getWorkerReviewDetails);
+router.get("/worker/ratings", authenticateWorkerToken, getWorkerReviewDetails);
 
-router.post("/work/time/completed/request",workCompletedRequest)
+router.post("/work/time/completed/request", workCompletedRequest);
 
 router.post("/user/location", authenticateToken, storeUserLocation);
 
@@ -544,37 +590,56 @@ router.post("/worker/store-fcm-token", authenticateWorkerToken, storeFcmToken);
 
 router.post("/user/store-fcm-token", authenticateToken, storeUserFcmToken);
 
-router.post('/worker/store-notification',authenticateWorkerToken, storeNotification);
+router.post(
+  "/worker/store-notification",
+  authenticateWorkerToken,
+  storeNotification
+);
 
-router.post('/user/store-notification',authenticateToken, storeUserNotification);
- 
-router.get('/user/track/details', authenticateToken, getUserTrackRoute);
+router.post(
+  "/user/store-notification",
+  authenticateToken,
+  storeUserNotification
+);
 
-router.get('/worker/track/details', authenticateWorkerToken, getWorkerTrackRoute);
+router.get("/user/track/details", authenticateToken, getUserTrackRoute);
 
-router.get('/worker/notifications', authenticateWorkerToken, getWorkerNotifications);
- 
- router.get('/user/notifications', authenticateToken, getUserNotifications);
+router.get(
+  "/worker/track/details",
+  authenticateWorkerToken,
+  getWorkerTrackRoute
+);
 
-router.post('/user/action', authenticateToken,createUserAction); 
+router.get(
+  "/worker/notifications",
+  authenticateWorkerToken,
+  getWorkerNotifications
+);
 
-router.post('/user/action/cancel',authenticateToken,userActionRemove)
+router.get("/user/notifications", authenticateToken, getUserNotifications);
 
-router.post('/worker/action', authenticateWorkerToken,createWorkerAction);
+router.post("/user/action", authenticateToken, createUserAction);
 
-router.post("/worker/skill/registration/filled",authenticateWorkerToken,skillWorkerRegistration)
+router.post("/user/action/cancel", authenticateToken, userActionRemove);
 
-router.get("/worker/life/details",authenticateWorkerToken,workerLifeDetails)
+router.post("/worker/action", authenticateWorkerToken, createWorkerAction);
 
-router.post("/profile",authenticateWorkerToken,workerProfileDetails)
+router.post(
+  "/worker/skill/registration/filled",
+  authenticateWorkerToken,
+  skillWorkerRegistration
+);
 
+router.get("/worker/life/details", authenticateWorkerToken, workerLifeDetails);
+
+router.post("/profile", authenticateWorkerToken, workerProfileDetails);
 
 // Define the route for fetching user bookings
-router.get("/",(req,res) =>{
-   res.status(200).json("working")
-})
+router.get("/", (req, res) => {
+  res.status(200).json("working");
+});
 
-router.post("/user/cancellation", cancelRequest); 
+router.post("/user/cancellation", cancelRequest);
 
 // Define the route for cancelling the navigation
 router.post("/user/tryping/cancel", userCancelNavigation);
@@ -584,7 +649,11 @@ router.post("/user/work/cancel", userNavigationCancel);
 
 router.post("/worker/work/cancel", workerNavigationCancel);
 
-router.post("/registration/status",authenticateWorkerToken,registrationStatus);
+router.post(
+  "/registration/status",
+  authenticateWorkerToken,
+  registrationStatus
+);
 
 router.post("/worker/tryping/cancel", workerCancelNavigation);
 
@@ -601,11 +670,7 @@ router.post(
   updateWorkerLocation
 );
 
-
-
 router.get("/cancelation/navigation/status", checkCancellationStatus);
-
-
 
 router.post("/cancelation/navigation/status", async (req, res) => {
   const { notification_id } = req.body;
@@ -627,28 +692,30 @@ router.post(
   workerAuthentication
 );
 
-router.post("/user/active/update",authenticateWorkerToken, userUpdateLastLogin);
+router.post(
+  "/user/active/update",
+  authenticateWorkerToken,
+  userUpdateLastLogin
+);
 
 router.post("/accept/request", authenticateWorkerToken, acceptRequest);
 
 router.post("/work/completion/cancel", workCompletionCancel);
 
 router.post("/worker/details", getWorkDetails);
- 
+
 router.post("/worker/confirm/completed", serviceCompleted);
 
-
 router.post("/reject/request", authenticateWorkerToken, rejectRequest);
- 
+
 router.get("/checking/status", checkStatus);
 
 router.post("/task/confirm/status", checkTaskStatus);
 
- 
 router.get("/user/address/details", getUserAddressDetails);
 
 // router.get('/workers-nearby/:user_id', getWorkersNearby);
- 
+
 router.post("/workers-nearby", authenticateToken, getWorkersNearby);
 
 router.get("/services", getServicesBySearch);

@@ -1,13 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { useNavigation, useRoute,CommonActions } from '@react-navigation/native';
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  Button,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+} from 'react-native';
+import {useNavigation, useRoute, CommonActions} from '@react-navigation/native';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 
 const WorkerAcceptance = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { encodedId } = route.params;
+  const {encodedId} = route.params;
   const [workDetails, setWorkDetails] = useState(null);
   const [city, setCity] = useState(null);
   const [area, setArea] = useState(null);
@@ -17,10 +24,9 @@ const WorkerAcceptance = () => {
   const [service, setService] = useState(null);
   const [decodedId, setDecodedId] = useState(null);
 
-  useEffect(() => { 
-    console.log("encodedId ra" ,encodedId)
+  useEffect(() => {
+    console.log('encodedId ra', encodedId);
     if (encodedId) {
-   
       const decoded = atob(encodedId);
       setDecodedId(decoded);
     }
@@ -30,14 +36,24 @@ const WorkerAcceptance = () => {
     if (decodedId) {
       const fetchPaymentDetails = async () => {
         try {
-          const response = await axios.post(`${process.env.BackendAPI}/api/worker/details`, {
-            notification_id: decodedId,
-          });
-          const { city, area, pincode, alternate_name, alternate_phone_number, service } = response.data;
+          const response = await axios.post(
+            `${process.env.BackendAPI}/api/worker/details`,
+            {
+              notification_id: decodedId,
+            },
+          );
+          const {
+            city,
+            area,
+            pincode,
+            alternate_name,
+            alternate_phone_number,
+            service,
+          } = response.data;
           setAlternateName(alternate_name);
           setAlternatePhoneNumber(alternate_phone_number);
           setArea(area);
-          setCity(city); 
+          setCity(city);
           setPincode(pincode);
           setService(service);
         } catch (error) {
@@ -48,55 +64,68 @@ const WorkerAcceptance = () => {
     }
   }, [decodedId]);
 
-  const handleAccept = async () => { 
+  const handleAccept = async () => {
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
-      const response = await axios.post(`${process.env.BackendAPI}/api/accept/request`,
-        { user_notification_id: decodedId },
-        { headers: { Authorization: `Bearer ${jwtToken}` } }
+      const response = await axios.post(
+        `${process.env.BackendAPI}/api/accept/request`,
+        {user_notification_id: decodedId},
+        {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
 
       if (response.status === 200) {
-        const { notificationId } = response.data;
+        const {notificationId} = response.data;
         const encodedNotificationId = btoa(notificationId);
-        const pcs_token = await EncryptedStorage.getItem('pcs_token'); 
-          
+        const pcs_token = await EncryptedStorage.getItem('pcs_token');
+
         // Send data to the backend
-        await axios.post(`${process.env.BackendAPI}/api/worker/action`, {
-          encodedId: encodedNotificationId,
-          screen: 'WorkerNavigation'
-        }, { 
-          headers: {
-            Authorization: `Bearer ${pcs_token}`
-          }
-        });
+        await axios.post(
+          `${process.env.BackendAPI}/api/worker/action`,
+          {
+            encodedId: encodedNotificationId,
+            screen: 'WorkerNavigation',
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${pcs_token}`,
+            },
+          },
+        );
 
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'WorkerNavigation', params: { encodedId: encodedNotificationId } }],
-          })
+            routes: [
+              {
+                name: 'WorkerNavigation',
+                params: {encodedId: encodedNotificationId},
+              },
+            ],
+          }),
         );
       } else {
         console.error('Unexpected response status:', response.status);
-        const pcs_token = await EncryptedStorage.getItem('pcs_token'); 
-          
-        // Send data to the backend
-        await axios.post(`${process.env.BackendAPI}/api/worker/action`, {
-          encodedId: "",
-          screen: ''
-        }, {
-          headers: {
-            Authorization: `Bearer ${pcs_token}`
-          }
-        });
+        const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
+        // Send data to the backend
+        await axios.post(
+          `${process.env.BackendAPI}/api/worker/action`,
+          {
+            encodedId: '',
+            screen: '',
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${pcs_token}`,
+            },
+          },
+        );
 
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
         );
       }
     } catch (error) {
@@ -104,8 +133,8 @@ const WorkerAcceptance = () => {
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-        })
+          routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+        }),
       );
     }
   };
@@ -115,50 +144,55 @@ const WorkerAcceptance = () => {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const response = await axios.post(
         `${process.env.BackendAPI}/api/reject/request`,
-        { user_notification_id: decodedId },
-        { headers: { Authorization: `Bearer ${jwtToken}` } }
+        {user_notification_id: decodedId},
+        {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
 
       if (response.status === 200) {
+        const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
-        const pcs_token = await EncryptedStorage.getItem('pcs_token'); 
-          
         // Send data to the backend
-        await axios.post(`${process.env.BackendAPI}/api/worker/action`, {
-          encodedId: "",
-          screen: ''
-        }, {
-          headers: {
-            Authorization: `Bearer ${pcs_token}`
-          }
-        });
-
+        await axios.post(
+          `${process.env.BackendAPI}/api/worker/action`,
+          {
+            encodedId: '',
+            screen: '',
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${pcs_token}`,
+            },
+          },
+        );
 
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
         );
       } else {
-        const pcs_token = await EncryptedStorage.getItem('pcs_token'); 
-          
-        // Send data to the backend
-        await axios.post(`${process.env.BackendAPI}/api/worker/action`, {
-          encodedId: "",
-          screen: ''
-        }, {
-          headers: {
-            Authorization: `Bearer ${pcs_token}`
-          }
-        });
+        const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
+        // Send data to the backend
+        await axios.post(
+          `${process.env.BackendAPI}/api/worker/action`,
+          {
+            encodedId: '',
+            screen: '',
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${pcs_token}`,
+            },
+          },
+        );
 
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
         );
         console.error('Unexpected response status:', response.status);
       }
@@ -172,7 +206,10 @@ const WorkerAcceptance = () => {
       <View style={styles.rideRequest}>
         <Text style={styles.header}>New Service Request</Text>
         <View style={styles.info}>
-          <Image style={styles.image} source={{ uri: 'https://via.placeholder.com/40' }} />
+          <Image
+            style={styles.image}
+            source={{uri: 'https://via.placeholder.com/40'}}
+          />
           <Text>{alternateName}</Text>
         </View>
         <View style={styles.location}>
@@ -215,7 +252,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.8,
     shadowRadius: 2,
     elevation: 5,
@@ -224,7 +261,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
-    color:'#000'
+    color: '#000',
   },
   info: {
     flexDirection: 'row',
@@ -243,18 +280,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: 'bold',
-    color:'#000'
+    color: '#000',
   },
   value: {
     fontSize: 16,
-    color:'#000'
+    color: '#000',
   },
   estimate: {
     marginBottom: 20,
   },
   rupeeBold: {
     fontWeight: 'bold',
-    color:'#000'
+    color: '#000',
   },
   buttons: {
     flexDirection: 'row',

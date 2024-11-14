@@ -1,23 +1,24 @@
 const admin = require("./firebaseAdmin.js");
-const {encrypt,decrypt} = require("./src/utils/encrytion.js")
+const { encrypt, decrypt } = require("./src/utils/encrytion.js");
 const { getMessaging } = require("firebase-admin/messaging"); // Import Firebase Admin SDK
 const db = admin.firestore();
 const client = require("./connection.js");
-const axios = require('axios')
-var cron = require('node-cron');
+const axios = require("axios");
+var cron = require("node-cron");
 const {
   generateToken,
   generateWorkerToken,
 } = require("./src/utils/generateToken.js");
 const { response } = require("express");
-const request = require('request');
+const request = require("request");
 
 // Telesign API credentials
-const customerId = '1D0C4D6D-48D8-40A2-BD9D-CE2160F6B3E9';
-const apiKey = 'BQXK2DGbESmYMvO0JC2sNAd9AtOTh48AwaPZIWL7bd8o8mB63TjwAJ/BhNxO3/YD6pjjZFQR5j6Ke1wEA1TCew==';
+const customerId = "1D0C4D6D-48D8-40A2-BD9D-CE2160F6B3E9";
+const apiKey =
+  "BQXK2DGbESmYMvO0JC2sNAd9AtOTh48AwaPZIWL7bd8o8mB63TjwAJ/BhNxO3/YD6pjjZFQR5j6Ke1wEA1TCew==";
 const smsEndpoint = `https://rest-api.telesign.com/v1/messaging`;
 
-// newly functions 
+// newly functions
 
 // const Partnerlogin = async (req, res) => {
 //   const { phone_number } = req.body;
@@ -86,8 +87,10 @@ const Partnerlogin = async (req, res) => {
 
     const result = await client.query(query, [phone_number]);
     const statusCode = result.rows[0].status_code;
-    const workerId = result.rows[0].verified_worker_id || result.rows[0].worker_id;
-    const stepsCompleted = result.rows[0].step1 && result.rows[0].step2 && result.rows[0].step3;
+    const workerId =
+      result.rows[0].verified_worker_id || result.rows[0].worker_id;
+    const stepsCompleted =
+      result.rows[0].step1 && result.rows[0].step2 && result.rows[0].step3;
 
     if (statusCode === 200) {
       // Worker found in workersverified table
@@ -99,32 +102,35 @@ const Partnerlogin = async (req, res) => {
       });
       return res.status(200).json({ token, workerId });
     } else if (statusCode === 201) {
-  const token = generateWorkerToken({ worker_id: workerId });
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "Strict",
-  });
-  console.log('Backend Response for status 201:', { token, workerId, stepsCompleted });
+      const token = generateWorkerToken({ worker_id: workerId });
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
+      });
+      console.log("Backend Response for status 201:", {
+        token,
+        workerId,
+        stepsCompleted,
+      });
 
-  return res.status(201).json({
-    message: "Phone number found in workers, please complete sign up",
-    token,
-    workerId,
-    stepsCompleted
-  });
-}
- else {
+      return res.status(201).json({
+        message: "Phone number found in workers, please complete sign up",
+        token,
+        workerId,
+        stepsCompleted,
+      });
+    } else {
       // Phone number not found in both tables
-      return res.status(203).json({ message: "Phone number not registered", phone_number });
+      return res
+        .status(203)
+        .json({ message: "Phone number not registered", phone_number });
     }
   } catch (error) {
     console.error("Error logging in worker:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-
-
 
 const accountDetailsUpdate = async (req, res) => {
   const userId = req.user.id; // Get user ID from the request
@@ -145,13 +151,15 @@ const accountDetailsUpdate = async (req, res) => {
 
     // Check if any row was updated
     if (result.rowCount > 0) {
-      return res.status(200).json({ message: 'Account details updated successfully' });
+      return res
+        .status(200)
+        .json({ message: "Account details updated successfully" });
     } else {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
   } catch (error) {
     console.error("Error updating account details:", error);
-    return res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -159,7 +167,9 @@ const userCompleteSignUp = async (req, res) => {
   const { fullName, email, phoneNumber } = req.body;
 
   if (!fullName || !email || !phoneNumber) {
-    return res.status(400).json({ message: "Full name, email, and phone number are required" });
+    return res
+      .status(400)
+      .json({ message: "Full name, email, and phone number are required" });
   }
 
   try {
@@ -187,12 +197,10 @@ const userCompleteSignUp = async (req, res) => {
     // Send the token in the response
     return res.json({ token });
   } catch (error) {
-    console.error('Error in userCompleteSignUp:', error);
+    console.error("Error in userCompleteSignUp:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-
-
 
 // const workerCompleteSignUp = async (req, res) => {
 //   const { fullName, email = null, phoneNumber } = req.body; // Set default value of email to null
@@ -240,7 +248,9 @@ const workerCompleteSignUp = async (req, res) => {
 
   // Check for the presence of the phone number
   if (!phoneNumber) {
-    return res.status(400).json({ message: "No phone number found. Please start the login process again." });
+    return res.status(400).json({
+      message: "No phone number found. Please start the login process again.",
+    });
   }
 
   try {
@@ -252,7 +262,11 @@ const workerCompleteSignUp = async (req, res) => {
     `;
 
     // Insert the new worker into the database
-    const result = await client.query(insertWorkerQuery, [phoneNumber, fullName, email]);
+    const result = await client.query(insertWorkerQuery, [
+      phoneNumber,
+      fullName,
+      email,
+    ]);
 
     const worker = result.rows[0];
 
@@ -266,8 +280,8 @@ const workerCompleteSignUp = async (req, res) => {
 
 const getServicesPhoneNumber = async (req, res) => {
   // Extract serviceTitle from the body of the POST request
-  const worker_id = req.worker.id
- 
+  const worker_id = req.worker.id;
+
   try {
     // Query to select rows from "services" table where "service_title" matches the provided value
     const query = `
@@ -279,7 +293,7 @@ const getServicesPhoneNumber = async (req, res) => {
         FROM "servicecategories" sc;
     `;
     const result = await client.query(query, [worker_id]);
-    console.log(worker_id,result.rows)
+    console.log(worker_id, result.rows);
     // Return the rows that match the query
     res.json(result.rows);
   } catch (err) {
@@ -287,7 +301,6 @@ const getServicesPhoneNumber = async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 };
-
 
 const getServiceTrackingWorkerItemDetails = async (req, res) => {
   try {
@@ -313,24 +326,32 @@ const getServiceTrackingWorkerItemDetails = async (req, res) => {
     const result = await client.query(query, values);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "No service tracking details found for the given accepted ID" });
+      return res.status(404).json({
+        message: "No service tracking details found for the given accepted ID",
+      });
     }
 
     const { service_booked } = result.rows[0];
 
     if (!service_booked || !Array.isArray(service_booked)) {
-      return res.status(400).json({ message: "Invalid service_booked data format" });
+      return res
+        .status(400)
+        .json({ message: "Invalid service_booked data format" });
     }
 
     const gstRate = 0.05;
     const discountRate = 0.05;
 
-    const fetchedTotalAmount = service_booked.reduce((total, service) => total + (service.cost || 0), 0);
+    const fetchedTotalAmount = service_booked.reduce(
+      (total, service) => total + (service.cost || 0),
+      0
+    );
 
     const gstAmount = fetchedTotalAmount * gstRate;
     const cgstAmount = fetchedTotalAmount * gstRate;
     const discountAmount = fetchedTotalAmount * discountRate;
-    const fetchedFinalTotalAmount = fetchedTotalAmount + gstAmount + cgstAmount - discountAmount;
+    const fetchedFinalTotalAmount =
+      fetchedTotalAmount + gstAmount + cgstAmount - discountAmount;
 
     const paymentDetails = {
       gstAmount,
@@ -341,8 +362,14 @@ const getServiceTrackingWorkerItemDetails = async (req, res) => {
 
     res.status(200).json({ data: result.rows[0], paymentDetails });
   } catch (error) {
-    console.error("Error fetching service tracking worker item details: ", error);
-    res.status(500).json({ message: "Failed to fetch service tracking worker item details", error: error.message });
+    console.error(
+      "Error fetching service tracking worker item details: ",
+      error
+    );
+    res.status(500).json({
+      message: "Failed to fetch service tracking worker item details",
+      error: error.message,
+    });
   }
 };
 
@@ -367,31 +394,38 @@ const getServiceTrackingUserItemDetails = async (req, res) => {
     JOIN workerskills ws ON w.worker_id = ws.worker_id
     WHERE st.tracking_id = $1;
   `;
-  
 
     const values = [tracking_id];
 
     const result = await client.query(query, values);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "No service tracking details found for the given accepted ID" });
+      return res.status(404).json({
+        message: "No service tracking details found for the given accepted ID",
+      });
     }
 
     const { service_booked } = result.rows[0];
 
     if (!service_booked || !Array.isArray(service_booked)) {
-      return res.status(400).json({ message: "Invalid service_booked data format" });
+      return res
+        .status(400)
+        .json({ message: "Invalid service_booked data format" });
     }
 
     const gstRate = 0.05;
     const discountRate = 0.05;
 
-    const fetchedTotalAmount = service_booked.reduce((total, service) => total + (service.cost || 0), 0);
+    const fetchedTotalAmount = service_booked.reduce(
+      (total, service) => total + (service.cost || 0),
+      0
+    );
 
     const gstAmount = fetchedTotalAmount * gstRate;
     const cgstAmount = fetchedTotalAmount * gstRate;
     const discountAmount = fetchedTotalAmount * discountRate;
-    const fetchedFinalTotalAmount = fetchedTotalAmount + gstAmount + cgstAmount - discountAmount;
+    const fetchedFinalTotalAmount =
+      fetchedTotalAmount + gstAmount + cgstAmount - discountAmount;
 
     const paymentDetails = {
       gstAmount,
@@ -402,15 +436,21 @@ const getServiceTrackingUserItemDetails = async (req, res) => {
 
     res.status(200).json({ data: result.rows[0], paymentDetails });
   } catch (error) {
-    console.error("Error fetching service tracking worker item details: ", error);
-    res.status(500).json({ message: "Failed to fetch service tracking worker item details", error: error.message });
+    console.error(
+      "Error fetching service tracking worker item details: ",
+      error
+    );
+    res.status(500).json({
+      message: "Failed to fetch service tracking worker item details",
+      error: error.message,
+    });
   }
 };
 
 const getServiceBookingItemDetails = async (req, res) => {
   try {
     const { tracking_id } = req.body;
-    console.log(tracking_id)
+    console.log(tracking_id);
     // console.log(tracking_id)
     const query = `
     SELECT
@@ -428,31 +468,38 @@ const getServiceBookingItemDetails = async (req, res) => {
     JOIN workerskills ws ON w.worker_id = ws.worker_id
     WHERE st.notification_id = $1;
   `;
-  
 
     const values = [tracking_id];
 
     const result = await client.query(query, values);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "No service tracking details found for the given accepted ID" });
+      return res.status(404).json({
+        message: "No service tracking details found for the given accepted ID",
+      });
     }
 
     const { service_booked } = result.rows[0];
 
     if (!service_booked || !Array.isArray(service_booked)) {
-      return res.status(400).json({ message: "Invalid service_booked data format" });
+      return res
+        .status(400)
+        .json({ message: "Invalid service_booked data format" });
     }
 
     const gstRate = 0.05;
     const discountRate = 0.05;
 
-    const fetchedTotalAmount = service_booked.reduce((total, service) => total + (service.cost || 0), 0);
+    const fetchedTotalAmount = service_booked.reduce(
+      (total, service) => total + (service.cost || 0),
+      0
+    );
 
     const gstAmount = fetchedTotalAmount * gstRate;
     const cgstAmount = fetchedTotalAmount * gstRate;
     const discountAmount = fetchedTotalAmount * discountRate;
-    const fetchedFinalTotalAmount = fetchedTotalAmount + gstAmount + cgstAmount - discountAmount;
+    const fetchedFinalTotalAmount =
+      fetchedTotalAmount + gstAmount + cgstAmount - discountAmount;
 
     const paymentDetails = {
       gstAmount,
@@ -463,44 +510,50 @@ const getServiceBookingItemDetails = async (req, res) => {
 
     res.status(200).json({ data: result.rows[0], paymentDetails });
   } catch (error) {
-    console.error("Error fetching service tracking worker item details: ", error);
-    res.status(500).json({ message: "Failed to fetch service tracking worker item details", error: error.message });
+    console.error(
+      "Error fetching service tracking worker item details: ",
+      error
+    );
+    res.status(500).json({
+      message: "Failed to fetch service tracking worker item details",
+      error: error.message,
+    });
   }
 };
-
 
 const serviceTrackingUpdateStatus = async (req, res) => {
   const { tracking_id, newStatus } = req.body;
 
   try {
-      // Check if tracking_id and status are provided
-      if (!tracking_id || !newStatus) {
-          return res.status(400).json({ message: "tracking_id and status are required." });
-      }
+    // Check if tracking_id and status are provided
+    if (!tracking_id || !newStatus) {
+      return res
+        .status(400)
+        .json({ message: "tracking_id and status are required." });
+    }
 
-      // Update query
-      const updateQuery = `
+    // Update query
+    const updateQuery = `
           UPDATE servicetracking 
           SET service_status = $1 
           WHERE tracking_id = $2
       `;
 
-      // Execute the query
-      const result = await client.query(updateQuery, [newStatus, tracking_id]);
+    // Execute the query
+    const result = await client.query(updateQuery, [newStatus, tracking_id]);
 
-      // Check if any rows were updated
-      if (result.rowCount === 0) {
-          return res.status(404).json({ message: "Service tracking not found." });
-      }
+    // Check if any rows were updated
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Service tracking not found." });
+    }
 
-      // Success response
-      res.status(200).json({ message: "Service status updated successfully." });
+    // Success response
+    res.status(200).json({ message: "Service status updated successfully." });
   } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Internal Server Error." });
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error." });
   }
 };
-
 
 const getWorkerDetails = async (notificationId) => {
   try {
@@ -524,52 +577,54 @@ const getWorkerDetails = async (notificationId) => {
         accepted.notification_id = $1;
 `;
 
-      const result = await client.query(query, [notificationId]);
+    const result = await client.query(query, [notificationId]);
 
-      if (result.rows.length === 0) {
-          return { error: "No worker details found for the provided notification ID." };
-      }
-
-      const { service_booked, name, area, city, pincode, profile } = result.rows[0];
-      let gstAmount = 0;
-      let cgstAmount = 0;
-      let discountAmount = 0;
-
-      const calculatePayment = (baseAmount) => {
-          const gst = (baseAmount * 5) / 100;  
-          const cgst = (baseAmount * 5) / 100;
-          const discount = (baseAmount * 5) / 100;
-          const finalAmount = baseAmount + gst + cgst - discount;
-          gstAmount = gst;
-          cgstAmount = cgst;
-          discountAmount = discount;
-          return finalAmount;
+    if (result.rows.length === 0) {
+      return {
+        error: "No worker details found for the provided notification ID.",
       };
+    }
 
-      const fetchedTotalAmount = service_booked.reduce((total, service) => {
-          return total + (service.cost || 0);
-      }, 0);
+    const { service_booked, name, area, city, pincode, profile } =
+      result.rows[0];
+    let gstAmount = 0;
+    let cgstAmount = 0;
+    let discountAmount = 0;
 
-      const fetchedFinalTotalAmount = calculatePayment(fetchedTotalAmount);
-      console.log(profile)
-      return { 
-          service_booked, 
-          name, 
-          area, 
-          profile,
-          city, 
-          pincode,
-          gstAmount, 
-          cgstAmount, 
-          discountAmount, 
-          fetchedFinalTotalAmount 
-      };
+    const calculatePayment = (baseAmount) => {
+      const gst = (baseAmount * 5) / 100;
+      const cgst = (baseAmount * 5) / 100;
+      const discount = (baseAmount * 5) / 100;
+      const finalAmount = baseAmount + gst + cgst - discount;
+      gstAmount = gst;
+      cgstAmount = cgst;
+      discountAmount = discount;
+      return finalAmount;
+    };
+
+    const fetchedTotalAmount = service_booked.reduce((total, service) => {
+      return total + (service.cost || 0);
+    }, 0);
+
+    const fetchedFinalTotalAmount = calculatePayment(fetchedTotalAmount);
+    console.log(profile);
+    return {
+      service_booked,
+      name,
+      area,
+      profile,
+      city,
+      pincode,
+      gstAmount,
+      cgstAmount,
+      discountAmount,
+      fetchedFinalTotalAmount,
+    };
   } catch (error) {
-      console.error("Error fetching worker details:", error);
-      return { error: "An error occurred while fetching worker details." };
+    console.error("Error fetching worker details:", error);
+    return { error: "An error occurred while fetching worker details." };
   }
 };
-
 
 const userProfileDetails = async (req, res) => {
   const userId = req.user.id;
@@ -586,7 +641,9 @@ const userProfileDetails = async (req, res) => {
     const result = await client.query(query, [userId]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "No worker details found for the provided user ID." });
+      return res
+        .status(404)
+        .json({ message: "No worker details found for the provided user ID." });
     }
 
     const { name, email, phone_number } = result.rows[0];
@@ -595,41 +652,41 @@ const userProfileDetails = async (req, res) => {
     return res.json({ name, email, phone_number });
   } catch (error) {
     console.error("Error fetching worker details:", error);
-    res.status(500).json({ message: "An error occurred while fetching worker details." });
+    res
+      .status(500)
+      .json({ message: "An error occurred while fetching worker details." });
   }
 };
-
-
 
 const registrationSubmit = async (req, res) => {
   const formData = req.body;
   // Extract data from formData
-  const workerId = req.worker.id; 
+  const workerId = req.worker.id;
   const profileImageUri = formData.profileImageUri;
   const proofImageUri = formData.proofImageUri;
   const serviceCategory = formData.skillCategory;
   // console.log(profileImageUri,proofImageUri,serviceCategory,formData)
   const subskillArray = formData.subSkills; // Assuming this is an array
   const personalDetails = {
-      lastName: formData.lastName,
-      firstName: formData.firstName,
-      gender: formData.gender,
-      workExperience: formData.workExperience,
-      dob: formData.dob,
-      education: formData.education,
+    lastName: formData.lastName,
+    firstName: formData.firstName,
+    gender: formData.gender,
+    workExperience: formData.workExperience,
+    dob: formData.dob,
+    education: formData.education,
   };
   const address = {
-      doorNo: formData.doorNo,
-      landmark: formData.landmark,
-      city: formData.city,
-      district: formData.district,
-      state: formData.state,
-      pincode: formData.pincode,
+    doorNo: formData.doorNo,
+    landmark: formData.landmark,
+    city: formData.city,
+    district: formData.district,
+    state: formData.state,
+    pincode: formData.pincode,
   };
 
   try {
-      // SQL query to insert into workerskill table with conflict resolution
-      const query = `
+    // SQL query to insert into workerskill table with conflict resolution
+    const query = `
           INSERT INTO workerskills (worker_id, profile, proof, service, subservices, personalDetails, address)
           VALUES ($1, $2, $3, $4, $5, $6, $7)
           ON CONFLICT (worker_id) DO UPDATE
@@ -642,31 +699,34 @@ const registrationSubmit = async (req, res) => {
               address = EXCLUDED.address
       `;
 
-      const values = [
-          workerId,
-          profileImageUri,
-          proofImageUri,
-          serviceCategory,
-          subskillArray, // Ensure this is compatible with your database schema
-          personalDetails,
-          address,
-      ];
+    const values = [
+      workerId,
+      profileImageUri,
+      proofImageUri,
+      serviceCategory,
+      subskillArray, // Ensure this is compatible with your database schema
+      personalDetails,
+      address,
+    ];
 
-      // Execute the query
-      await client.query(query, values);
+    // Execute the query
+    await client.query(query, values);
 
-      // Send success response
-      res.status(200).json({ message: 'Registration successful' });
+    // Send success response
+    res.status(200).json({ message: "Registration successful" });
   } catch (error) {
-      console.error('Error inserting or updating data in workerskill table:', error);
-      res.status(500).json({ message: 'Error registering worker', error });
+    console.error(
+      "Error inserting or updating data in workerskill table:",
+      error
+    );
+    res.status(500).json({ message: "Error registering worker", error });
   }
 };
 
 const addBankAccount = async (req, res) => {
   const bankAccountDetails = req.body;
   // Extract data from formData
-  const workerId = req.worker.id; 
+  const workerId = req.worker.id;
   const bankName = bankAccountDetails.bank;
   const accountNumber = bankAccountDetails.accountNumber;
   const ifscCode = bankAccountDetails.ifscCode;
@@ -701,16 +761,19 @@ const addBankAccount = async (req, res) => {
     await client.query(query, values);
 
     // Send success response
-    res.status(200).json({ message: 'Bank account added successfully' });
+    res.status(200).json({ message: "Bank account added successfully" });
   } catch (error) {
-    console.error('Error inserting or updating data in bank account table:', error);
-    res.status(500).json({ message: 'Error adding account', error });
+    console.error(
+      "Error inserting or updating data in bank account table:",
+      error
+    );
+    res.status(500).json({ message: "Error adding account", error });
   }
 };
 
 const addUpiId = async (req, res) => {
   const workerId = req.worker.id;
-  const upiId = req.body.upi_id;  // Ensure you're extracting the upi_id from the request body
+  const upiId = req.body.upi_id; // Ensure you're extracting the upi_id from the request body
   // console.log(workerId,req.body)
   try {
     // SQL query to insert into bankaccounts table with conflict resolution
@@ -728,10 +791,13 @@ const addUpiId = async (req, res) => {
     await client.query(query, values);
 
     // Send success response
-    res.status(201).json({ message: 'Bank account added successfully' });
+    res.status(201).json({ message: "Bank account added successfully" });
   } catch (error) {
-    console.error('Error inserting or updating data in bank account table:', error);
-    res.status(500).json({ message: 'Error adding account', error });
+    console.error(
+      "Error inserting or updating data in bank account table:",
+      error
+    );
+    res.status(500).json({ message: "Error adding account", error });
   }
 };
 
@@ -747,7 +813,7 @@ const onboardingSteps = async (req, res) => {
     `;
 
     const result = await client.query(query, [workerId]);
-    
+
     // Extracting step results from the query response
     const { step1, step2, step3 } = result.rows[0];
 
@@ -759,30 +825,33 @@ const onboardingSteps = async (req, res) => {
     };
 
     // Send response
-    res.status(200).json({ message: 'Onboarding steps checked successfully', steps: response });
+    res.status(200).json({
+      message: "Onboarding steps checked successfully",
+      steps: response,
+    });
   } catch (error) {
-    console.error('Error checking onboarding steps:', error);
-    res.status(500).json({ message: 'Error checking onboarding steps', error });
+    console.error("Error checking onboarding steps:", error);
+    res.status(500).json({ message: "Error checking onboarding steps", error });
   }
 };
 
 const getAllBankAccounts = async (req, res) => {
   try {
     // SQL query to select all rows from the bankaccounts table
-    const query = 'SELECT * FROM bankaccounts';
+    const query = "SELECT * FROM bankaccounts";
     const result = await client.query(query);
 
     // Decrypt the sensitive fields in the retrieved data
-    const bankAccounts = result.rows.map(account => ({
+    const bankAccounts = result.rows.map((account) => ({
       ...account,
       account_number: decrypt(account.account_number),
       ifsc_code: decrypt(account.ifsc_code),
     }));
-    // console.log(bankAccounts) 
+    // console.log(bankAccounts)
 
     // res.status(200).json(bankAccounts);
   } catch (error) {
-    console.error('Error retrieving bank accounts:', error);
+    console.error("Error retrieving bank accounts:", error);
     // res.status(500).json({ message: 'Error retrieving bank accounts', error });
   }
 };
@@ -815,14 +884,14 @@ const getWorkerProfileDetails = async (req, res) => {
     const result = await client.query(query, [workerId]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Worker not found' });
+      return res.status(404).json({ message: "Worker not found" });
     }
 
     // Send the response with worker details
     res.status(200).json(result.rows[0]); // Return a single worker's details
   } catch (error) {
-    console.error('Error fetching worker profile details:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error fetching worker profile details:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -831,22 +900,25 @@ const checkOnboardingStatus = async (req, res) => {
   const worker_id = req.worker.id;
 
   try {
-    const { rows } = await client.query('SELECT onboarding_status FROM workersverified WHERE worker_id = $1', [worker_id]);
+    const { rows } = await client.query(
+      "SELECT onboarding_status FROM workersverified WHERE worker_id = $1",
+      [worker_id]
+    );
 
     if (!rows.length) {
-      return res.status(404).json({ message: 'Worker not found' });
+      return res.status(404).json({ message: "Worker not found" });
     }
 
     res.status(200).json({ onboarding_status: rows[0].onboarding_status });
   } catch (error) {
-    console.error('Error checking onboarding status:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error checking onboarding status:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
 // balanceAmmountToPay function
 const balanceAmmountToPay = async (req, res) => {
-  const  worker_id  = req.worker.id; // Assuming worker_id is passed in the request parameters
+  const worker_id = req.worker.id; // Assuming worker_id is passed in the request parameters
   // console.log(worker_id)
   try {
     // Query to select payment, payment_type, notification_id, and end_time where worker_id matches and payment is not null
@@ -865,20 +937,21 @@ const balanceAmmountToPay = async (req, res) => {
        WHERE servicecall.worker_id = $1 AND servicecall.payment IS NOT NULL`,
       [worker_id]
     );
-    
-    
 
     // If there are no records, return a message
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'No payments found for this worker' });
+      return res
+        .status(404)
+        .json({ message: "No payments found for this worker" });
     }
 
-    
     // Return the found records
     res.status(200).json(result.rows);
   } catch (err) {
-    console.error('Error fetching balance amount to pay:', err);
-    res.status(500).json({ error: 'An error occurred while retrieving payments' });
+    console.error("Error fetching balance amount to pay:", err);
+    res
+      .status(500)
+      .json({ error: "An error occurred while retrieving payments" });
   }
 };
 
@@ -887,30 +960,30 @@ const balanceAmmountToPay = async (req, res) => {
 //     const { worker_id } = req.body; // Get worker_id from the request body
 //     console.log(worker_id)
 //     const query = `
-//       SELECT 
-//         servicecall.payment, 
-//         servicecall.payment_type, 
-//         servicecall.notification_id, 
-//         servicecall.end_time, 
-//         completenotifications.*, 
+//       SELECT
+//         servicecall.payment,
+//         servicecall.payment_type,
+//         servicecall.notification_id,
+//         servicecall.end_time,
+//         completenotifications.*,
 //         "user".name,
 //         workerlife.cashback_history,
 //         workerlife.cashback_approved_times,
 //         workerlife.cashback_gain
 //       FROM servicecall
-//       LEFT JOIN completenotifications 
+//       LEFT JOIN completenotifications
 //         ON servicecall.notification_id = completenotifications.notification_id
-//       LEFT JOIN "user" 
+//       LEFT JOIN "user"
 //         ON completenotifications.user_id = "user".user_id
-//       LEFT JOIN workerlife 
+//       LEFT JOIN workerlife
 //         ON servicecall.worker_id = workerlife.worker_id
-//       WHERE servicecall.worker_id = $1 
+//       WHERE servicecall.worker_id = $1
 //         AND servicecall.payment IS NOT NULL;
 //     `;
 
 //     const values = [worker_id];
 //     const result = await client.query(query, values);
-    
+
 //     res.status(200).json(result.rows);
 //   } catch (error) {
 //     console.error('Error fetching worker cashback details:', error);
@@ -919,7 +992,6 @@ const balanceAmmountToPay = async (req, res) => {
 // };
 
 // Function to insert data into the 'relatedservices' table
-
 
 const getWorkerCashbackDetails = async (req, res) => {
   try {
@@ -954,14 +1026,13 @@ const getWorkerCashbackDetails = async (req, res) => {
 
     const values = [worker_id];
     const result = await client.query(query, values);
-    
+
     res.status(200).json(result.rows);
   } catch (error) {
-    console.error('Error fetching worker cashback details:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error fetching worker cashback details:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
 
 const pendingBalanceWorkers = async (req, res) => {
   try {
@@ -980,15 +1051,14 @@ const pendingBalanceWorkers = async (req, res) => {
     `;
 
     const result = await client.query(query);
-    
+
     // Send the results as JSON
     res.status(200).json(result.rows);
   } catch (error) {
-    console.error('Error fetching pending balance worker details:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error fetching pending balance worker details:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
 
 const getDashboardDetails = async (req, res) => {
   try {
@@ -1007,7 +1077,10 @@ const getDashboardDetails = async (req, res) => {
       dateCondition = `BETWEEN $1 AND $2`;
       values.push(startDate, endDate);
     } else {
-      return res.status(400).json({ error: "Please provide either 'date' or both 'startDate' and 'endDate'." });
+      return res.status(400).json({
+        error:
+          "Please provide either 'date' or both 'startDate' and 'endDate'.",
+      });
     }
 
     const query = `
@@ -1036,11 +1109,10 @@ const getDashboardDetails = async (req, res) => {
     // Return results as JSON response
     res.status(200).json(result.rows[0]);
   } catch (error) {
-    console.error('Error fetching dashboard details:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error fetching dashboard details:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
 
 const insertRelatedService = async (req, res) => {
   const { service, service_category, related_services } = req.body;
@@ -1057,24 +1129,22 @@ const insertRelatedService = async (req, res) => {
   try {
     // Execute the query
     const result = await client.query(query, values);
-    
+
     // Send a success response with the inserted row details
     res.status(201).json({
-      message: 'Related service added successfully',
+      message: "Related service added successfully",
       data: result.rows[0],
     });
   } catch (error) {
-    console.error('Error inserting related service:', error);
-    
+    console.error("Error inserting related service:", error);
+
     // Send an error response if something goes wrong
     res.status(500).json({
-      message: 'Error adding related service',
+      message: "Error adding related service",
       error: error.message,
     });
   }
 };
-
-
 
 // const insertTracking = async (req, res) => {
 //   try {
@@ -1138,9 +1208,7 @@ const insertRelatedService = async (req, res) => {
 //         (SELECT fcm_token FROM selected);
 
 //     `;
-    
-    
-  
+
 //     const values = [notification_id, trackingPin, trackingKey, serviceStatus];
 
 //     const result = await client.query(query, values);
@@ -1157,7 +1225,7 @@ const insertRelatedService = async (req, res) => {
 //     await updateWorkerAction(worker_id,screen,screen)
 
 //     const fcmTokens = result.rows.map(row => row.fcm_token).filter(token => token); // Filter out any undefined tokens
-    
+
 //     if (fcmTokens.length > 0) {
 //       // Create a multicast message object for all tokens
 //       const multicastMessage = {
@@ -1194,9 +1262,6 @@ const insertRelatedService = async (req, res) => {
 //       console.error('No FCM tokens to send the message to.');
 //     }
 
-
-
-
 //     res.status(201).json({ message: "Tracking inserted successfully", data: result.rows[0] });
 //   } catch (error) {
 //     console.error("Error inserting tracking: ", error);
@@ -1212,7 +1277,9 @@ const insertTracking = async (req, res) => {
     const trackingPin = Math.floor(1000 + Math.random() * 9000);
 
     // Generate a tracking_key: #cs followed by 13 random digits
-    const trackingKey = `#cs${Math.floor(1000000000000 + Math.random() * 9000000000000)}`;
+    const trackingKey = `#cs${Math.floor(
+      1000000000000 + Math.random() * 9000000000000
+    )}`;
 
     // Set service_status as "Commander collected the service item"
     const serviceStatus = "Collected Item";
@@ -1267,7 +1334,13 @@ const insertTracking = async (req, res) => {
         (SELECT fcm_token FROM selected);
     `;
 
-    const values = [notification_id, trackingPin, trackingKey, serviceStatus, details];
+    const values = [
+      notification_id,
+      trackingPin,
+      trackingKey,
+      serviceStatus,
+      details,
+    ];
 
     const result = await client.query(query, values);
 
@@ -1277,12 +1350,21 @@ const insertTracking = async (req, res) => {
 
     const { user_id, service_booked, worker_id } = result.rows[0];
     const screen = "";
-    const encodedId = Buffer.from(notification_id.toString()).toString("base64");
+    const encodedId = Buffer.from(notification_id.toString()).toString(
+      "base64"
+    );
 
-    await createUserBackgroundAction(user_id, encodedId, screen, service_booked);
+    await createUserBackgroundAction(
+      user_id,
+      encodedId,
+      screen,
+      service_booked
+    );
     await updateWorkerAction(worker_id, screen, screen);
 
-    const fcmTokens = result.rows.map(row => row.fcm_token).filter(token => token);
+    const fcmTokens = result.rows
+      .map((row) => row.fcm_token)
+      .filter((token) => token);
 
     if (fcmTokens.length > 0) {
       const multicastMessage = {
@@ -1293,31 +1375,40 @@ const insertTracking = async (req, res) => {
         },
         data: {
           notification_id: notification_id.toString(),
-          screen: 'Home',
+          screen: "Home",
         },
       };
 
       try {
-        const response = await getMessaging().sendEachForMulticast(multicastMessage);
+        const response = await getMessaging().sendEachForMulticast(
+          multicastMessage
+        );
         response.responses.forEach((res, index) => {
           if (!res.success) {
-            console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+            console.error(
+              `Error sending message to token ${fcmTokens[index]}:`,
+              res.error
+            );
           }
         });
       } catch (error) {
-        console.error('Error sending notifications:', error);
+        console.error("Error sending notifications:", error);
       }
     } else {
-      console.error('No FCM tokens to send the message to.');
+      console.error("No FCM tokens to send the message to.");
     }
 
-    res.status(201).json({ message: "Tracking inserted successfully", data: result.rows[0] });
+    res.status(201).json({
+      message: "Tracking inserted successfully",
+      data: result.rows[0],
+    });
   } catch (error) {
     console.error("Error inserting tracking: ", error);
-    res.status(500).json({ message: "Failed to insert tracking", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to insert tracking", error: error.message });
   }
 };
-
 
 const getWorkerTrackingServices = async (req, res) => {
   try {
@@ -1342,19 +1433,24 @@ const getWorkerTrackingServices = async (req, res) => {
     const result = await client.query(query, values);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "No tracking services found for the given notification ID" });
+      return res.status(404).json({
+        message: "No tracking services found for the given notification ID",
+      });
     }
 
-    res.status(200).json(result.rows );
+    res.status(200).json(result.rows);
   } catch (error) {
     console.error("Error fetching worker tracking services: ", error);
-    res.status(500).json({ message: "Failed to fetch worker tracking services", error: error.message });
+    res.status(500).json({
+      message: "Failed to fetch worker tracking services",
+      error: error.message,
+    });
   }
 };
 
 const getAllTrackingServices = async (req, res) => {
   try {
-    console.log("Hi")
+    console.log("Hi");
     // SQL query to fetch service_status, created_at, tracking_id from servicetracking
     // and join with workerskills table to get service
     const query = `
@@ -1366,20 +1462,23 @@ const getAllTrackingServices = async (req, res) => {
     FROM servicetracking st
     LEFT JOIN workerskills ws ON st.worker_id = ws.worker_id
   `;
-  
-
 
     // Execute the query
     const result = await client.query(query);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "No tracking services found for the given notification ID" });
+      return res.status(404).json({
+        message: "No tracking services found for the given notification ID",
+      });
     }
 
-    res.status(200).json(result.rows );
+    res.status(200).json(result.rows);
   } catch (error) {
     console.error("Error fetching worker tracking services: ", error);
-    res.status(500).json({ message: "Failed to fetch worker tracking services", error: error.message });
+    res.status(500).json({
+      message: "Failed to fetch worker tracking services",
+      error: error.message,
+    });
   }
 };
 
@@ -1388,34 +1487,33 @@ const serviceDeliveryVerification = async (req, res) => {
   // console.log(trackingId,enteredOtp)
 
   try {
-    
     const result = await client.query(
-      'SELECT tracking_pin, notification_id FROM servicetracking WHERE tracking_id = $1',
+      "SELECT tracking_pin, notification_id FROM servicetracking WHERE tracking_id = $1",
       [trackingId]
     );
 
-   
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Tracking ID not found' });
+      return res.status(404).json({ message: "Tracking ID not found" });
     }
 
-   
     const { tracking_pin, notification_id } = result.rows[0];
 
-    const NotificationEncodedId = Buffer.from(notification_id.toString()).toString("base64")
+    const NotificationEncodedId = Buffer.from(
+      notification_id.toString()
+    ).toString("base64");
     if (enteredOtp === tracking_pin) {
       // If OTP matches, send a success response with notification_id
       return res.status(200).json({
-        message: 'OTP verified successfully',
-        encodedId: NotificationEncodedId
+        message: "OTP verified successfully",
+        encodedId: NotificationEncodedId,
       });
     } else {
       // If OTP does not match, send an error response
-      return res.status(400).json({ message: 'Invalid OTP' });
+      return res.status(400).json({ message: "Invalid OTP" });
     }
   } catch (error) {
-    console.error('Error verifying OTP:', error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error("Error verifying OTP:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -1442,13 +1540,18 @@ const getUserTrackingServices = async (req, res) => {
     const result = await client.query(query, values);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "No tracking services found for the given notification ID" });
+      return res.status(404).json({
+        message: "No tracking services found for the given notification ID",
+      });
     }
 
-    res.status(200).json(result.rows );
+    res.status(200).json(result.rows);
   } catch (error) {
     console.error("Error fetching worker tracking services: ", error);
-    res.status(500).json({ message: "Failed to fetch worker tracking services", error: error.message });
+    res.status(500).json({
+      message: "Failed to fetch worker tracking services",
+      error: error.message,
+    });
   }
 };
 
@@ -1482,8 +1585,8 @@ const getPendingWorkers = async (req, res) => {
     const { rows } = await client.query(query);
     res.status(200).json({ success: true, data: rows });
   } catch (error) {
-    console.error('Error fetching pending workers:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error("Error fetching pending workers:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -1519,34 +1622,37 @@ const getPendingWorkerDetails = async (req, res) => {
     const { rows } = await client.query(query, [workerId]);
     res.status(200).json({ success: true, data: rows });
   } catch (error) {
-    console.error('Error fetching pending worker details:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error("Error fetching pending worker details:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
 
 const updateIssues = async (req, res) => {
   const { workerId, issues } = req.body;
 
   if (!workerId || !issues) {
-      return res.status(400).json({ message: 'workerId and issues are required.' });
+    return res
+      .status(400)
+      .json({ message: "workerId and issues are required." });
   }
 
   try {
-      // Update or insert worker's issues
-        const query = `
+    // Update or insert worker's issues
+    const query = `
         UPDATE workers
         SET issues = $2::jsonb
         WHERE worker_id = $1
     `;
 
-      // Execute the query
-      await client.query(query, [workerId, JSON.stringify(issues)]);
+    // Execute the query
+    await client.query(query, [workerId, JSON.stringify(issues)]);
 
-      return res.status(200).json({ message: 'Issues updated successfully.' });
+    return res.status(200).json({ message: "Issues updated successfully." });
   } catch (error) {
-      console.error('Error updating issues:', error);
-      return res.status(500).json({ message: 'An error occurred while updating issues.' });
+    console.error("Error updating issues:", error);
+    return res
+      .status(500)
+      .json({ message: "An error occurred while updating issues." });
   }
 };
 
@@ -1554,29 +1660,35 @@ const updateApproveStatus = async (req, res) => {
   const { newStatus, workerId } = req.body;
 
   if (!newStatus || !workerId) {
-      return res.status(400).json({ message: 'status and workerId are required.' });
+    return res
+      .status(400)
+      .json({ message: "status and workerId are required." });
   }
 
   try {
-      // Update the verification_status for the specified worker_id
-      const query = `
+    // Update the verification_status for the specified worker_id
+    const query = `
           UPDATE workers
           SET verification_status = $1
           WHERE worker_id = $2
       `;
 
-      // Execute the query
-      const result = await client.query(query, [newStatus, workerId]);
+    // Execute the query
+    const result = await client.query(query, [newStatus, workerId]);
 
-      // Check if any rows were updated
-      if (result.rowCount === 0) {
-          return res.status(404).json({ message: 'Worker not found.' });
-      }
+    // Check if any rows were updated
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Worker not found." });
+    }
 
-      return res.status(200).json({ message: 'Verification status updated successfully.' });
+    return res
+      .status(200)
+      .json({ message: "Verification status updated successfully." });
   } catch (error) {
-      console.error('Error updating verification status:', error);
-      return res.status(500).json({ message: 'An error occurred while updating verification status.' });
+    console.error("Error updating verification status:", error);
+    return res.status(500).json({
+      message: "An error occurred while updating verification status.",
+    });
   }
 };
 
@@ -1631,9 +1743,6 @@ const updateApproveStatus = async (req, res) => {
 //       SELECT * FROM worker_check LIMIT 1;
 //     `;
 
-
-    
-
 //     // Execute the query
 //     const result = await client.query(query, [workerId]);
 
@@ -1665,7 +1774,7 @@ const updateApproveStatus = async (req, res) => {
 const checkApprovalVerificationStatus = async (req, res) => {
   const workerId = req.worker.id;
   if (!workerId) {
-    return res.status(400).json({ message: 'workerId is required.' });
+    return res.status(400).json({ message: "workerId is required." });
   }
 
   try {
@@ -1691,14 +1800,14 @@ const checkApprovalVerificationStatus = async (req, res) => {
 
     // Check if any rows were returned
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Worker not found.' });
+      return res.status(404).json({ message: "Worker not found." });
     }
 
     // Determine the source and respond accordingly
     const workerData = result.rows[0];
 
-    if (workerData.source === 'workersverified') {
-      return res.status(201).json({ message: 'Worker is verified.' });
+    if (workerData.source === "workersverified") {
+      return res.status(201).json({ message: "Worker is verified." });
     }
 
     // If the worker is in the workers table, send worker details
@@ -1708,15 +1817,13 @@ const checkApprovalVerificationStatus = async (req, res) => {
       verification_status: workerData.verification_status,
       service: workerData.service, // Include the service field from workerskills
     });
-
   } catch (error) {
-    console.error('Error fetching approval verification status:', error);
-    return res.status(500).json({ message: 'An error occurred while fetching approval verification status.' });
+    console.error("Error fetching approval verification status:", error);
+    return res.status(500).json({
+      message: "An error occurred while fetching approval verification status.",
+    });
   }
 };
-
-
-
 
 const workerApprove = async (req, res) => {
   const { workerId } = req.body;
@@ -1735,13 +1842,19 @@ const workerApprove = async (req, res) => {
     const result = await client.query(query, [workerId]);
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Worker not found or already verified' });
+      return res
+        .status(404)
+        .json({ error: "Worker not found or already verified" });
     }
 
-    res.status(200).json({ message: 'Worker approved and moved to workerverified table' });
+    res
+      .status(200)
+      .json({ message: "Worker approved and moved to workerverified table" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'An error occurred while approving the worker' });
+    res
+      .status(500)
+      .json({ error: "An error occurred while approving the worker" });
   }
 };
 
@@ -1764,14 +1877,14 @@ const getWorkersPendingCashback = async (req, res) => {
     const result = await client.query(query);
     res.status(200).json(result.rows);
   } catch (error) {
-    console.error('Error fetching pending cashback for workers:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error fetching pending cashback for workers:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
 const workerCashbackPayed = async (req, res) => {
   const { worker_id, cashbackCount, cashbackPayed } = req.body;
-  console.log(worker_id,cashbackPayed,cashbackCount)
+  console.log(worker_id, cashbackPayed, cashbackCount);
   try {
     const currentTime = new Date().toISOString();
 
@@ -1787,55 +1900,56 @@ const workerCashbackPayed = async (req, res) => {
     `;
 
     // Construct the new cashback history entry as a JSON object
-    const newHistoryEntry = JSON.stringify([{
-      amount: cashbackPayed,
-      time: currentTime,
-      paid: "paid by Click Solver",
-      count: cashbackCount
-    }]);
+    const newHistoryEntry = JSON.stringify([
+      {
+        amount: cashbackPayed,
+        time: currentTime,
+        paid: "paid by Click Solver",
+        count: cashbackCount,
+      },
+    ]);
 
     // Execute the query with parameters
     const { rows } = await client.query(query, [
       cashbackCount,
       newHistoryEntry,
-      worker_id
+      worker_id,
     ]);
 
     if (rows.length === 0) {
-      return res.status(404).json({ message: 'Worker not found' });
+      return res.status(404).json({ message: "Worker not found" });
     }
 
     // Send the updated cashback information as response
     res.status(200).json({
-      message: 'Cashback updated successfully',
+      message: "Cashback updated successfully",
       cashback_gain: rows[0].cashback_gain,
-      cashback_history: rows[0].cashback_history
+      cashback_history: rows[0].cashback_history,
     });
   } catch (error) {
-    console.error('Error updating cashback:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error updating cashback:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
-
 // optimized functions
 
-const getServiceByName = async (req, res) => { 
-  const { serviceName } = req.body;  // Get the service name from the request body
-  console.log(serviceName)
+const getServiceByName = async (req, res) => {
+  const { serviceName } = req.body; // Get the service name from the request body
+  console.log(serviceName);
   if (!serviceName) {
-      return res.status(400).json({ error: 'Service name is required' });
+    return res.status(400).json({ error: "Service name is required" });
   }
 
   try {
-      // Use a single query to get both the service by name and the related services by title
-      // const query = `
-      //   SELECT s1.*, s2.*
-      //   FROM services s1
-      //   LEFT JOIN services s2 
-      //   ON s1.service_title = s2.service_title
-      //   WHERE s1.service_name = $1
-      // `;
+    // Use a single query to get both the service by name and the related services by title
+    // const query = `
+    //   SELECT s1.*, s2.*
+    //   FROM services s1
+    //   LEFT JOIN services s2
+    //   ON s1.service_title = s2.service_title
+    //   WHERE s1.service_name = $1
+    // `;
     //   const query = `
     //   SELECT a.*, s.*
     //   FROM allservices a
@@ -1854,71 +1968,67 @@ const getServiceByName = async (req, res) => {
     ORDER BY array_position(r.related_services, a.service_tag);
 `;
 
-    
+    const result = await client.query(query, [serviceName]);
 
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Service not found" });
+    }
 
-      const result = await client.query(query, [serviceName]);
-      
-
-      if (result.rows.length === 0) {
-          return res.status(404).json({ error: 'Service not found' });
-      }
-
-      // Extract the main service (first row) and the related services (all matching rows)
-      const serviceData = result.rows[0];  // First matching row is the main service
-      const relatedServicesData = result.rows;  // All rows including the first are related services
-      // console.log(serviceData,relatedServicesData.length)
-      // Return the service and related services as response
-      res.status(200).json({
-          service: serviceData,  // The primary service
-          relatedServices: relatedServicesData  // All related services including the primary one
-      });
-
+    // Extract the main service (first row) and the related services (all matching rows)
+    const serviceData = result.rows[0]; // First matching row is the main service
+    const relatedServicesData = result.rows; // All rows including the first are related services
+    // console.log(serviceData,relatedServicesData.length)
+    // Return the service and related services as response
+    res.status(200).json({
+      service: serviceData, // The primary service
+      relatedServices: relatedServicesData, // All related services including the primary one
+    });
   } catch (error) {
-      console.error('Error fetching service:', error);
-      res.status(500).json({ error: 'An error occurred while fetching the service' });
+    console.error("Error fetching service:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching the service" });
   }
 };
-
 
 // Function to get all data from the 'locations' collection
 
 const getAllLocations = async (workerIds) => {
   try {
-    if(workerIds.length < 1){
-      return []
+    if (workerIds.length < 1) {
+      return [];
     }
-    const locationsRef = db.collection('locations');
-    
+    const locationsRef = db.collection("locations");
+
     // Create a query to filter documents where workerId is in the workerIds array
-    const query = locationsRef.where('worker_id', 'in', workerIds);
+    const query = locationsRef.where("worker_id", "in", workerIds);
 
     const snapshot = await query.get();
-    
+
     if (snapshot.empty) {
       return [];
     }
 
     let locations = [];
-    snapshot.forEach(doc => {
+    snapshot.forEach((doc) => {
       locations.push({ id: doc.id, ...doc.data() });
     });
     // console.log(locations)
     return locations;
   } catch (error) {
-    console.error('Error getting locations:', error);
+    console.error("Error getting locations:", error);
     return [];
   }
 };
 
-const getWorkerLocation =async (workerId) => {
+const getWorkerLocation = async (workerId) => {
   try {
     if (!workerId) {
       return [];
     }
 
-    const locationsRef = db.collection('locations');
-    const query = locationsRef.where('worker_id', '==', workerId);
+    const locationsRef = db.collection("locations");
+    const query = locationsRef.where("worker_id", "==", workerId);
 
     const snapshot = await query.get();
 
@@ -1927,21 +2037,19 @@ const getWorkerLocation =async (workerId) => {
     }
 
     let locations = [];
-    snapshot.forEach(doc => {
+    snapshot.forEach((doc) => {
       locations.push({ id: doc.id, ...doc.data() });
     });
     // console.log(locations);
     return locations;
   } catch (error) {
-    console.error('Error getting location:', error);
+    console.error("Error getting location:", error);
     return [];
   }
-}
-
+};
 
 const getUserAndWorkerLocation = async (req, res) => {
   const { notification_id } = req.body;
-
 
   try {
     // Step 1: Get user longitude, latitude, and worker_id from accepted table using notification_id
@@ -1951,21 +2059,30 @@ const getUserAndWorkerLocation = async (req, res) => {
       WHERE notification_id = $1
     `;
     const result = await client.query(query, [notification_id]);
-  
+
     // Check if the notification exists in the table
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Notification not found' });
+      return res.status(404).json({ message: "Notification not found" });
     }
 
-    const { longitude: userLongitude, latitude: userLatitude, worker_id } = result.rows[0];
+    const {
+      longitude: userLongitude,
+      latitude: userLatitude,
+      worker_id,
+    } = result.rows[0];
 
     // Step 2: Query Firestore for the worker's location by worker_id
-    const workerLocationSnapshot = await db.collection('locations')
-      .where('worker_id', '==', worker_id).limit(1).get();
+    const workerLocationSnapshot = await db
+      .collection("locations")
+      .where("worker_id", "==", worker_id)
+      .limit(1)
+      .get();
 
     // Check if the worker's location was found
     if (workerLocationSnapshot.empty) {
-      return res.status(404).json({ message: 'Worker location not found in Firestore' });
+      return res
+        .status(404)
+        .json({ message: "Worker location not found in Firestore" });
     }
 
     // Assuming only one document is returned (matching worker_id)
@@ -1973,8 +2090,14 @@ const getUserAndWorkerLocation = async (req, res) => {
 
     // Extract the GeoPoint object from the worker's location data
     const workerLocationGeoPoint = workerLocationData.location;
-    if (!workerLocationGeoPoint || !workerLocationGeoPoint.latitude || !workerLocationGeoPoint.longitude) {
-      return res.status(500).json({ message: 'Worker GeoPoint data is missing or incomplete' });
+    if (
+      !workerLocationGeoPoint ||
+      !workerLocationGeoPoint.latitude ||
+      !workerLocationGeoPoint.longitude
+    ) {
+      return res
+        .status(500)
+        .json({ message: "Worker GeoPoint data is missing or incomplete" });
     }
 
     const workerLongitude = workerLocationGeoPoint.longitude;
@@ -1982,13 +2105,14 @@ const getUserAndWorkerLocation = async (req, res) => {
 
     // Step 3: Return both user and worker locations as arrays
     return res.status(200).json({
-      endPoint: [Number(userLongitude), Number(userLatitude)],  // User's location
-      startPoint: [workerLongitude, workerLatitude]  // Worker's location
+      endPoint: [Number(userLongitude), Number(userLatitude)], // User's location
+      startPoint: [workerLongitude, workerLatitude], // Worker's location
     });
-
   } catch (error) {
-    console.error('Error fetching locations:', error.message);
-    return res.status(500).json({ message: 'Error fetching locations', error: error.message });
+    console.error("Error fetching locations:", error.message);
+    return res
+      .status(500)
+      .json({ message: "Error fetching locations", error: error.message });
   }
 };
 
@@ -2002,21 +2126,17 @@ const getServices = async () => {
   }
 };
 
-
-
-
-
 const getIndividualServices = async (req, res) => {
   // Extract serviceTitle from the body of the POST request
-  const { serviceObject} = req.body;
-  
+  const { serviceObject } = req.body;
+
   try {
     // Query to select rows from "services" table where "service_title" matches the provided value
     const result = await client.query(
       'SELECT * FROM "services" WHERE "service_title" = $1',
       [serviceObject]
     );
-    
+
     // Return the rows that match the query
     res.json(result.rows);
   } catch (err) {
@@ -2047,16 +2167,18 @@ const getUserBookings = async (req, res) => {
     ORDER BY u.created_at DESC
 `;
 
-      const { rows } = await client.query(query, [userId]);
+    const { rows } = await client.query(query, [userId]);
 
-      res.status(200).json(rows);
+    res.status(200).json(rows);
   } catch (error) {
-      console.error('Error fetching user bookings:', error);
-      res.status(500).json({ error: 'An error occurred while fetching user bookings' });
+    console.error("Error fetching user bookings:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching user bookings" });
   }
-}; 
+};
 
-const getWorkerProfleDetails = async (req,res) => {
+const getWorkerProfleDetails = async (req, res) => {
   const workerId = req.worker.id;
   try {
     const query = `
@@ -2068,17 +2190,18 @@ const getWorkerProfleDetails = async (req,res) => {
       WHERE ws.worker_id = $1
 `;
 
-      const { rows } = await client.query(query, [workerId]);
+    const { rows } = await client.query(query, [workerId]);
 
-      res.status(200).json(rows);
+    res.status(200).json(rows);
   } catch (error) {
-      console.error('Error fetching worker profile:', error);
-      res.status(500).json({ error: 'An error occurred while fetching worker profile' });
+    console.error("Error fetching worker profile:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching worker profile" });
   }
-  
-}
+};
 
-const getWorkerReviewDetails = async (req,res) => {
+const getWorkerReviewDetails = async (req, res) => {
   const workerId = req.worker.id;
   try {
     const query = `
@@ -2104,15 +2227,16 @@ const getWorkerReviewDetails = async (req,res) => {
       f.created_at DESC;
   `;
 
-      const { rows } = await client.query(query, [workerId]);
+    const { rows } = await client.query(query, [workerId]);
 
-      res.status(200).json(rows);
+    res.status(200).json(rows);
   } catch (error) {
-      console.error('Error fetching worker reviews:', error);
-      res.status(500).json({ error: 'An error occurred while fetching worker reviews' });
+    console.error("Error fetching worker reviews:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching worker reviews" });
   }
-  
-}
+};
 
 const getWorkerBookings = async (req, res) => {
   const workerId = req.worker.id;
@@ -2135,15 +2259,16 @@ const getWorkerBookings = async (req, res) => {
     ORDER BY n.created_at DESC
 `;
 
+    const { rows } = await client.query(query, [workerId]);
 
-      const { rows } = await client.query(query, [workerId]);
-
-      res.status(200).json(rows);
+    res.status(200).json(rows);
   } catch (error) {
-      console.error('Error fetching user bookings:', error);
-      res.status(500).json({ error: 'An error occurred while fetching user bookings' });
+    console.error("Error fetching user bookings:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching user bookings" });
   }
-}; 
+};
 
 const getUserAllBookings = async (req, res) => {
   const userId = req.user.id;
@@ -2168,11 +2293,12 @@ const getUserAllBookings = async (req, res) => {
 
     res.status(200).json(rows);
   } catch (error) {
-    console.error('Error fetching user bookings:', error);
-    res.status(500).json({ error: 'An error occurred while fetching user bookings' });
+    console.error("Error fetching user bookings:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching user bookings" });
   }
 };
-
 
 const workerAuthentication = async (req, res) => {
   const workerId = req.worker.id;
@@ -2207,80 +2333,93 @@ const getUserById = async (req, res) => {
 const getWorkerNotifications = async (req, res) => {
   const workerId = req.worker.id;
   const fcmToken = req.query.fcmToken; // Access fcmToken from query parameters
-  
+
   try {
-    const result = await client.query(`
+    const result = await client.query(
+      `
       SELECT title, body, encodedId, data, receivedat
       FROM workernotifications
       WHERE worker_id = $1 AND fcm_token = $2
       ORDER BY receivedat DESC
       LIMIT 10;
-    `, [workerId, fcmToken]); // Pass fcmToken as the second parameter
+    `,
+      [workerId, fcmToken]
+    ); // Pass fcmToken as the second parameter
 
     const notifications = result.rows;
     res.json(notifications);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Error fetching notifications' });
+    res.status(500).json({ message: "Error fetching notifications" });
   }
 };
 
 const getUserNotifications = async (req, res) => {
   const userId = req.user.id;
   const fcmToken = req.query.fcmToken; // Access fcmToken from query parameters
-  
+
   try {
-    const result = await client.query(`
+    const result = await client.query(
+      `
       SELECT title, body, encodedId, data, receivedat
       FROM userrecievednotifications
       WHERE user_id = $1 AND fcm_token = $2
       ORDER BY receivedat DESC
       LIMIT 10;
-    `, [userId, fcmToken]); // Pass fcmToken as the second parameter
+    `,
+      [userId, fcmToken]
+    ); // Pass fcmToken as the second parameter
 
     const notifications = result.rows;
     res.json(notifications);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Error fetching notifications' });
+    res.status(500).json({ message: "Error fetching notifications" });
   }
 };
 
 const storeUserNotification = async (req, res) => {
   const userId = req.user.id;
-  const {fcmToken,notification}= req.body;
+  const { fcmToken, notification } = req.body;
   const { title, body, data, receivedAt, userNotificationId } = notification;
   try {
     const result = await client.query(
-      'INSERT INTO userrecievednotifications (title, body, data, receivedat, user_id, encodedid, fcm_token) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [title, body, JSON.stringify(data), receivedAt, userId, userNotificationId, fcmToken]
+      "INSERT INTO userrecievednotifications (title, body, data, receivedat, user_id, encodedid, fcm_token) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+      [
+        title,
+        body,
+        JSON.stringify(data),
+        receivedAt,
+        userId,
+        userNotificationId,
+        fcmToken,
+      ]
     );
     res.status(200).json(result.rows[0]);
   } catch (err) {
-    console.error('Error storing notification:', err);
-    res.status(500).send('Error storing notification');
+    console.error("Error storing notification:", err);
+    res.status(500).send("Error storing notification");
   }
 };
 
-
 const storeNotification = async (req, res) => {
   const workerId = req.worker.id;
-  const {fcmToken,notification}= req.body;
+  const { fcmToken, notification } = req.body;
   const { title, body, data, receivedAt, userNotificationId } = notification;
-  const {cost} =data
+  const { cost } = data;
   try {
     const result = await client.query(
-      'INSERT INTO workernotifications (title, body, data, receivedat, worker_id, encodedid, fcm_token) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      "INSERT INTO workernotifications (title, body, data, receivedat, worker_id, encodedid, fcm_token) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
       [title, body, cost, receivedAt, workerId, userNotificationId, fcmToken]
     );
     res.status(200).json(result.rows[0]);
   } catch (err) {
-    console.error('Error storing notification:', err);
-    res.status(500).send('Error storing notification');
+    console.error("Error storing notification:", err);
+    res.status(500).send("Error storing notification");
   }
 };
 
-const updateWorkerAction = async (workerId,encodedId, screen) => {
+const updateWorkerAction = async (workerId, encodedId, screen) => {
   try {
     // Create the params object and convert it to JSON string
     const params = JSON.stringify({ encodedId });
@@ -2296,14 +2435,14 @@ const updateWorkerAction = async (workerId,encodedId, screen) => {
 
     // Execute the query with the provided parameters
     const result = await client.query(query, [workerId, screen, params]);
-    
+
     // The result should contain the updated or inserted row
     const userAction = result.rows[0];
 
     // Respond with the user action data
-    return userAction
+    return userAction;
   } catch (error) {
-    console.error('Error inserting user action:', error);
+    console.error("Error inserting user action:", error);
   }
 };
 
@@ -2326,18 +2465,17 @@ const createWorkerAction = async (req, res) => {
 
     // Execute the query with the provided parameters
     const result = await client.query(query, [workerId, screen, params]);
-    
+
     // The result should contain the updated or inserted row
     const userAction = result.rows[0];
 
     // Respond with the user action data
     res.json(userAction);
   } catch (error) {
-    console.error('Error inserting user action:', error);
-    res.status(500).json({ message: 'Error inserting user action' });
+    console.error("Error inserting user action:", error);
+    res.status(500).json({ message: "Error inserting user action" });
   }
 };
-
 
 // const createUserAction = async (req, res) => {
 //   const userId = req.user.id; // Assuming req.user contains the authenticated user's information
@@ -2379,7 +2517,7 @@ const createWorkerAction = async (req, res) => {
 //       } else {
 //         // Update or add the object with the new screen, encodedId, and additional fields
 //         updatedTrack = updatedTrack.filter(item => item.encodedId !== encodedId);
-        
+
 //         const newAction = {
 //           screen,
 //           encodedId,
@@ -2413,7 +2551,7 @@ const createWorkerAction = async (req, res) => {
 //     } else {
 //       // If the user action does not exist, create a new one
 //       let newTrack = [];
-      
+
 //       if (screen) {
 //         const newAction = {
 //           screen,
@@ -2461,7 +2599,7 @@ const createUserAction = async (req, res) => {
     alternateName,
     alternatePhoneNumber,
     pincode,
-    location
+    location,
   } = req.body;
 
   console.log("User action creation initiated");
@@ -2478,7 +2616,8 @@ const createUserAction = async (req, res) => {
     const existingUserAction = result.rows[0];
 
     // Determine whether the additional fields are present
-    const hasAdditionalFields = area || city || alternateName || alternatePhoneNumber || pincode;
+    const hasAdditionalFields =
+      area || city || alternateName || alternatePhoneNumber || pincode;
 
     if (existingUserAction) {
       // If the user action exists, update the track array
@@ -2486,15 +2625,19 @@ const createUserAction = async (req, res) => {
 
       if (screen === "") {
         // Remove the object with the matching encodedId if screen is empty
-        updatedTrack = updatedTrack.filter(item => item.encodedId !== encodedId);
+        updatedTrack = updatedTrack.filter(
+          (item) => item.encodedId !== encodedId
+        );
       } else {
         // Update or add the object with the new screen, encodedId, and additional fields
-        updatedTrack = updatedTrack.filter(item => item.encodedId !== encodedId);
-        
+        updatedTrack = updatedTrack.filter(
+          (item) => item.encodedId !== encodedId
+        );
+
         const newAction = {
           screen,
           encodedId,
-          serviceBooked
+          serviceBooked,
         };
         // If additional fields are present, include them in the update
         if (hasAdditionalFields) {
@@ -2516,7 +2659,10 @@ const createUserAction = async (req, res) => {
         WHERE user_id = $2
         RETURNING *;
       `;
-      const updateResult = await client.query(updateQuery, [JSON.stringify(updatedTrack), userId]);
+      const updateResult = await client.query(updateQuery, [
+        JSON.stringify(updatedTrack),
+        userId,
+      ]);
       const updatedTrackScreen = updateResult.rows[0];
 
       // Respond with the updated user action data
@@ -2524,12 +2670,12 @@ const createUserAction = async (req, res) => {
     } else {
       // If the user action does not exist, create a new one
       let newTrack = [];
-      
+
       if (screen) {
         const newAction = {
           screen,
           encodedId,
-          serviceBooked
+          serviceBooked,
         };
 
         // Include additional fields if they are present
@@ -2549,18 +2695,22 @@ const createUserAction = async (req, res) => {
         VALUES ($1, $2)
         RETURNING *;
       `;
-      const insertResult = await client.query(insertQuery, [userId, JSON.stringify(newTrack)]);
+      const insertResult = await client.query(insertQuery, [
+        userId,
+        JSON.stringify(newTrack),
+      ]);
       const updatedTrackScreen = insertResult.rows[0];
 
       // Respond with the new user action data
       res.json(updatedTrackScreen);
     }
   } catch (error) {
-    console.error('Error inserting or updating user action:', error);
-    res.status(500).json({ message: 'Error inserting or updating user action' });
+    console.error("Error inserting or updating user action:", error);
+    res
+      .status(500)
+      .json({ message: "Error inserting or updating user action" });
   }
 };
-
 
 const userActionRemove = async (req, res) => {
   const userId = req.user.id; // Assuming req.user contains the authenticated user's information
@@ -2580,14 +2730,16 @@ const userActionRemove = async (req, res) => {
     const existingTrack = result.rows[0]?.track;
 
     if (!existingTrack) {
-      return res.status(404).json({ message: 'User action not found' });
+      return res.status(404).json({ message: "User action not found" });
     }
 
     // Step 2: Filter out the object with the matching encodedId
-    const updatedTrack = existingTrack.filter(item => item.encodedId !== encodedId);
+    const updatedTrack = existingTrack.filter(
+      (item) => item.encodedId !== encodedId
+    );
 
     if (updatedTrack.length === existingTrack.length) {
-      return res.status(404).json({ message: 'No matching encodedId found' });
+      return res.status(404).json({ message: "No matching encodedId found" });
     }
 
     // Step 3: Update the track array in the database
@@ -2597,13 +2749,16 @@ const userActionRemove = async (req, res) => {
       WHERE user_id = $2
       RETURNING *;
     `;
-    const updateResult = await client.query(updateQuery, [JSON.stringify(updatedTrack), userId]);
+    const updateResult = await client.query(updateQuery, [
+      JSON.stringify(updatedTrack),
+      userId,
+    ]);
 
     // Step 4: Respond with the updated user action
     res.json(updateResult.rows[0]);
   } catch (error) {
-    console.error('Error removing user action:', error);
-    res.status(500).json({ message: 'Error removing user action' });
+    console.error("Error removing user action:", error);
+    res.status(500).json({ message: "Error removing user action" });
   }
 };
 
@@ -2619,11 +2774,13 @@ const getWorkerTrackRoute = async (req, res) => {
     const result = await client.query(query, [id]);
 
     if (result.rows.length > 0) {
-      const route = result.rows[0].screen_name
-      const parameter = result.rows[0].params
-        res.status(200).json({route,parameter});
+      const route = result.rows[0].screen_name;
+      const parameter = result.rows[0].params;
+      res.status(200).json({ route, parameter });
     } else {
-        res.status(200).json({ error: 'No action found for the specified worker_id' });
+      res
+        .status(200)
+        .json({ error: "No action found for the specified worker_id" });
     }
   } catch (err) {
     console.error(`Error fetching user with ID ${id}:`, err);
@@ -2661,7 +2818,7 @@ const getUserTrackRoute = async (req, res) => {
     }
   } catch (err) {
     console.error(`Error fetching user with ID ${id}:`, err);
-    res.status(500).json({ message: 'Error fetching user data' });
+    res.status(500).json({ message: "Error fetching user data" });
   }
 };
 
@@ -2676,11 +2833,11 @@ const loginStatus = async (req, res) => {
     if (result.rows.length > 0) {
       res.status(200).json(result.rows[0]);
     } else {
-      res.status(401).json({ message: 'Unauthorized' });
+      res.status(401).json({ message: "Unauthorized" });
     }
   } catch (err) {
     console.error(`Error fetching user with ID ${id}:`, err);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -2692,7 +2849,7 @@ const getUserByPhoneNumber = async (phone_number) => {
     return result.rows.length ? result.rows[0] : null;
   } catch (error) {
     console.error("Error fetching user by phone number:", error);
-    throw new Error('Database query failed');
+    throw new Error("Database query failed");
   }
 };
 
@@ -2800,7 +2957,9 @@ const getAllServices = async () => {
 // };
 
 const getServicesBySearch = async (req, res) => {
-  const searchQuery = req.query.search ? req.query.search.toLowerCase().trim() : "";
+  const searchQuery = req.query.search
+    ? req.query.search.toLowerCase().trim()
+    : "";
 
   try {
     const allServices = await getAllServices();
@@ -2812,31 +2971,35 @@ const getServicesBySearch = async (req, res) => {
     let filteredServices = allServices.filter(
       (service) =>
         service.service_tag.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        service.service_category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        service.service_category
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
         service.service_name?.toLowerCase().includes(searchQuery.toLowerCase()) // Ensure to handle null or undefined properties with optional chaining
     );
-    
+
     // 2. Second attempt: Match any of the individual keywords
     if (filteredServices.length === 0 && searchKeywords.length > 0) {
       filteredServices = allServices.filter((service) =>
-        searchKeywords.some((keyword) =>
-          service.service_tag.toLowerCase().includes(keyword.toLowerCase()) ||
-          service.service_category.toLowerCase().includes(keyword.toLowerCase()) ||
-          service.service_name?.toLowerCase().includes(keyword.toLowerCase()) // Optional chaining for safety
+        searchKeywords.some(
+          (keyword) =>
+            service.service_tag.toLowerCase().includes(keyword.toLowerCase()) ||
+            service.service_category
+              .toLowerCase()
+              .includes(keyword.toLowerCase()) ||
+            service.service_name?.toLowerCase().includes(keyword.toLowerCase()) // Optional chaining for safety
         )
       );
     }
-    
 
     // Return filtered results (empty or matched)
-    
+
     res.json(filteredServices);
   } catch (error) {
     console.error("Error fetching services:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
- 
+
 // Function to log in partner (worker)
 // const Partnerlogin = async (req, res) => {
 //   const { phone_number } = req.body;
@@ -2932,7 +3095,9 @@ const storeUserFcmToken = async (req, res) => {
       res.status(200).json({ message: "FCM token stored successfully" });
     } else {
       // Token already exists
-      res.status(200).json({ message: "FCM token already exists for this user" });
+      res
+        .status(200)
+        .json({ message: "FCM token already exists for this user" });
     }
   } catch (error) {
     console.error("Error storing FCM token:", error);
@@ -2960,7 +3125,9 @@ const storeFcmToken = async (req, res) => {
       res.status(200).json({ message: "FCM token stored successfully" });
     } else {
       // Token already exists
-      res.status(200).json({ message: "FCM token already exists for this worker" });
+      res
+        .status(200)
+        .json({ message: "FCM token already exists for this worker" });
     }
   } catch (error) {
     console.error("Error storing FCM token:", error);
@@ -3052,8 +3219,6 @@ const fetchLocationDetails = async (notificationId) => {
   }
 };
 
-
-
 // Check cancellation status
 const checkCancellationStatus = async (req, res) => {
   try {
@@ -3079,13 +3244,16 @@ const TimeStart = async (notification_id) => {
   // console.log("time ayindhi",notification_id)
   try {
     // Query to insert into ServiceCall and get the worker_id in one step
-    const result = await client.query(`
+    const result = await client.query(
+      `
       INSERT INTO servicecall (notification_id, start_time, worker_id)
       SELECT $1, $2, worker_id
       FROM accepted
       WHERE notification_id = $1
       RETURNING start_time
-    `, [notification_id, new Date()]);
+    `,
+      [notification_id, new Date()]
+    );
 
     if (result.rows.length > 0) {
       return result.rows[0].start_time;
@@ -3203,11 +3371,14 @@ const getUserAddressDetails = async (req, res) => {
 
     // Check if data was found
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Notification or user address details not found" });
+      return res
+        .status(404)
+        .json({ error: "Notification or user address details not found" });
     }
 
     // Destructure and return the address details
-    const { city, area, pincode, alternate_phone_number, alternate_name } = result.rows[0];
+    const { city, area, pincode, alternate_phone_number, alternate_name } =
+      result.rows[0];
     // console.log(result.rows[0])
 
     res.json({
@@ -3222,7 +3393,6 @@ const getUserAddressDetails = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
-
 
 const rejectRequest = async (req, res) => {
   const { user_notification_id } = req.body;
@@ -3250,17 +3420,22 @@ const rejectRequest = async (req, res) => {
   }
 };
 
-
-const createUserBackgroundAction = async (userId, encodedId, screen, serviceBooked, userNotificationEncodedId = null) => {
+const createUserBackgroundAction = async (
+  userId,
+  encodedId,
+  screen,
+  serviceBooked,
+  userNotificationEncodedId = null
+) => {
   // console.log('Service Booked:', screen,encodedId,serviceBooked);
-  
+
   try {
     // Prepare the new action object if 'screen' is provided
     const newAction = screen
       ? {
           screen,
           encodedId,
-          serviceBooked
+          serviceBooked,
         }
       : null;
 
@@ -3268,7 +3443,9 @@ const createUserBackgroundAction = async (userId, encodedId, screen, serviceBook
     const newActionJson = newAction ? JSON.stringify(newAction) : null;
 
     // Prepare the initial track array for insertion
-    const initialTrack = newAction ? JSON.stringify([newAction]) : JSON.stringify([]);
+    const initialTrack = newAction
+      ? JSON.stringify([newAction])
+      : JSON.stringify([]);
 
     // Define the UPSERT query with explicit casting for $4 and $5
     const upsertQuery = `
@@ -3294,12 +3471,12 @@ const createUserBackgroundAction = async (userId, encodedId, screen, serviceBook
 
     // Parameters for the query
     const params = [
-      userId,                       // $1: user_id
-      initialTrack,                 // $2: initial track array (JSONB)
-      encodedId,                    // $3: encodedId to remove
-      userNotificationEncodedId,    // $4: userNotificationEncodedId to remove (can be null)
-      newActionJson,                // $5: new action JSON (if screen is provided)
-      newActionJson ? `[${newActionJson}]` : '[]' // $6: new action as JSONB array or empty array
+      userId, // $1: user_id
+      initialTrack, // $2: initial track array (JSONB)
+      encodedId, // $3: encodedId to remove
+      userNotificationEncodedId, // $4: userNotificationEncodedId to remove (can be null)
+      newActionJson, // $5: new action JSON (if screen is provided)
+      newActionJson ? `[${newActionJson}]` : "[]", // $6: new action as JSONB array or empty array
     ];
 
     // Execute the UPSERT query
@@ -3311,13 +3488,10 @@ const createUserBackgroundAction = async (userId, encodedId, screen, serviceBook
     // Return the updated user action data
     return updatedTrackScreen;
   } catch (error) {
-    console.error('Error inserting or updating user background action:', error);
+    console.error("Error inserting or updating user background action:", error);
     throw error; // Re-throw the error after logging
   }
 };
-
-
-
 
 // const createUserBackgroundAction = async (userId, encodedId, screen, serviceBooked, userNotificationEncodedId = null) => {
 //   console.log("call ayindhi",screen,encodedId,userId,serviceBooked);
@@ -3396,36 +3570,24 @@ const createUserBackgroundAction = async (userId, encodedId, screen, serviceBook
 //   }
 // };
 
-
-
-
-
-
-
-
-const workCompletionCancel = async(req,res) =>{
+const workCompletionCancel = async (req, res) => {
   const { notification_id } = req.body;
-  try{
-    if(notification_id){
+  try {
+    if (notification_id) {
       const updateResult = await client.query(
         "UPDATE accepted SET complete_status = $1 WHERE notification_id = $2 RETURNING *",
         ["cancel", notification_id]
       );
-    if(updateResult.rowCount>0){
-      res.status(200).json({
-        message: "Status updated to accept",
-      });
-    }
-    }else{
+      if (updateResult.rowCount > 0) {
+        res.status(200).json({
+          message: "Status updated to accept",
+        });
+      }
+    } else {
       res.status(400).json({ message: "notification_id not there" });
     }
-  }catch(error){
-
-  }
-}
-
-
-
+  } catch (error) {}
+};
 
 // const acceptRequest = async (req, res) => {
 //   const { user_notification_id } = req.body;
@@ -3449,7 +3611,7 @@ const workCompletionCancel = async(req,res) =>{
 
 //     // 2. Get notification details
 //     const notificationResult = await client.query(
-//       `SELECT n.cancel_status, n.user_id, n.notification_id, n.service_booked, 
+//       `SELECT n.cancel_status, n.user_id, n.notification_id, n.service_booked,
 //               n.longitude, n.latitude
 //        FROM notifications n
 //        WHERE n.user_notification_id = $1 FOR UPDATE`,
@@ -3479,7 +3641,7 @@ const workCompletionCancel = async(req,res) =>{
 //     );
 
 //     const fcmTokens = fcmResult.rows.map(row => row.fcm_token).filter(token => token);
-    
+
 //     // 5. Prepare service_booked for insertion
 //     let jsonbServiceBooked;
 //     if (typeof notificationData.service_booked === 'object') {
@@ -3501,9 +3663,9 @@ const workCompletionCancel = async(req,res) =>{
 
 //     // 6. Insert into accepted table
 //     const insertResult = await client.query(
-//       `INSERT INTO accepted 
+//       `INSERT INTO accepted
 //          (user_notification_id, worker_id, notification_id, status, user_id, service_booked, pin, longitude, latitude)
-//        VALUES 
+//        VALUES
 //          ($1, $2, $3, $4, $5, $6, FLOOR(RANDOM() * 9000) + 1000, $7::numeric, $8::numeric)
 //        RETURNING notification_id`,
 //       [
@@ -3614,7 +3776,7 @@ const acceptRequest = async (req, res) => {
 
   try {
     // Start a transaction
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     // Combined CTE to perform multiple operations
     const combinedQuery = `
@@ -3680,26 +3842,33 @@ const acceptRequest = async (req, res) => {
     LEFT JOIN delete_notification dn ON TRUE
   `;
 
-    const combinedResult = await client.query(combinedQuery, [user_notification_id, worker_id]);
+    const combinedResult = await client.query(combinedQuery, [
+      user_notification_id,
+      worker_id,
+    ]);
 
     // Extract the first row (since the query should return only one row)
     const row = combinedResult.rows[0];
 
     // **Check if someone already accepted the request**
     if (row.existing_notification_id) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ message: "Someone already accepted the request." });
+      await client.query("ROLLBACK");
+      return res
+        .status(400)
+        .json({ message: "Someone already accepted the request." });
     }
 
     // **Check if notification exists**
     if (!row.cancel_status && !row.user_id && !row.notification_id) {
       // If 'get_notification' didn't find any row, these fields would be undefined
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
       return res.status(404).json({ message: "Notification not found." });
     }
     if (row.cancel_status === "cancel") {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ message: "Cannot accept request; it has been canceled." });
+      await client.query("ROLLBACK");
+      return res
+        .status(400)
+        .json({ message: "Cannot accept request; it has been canceled." });
     }
 
     const insertedNotificationId = row.inserted_notification_id;
@@ -3710,8 +3879,10 @@ const acceptRequest = async (req, res) => {
       [row.user_id]
     );
 
-    const fcmTokens = fcmResult.rows.map(r => r.fcm_token).filter(token => token);
-    await client.query('COMMIT');
+    const fcmTokens = fcmResult.rows
+      .map((r) => r.fcm_token)
+      .filter((token) => token);
+    await client.query("COMMIT");
     if (fcmTokens.length > 0) {
       const multicastMessage = {
         tokens: fcmTokens,
@@ -3721,24 +3892,33 @@ const acceptRequest = async (req, res) => {
         },
         data: {
           notification_id: insertedNotificationId.toString(),
-          screen: 'UserNavigation',
+          screen: "UserNavigation",
         },
       };
-      const response = await getMessaging().sendEachForMulticast(multicastMessage);
+      const response = await getMessaging().sendEachForMulticast(
+        multicastMessage
+      );
       response.responses.forEach((resp, index) => {
         if (resp.success) {
         } else {
-          console.error(`Error sending message to token ${fcmTokens[index]}:`, resp.error);
+          console.error(
+            `Error sending message to token ${fcmTokens[index]}:`,
+            resp.error
+          );
         }
       });
     } else {
-      console.error('No FCM tokens to send the message to.');
+      console.error("No FCM tokens to send the message to.");
     }
-    const userNotificationEncodedId = Buffer.from(user_notification_id.toString()).toString("base64");
-    const encodedId = Buffer.from(insertedNotificationId.toString()).toString("base64");
+    const userNotificationEncodedId = Buffer.from(
+      user_notification_id.toString()
+    ).toString("base64");
+    const encodedId = Buffer.from(insertedNotificationId.toString()).toString(
+      "base64"
+    );
     const screen = "UserNavigation";
     let parsedServiceBooked;
-    if (typeof row.service_booked === 'string') {
+    if (typeof row.service_booked === "string") {
       try {
         parsedServiceBooked = JSON.parse(row.service_booked);
       } catch (parseError) {
@@ -3758,12 +3938,11 @@ const acceptRequest = async (req, res) => {
     res.status(200).json({
       message: "Status updated to accept",
       notificationId: insertedNotificationId,
-      backgroundAction: backgroundActionResult, 
+      backgroundAction: backgroundActionResult,
     });
-
   } catch (error) {
     try {
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
     } catch (rollbackError) {
       console.error("Error during ROLLBACK:", rollbackError);
     }
@@ -3772,8 +3951,6 @@ const acceptRequest = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
-
 
 // const userNavigationCancel = async (req, res) => {
 //   const { notification_id } = req.body;
@@ -3853,14 +4030,17 @@ const acceptRequest = async (req, res) => {
 
 const userNavigationCancel = async (req, res) => {
   const { notification_id } = req.body;
-  const encodedUserNotificationId = Buffer.from(notification_id.toString()).toString("base64");
+  const encodedUserNotificationId = Buffer.from(
+    notification_id.toString()
+  ).toString("base64");
 
   try {
     // Begin a transaction
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     // First query: UPDATE and INSERT operations
-    const combinedQuery = await client.query(`
+    const combinedQuery = await client.query(
+      `
       WITH updated AS (
         UPDATE accepted
         SET user_navigation_cancel_status = 'usercanceled'
@@ -3910,21 +4090,26 @@ const userNavigationCancel = async (req, res) => {
       FROM inserted i
       JOIN workersverified w ON w.worker_id = i.worker_id
       JOIN fcm f ON f.worker_id = w.worker_id;
-    `, [notification_id]);
+    `,
+      [notification_id]
+    );
 
     // Second query: DELETE operation
-    const deleteResult = await client.query(`
+    const deleteResult = await client.query(
+      `
       DELETE FROM accepted
       WHERE notification_id = $1
       RETURNING *;
-    `, [notification_id]);
+    `,
+      [notification_id]
+    );
 
     // Commit the transaction
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
     if (combinedQuery.rowCount > 0) {
       const workerId = combinedQuery.rows[0].worker_id;
-      const fcmTokens = combinedQuery.rows.map(row => row.fcm_token);
+      const fcmTokens = combinedQuery.rows.map((row) => row.fcm_token);
 
       if (fcmTokens.length > 0) {
         // Create the multicast message object for FCM tokens
@@ -3936,13 +4121,15 @@ const userNavigationCancel = async (req, res) => {
           },
           data: {
             notification_id: encodedUserNotificationId,
-            screen: 'Home',
+            screen: "Home",
           },
         };
 
         try {
           // Send the message to multiple tokens using sendEachForMulticast
-          const response = await getMessaging().sendEachForMulticast(multicastMessage);
+          const response = await getMessaging().sendEachForMulticast(
+            multicastMessage
+          );
 
           // Log the responses for each token
           response.responses.forEach((res, index) => {
@@ -3950,32 +4137,44 @@ const userNavigationCancel = async (req, res) => {
               // Optionally log successful sends
               // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
             } else {
-              console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+              console.error(
+                `Error sending message to token ${fcmTokens[index]}:`,
+                res.error
+              );
             }
           });
         } catch (error) {
-          console.error('Error sending notifications:', error);
+          console.error("Error sending notifications:", error);
         }
 
         const screen = "";
-        const encodedId = Buffer.from(notification_id.toString()).toString("base64");
+        const encodedId = Buffer.from(notification_id.toString()).toString(
+          "base64"
+        );
         await updateWorkerAction(workerId, encodedId, screen);
 
         return res.status(200).json({ message: "Cancellation successful" });
       } else {
         const screen = "";
-        const encodedId = Buffer.from(notification_id.toString()).toString("base64");
+        const encodedId = Buffer.from(notification_id.toString()).toString(
+          "base64"
+        );
         await updateWorkerAction(workerId, encodedId, screen);
-        console.error('No FCM tokens to send the message to.');
-        return res.status(200).json({ message: "Cancellation successful, but no FCM tokens found." });
+        console.error("No FCM tokens to send the message to.");
+        return res.status(200).json({
+          message: "Cancellation successful, but no FCM tokens found.",
+        });
       }
     } else {
-      return res.status(205).json({ message: "Cancellation not performed. Either invalid ID or already canceled." });
+      return res.status(205).json({
+        message:
+          "Cancellation not performed. Either invalid ID or already canceled.",
+      });
     }
   } catch (error) {
     // Rollback the transaction in case of error
-    await client.query('ROLLBACK');
-    console.error('Error processing request:', error);
+    await client.query("ROLLBACK");
+    console.error("Error processing request:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -3995,43 +4194,43 @@ const userNavigationCancel = async (req, res) => {
 //    UPDATE accepted
 //    SET user_navigation_cancel_status = 'usercanceled'
 //    WHERE notification_id = $1
-//    RETURNING 
-//      accepted_id, 
-//      notification_id, 
-//      user_id, 
-//      user_notification_id, 
-//      longitude, 
-//      latitude, 
-//      created_at, 
-//      worker_id, 
+//    RETURNING
+//      accepted_id,
+//      notification_id,
+//      user_id,
+//      user_notification_id,
+//      longitude,
+//      latitude,
+//      created_at,
+//      worker_id,
 //      complete_status,
 //      time
 //  ),
 //  inserted AS (
 //    INSERT INTO completenotifications (
-//      accepted_id, 
-//      notification_id, 
-//      user_id, 
-//      user_notification_id, 
-//      longitude, 
-//      latitude, 
-//      created_at, 
-//      worker_id, 
+//      accepted_id,
+//      notification_id,
+//      user_id,
+//      user_notification_id,
+//      longitude,
+//      latitude,
+//      created_at,
+//      worker_id,
 //      complete_status,
-//      service_booked, 
+//      service_booked,
 //      time
 //    )
-//    SELECT 
-//      accepted_id, 
-//      notification_id, 
-//      user_id, 
-//      user_notification_id, 
-//      longitude, 
-//      latitude, 
-//      created_at, 
-//      worker_id, 
-//      'cancel', 
-//      to_jsonb('service_booked'::text), 
+//    SELECT
+//      accepted_id,
+//      notification_id,
+//      user_id,
+//      user_notification_id,
+//      longitude,
+//      latitude,
+//      created_at,
+//      worker_id,
+//      'cancel',
+//      to_jsonb('service_booked'::text),
 //      time
 //    FROM updated
 //    RETURNING worker_id, notification_id
@@ -4046,8 +4245,6 @@ const userNavigationCancel = async (req, res) => {
 //  JOIN workersverified w ON w.worker_id = i.worker_id
 //  JOIN fcm f ON f.worker_id = w.worker_id
 //  `, [notification_id]);
- 
-
 
 //     // Commit the transaction
 //     await client.query('COMMIT');
@@ -4115,14 +4312,17 @@ const userNavigationCancel = async (req, res) => {
 
 const workerNavigationCancel = async (req, res) => {
   const { notification_id } = req.body;
-  const encodedUserNotificationId = Buffer.from(notification_id.toString()).toString("base64");
+  const encodedUserNotificationId = Buffer.from(
+    notification_id.toString()
+  ).toString("base64");
 
   try {
     // Begin a transaction
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     // First query: UPDATE and INSERT operations
-    const combinedQuery = await client.query(`
+    const combinedQuery = await client.query(
+      `
       WITH updated AS (
         UPDATE accepted
         SET user_navigation_cancel_status = 'workercanceled'
@@ -4172,23 +4372,28 @@ const workerNavigationCancel = async (req, res) => {
       FROM inserted i
       JOIN "user" w ON w.user_id = i.user_id
       JOIN userfcm f ON f.user_id = w.user_id;
-    `, [notification_id]);
+    `,
+      [notification_id]
+    );
 
     // Second query: DELETE operation
-    const deleteResult = await client.query(`
+    const deleteResult = await client.query(
+      `
       DELETE FROM accepted
       WHERE notification_id = $1
       RETURNING *;
-    `, [notification_id]);
+    `,
+      [notification_id]
+    );
 
     // Commit the transaction
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
     if (combinedQuery.rowCount > 0) {
       const userId = combinedQuery.rows[0].user_id;
       const serviceBooked = combinedQuery.rows[0].service_booked;
 
-      const fcmTokens = combinedQuery.rows.map(row => row.fcm_token);
+      const fcmTokens = combinedQuery.rows.map((row) => row.fcm_token);
 
       if (fcmTokens.length > 0) {
         // Create the multicast message object for FCM tokens
@@ -4200,13 +4405,15 @@ const workerNavigationCancel = async (req, res) => {
           },
           data: {
             notification_id: encodedUserNotificationId,
-            screen: 'Home',
+            screen: "Home",
           },
         };
 
         try {
           // Send the message to multiple tokens using sendEachForMulticast
-          const response = await getMessaging().sendEachForMulticast(multicastMessage);
+          const response = await getMessaging().sendEachForMulticast(
+            multicastMessage
+          );
 
           // Log the responses for each token
           response.responses.forEach((res, index) => {
@@ -4214,53 +4421,79 @@ const workerNavigationCancel = async (req, res) => {
               // Optionally log successful sends
               // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
             } else {
-              console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+              console.error(
+                `Error sending message to token ${fcmTokens[index]}:`,
+                res.error
+              );
             }
           });
         } catch (error) {
-          console.error('Error sending notifications:', error);
+          console.error("Error sending notifications:", error);
         }
 
         const screen = "";
-        const encodedId = Buffer.from(notification_id.toString()).toString("base64");
-        await createUserBackgroundAction(userId, encodedId, screen, serviceBooked);
+        const encodedId = Buffer.from(notification_id.toString()).toString(
+          "base64"
+        );
+        await createUserBackgroundAction(
+          userId,
+          encodedId,
+          screen,
+          serviceBooked
+        );
 
         return res.status(200).json({ message: "Cancellation successful" });
       } else {
         const screen = "";
-        const encodedId = Buffer.from(notification_id.toString()).toString("base64");
-        await createUserBackgroundAction(userId, encodedId, screen, serviceBooked);
-        console.error('No FCM tokens to send the message to.');
-        return res.status(200).json({ message: "Cancellation successful, but no FCM tokens found." });
+        const encodedId = Buffer.from(notification_id.toString()).toString(
+          "base64"
+        );
+        await createUserBackgroundAction(
+          userId,
+          encodedId,
+          screen,
+          serviceBooked
+        );
+        console.error("No FCM tokens to send the message to.");
+        return res.status(200).json({
+          message: "Cancellation successful, but no FCM tokens found.",
+        });
       }
     } else {
-      return res.status(205).json({ message: "Cancellation not performed. Either invalid ID or already canceled." });
+      return res.status(205).json({
+        message:
+          "Cancellation not performed. Either invalid ID or already canceled.",
+      });
     }
   } catch (error) {
     // Rollback the transaction in case of error
-    await client.query('ROLLBACK');
-    console.error('Error processing request:', error);
+    await client.query("ROLLBACK");
+    console.error("Error processing request:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
 
-
 const workCompletedRequest = async (req, res) => {
   const { notification_id } = req.body;
   // console.log("comp", notification_id);
-  const encodedUserNotificationId = Buffer.from(notification_id.toString()).toString("base64");
+  const encodedUserNotificationId = Buffer.from(
+    notification_id.toString()
+  ).toString("base64");
 
   try {
     // Query to get worker_id and fcm_tokens in one go using JOIN
-    const result = await client.query(`
+    const result = await client.query(
+      `
       SELECT f.worker_id, f.fcm_token 
       FROM accepted a
       JOIN fcm f ON a.worker_id = f.worker_id
       WHERE a.notification_id = $1
-    `, [notification_id]);
+    `,
+      [notification_id]
+    );
 
     if (result.rows.length > 0) {
-      const fcmTokens = result.rows.map(row => row.fcm_token);
+      const fcmTokens = result.rows.map((row) => row.fcm_token);
       // console.log(fcmTokens);
 
       if (fcmTokens.length > 0) {
@@ -4273,31 +4506,35 @@ const workCompletedRequest = async (req, res) => {
           },
           data: {
             notification_id: encodedUserNotificationId.toString(),
-            screen: 'TaskConfirmation',
+            screen: "TaskConfirmation",
           },
         };
 
         try {
           // Use sendEachForMulticast to send the same message to multiple tokens
-          const response = await getMessaging().sendEachForMulticast(multicastMessage);
+          const response = await getMessaging().sendEachForMulticast(
+            multicastMessage
+          );
 
           // Log the responses for each token
           response.responses.forEach((res, index) => {
             if (res.success) {
               // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
             } else {
-              console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+              console.error(
+                `Error sending message to token ${fcmTokens[index]}:`,
+                res.error
+              );
             }
           });
 
           // console.log('Success Count:', response.successCount);
           // console.log('Failure Count:', response.failureCount);
-
         } catch (error) {
-          console.error('Error sending notifications:', error);
+          console.error("Error sending notifications:", error);
         }
       } else {
-        console.error('No FCM tokens to send the message to.');
+        console.error("No FCM tokens to send the message to.");
       }
 
       res.status(200).json({
@@ -4309,11 +4546,10 @@ const workCompletedRequest = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Error processing request:', error);
+    console.error("Error processing request:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
-
 
 const addWorker = async (worker) => {
   const { name, phone_number } = worker;
@@ -4327,7 +4563,7 @@ const addWorker = async (worker) => {
   } catch (err) {
     console.error("Error adding user:", err);
     throw err;
-  } 
+  }
 };
 
 // ***
@@ -4370,7 +4606,6 @@ const addWorker = async (worker) => {
 
 // const userCancelNavigation = async (req, res) => {
 //   const { notification_id } = req.body;
-
 
 //   if (!notification_id) {
 //     return res.status(400).json({ error: "Notification ID is required" });
@@ -4422,7 +4657,9 @@ const userCancelNavigation = async (req, res) => {
     const result = await client.query(query, [notification_id]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Cancellation time is up or Notification not found" });
+      return res
+        .status(404)
+        .json({ error: "Cancellation time is up or Notification not found" });
     }
 
     const updatedStatus = result.rows[0].user_navigation_cancel_status;
@@ -4498,7 +4735,9 @@ const workerCancelNavigation = async (req, res) => {
 
     // If no rows were returned, the notification either doesn't exist or the status is 'timeup'
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Cancellation time is up or Notification not found" });
+      return res
+        .status(404)
+        .json({ error: "Cancellation time is up or Notification not found" });
     }
 
     const updatedStatus = result.rows[0].navigation_status;
@@ -4538,15 +4777,15 @@ const generatePin = () => {
   return Math.floor(1000 + Math.random() * 9000); // Generates a 4-digit random number
 };
 
-const formattedDate = () =>{
+const formattedDate = () => {
   const currentDateTime = new Date();
   return currentDateTime.toLocaleDateString();
-}
+};
 
-const formattedTime = () =>{
+const formattedTime = () => {
   const currentDateTime = new Date();
   return currentDateTime.toLocaleTimeString();
-}
+};
 
 // ***
 // const getWorkersNearby = async (req, res) => {
@@ -4620,12 +4859,11 @@ const formattedTime = () =>{
 //     const recentNotificationId =
 //       userRecentNotificationResult.rows[0].recent_notification_id;
 
-
 //     // // // Get all worker locations
 //     // const workerLocationsQuery = "SELECT * FROM workerlocation";
 //     // const workerLocationsResult = await client.query(workerLocationsQuery);
 //     const query = `
-//     SELECT worker_id 
+//     SELECT worker_id
 //     FROM workerskills
 //     WHERE $1 = ANY(subservices);
 //   `;
@@ -4638,11 +4876,7 @@ const formattedTime = () =>{
 
 //   // console.log('Worker IDs:', workerIds);
 
-
-
-    
 //     const workerDb = await getAllLocations(workerIds)
-
 
 //     // Filter workersverified within 2 km radius
 //     const nearbyWorkers = [];
@@ -4706,7 +4940,6 @@ const formattedTime = () =>{
 //       const fcmTokens = fcmTokensResult.rows.map((row) => row.fcm_token);
 
 //       // console.log(fcmTokens)
-      
 
 //       // Send notifications to nearby workersverified
 //       // const messages = fcmTokens.map((token) => ({
@@ -4740,11 +4973,11 @@ const formattedTime = () =>{
 //             time: formattedTime(), // Add the current time
 //           },
 //         };
-      
+
 //         try {
 //           // Use sendEachForMulticast to send the same message to multiple tokens
 //           const response = await getMessaging().sendEachForMulticast(multicastMessage);
-      
+
 //           // Log the responses for each token
 //           response.responses.forEach((res, index) => {
 //             if (res.success) {
@@ -4753,10 +4986,10 @@ const formattedTime = () =>{
 //               console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
 //             }
 //           });
-      
+
 //           // console.log('Success Count:', response.successCount);
 //           // console.log('Failure Count:', response.failureCount);
-      
+
 //         } catch (error) {
 //           console.error('Error sending notifications:', error);
 //         }
@@ -4767,7 +5000,7 @@ const formattedTime = () =>{
 //       return res.status(200).json(encodedUserNotificationId);
 //     } else {
 //       return res
-//         .status(200) 
+//         .status(200)
 //         .json("No workersverified found within 2 km radius" );
 //     }
 //   } catch (error) {
@@ -4778,15 +5011,15 @@ const formattedTime = () =>{
 
 async function getWorkerLocations(workerIds) {
   try {
-    const workersCollection = db.collection('locations');
+    const workersCollection = db.collection("locations");
     const workerLocations = [];
 
     // Use a batch get to fetch all worker documents by their IDs
     const workerSnapshots = await Promise.all(
-      workerIds.map(workerId => workersCollection.doc(workerId).get())
+      workerIds.map((workerId) => workersCollection.doc(workerId).get())
     );
 
-    workerSnapshots.forEach(docSnapshot => {
+    workerSnapshots.forEach((docSnapshot) => {
       if (docSnapshot.exists) {
         const data = docSnapshot.data();
         if (data.location) {
@@ -4801,8 +5034,8 @@ async function getWorkerLocations(workerIds) {
 
     return workerLocations;
   } catch (error) {
-    console.error('Error fetching worker locations:', error);
-    throw new Error('Unable to fetch worker locations');
+    console.error("Error fetching worker locations:", error);
+    throw new Error("Unable to fetch worker locations");
   }
 }
 
@@ -4810,11 +5043,17 @@ async function getWorkerLocations(workerIds) {
 
 const getWorkersNearby = async (req, res) => {
   const user_id = req.user.id;
-  const { area, pincode, city, alternateName, alternatePhoneNumber, serviceBooked } = req.body;
+  const {
+    area,
+    pincode,
+    city,
+    alternateName,
+    alternatePhoneNumber,
+    serviceBooked,
+  } = req.body;
   const created_at = getCurrentTimestamp();
   const serviceArray = JSON.stringify(serviceBooked);
 
-  
   try {
     // Get user details and location in one query using a JOIN
     const userQuery = `
@@ -4824,9 +5063,11 @@ const getWorkersNearby = async (req, res) => {
       WHERE u.user_id = $1
     `;
     const userResult = await client.query(userQuery, [user_id]);
-   
+
     if (userResult.rows.length === 0) {
-      return res.status(404).json({ error: "User not found or location not found" });
+      return res
+        .status(404)
+        .json({ error: "User not found or location not found" });
     }
     const user = userResult.rows[0];
 
@@ -4836,10 +5077,23 @@ const getWorkersNearby = async (req, res) => {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING user_notification_id
     `;
-    const userNotificationResult = await client.query(insertUserNotificationQuery, [
-      user_id, user.longitude, user.latitude, created_at, area, pincode, city, alternateName, alternatePhoneNumber, serviceArray
-    ]);
-    const userNotificationId = userNotificationResult.rows[0].user_notification_id;
+    const userNotificationResult = await client.query(
+      insertUserNotificationQuery,
+      [
+        user_id,
+        user.longitude,
+        user.latitude,
+        created_at,
+        area,
+        pincode,
+        city,
+        alternateName,
+        alternatePhoneNumber,
+        serviceArray,
+      ]
+    );
+    const userNotificationId =
+      userNotificationResult.rows[0].user_notification_id;
 
     // Insert into userrecentnotifications with conflict handling
     const insertUserRecentNotificationQuery = `
@@ -4852,19 +5106,21 @@ const getWorkersNearby = async (req, res) => {
         created_at = EXCLUDED.created_at
       RETURNING recent_notification_id
     `;
-    const userRecentNotificationResult = await client.query(insertUserRecentNotificationQuery, [
-      userNotificationId, user_id, user.longitude, user.latitude, created_at
-    ]);
-    const recentNotificationId = userRecentNotificationResult.rows[0].recent_notification_id;
+    const userRecentNotificationResult = await client.query(
+      insertUserRecentNotificationQuery,
+      [userNotificationId, user_id, user.longitude, user.latitude, created_at]
+    );
+    const recentNotificationId =
+      userRecentNotificationResult.rows[0].recent_notification_id;
 
-// console.log("serviceArray:", serviceBooked, "Type:", typeof serviceBooked);
+    // console.log("serviceArray:", serviceBooked, "Type:", typeof serviceBooked);
 
     // Extract service names from the serviceBooked array
-    const serviceNames = serviceBooked.map(service => service.serviceName);
+    const serviceNames = serviceBooked.map((service) => service.serviceName);
     const totalCost = serviceBooked.reduce((accumulator, service) => {
       return accumulator + service.cost;
     }, 0); // Start with 0
-    
+
     // Create the query to find worker_ids with all serviceNames
     const workerServiceQuery = `
       SELECT worker_id
@@ -4874,27 +5130,27 @@ const getWorkersNearby = async (req, res) => {
       GROUP BY worker_id
     `;
     // Execute the query, passing in the serviceNames array
-    const workerServiceResult = await client.query(workerServiceQuery, [serviceNames]);
+    const workerServiceResult = await client.query(workerServiceQuery, [
+      serviceNames,
+    ]);
 
-    
     // Extract the worker_ids from the result
-    const workerIds = workerServiceResult.rows.map(row => row.worker_id);
-    
+    const workerIds = workerServiceResult.rows.map((row) => row.worker_id);
+
     if (workerIds.length === 0) {
-      return res.status(200).json("No workersverified found within 2 km radius");
+      return res
+        .status(200)
+        .json("No workersverified found within 2 km radius");
     }
 
- 
-
-
-    const workerDb = await getAllLocations(workerIds)
+    const workerDb = await getAllLocations(workerIds);
     // console.log("db",workerDb)
 
     // Filter workersverified within 2 km radius
     const nearbyWorkers = [];
     workerDb.forEach((workerLocation) => {
       const distance = haversineDistance(
-        user.latitude, 
+        user.latitude,
         user.longitude,
         workerLocation.location._latitude,
         workerLocation.location._longitude
@@ -4904,12 +5160,10 @@ const getWorkersNearby = async (req, res) => {
       }
     });
 
-
-    
-
-
     if (nearbyWorkers.length === 0) {
-      return res.status(200).json("No workersverified found within 2 km radius");
+      return res
+        .status(200)
+        .json("No workersverified found within 2 km radius");
     }
 
     // Insert worker details into notifications table
@@ -4920,100 +5174,117 @@ const getWorkersNearby = async (req, res) => {
     `;
     for (const worker of nearbyWorkers) {
       await client.query(insertNotificationsQuery, [
-        recentNotificationId, userNotificationId, user_id, worker.worker_id,
-        user.longitude, user.latitude, created_at, pin, serviceArray
+        recentNotificationId,
+        userNotificationId,
+        user_id,
+        worker.worker_id,
+        user.longitude,
+        user.latitude,
+        created_at,
+        pin,
+        serviceArray,
       ]);
     }
 
-    const encodedUserNotificationId = Buffer.from(userNotificationId.toString()).toString("base64");
+    const encodedUserNotificationId = Buffer.from(
+      userNotificationId.toString()
+    ).toString("base64");
 
     // Get FCM tokens and send notifications
     const fcmTokensQuery = `
     SELECT fcm_token FROM fcm WHERE worker_id = ANY($1::int[])
     `;
-    const fcmTokensResult = await client.query(fcmTokensQuery, [
-      nearbyWorkers,
-    ]);
+    const fcmTokensResult = await client.query(fcmTokensQuery, [nearbyWorkers]);
     const fcmTokens = fcmTokensResult.rows.map((row) => row.fcm_token);
 
     if (fcmTokens.length > 0) {
-        // 1. Normal Notification Message (with `notification` payload)
-        const normalNotificationMessage = {
-            tokens: fcmTokens,
-            notification: {
-                title: serviceArray,
-                body: `${area}, ${city}, ${pincode}`,
-            },
-            data: {
-                user_notification_id: encodedUserNotificationId.toString(),
-                service: serviceArray,
-                location: `${area}, ${city}, ${pincode}`,
-                coordinates: `${user.latitude},${user.longitude}`,
-                click_action: "FLUTTER_NOTIFICATION_CLICK",
-                cost: totalCost.toString(),
-                targetUrl: `/acceptance/${encodedUserNotificationId}`,
-                screen: 'Acceptance',
-                date: formattedDate(),
-                time: formattedTime(),
-                type: "normal" // Adding a custom type to distinguish notifications if needed
-            },
-            android: {
-                priority: "high",
-            }
-        };
+      // 1. Normal Notification Message (with `notification` payload)
+      const normalNotificationMessage = {
+        tokens: fcmTokens,
+        notification: {
+          title: serviceArray,
+          body: `${area}, ${city}, ${pincode}`,
+        },
+        data: {
+          user_notification_id: encodedUserNotificationId.toString(),
+          service: serviceArray,
+          location: `${area}, ${city}, ${pincode}`,
+          coordinates: `${user.latitude},${user.longitude}`,
+          click_action: "FLUTTER_NOTIFICATION_CLICK",
+          cost: totalCost.toString(),
+          targetUrl: `/acceptance/${encodedUserNotificationId}`,
+          screen: "Acceptance",
+          date: formattedDate(),
+          time: formattedTime(),
+          type: "normal", // Adding a custom type to distinguish notifications if needed
+        },
+        android: {
+          priority: "high",
+        },
+      };
 
-        // 2. Silent Notification Message (data-only, no `notification` payload)
-        const silentNotificationMessage = {
-            tokens: fcmTokens,
-            data: {
-                user_notification_id: encodedUserNotificationId.toString(),
-                service: serviceArray,
-                location: `${area}, ${city}, ${pincode}`,
-                click_action: "FLUTTER_NOTIFICATION_CLICK",
-                coordinates: `${user.latitude},${user.longitude}`,
-                cost: totalCost.toString(),
-                targetUrl: `/acceptance/${encodedUserNotificationId}`,
-                screen: 'Acceptance',
-                date: formattedDate(),
-                time: formattedTime(),
-                type: "silent"
-            },
-            android: {
-                priority: "high",
-                contentAvailable: true,
-            }
-        };
+      // 2. Silent Notification Message (data-only, no `notification` payload)
+      const silentNotificationMessage = {
+        tokens: fcmTokens,
+        data: {
+          user_notification_id: encodedUserNotificationId.toString(),
+          service: serviceArray,
+          location: `${area}, ${city}, ${pincode}`,
+          click_action: "FLUTTER_NOTIFICATION_CLICK",
+          coordinates: `${user.latitude},${user.longitude}`,
+          cost: totalCost.toString(),
+          targetUrl: `/acceptance/${encodedUserNotificationId}`,
+          screen: "Acceptance",
+          date: formattedDate(),
+          time: formattedTime(),
+          type: "silent",
+        },
+        android: {
+          priority: "high",
+          contentAvailable: true,
+        },
+      };
 
-        try {
-            // Send Normal Notification (visible)
-            const normalResponse = await getMessaging().sendEachForMulticast(normalNotificationMessage);
-            normalResponse.responses.forEach((res, index) => {
-                if (res.success) {
-                    // console.log(`Normal message sent successfully to token ${fcmTokens[index]}`);
-                } else {
-                    console.error(`Error sending normal message to token ${fcmTokens[index]}:`, res.error);
-                }
-            });
+      try {
+        // Send Normal Notification (visible)
+        const normalResponse = await getMessaging().sendEachForMulticast(
+          normalNotificationMessage
+        );
+        normalResponse.responses.forEach((res, index) => {
+          if (res.success) {
+            // console.log(`Normal message sent successfully to token ${fcmTokens[index]}`);
+          } else {
+            console.error(
+              `Error sending normal message to token ${fcmTokens[index]}:`,
+              res.error
+            );
+          }
+        });
 
-            // Send Silent Notification (background processing)
-            const silentResponse = await getMessaging().sendEachForMulticast(silentNotificationMessage);
-            silentResponse.responses.forEach((res, index) => {
-                if (res.success) {
-                    // console.log(`Silent message sent successfully to token ${fcmTokens[index]}`);
-                } else {
-                    console.error(`Error sending silent message to token ${fcmTokens[index]}:`, res.error);
-                }
-            });
+        // Send Silent Notification (background processing)
+        const silentResponse = await getMessaging().sendEachForMulticast(
+          silentNotificationMessage
+        );
+        silentResponse.responses.forEach((res, index) => {
+          if (res.success) {
+            // console.log(`Silent message sent successfully to token ${fcmTokens[index]}`);
+          } else {
+            console.error(
+              `Error sending silent message to token ${fcmTokens[index]}:`,
+              res.error
+            );
+          }
+        });
 
-            // console.log('Normal Notification Success Count:', normalResponse.successCount);
-            // console.log('Normal Notification Failure Count:', normalResponse.failureCount);
-            // console.log('Silent Notification Success Count:', silentResponse.successCount);
-            // console.log('Silent Notification Failure Count:', silentResponse.failureCount);
-        } catch (error) {
-            console.error('Error sending notifications:', error);
-        }
+        // console.log('Normal Notification Success Count:', normalResponse.successCount);
+        // console.log('Normal Notification Failure Count:', normalResponse.failureCount);
+        // console.log('Silent Notification Success Count:', silentResponse.successCount);
+        // console.log('Silent Notification Failure Count:', silentResponse.failureCount);
+      } catch (error) {
+        console.error("Error sending notifications:", error);
+      }
     } else {
-      console.error('No FCM tokens to send the message to.');
+      console.error("No FCM tokens to send the message to.");
     }
 
     return res.status(200).json(encodedUserNotificationId);
@@ -5022,7 +5293,6 @@ const getWorkersNearby = async (req, res) => {
     return res.status(500).json({ error: "Server error" });
   }
 };
-
 
 // const getWorkersNearby = async (req, res) => {
 //   const user_id = req.user.id;
@@ -5221,7 +5491,6 @@ const getWorkersNearby = async (req, res) => {
 
 // Adjust the getAllLocations function to batch Firestore calls
 
-
 // const getAllLocations = async (workerIds) => {
 //   try {
 //     if (workerIds.length < 1) {
@@ -5256,9 +5525,6 @@ const getWorkersNearby = async (req, res) => {
 //     return [];
 //   }
 // };
-
-
-
 
 // main second
 // const getWorkersNearby = async (req, res) => {
@@ -5329,7 +5595,7 @@ const getWorkersNearby = async (req, res) => {
 //       WHERE w.worker_id = ANY($1::int[])
 //     `;
 //     const workerDetailsResult = await client.query(workerDetailsQuery, [workerIds]);
-    
+
 //     // Filter workersverified within 2 km radius
 //     const nearbyWorkers = workerDetailsResult.rows.filter((workerLocation) => {
 //       const distance = haversineDistance(user.latitude, user.longitude, workerLocation.latitude, workerLocation.longitude);
@@ -5402,19 +5668,19 @@ const getWorkersNearby = async (req, res) => {
 
 const checkTaskStatus = async (req, res) => {
   const { notification_id } = req.body;
-  
+
   try {
     // Directly check the result in the if condition to reduce extra variables
     const result = await client.query(
       "SELECT end_time FROM servicecall WHERE notification_id = $1",
       [notification_id]
     );
-    
+
     if (result.rows.length === 0) {
       // Return early if no notification is found
       return res.status(205).json({ message: "Notification not found" });
     }
-    
+
     const end_time = result.rows[0].end_time;
 
     if (end_time) {
@@ -5424,13 +5690,11 @@ const checkTaskStatus = async (req, res) => {
 
     // If end_time is null, return a notification not found response
     return res.status(205).json({ message: "Notification not found" });
-
   } catch (error) {
     console.error("Error checking status:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 const checkStatus = async (req, res) => {
   const { user_notification_id } = req.query;
@@ -5440,7 +5704,7 @@ const checkStatus = async (req, res) => {
       "SELECT status, notification_id FROM notifications WHERE user_notification_id = $1",
       [user_notification_id]
     );
-    
+
     if (result.rows.length > 0) {
       const status = result.rows[0].status;
       const notification_id = result.rows[0].notification_id;
@@ -5485,28 +5749,26 @@ const getVerificationStatus = async (req, res) => {
   const { notification_id } = req.query;
 
   if (!notification_id) {
-    return res.status(400).json({ error: 'Notification ID is required' });
+    return res.status(400).json({ error: "Notification ID is required" });
   }
 
   try {
     const result = await client.query(
-      'SELECT verification_status FROM accepted WHERE notification_id = $1',
+      "SELECT verification_status FROM accepted WHERE notification_id = $1",
       [notification_id]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Notification ID not found' });
+      return res.status(404).json({ error: "Notification ID not found" });
     }
 
     const verificationStatus = result.rows[0].verification_status;
     res.json(verificationStatus);
   } catch (error) {
-    console.error('Error checking verification status:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error checking verification status:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
-
-
 
 // const workerVerifyOtp = async (req, res) => {
 //   const { notification_id, otp } = req.body;
@@ -5618,7 +5880,6 @@ const getVerificationStatus = async (req, res) => {
 //   }
 // };
 
-
 const workerVerifyOtp = async (req, res) => {
   const { notification_id, otp } = req.body;
 
@@ -5652,17 +5913,19 @@ const workerVerifyOtp = async (req, res) => {
 
     // Execute the query with parameters
     const queryResult = await client.query(query, [notification_id, otp]);
-    console.log(notification_id)
+    console.log(notification_id);
     // Check if any records were returned
     if (queryResult.rows.length === 0) {
-      return res.status(404).json({ message: "OTP is incorrect or notification not found" });
+      return res
+        .status(404)
+        .json({ message: "OTP is incorrect or notification not found" });
     }
 
     const row = queryResult.rows[0];
     console.log("Updated Row:", row);
 
     // Check if the user canceled the navigation
-    if (row.user_navigation_cancel_status === 'usercanceled') {
+    if (row.user_navigation_cancel_status === "usercanceled") {
       return res.status(205).json({ message: "User cancelled the navigation" });
     }
 
@@ -5671,7 +5934,7 @@ const workerVerifyOtp = async (req, res) => {
     const timeResult = await TimeStart(notification_id);
 
     // Fetch the FCM tokens from the query result
-    const fcmTokens = [row.fcm_token].filter(token => token);
+    const fcmTokens = [row.fcm_token].filter((token) => token);
 
     if (fcmTokens.length > 0) {
       // Create a multicast message for all tokens
@@ -5683,42 +5946,51 @@ const workerVerifyOtp = async (req, res) => {
         },
         data: {
           notification_id: notification_id.toString(),
-          screen: 'worktimescreen',
+          screen: "worktimescreen",
         },
       };
 
       try {
         // Send notifications to multiple tokens
-        const response = await getMessaging().sendEachForMulticast(multicastMessage);
+        const response = await getMessaging().sendEachForMulticast(
+          multicastMessage
+        );
 
         response.responses.forEach((resItem, index) => {
           if (!resItem.success) {
-            console.error(`Error sending message to token ${fcmTokens[index]}:`, resItem.error);
+            console.error(
+              `Error sending message to token ${fcmTokens[index]}:`,
+              resItem.error
+            );
           }
         });
-
       } catch (error) {
-        console.error('Error sending notifications:', error);
+        console.error("Error sending notifications:", error);
       }
     } else {
-      console.error('No FCM tokens to send the message to.');
+      console.error("No FCM tokens to send the message to.");
     }
 
     const screen = "worktimescreen";
-    const encodedId = Buffer.from(notification_id.toString()).toString("base64");
-    await createUserBackgroundAction(row.user_id, encodedId, screen, row.service_booked);
+    const encodedId = Buffer.from(notification_id.toString()).toString(
+      "base64"
+    );
+    await createUserBackgroundAction(
+      row.user_id,
+      encodedId,
+      screen,
+      row.service_booked
+    );
 
     // Respond with success
-    return res.status(200).json({ status: 'Verification successful', timeResult: timeResult });
-
+    return res
+      .status(200)
+      .json({ status: "Verification successful", timeResult: timeResult });
   } catch (error) {
     console.error("Error verifying OTP:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-
-
-
 
 const getCleaningServices = async () => {
   try {
@@ -5763,16 +6035,17 @@ const sendOtp = (req, res) => {
   const { mobileNumber } = req.body;
   // console.log(mobileNumber)
   const options = {
-    method: 'POST',
+    method: "POST",
     url: `https://cpaas.messagecentral.com/verification/v3/send?countryCode=91&customerId=C-B3753ECA43BD435&flowType=SMS&mobileNumber=${mobileNumber}`,
     headers: {
-      'authToken': 'eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUIzNzUzRUNBNDNCRDQzNSIsImlhdCI6MTcyNjI1OTQwNiwiZXhwIjoxODgzOTM5NDA2fQ.Gme6ijpbtUge-n9NpEgJR7lIsNQTqH4kDWkoe9Wp6Nnd6AE0jaAKCuuGuYtkilkBrcC1wCj8GrlMNQodR-Gelg'
-    }
+      authToken:
+        "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUIzNzUzRUNBNDNCRDQzNSIsImlhdCI6MTcyNjI1OTQwNiwiZXhwIjoxODgzOTM5NDA2fQ.Gme6ijpbtUge-n9NpEgJR7lIsNQTqH4kDWkoe9Wp6Nnd6AE0jaAKCuuGuYtkilkBrcC1wCj8GrlMNQodR-Gelg",
+    },
   };
 
   request(options, function (error, response) {
     if (error) {
-      return res.status(500).json({ message: 'Error sending OTP', error });
+      return res.status(500).json({ message: "Error sending OTP", error });
     }
 
     // Log the response body to see what you are getting
@@ -5780,23 +6053,25 @@ const sendOtp = (req, res) => {
 
     try {
       const data = JSON.parse(response.body);
-      
+
       // Check if data contains the expected structure
       if (data && data.data && data.data.verificationId) {
         res.status(200).json({
-          message: 'OTP sent successfully',
+          message: "OTP sent successfully",
           verificationId: data.data.verificationId,
         });
       } else {
         // Handle case where verificationId is not present
         res.status(500).json({
-          message: 'Failed to retrieve verificationId',
-          error: data
+          message: "Failed to retrieve verificationId",
+          error: data,
         });
       }
     } catch (parseError) {
       // Handle JSON parsing errors
-      res.status(500).json({ message: 'Failed to parse response', error: parseError });
+      res
+        .status(500)
+        .json({ message: "Failed to parse response", error: parseError });
     }
   });
 };
@@ -5805,35 +6080,39 @@ const validateOtp = (req, res) => {
   const { mobileNumber, verificationId, otpCode } = req.query;
 
   const options = {
-    method: 'GET',
+    method: "GET",
     url: `https://cpaas.messagecentral.com/verification/v3/validateOtp?countryCode=91&mobileNumber=${mobileNumber}&verificationId=${verificationId}&customerId=C-B3753ECA43BD435&code=${otpCode}`,
     headers: {
-      'authToken': 'eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUIzNzUzRUNBNDNCRDQzNSIsImlhdCI6MTcyNjI1OTQwNiwiZXhwIjoxODgzOTM5NDA2fQ.Gme6ijpbtUge-n9NpEgJR7lIsNQTqH4kDWkoe9Wp6Nnd6AE0jaAKCuuGuYtkilkBrcC1wCj8GrlMNQodR-Gelg'
-    }
+      authToken:
+        "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUIzNzUzRUNBNDNCRDQzNSIsImlhdCI6MTcyNjI1OTQwNiwiZXhwIjoxODgzOTM5NDA2fQ.Gme6ijpbtUge-n9NpEgJR7lIsNQTqH4kDWkoe9Wp6Nnd6AE0jaAKCuuGuYtkilkBrcC1wCj8GrlMNQodR-Gelg",
+    },
   };
 
   request(options, function (error, response) {
     if (error) {
-      return res.status(500).json({ message: 'Error validating OTP', error });
+      return res.status(500).json({ message: "Error validating OTP", error });
     }
     const data = JSON.parse(response.body);
     // console.log(data)
     res.status(200).json({
-      message: data.data.verificationStatus === "VERIFICATION_COMPLETED" ? 'OTP Verified' : 'Invalid OTP',
+      message:
+        data.data.verificationStatus === "VERIFICATION_COMPLETED"
+          ? "OTP Verified"
+          : "Invalid OTP",
     });
   });
 };
 
 // ***
 // const CheckStartTime = async (req,res) => {
-//   const { notification_id } = req.body; 
+//   const { notification_id } = req.body;
 //   // console.log("check chesthunam mawa kastam ga ",notification_id)
 //   try {
 //     const result = await client.query(
 //       "SELECT start_time FROM ServiceCall WHERE notification_id = $1",
 //       [notification_id]
 //     );
-  
+
 //     if (result.rows.length > 0) {
 //       const workedTime = result.rows[0].start_time;
 //       // console.log(workedTime)
@@ -5891,17 +6170,18 @@ const CheckStartTime = async (req, res) => {
     }
 
     // If no worker_id is found in both tables, return a 404
-    return res.status(404).json({ error: 'Notification ID not found in ServiceCall or accepted table' });
-
+    return res.status(404).json({
+      error: "Notification ID not found in ServiceCall or accepted table",
+    });
   } catch (error) {
-    console.error('Error fetching or inserting start time:', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error fetching or inserting start time:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
 // ***
 // const CheckStartTime = async (req, res) => {
-//   const { notification_id } = req.body; 
+//   const { notification_id } = req.body;
 //   // console.log("Checking start time for notification ID:", notification_id);
 
 //   try {
@@ -5948,7 +6228,6 @@ const CheckStartTime = async (req, res) => {
 //   }
 // };
 
-
 const getTimerValue = async (req, res) => {
   const { notification_id } = req.body; // Extract notification_id from query parameters
   // console.log("notification denedhe", notification_id);
@@ -5964,14 +6243,14 @@ const getTimerValue = async (req, res) => {
       if (workedTime) {
         res.status(200).json(workedTime);
       } else {
-        res.status(200).json('00:00:00');
+        res.status(200).json("00:00:00");
       }
     } else {
-      res.status(404).json({ error: 'Notification ID not found' });
+      res.status(404).json({ error: "Notification ID not found" });
     }
   } catch (error) {
-    console.error('Error fetching timer value:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error fetching timer value:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -6094,9 +6373,11 @@ const getTimeDifferenceInIST = (start_time, end_time) => {
   const seconds = differenceInSeconds % 60;
 
   // Format to hh:mm:ss with leading zeros
-  const formatTime = (value) => value.toString().padStart(2, '0');
-  const time_worked = `${formatTime(hours)}:${formatTime(minutes)}:${formatTime(seconds)}`
-  return {time_worked};
+  const formatTime = (value) => value.toString().padStart(2, "0");
+  const time_worked = `${formatTime(hours)}:${formatTime(minutes)}:${formatTime(
+    seconds
+  )}`;
+  return { time_worked };
 };
 
 // const serviceCompleted = async (req, res) => {
@@ -6113,7 +6394,7 @@ const getTimeDifferenceInIST = (start_time, end_time) => {
 //     FROM servicecall
 //     WHERE notification_id = $1
 //   `;
-  
+
 //     const checkResult = await client.query(checkQuery, [notification_id]);
 
 //     if (checkResult.rows.length > 0) {
@@ -6130,18 +6411,17 @@ const getTimeDifferenceInIST = (start_time, end_time) => {
 //     const hours = String(Math.floor(timeWorkedInSeconds / 3600)).padStart(2, '0');
 //     const minutes = String(Math.floor((timeWorkedInSeconds % 3600) / 60)).padStart(2, '0');
 //     const seconds = String(timeWorkedInSeconds % 60).padStart(2, '0');
-    
+
 //     const time_worked = `${hours}:${minutes}:${seconds}`;
-  
+
 //     // Update end_time and time_worked in the database
 //     const updateQuery = `
 //       UPDATE servicecall
 //       SET end_time = $1, time_worked = $2
 //       WHERE notification_id = $3
 //     `;
-  
+
 //     const updateResult = await client.query(updateQuery, [end_time, time_worked, notification_id]);
-    
 
 //     if (updateResult.rowCount > 0) {
 //       const result =  `
@@ -6162,7 +6442,7 @@ const getTimeDifferenceInIST = (start_time, end_time) => {
 
 //     const fcmTokens = fcmTokenResult.rows.map(row => row.fcm_token);
 //     // console.log(fcmTokens);
-    
+
 //     if (fcmTokens.length > 0) {
 //       // Create a multicast message object for all tokens
 //       const multicastMessage = {
@@ -6176,11 +6456,11 @@ const getTimeDifferenceInIST = (start_time, end_time) => {
 //           screen:'Paymentscreen'
 //         },
 //       };
-    
+
 //       try {
 //         // Use sendEachForMulticast to send the same message to multiple tokens
 //         const response = await getMessaging().sendEachForMulticast(multicastMessage);
-    
+
 //         // Log the responses for each token
 //         response.responses.forEach((res, index) => {
 //           if (res.success) {
@@ -6192,15 +6472,14 @@ const getTimeDifferenceInIST = (start_time, end_time) => {
 //         res.status(200).json({ notification_id });
 //         // console.log('Success Count:', response.successCount);
 //         // console.log('Failure Count:', response.failureCount);
-    
+
 //       } catch (error) {
 //         console.error('Error sending notifications:', error);
 //       }
 //     } else {
 //       console.error('No FCM tokens to send the message to.');
 //     }
-    
-   
+
 //     } else {
 //       res.status(404).json({ error: 'Notification not found' });
 //     }
@@ -6215,10 +6494,14 @@ const serviceCompleted = async (req, res) => {
 
   // Input Validation
   if (!notification_id || !encodedId) {
-    return res.status(400).json({ error: 'Missing required fields: notification_id and encodedId.' });
+    return res.status(400).json({
+      error: "Missing required fields: notification_id and encodedId.",
+    });
   }
 
-  const encodedUserNotificationId = Buffer.from(notification_id.toString()).toString("base64");
+  const encodedUserNotificationId = Buffer.from(
+    notification_id.toString()
+  ).toString("base64");
 
   try {
     const end_time = new Date();
@@ -6292,25 +6575,25 @@ const serviceCompleted = async (req, res) => {
 
     // Check if any records were returned
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Notification not found.' });
+      return res.status(404).json({ error: "Notification not found." });
     }
 
     const row = result.rows[0];
-    const { 
-      start_time, 
-      end_time: existingEndTime, 
-      user_id, 
-      service_booked, 
-      is_end_time_set, 
-      updated_end_time, 
-      updated_time_worked, 
+    const {
+      start_time,
+      end_time: existingEndTime,
+      user_id,
+      service_booked,
+      is_end_time_set,
+      updated_end_time,
+      updated_time_worked,
       updated_time,
-      fcm_tokens 
+      fcm_tokens,
     } = row;
 
     // If end_time is already set, return a message
     if (is_end_time_set) {
-      return res.status(205).json({ message: 'End time already set.' });
+      return res.status(205).json({ message: "End time already set." });
     }
 
     // Determine the time_worked value
@@ -6321,14 +6604,19 @@ const serviceCompleted = async (req, res) => {
     } else {
       // Fallback calculation in application code if needed
       const timeWorkedInSeconds = Math.floor((end_time - start_time) / 1000);
-      const hours = String(Math.floor(timeWorkedInSeconds / 3600)).padStart(2, '0');
-      const minutes = String(Math.floor((timeWorkedInSeconds % 3600) / 60)).padStart(2, '0');
-      const seconds = String(timeWorkedInSeconds % 60).padStart(2, '0');
+      const hours = String(Math.floor(timeWorkedInSeconds / 3600)).padStart(
+        2,
+        "0"
+      );
+      const minutes = String(
+        Math.floor((timeWorkedInSeconds % 3600) / 60)
+      ).padStart(2, "0");
+      const seconds = String(timeWorkedInSeconds % 60).padStart(2, "0");
       time_worked = `${hours}:${minutes}:${seconds}`;
     }
 
     // Retrieve FCM tokens
-    const fcmTokens = fcm_tokens ? fcm_tokens.filter(token => token) : [];
+    const fcmTokens = fcm_tokens ? fcm_tokens.filter((token) => token) : [];
 
     // Send notifications if FCM tokens are available
     if (fcmTokens.length > 0) {
@@ -6340,29 +6628,35 @@ const serviceCompleted = async (req, res) => {
         },
         data: {
           notification_id: notification_id.toString(),
-          screen: 'Paymentscreen',
+          screen: "Paymentscreen",
         },
       };
 
       try {
-        const response = await getMessaging().sendEachForMulticast(multicastMessage);
+        const response = await getMessaging().sendEachForMulticast(
+          multicastMessage
+        );
 
         response.responses.forEach((resItem, index) => {
           if (resItem.success) {
             // Optionally log successful sends
             // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
           } else {
-            console.error(`Error sending message to token ${fcmTokens[index]}:`, resItem.error);
+            console.error(
+              `Error sending message to token ${fcmTokens[index]}:`,
+              resItem.error
+            );
           }
         });
-
       } catch (error) {
-        console.error('Error sending notifications:', error);
-        return res.status(500).json({ error: 'Error sending notifications.' });
+        console.error("Error sending notifications:", error);
+        return res.status(500).json({ error: "Error sending notifications." });
       }
     } else {
-      console.error('No FCM tokens to send the message to.');
-      return res.status(200).json({ message: 'No FCM tokens to send the message to.' });
+      console.error("No FCM tokens to send the message to.");
+      return res
+        .status(200)
+        .json({ message: "No FCM tokens to send the message to." });
     }
 
     // Create a background action for the user (Uncomment if needed)
@@ -6371,14 +6665,17 @@ const serviceCompleted = async (req, res) => {
     // createUserBackgroundAction(user_id, encodedId, screen, service_booked);
 
     // Respond with success
-    return res.status(200).json({ notification_id, end_time: updated_end_time, time_worked, updated_time });
-
+    return res.status(200).json({
+      notification_id,
+      end_time: updated_end_time,
+      time_worked,
+      updated_time,
+    });
   } catch (error) {
-    console.error('Error updating end time:', error);
-    return res.status(500).json({ error: 'Internal server error.' });
+    console.error("Error updating end time:", error);
+    return res.status(500).json({ error: "Internal server error." });
   }
 };
-
 
 // const serviceCompleted = async (req, res) => {
 //   const { notification_id, encodedId } = req.body;
@@ -6396,11 +6693,11 @@ const serviceCompleted = async (req, res) => {
 //     // Single query using CTEs to fetch, check, update, and return necessary data
 //     const query = `
 //       WITH fetched_data AS (
-//         SELECT 
+//         SELECT
 //           sc.notification_id,  -- Added notification_id
-//           sc.start_time, 
-//           sc.end_time, 
-//           a.user_id, 
+//           sc.start_time,
+//           sc.end_time,
+//           a.user_id,
 //           a.service_booked
 //         FROM servicecall sc
 //         JOIN accepted a ON sc.notification_id = a.notification_id
@@ -6408,17 +6705,17 @@ const serviceCompleted = async (req, res) => {
 //         FOR UPDATE
 //       ),
 //       check_end_time AS (
-//         SELECT 
-//           fd.*, 
-//           CASE 
-//             WHEN fd.end_time IS NOT NULL THEN TRUE 
-//             ELSE FALSE 
+//         SELECT
+//           fd.*,
+//           CASE
+//             WHEN fd.end_time IS NOT NULL THEN TRUE
+//             ELSE FALSE
 //           END AS is_end_time_set
 //         FROM fetched_data fd
 //       ),
 //       update_servicecall AS (
 //         UPDATE servicecall sc
-//         SET 
+//         SET
 //           end_time = $2,
 //           time_worked = TO_CHAR(EXTRACT(EPOCH FROM ($2 - sc.start_time)) / 3600, 'FM00') || ':' ||
 //                         TO_CHAR((EXTRACT(EPOCH FROM ($2 - sc.start_time)) / 60) % 60, 'FM00') || ':' ||
@@ -6432,9 +6729,9 @@ const serviceCompleted = async (req, res) => {
 //         FROM userfcm u
 //         WHERE u.user_id = (SELECT user_id FROM fetched_data)
 //       )
-//       SELECT 
-//         cd.*, 
-//         us.end_time AS updated_end_time, 
+//       SELECT
+//         cd.*,
+//         us.end_time AS updated_end_time,
 //         us.time_worked AS updated_time_worked,
 //         uf.fcm_tokens
 //       FROM check_end_time cd
@@ -6452,15 +6749,15 @@ const serviceCompleted = async (req, res) => {
 //     }
 
 //     const row = result.rows[0];
-//     const { 
-//       start_time, 
-//       end_time: existingEndTime, 
-//       user_id, 
-//       service_booked, 
-//       is_end_time_set, 
-//       updated_end_time, 
-//       updated_time_worked, 
-//       fcm_tokens 
+//     const {
+//       start_time,
+//       end_time: existingEndTime,
+//       user_id,
+//       service_booked,
+//       is_end_time_set,
+//       updated_end_time,
+//       updated_time_worked,
+//       fcm_tokens
 //     } = row;
 
 //     // If end_time is already set, return a message
@@ -6536,11 +6833,6 @@ const serviceCompleted = async (req, res) => {
 //   }
 // };
 
-
-
-
-
-
 const stopStopwatch = async (notification_id) => {
   if (stopwatchInterval) {
     clearInterval(stopwatchInterval);
@@ -6565,24 +6857,24 @@ const stopStopwatch = async (notification_id) => {
       const result = await client.query(query, values);
 
       if (result.rowCount === 0) {
-        throw new Error('No service call found with the given notification_id');
+        throw new Error("No service call found with the given notification_id");
       }
 
-      const userIdDetails =  await client.query(
+      const userIdDetails = await client.query(
         "SELECT user_id FROM notifications WHERE notification_id = $1",
         [notification_id]
       );
 
-      const userId = userIdDetails.rows[0].user_id
+      const userId = userIdDetails.rows[0].user_id;
 
       const fcmTokenResult = await client.query(
         "SELECT fcm_token FROM userfcm WHERE user_id = $1",
         [userId]
       );
 
-      const fcmTokens = fcmTokenResult.rows.map(row => row.fcm_token);
+      const fcmTokens = fcmTokenResult.rows.map((row) => row.fcm_token);
       // console.log(fcmTokens);
-      
+
       if (fcmTokens.length > 0) {
         // Create a multicast message object for all tokens
         const multicastMessage = {
@@ -6595,39 +6887,41 @@ const stopStopwatch = async (notification_id) => {
             user_notification_id: notification_id.toString(),
           },
         };
-      
+
         try {
           // Use sendEachForMulticast to send the same message to multiple tokens
-          const response = await getMessaging().sendEachForMulticast(multicastMessage);
-      
+          const response = await getMessaging().sendEachForMulticast(
+            multicastMessage
+          );
+
           // Log the responses for each token
           response.responses.forEach((res, index) => {
             if (res.success) {
               // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
             } else {
-              console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+              console.error(
+                `Error sending message to token ${fcmTokens[index]}:`,
+                res.error
+              );
             }
           });
-      
+
           // console.log('Success Count:', response.successCount);
           // console.log('Failure Count:', response.failureCount);
-      
         } catch (error) {
-          console.error('Error sending notifications:', error);
+          console.error("Error sending notifications:", error);
         }
       } else {
-        console.error('No FCM tokens to send the message to.');
+        console.error("No FCM tokens to send the message to.");
       }
-      
-
 
       return result.rows[0].worker_id; // Return worker_id from the joined table
     } catch (error) {
-      console.error('Error updating end_time:', error);
-      throw new Error('Internal server error');
+      console.error("Error updating end_time:", error);
+      throw new Error("Internal server error");
     }
   } else {
-    throw new Error('Stopwatch is not running');
+    throw new Error("Stopwatch is not running");
   }
 };
 
@@ -6649,28 +6943,24 @@ const updateWorkerLifeDetails = async (workerId, totalAmount) => {
     const result = await client.query(query, values);
 
     if (result.rowCount === 0) {
-      throw new Error('No worker found with the given worker_id');
+      throw new Error("No worker found with the given worker_id");
     }
 
     return result.rows[0];
   } catch (error) {
-    console.error('Error updating workerlife details:', error);
-    throw new Error('Internal server error');
+    console.error("Error updating workerlife details:", error);
+    throw new Error("Internal server error");
   }
 };
-
 
 // Controller function to handle storing user location
 const storeUserLocation = async (req, res) => {
   let { longitude, latitude } = req.body;
 
   const userId = req.user.id;
-   // Log the received data
-
+  // Log the received data
 
   try {
-
- 
     const query = `
       INSERT INTO userLocation (longitude, latitude, user_id)
       VALUES ($1, $2, $3)
@@ -6688,7 +6978,8 @@ const storeUserLocation = async (req, res) => {
 
 const skillWorkerRegistration = async (req, res) => {
   const workerId = req.worker.id;
-  const { selectedService, checkedServices, profilePic, proofPic, agree } = req.body;
+  const { selectedService, checkedServices, profilePic, proofPic, agree } =
+    req.body;
   try {
     const query = `
       INSERT INTO workerskills (worker_id, service, subservices, profile, proof, agree)
@@ -6696,7 +6987,14 @@ const skillWorkerRegistration = async (req, res) => {
       ON CONFLICT (worker_id) DO UPDATE
       SET service = EXCLUDED.service, subservices = EXCLUDED.subservices, profile = EXCLUDED.profile, proof = EXCLUDED.proof, agree = EXCLUDED.agree
     `;
-    await client.query(query, [workerId, selectedService, checkedServices, profilePic, proofPic, agree]);
+    await client.query(query, [
+      workerId,
+      selectedService,
+      checkedServices,
+      profilePic,
+      proofPic,
+      agree,
+    ]);
 
     const workerLife = `
     INSERT INTO workerlife (worker_id, service_counts, money_earned)
@@ -6704,11 +7002,15 @@ const skillWorkerRegistration = async (req, res) => {
     ON CONFLICT (worker_id) DO UPDATE
     SET service_counts = 0, money_earned = 0
   `;
-  await client.query(workerLife, [workerId, 0, 0]);
-    res.status(200).json({ message: "Skilled worker registration stored successfully" });
+    await client.query(workerLife, [workerId, 0, 0]);
+    res
+      .status(200)
+      .json({ message: "Skilled worker registration stored successfully" });
   } catch (error) {
     console.error("Error storing user location:", error);
-    res.status(500).json({ error: "Failed to store Skilled worker registration" });
+    res
+      .status(500)
+      .json({ error: "Failed to store Skilled worker registration" });
   }
 };
 
@@ -6754,14 +7056,13 @@ const workerLifeDetails = async (req, res) => {
 
     const workerProfile = {
       profileDetails: result.rows,
-      workerId
+      workerId,
     };
 
     // Since the average_rating is included in each row, you can take it from the first result.
     workerProfile.averageRating = result.rows[0].average_rating;
 
     return res.status(200).json(workerProfile);
-
   } catch (error) {
     console.error("Error getting worker life details:", error);
     return res.status(500).json({ error: "Internal server error" });
@@ -6801,7 +7102,7 @@ const workerProfileDetails = async (req, res) => {
 
     const workerProfile = {
       profileDetails: profileResult.rows,
-      averageRating
+      averageRating,
     };
 
     return res.status(200).json(workerProfile);
@@ -6841,30 +7142,48 @@ const getWorkerNavigationDetails = async (req, res) => {
     WHERE 
       n.notification_id = $1
   `;
-  
 
     const result = await client.query(query, [notificationId]);
 
     // If no results, return 404
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Notification or worker not found" });
+      return res
+        .status(404)
+        .json({ error: "Notification or worker not found" });
     }
 
-    const { pin, name, phone_number, profile, pincode, area, city, service_booked } = result.rows[0];
+    const {
+      pin,
+      name,
+      phone_number,
+      profile,
+      pincode,
+      area,
+      city,
+      service_booked,
+    } = result.rows[0];
 
     // Send the response
-    return res.status(200).json({ pin, name, phone_number, profile, pincode, area, city, service_booked });
+    return res.status(200).json({
+      pin,
+      name,
+      phone_number,
+      profile,
+      pincode,
+      area,
+      city,
+      service_booked,
+    });
   } catch (error) {
     console.error("Error getting worker navigation details:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
 
-
-const registrationStatus = async (req,res) => {
+const registrationStatus = async (req, res) => {
   const workerId = req.worker.id;
 
-  try{
+  try {
     const result = await client.query(
       "SELECT skill_id FROM workerskills WHERE worker_id = $1",
       [workerId]
@@ -6872,17 +7191,17 @@ const registrationStatus = async (req,res) => {
     // console.log(result.rows.length)
     if (result.rows.length === 0) {
       return res.status(204).json({ message: "worker not found" });
-    } else{
-      return res.status(200).json(result.rows)
+    } else {
+      return res.status(200).json(result.rows);
     }
-  }catch (error) {
+  } catch (error) {
     console.error("Error updating skill registration:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
-}
+};
 
-const subservices = async (req,res) => {
-  const {selectedService} = req.body;
+const subservices = async (req, res) => {
+  const { selectedService } = req.body;
   try {
     const result = await client.query(
       `SELECT 
@@ -6901,24 +7220,22 @@ const subservices = async (req,res) => {
     // console.log(selectedService)
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "worker not found" });
-    } else{
-      return res.status(200).json(result.rows)
+    } else {
+      return res.status(200).json(result.rows);
     }
-
   } catch (error) {
     console.error("Error updating skill registration:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
-  
-}
+};
 
-const userUpdateLastLogin = async (req,res) => {
-  const userId = req.worker.id
-  const time = getCurrentTimestamp()
+const userUpdateLastLogin = async (req, res) => {
+  const userId = req.worker.id;
+  const time = getCurrentTimestamp();
   try {
     const query = {
       text: `UPDATE "user" SET last_active = $1 WHERE user_id = $2 RETURNING *`,
-      values: [time,userId],
+      values: [time, userId],
     };
 
     const result = await client.query(query);
@@ -6927,7 +7244,7 @@ const userUpdateLastLogin = async (req,res) => {
     console.error(error);
     throw error;
   }
-}
+};
 
 const checkInactiveUsers = async () => {
   // const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
@@ -6948,8 +7265,8 @@ const checkInactiveUsers = async () => {
     // Send notification using FCM
     const message = {
       notification: {
-        title: 'We Miss You!',
-        body: 'It’s been a while since you last visited us. Come back and check out what’s new!',
+        title: "We Miss You!",
+        body: "It’s been a while since you last visited us. Come back and check out what’s new!",
       },
       token: user.fcm_token,
     };
@@ -6957,7 +7274,7 @@ const checkInactiveUsers = async () => {
   });
 };
 
-cron.schedule('0 9 * * *', () => {
+cron.schedule("0 9 * * *", () => {
   checkInactiveUsers();
 });
 
@@ -7013,8 +7330,6 @@ const cancelRequest = async (req, res) => {
   }
 };
 
-
- 
 // Function to verify OTP
 const verifyOTP = async (req, res) => {
   const { verificationCode } = req.body;
@@ -7030,12 +7345,11 @@ const verifyOTP = async (req, res) => {
 };
 
 const calculatePayment = (timeWorked) => {
- 
-  const [hours, minutes, seconds] = timeWorked.split(':').map(Number);
+  const [hours, minutes, seconds] = timeWorked.split(":").map(Number);
   const totalMinutes = hours * 60 + minutes;
 
   if (totalMinutes <= 30) {
-      return 149;
+    return 149;
   }
 
   const extraMinutes = totalMinutes - 30;
@@ -7044,8 +7358,8 @@ const calculatePayment = (timeWorked) => {
 
   let extraCharges = fullHalfHours * 49;
   if (remainingMinutes > 0) {
-      const remainingCharge = Math.min(remainingMinutes * 5, 49);
-      extraCharges += remainingCharge;
+    const remainingCharge = Math.min(remainingMinutes * 5, 49);
+    extraCharges += remainingCharge;
   }
 
   return 149 + extraCharges;
@@ -7054,22 +7368,21 @@ const calculatePayment = (timeWorked) => {
 // Function to get service call details by notification_id
 const paymentDetails = async (notification_id) => {
   try {
-      const query = 'SELECT * FROM servicecall WHERE notification_id = $1';
-      const values = [notification_id];
+    const query = "SELECT * FROM servicecall WHERE notification_id = $1";
+    const values = [notification_id];
 
-      const res = await client.query(query, values);
+    const res = await client.query(query, values);
 
-      if (res.rows.length > 0) {
-          return res.rows[0];
-      } else {
-          throw new Error('No service call found with the given notification_id');
-      }
+    if (res.rows.length > 0) {
+      return res.rows[0];
+    } else {
+      throw new Error("No service call found with the given notification_id");
+    }
   } catch (error) {
-      console.error('Error fetching service call details:', error);
-      throw error;
+    console.error("Error fetching service call details:", error);
+    throw error;
   }
 };
-
 
 const getPaymentDetails = async (notification_id) => {
   // console.log(notification_id)
@@ -7087,17 +7400,19 @@ const getPaymentDetails = async (notification_id) => {
     `;
     const values = [notification_id];
 
-      const res = await client.query(query, values);
-      
-      if (res.rows.length > 0) {
-        // console.log(res.rows[0])
-          return res.rows[0];
-      } else {
-          throw new Error('No service payment details found with the given notification_id');
-      }
+    const res = await client.query(query, values);
+
+    if (res.rows.length > 0) {
+      // console.log(res.rows[0])
+      return res.rows[0];
+    } else {
+      throw new Error(
+        "No service payment details found with the given notification_id"
+      );
+    }
   } catch (error) {
-      console.error('Error fetching payment details details:', error);
-      throw error;
+    console.error("Error fetching payment details details:", error);
+    throw error;
   }
 };
 
@@ -7112,9 +7427,8 @@ const getPaymentDetails = async (notification_id) => {
 //           SET payment = $1, payment_type = $2
 //           WHERE notification_id = $3
 //       `;
- 
+
 //       await client.query(query, [totalAmount, paymentMethod, decodedId]);
-      
 
 //       const userIdDetails =  await client.query(
 //         "SELECT user_id, worker_id FROM completenotifications WHERE notification_id = $1",
@@ -7124,7 +7438,7 @@ const getPaymentDetails = async (notification_id) => {
 //       const userId = userIdDetails.rows[0].user_id
 //       const workerId = userIdDetails.rows[0].worker_id
 //       const serviceResult = await updateWorkerLifeDetails(workerId, totalAmount);
-      
+
 //       const fcmTokenResult = await client.query(
 //         "SELECT fcm_token FROM userfcm WHERE user_id = $1",
 //         [userId]
@@ -7132,7 +7446,7 @@ const getPaymentDetails = async (notification_id) => {
 
 //       const fcmTokens = fcmTokenResult.rows.map(row => row.fcm_token);
 //       // console.log(fcmTokens);
-      
+
 //       if (fcmTokens.length > 0) {
 //         // Create a multicast message object for all tokens
 //         const multicastMessage = {
@@ -7146,11 +7460,11 @@ const getPaymentDetails = async (notification_id) => {
 //             screen:'Home'
 //           },
 //         };
-      
+
 //         try {
 //           // Use sendEachForMulticast to send the same message to multiple tokens
 //           const response = await getMessaging().sendEachForMulticast(multicastMessage);
-      
+
 //           // Log the responses for each token
 //           response.responses.forEach((res, index) => {
 //             if (res.success) {
@@ -7159,18 +7473,16 @@ const getPaymentDetails = async (notification_id) => {
 //               console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
 //             }
 //           });
-      
+
 //           // console.log('Success Count:', response.successCount);
 //           // console.log('Failure Count:', response.failureCount);
-      
+
 //         } catch (error) {
 //           console.error('Error sending notifications:', error);
 //         }
 //       } else {
 //         console.error('No FCM tokens to send the message to.');
 //       }
-      
-
 
 //       res.status(200).json({ message: 'Payment processed successfully' });
 //   } catch (error) {
@@ -7179,13 +7491,15 @@ const getPaymentDetails = async (notification_id) => {
 //   }
 // };
 
-
 const processPayment = async (req, res) => {
   const { totalAmount, paymentMethod, decodedId } = req.body;
 
   // Input Validation
   if (!totalAmount || !paymentMethod || !decodedId) {
-    return res.status(400).json({ error: 'Missing required fields: totalAmount, paymentMethod, and decodedId.' });
+    return res.status(400).json({
+      error:
+        "Missing required fields: totalAmount, paymentMethod, and decodedId.",
+    });
   }
 
   try {
@@ -7243,10 +7557,16 @@ const processPayment = async (req, res) => {
     LEFT JOIN fetch_fcm fcm ON TRUE
     GROUP BY ua.user_id, ua.service_booked, ua.worker_id;
   `;
-  
-  const values = [totalAmount, paymentMethod, decodedId, end_time, paymentMethod, totalAmount];
-  const combinedResult = await client.query(combinedQuery, values);
-  
+
+    const values = [
+      totalAmount,
+      paymentMethod,
+      decodedId,
+      end_time,
+      paymentMethod,
+      totalAmount,
+    ];
+    const combinedResult = await client.query(combinedQuery, values);
 
     if (combinedResult.rows.length === 0) {
       return res.status(404).json({ error: "Notification not found." });
@@ -7265,37 +7585,48 @@ const processPayment = async (req, res) => {
         },
         data: {
           notification_id: decodedId.toString(),
-          screen: 'Home',
+          screen: "Home",
         },
       };
 
       try {
-        const response = await getMessaging().sendEachForMulticast(multicastMessage);
+        const response = await getMessaging().sendEachForMulticast(
+          multicastMessage
+        );
         response.responses.forEach((resItem, index) => {
           if (!resItem.success) {
-            console.error(`Error sending message to token ${fcm_tokens[index]}:`, resItem.error);
+            console.error(
+              `Error sending message to token ${fcm_tokens[index]}:`,
+              resItem.error
+            );
           }
         });
       } catch (error) {
-        console.error('Error sending notifications:', error);
-        return res.status(500).json({ error: 'Error sending notifications.' });
+        console.error("Error sending notifications:", error);
+        return res.status(500).json({ error: "Error sending notifications." });
       }
     }
 
     // Create a background action for the user
     const screen = "";
-    const encodedNotificationId = Buffer.from(decodedId.toString()).toString("base64");
-    await createUserBackgroundAction(user_id, encodedNotificationId, screen, service_booked);
+    const encodedNotificationId = Buffer.from(decodedId.toString()).toString(
+      "base64"
+    );
+    await createUserBackgroundAction(
+      user_id,
+      encodedNotificationId,
+      screen,
+      service_booked
+    );
 
-    return res.status(200).json({ message: 'Payment processed successfully' });
-
+    return res.status(200).json({ message: "Payment processed successfully" });
   } catch (error) {
-    console.error('Error processing payment:', error);
-    return res.status(500).json({ error: 'An error occurred while processing the payment' });
+    console.error("Error processing payment:", error);
+    return res
+      .status(500)
+      .json({ error: "An error occurred while processing the payment" });
   }
 };
-
-
 
 // const processPayment = async (req, res) => {
 //   const { totalAmount, paymentMethod, decodedId } = req.body;
@@ -7312,15 +7643,15 @@ const processPayment = async (req, res) => {
 //     const combinedQuery = `
 //       WITH update_servicecall AS (
 //         UPDATE servicecall
-//         SET 
-//           payment = $1, 
+//         SET
+//           payment = $1,
 //           payment_type = $2
 //         WHERE notification_id = $3
 //         RETURNING notification_id
 //       ),
 //       update_accepted AS (
 //         UPDATE accepted a
-//         SET 
+//         SET
 //           time = jsonb_set(
 //             COALESCE(a.time, '{}'::jsonb),
 //             '{paymentCompleted}',
@@ -7331,23 +7662,23 @@ const processPayment = async (req, res) => {
 //         RETURNING a.user_id, a.service_booked, a.worker_id
 //       ),
 //       fetch_fcm AS (
-//         SELECT 
-//           u.fcm_token 
+//         SELECT
+//           u.fcm_token
 //         FROM userfcm u
 //         JOIN update_accepted ua ON u.user_id = ua.user_id
 //       ),
 //       update_workerlife AS (
 //         UPDATE workerlife wl
-//         SET 
+//         SET
 //           cashback_approved_times = COALESCE(service_counts / 6, 0)
 //         FROM update_accepted ua
 //         WHERE wl.worker_id = ua.worker_id
 //         RETURNING wl.worker_id, wl.cashback_approved_times
 //       )
-//       SELECT 
-//         ua.user_id, 
+//       SELECT
+//         ua.user_id,
 //         ua.service_booked,
-//         ua.worker_id, 
+//         ua.worker_id,
 //         ARRAY_AGG(fcm.fcm_token) AS fcm_tokens
 //       FROM update_accepted ua
 //       LEFT JOIN fetch_fcm fcm ON TRUE
@@ -7420,8 +7751,6 @@ const processPayment = async (req, res) => {
 //   }
 // };
 
-
-
 const submitFeedback = async (req, res) => {
   const { notification_id, rating, comments } = req.body;
 
@@ -7450,16 +7779,11 @@ const submitFeedback = async (req, res) => {
     const notificationResult = await client.query(query, [notification_id]);
 
     if (notificationResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Notification ID not found' });
+      return res.status(404).json({ error: "Notification ID not found" });
     }
 
-    const {
-      worker_id,
-      user_id,
-      user_notification_id,
-      user_name,
-      worker_name,
-    } = notificationResult.rows[0];
+    const { worker_id, user_id, user_notification_id, user_name, worker_name } =
+      notificationResult.rows[0];
 
     // Step 2: Insert feedback into the feedback table
     const insertFeedbackQuery = `
@@ -7480,7 +7804,9 @@ const submitFeedback = async (req, res) => {
     ]);
 
     // Collect FCM tokens
-    const fcmTokens = notificationResult.rows.map(row => row.fcm_token).filter(token => token); // Filter out any undefined tokens
+    const fcmTokens = notificationResult.rows
+      .map((row) => row.fcm_token)
+      .filter((token) => token); // Filter out any undefined tokens
 
     if (fcmTokens.length > 0) {
       // Prepare multicast message
@@ -7496,33 +7822,40 @@ const submitFeedback = async (req, res) => {
       };
 
       try {
-        const response = await getMessaging().sendEachForMulticast(multicastMessage);
+        const response = await getMessaging().sendEachForMulticast(
+          multicastMessage
+        );
 
         response.responses.forEach((res, index) => {
           if (res.success) {
             // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
           } else {
-            console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+            console.error(
+              `Error sending message to token ${fcmTokens[index]}:`,
+              res.error
+            );
           }
         });
 
         // console.log('Success Count:', response.successCount);
         // console.log('Failure Count:', response.failureCount);
       } catch (error) {
-        console.error('Error sending notifications:', error);
+        console.error("Error sending notifications:", error);
       }
     } else {
-      console.error('No FCM tokens to send the message to.');
+      console.error("No FCM tokens to send the message to.");
     }
 
     // Step 4: Send response after feedback submission and notification sending
-    res.status(201).json({ message: 'Feedback submitted successfully', feedback: insertFeedbackResult.rows[0] });
+    res.status(201).json({
+      message: "Feedback submitted successfully",
+      feedback: insertFeedbackResult.rows[0],
+    });
   } catch (error) {
-    console.error('Error submitting feedback:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error submitting feedback:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
-
 
 const sendSMSVerification = async (req, res) => {
   const { phoneNumber } = req.body;
@@ -7531,7 +7864,7 @@ const sendSMSVerification = async (req, res) => {
   const verificationCode = Math.floor(100000 + Math.random() * 900000);
   const message = `Your verification code is ${verificationCode}`;
 
-  const authString = Buffer.from(`${customerId}:${apiKey}`).toString('base64');
+  const authString = Buffer.from(`${customerId}:${apiKey}`).toString("base64");
 
   try {
     // Send SMS using Telesign API
@@ -7540,12 +7873,12 @@ const sendSMSVerification = async (req, res) => {
       {
         phone_number: phoneNumber,
         message: message,
-        message_type: 'OTP',
+        message_type: "OTP",
       },
       {
         headers: {
           Authorization: `Basic ${authString}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
+          "Content-Type": "application/x-www-form-urlencoded",
         },
       }
     );
@@ -7554,8 +7887,11 @@ const sendSMSVerification = async (req, res) => {
     res.status(200).json({ success: true, verificationCode });
   } catch (error) {
     // On failure, log and return the error
-    console.error('Error sending SMS:', error.response ? error.response.data : error.message);
-    res.status(500).json({ success: false, message: 'Error sending SMS' });
+    console.error(
+      "Error sending SMS:",
+      error.response ? error.response.data : error.message
+    );
+    res.status(500).json({ success: false, message: "Error sending SMS" });
   }
 };
 
@@ -7580,7 +7916,9 @@ const workerDetails = async (req, res, notification_id) => {
     const result = await client.query(query, [notification_id]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Notification or related data not found' });
+      return res
+        .status(404)
+        .json({ error: "Notification or related data not found" });
     }
 
     const { worker_name, service } = result.rows[0];
@@ -7588,11 +7926,10 @@ const workerDetails = async (req, res, notification_id) => {
     // Return the worker's name and service
     res.json({ name: worker_name, service });
   } catch (error) {
-    console.error('Error checking worker details:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error checking worker details:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
-
 
 const getServiceCompletedDetails = async (req, res) => {
   const { notification_id } = req.body;
@@ -7681,18 +8018,33 @@ const getServiceCompletedDetails = async (req, res) => {
     const result = await client.query(query, [notification_id]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Notification or related data not found' });
+      return res
+        .status(404)
+        .json({ error: "Notification or related data not found" });
     }
 
     // console.log("getServiceCompletedDetails",result.rows[0])
 
     // Extract the necessary details from the retrieved data
-    const { payment, payment_type, service_booked, longitude, latitude, area, city, pincode, name } = result.rows[0];
-    const jsonbServiceBooked = typeof service_booked === 'object' ? JSON.stringify(service_booked) : service_booked;
+    const {
+      payment,
+      payment_type,
+      service_booked,
+      longitude,
+      latitude,
+      area,
+      city,
+      pincode,
+      name,
+    } = result.rows[0];
+    const jsonbServiceBooked =
+      typeof service_booked === "object"
+        ? JSON.stringify(service_booked)
+        : service_booked;
 
     // Return the response with the required details
     res.json({
-      message: 'Service completed and data shifted successfully',
+      message: "Service completed and data shifted successfully",
       payment,
       payment_type,
       service: jsonbServiceBooked,
@@ -7701,16 +8053,13 @@ const getServiceCompletedDetails = async (req, res) => {
       area,
       city,
       pincode,
-      name
+      name,
     });
-
   } catch (error) {
-    console.error('Error checking worker details:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error checking worker details:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
-
-
 
 // const getServiceCompletedDetails = async (req, res) => {
 //   const { notification_id } = req.body;
@@ -7720,30 +8069,30 @@ const getServiceCompletedDetails = async (req, res) => {
 //     // Combine all steps into a single query with a transaction
 //     const query = `
 //       WITH retrieved_data AS (
-//         SELECT 
+//         SELECT
 //           n.accepted_id,
-//           n.notification_id, 
+//           n.notification_id,
 //           n.user_notification_id,
-//           n.service_booked, 
-//           n.longitude, 
-//           n.latitude, 
+//           n.service_booked,
+//           n.longitude,
+//           n.latitude,
 //           n.worker_id,
 //           un.user_id,
-//           sc.payment, 
-//           sc.payment_type, 
-//           un.city, 
-//           un.pincode, 
-//           un.area, 
+//           sc.payment,
+//           sc.payment_type,
+//           un.city,
+//           un.pincode,
+//           un.area,
 //           u.name
-//         FROM 
+//         FROM
 //           accepted n
-//         JOIN 
+//         JOIN
 //           servicecall sc ON n.notification_id = sc.notification_id
-//         JOIN 
+//         JOIN
 //           usernotifications un ON n.user_notification_id = un.user_notification_id
-//         JOIN 
+//         JOIN
 //           "user" u ON un.user_id = u.user_id
-//         WHERE 
+//         WHERE
 //           n.notification_id = $1
 //       ),
 //       inserted_data AS (
@@ -7757,7 +8106,7 @@ const getServiceCompletedDetails = async (req, res) => {
 //           latitude,
 //           worker_id
 //         )
-//         SELECT 
+//         SELECT
 //           accepted_id,
 //           notification_id,
 //           user_id,
@@ -7779,15 +8128,15 @@ const getServiceCompletedDetails = async (req, res) => {
 //         WHERE notification_id = $1
 //         RETURNING *
 //       )
-//       SELECT 
-//         r.payment, 
-//         r.payment_type, 
-//         r.service_booked, 
-//         r.longitude, 
-//         r.latitude, 
-//         r.area, 
-//         r.city, 
-//         r.pincode, 
+//       SELECT
+//         r.payment,
+//         r.payment_type,
+//         r.service_booked,
+//         r.longitude,
+//         r.latitude,
+//         r.area,
+//         r.city,
+//         r.pincode,
 //         r.name
 //       FROM retrieved_data r;
 //     `;
@@ -7824,27 +8173,26 @@ const getServiceCompletedDetails = async (req, res) => {
 //   }
 // };
 
-
 function convertToDateString(isoDate) {
   if (!isoDate) {
-      // Handle case where isoDate is null or undefined
-      return null;
+    // Handle case where isoDate is null or undefined
+    return null;
   }
-  
+
   const date = new Date(isoDate);
   if (isNaN(date.getTime())) {
-      // Handle invalid date format
-      return null;
+    // Handle invalid date format
+    return null;
   }
 
   // Extract year, month, day, hours, minutes, seconds, and milliseconds
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is zero-based
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
-  const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0"); // Month is zero-based
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  const milliseconds = String(date.getMilliseconds()).padStart(3, "0");
 
   // Return the formatted date string
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
@@ -7862,21 +8210,25 @@ const getWorkerEarnings = async (req, res) => {
     selectEndDate = convertToDateString(endDate);
 
     if (!selectStartDate || !selectEndDate) {
-      return res.status(400).json({ error: 'Invalid startDate or endDate format' });
+      return res
+        .status(400)
+        .json({ error: "Invalid startDate or endDate format" });
     }
 
     if (new Date(selectStartDate) > new Date(selectEndDate)) {
-      return res.status(400).json({ error: 'startDate cannot be after endDate' });
+      return res
+        .status(400)
+        .json({ error: "startDate cannot be after endDate" });
     }
   } else if (date) {
     selectStartDate = convertToDateString(date);
     selectEndDate = selectStartDate;
 
     if (!selectStartDate) {
-      return res.status(400).json({ error: 'Invalid date format' });
+      return res.status(400).json({ error: "Invalid date format" });
     }
   } else {
-    return res.status(400).json({ error: 'No date provided' });
+    return res.status(400).json({ error: "No date provided" });
   }
 
   try {
@@ -7921,10 +8273,14 @@ const getWorkerEarnings = async (req, res) => {
         AND DATE(end_time) BETWEEN DATE($2) AND DATE($3);
     `;
 
-    const result = await client.query(query, [workerId, selectStartDate, selectEndDate]);
+    const result = await client.query(query, [
+      workerId,
+      selectStartDate,
+      selectEndDate,
+    ]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'No earnings data found' });
+      return res.status(404).json({ error: "No earnings data found" });
     }
 
     const {
@@ -7938,35 +8294,33 @@ const getWorkerEarnings = async (req, res) => {
       total_time_worked_hours,
       service_counts,
       cashback_approved_times,
-      cashback_gain
+      cashback_gain,
     } = result.rows[0];
 
-    res.json({ 
-      total_payment: Number(total_payment) || 0, 
-      cash_payment: Number(cash_payment) || 0, 
-      payment_count: Number(payment_count) || 0, 
-      life_earnings: Number(life_earnings) || 0, 
-      avg_rating: Number(avg_rating) || 0, 
-      rejected_count: Number(rejected_count) || 0, 
-      pending_count: Number(pending_count) || 0, 
+    res.json({
+      total_payment: Number(total_payment) || 0,
+      cash_payment: Number(cash_payment) || 0,
+      payment_count: Number(payment_count) || 0,
+      life_earnings: Number(life_earnings) || 0,
+      avg_rating: Number(avg_rating) || 0,
+      rejected_count: Number(rejected_count) || 0,
+      pending_count: Number(pending_count) || 0,
       total_time_worked_hours: Number(total_time_worked_hours) || 0,
       service_counts: Number(service_counts) || 0,
       cashback_approved_times: Number(cashback_approved_times) || 0,
-      cashback_gain: Number(cashback_gain) || 0
+      cashback_gain: Number(cashback_gain) || 0,
     });
-
   } catch (error) {
-    console.error('Error fetching worker earnings:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error fetching worker earnings:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
-
 const userWorkerInProgressDetails = async (req, res) => {
   const { decodedId } = req.body;
-  console.log(decodedId)
+  console.log(decodedId);
   try {
-      const query = `
+    const query = `
           SELECT 
               a.service_booked, 
               a.time, 
@@ -7986,19 +8340,20 @@ const userWorkerInProgressDetails = async (req, res) => {
               a.notification_id = $1
       `;
 
-      const result = await client.query(query, [decodedId]);
+    const result = await client.query(query, [decodedId]);
 
-      if (result.rows.length === 0) {
-          return res.status(404).json({ message: 'No details found for the given notification_id' });
-      }
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No details found for the given notification_id" });
+    }
 
-      res.status(200).json(result.rows);
+    res.status(200).json(result.rows);
   } catch (error) {
-      console.error('Error fetching user worker in-progress details:', error);
-      res.status(500).json({ message: 'Internal server error' });
+    console.error("Error fetching user worker in-progress details:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 // const getWorkerEarnings = async (req, res) => {
 //   // Destructure the possible date parameters from the request body
@@ -8038,27 +8393,27 @@ const userWorkerInProgressDetails = async (req, res) => {
 //   try {
 //     // Define the SQL query with placeholders for parameters
 //     const query = `
-//       SELECT 
-//         SUM(payment) AS total_payment, 
-//         SUM(CASE WHEN payment_type = 'cash' THEN payment ELSE 0 END) AS cash_payment, 
+//       SELECT
+//         SUM(payment) AS total_payment,
+//         SUM(CASE WHEN payment_type = 'cash' THEN payment ELSE 0 END) AS cash_payment,
 //         COUNT(*) AS payment_count,
-//         (SELECT SUM(payment) 
-//           FROM servicecall 
+//         (SELECT SUM(payment)
+//           FROM servicecall
 //           WHERE worker_id = $1
 //             AND payment IS NOT NULL
-//         ) AS life_earnings, 
-//         (SELECT AVG(rating) 
-//           FROM feedback 
+//         ) AS life_earnings,
+//         (SELECT AVG(rating)
+//           FROM feedback
 //           WHERE worker_id = $1
-//         ) AS avg_rating, 
-//         (SELECT COUNT(*) 
-//           FROM notifications 
+//         ) AS avg_rating,
+//         (SELECT COUNT(*)
+//           FROM notifications
 //           WHERE worker_id = $1
 //             AND status = 'reject'
 //             AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
 //         ) AS rejected_count, -- Count of 'rejected' statuses
-//         (SELECT COUNT(*) 
-//           FROM notifications 
+//         (SELECT COUNT(*)
+//           FROM notifications
 //           WHERE worker_id = $1
 //             AND status = 'pending'
 //             AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
@@ -8096,15 +8451,15 @@ const userWorkerInProgressDetails = async (req, res) => {
 //     } = result.rows[0];
 
 //     // Send the response with the earnings data, ensuring numerical values
-//     res.json({ 
-//       total_payment: Number(total_payment) || 0, 
-//       cash_payment: Number(cash_payment) || 0, 
-//       payment_count: Number(payment_count) || 0, 
-//       life_earnings: Number(life_earnings) || 0, 
-//       avg_rating: Number(avg_rating) || 0, 
-//       rejected_count: Number(rejected_count) || 0, 
-//       pending_count: Number(pending_count) || 0, 
-//       total_time_worked_hours: Number(total_time_worked_hours) || 0 
+//     res.json({
+//       total_payment: Number(total_payment) || 0,
+//       cash_payment: Number(cash_payment) || 0,
+//       payment_count: Number(payment_count) || 0,
+//       life_earnings: Number(life_earnings) || 0,
+//       avg_rating: Number(avg_rating) || 0,
+//       rejected_count: Number(rejected_count) || 0,
+//       pending_count: Number(pending_count) || 0,
+//       total_time_worked_hours: Number(total_time_worked_hours) || 0
 //     });
 
 //   } catch (error) {
@@ -8113,9 +8468,7 @@ const userWorkerInProgressDetails = async (req, res) => {
 //   }
 // };
 
-
 // Define the function to fetch in-progress worker details for a user
-
 
 const getWorkDetails = async (req, res) => {
   const { notification_id } = req.body;
@@ -8143,31 +8496,35 @@ const getWorkDetails = async (req, res) => {
 
     if (result.rows.length > 0) {
       const workDetails = result.rows[0];
-      const service_booked = result.rows[0].service_booked
+      const service_booked = result.rows[0].service_booked;
 
       const gstRate = 0.05;
       const discountRate = 0.05;
-  
-      const fetchedTotalAmount = service_booked.reduce((total, service) => total + (service.cost || 0), 0);
-  
+
+      const fetchedTotalAmount = service_booked.reduce(
+        (total, service) => total + (service.cost || 0),
+        0
+      );
+
       const gstAmount = fetchedTotalAmount * gstRate;
       const cgstAmount = fetchedTotalAmount * gstRate;
       const discountAmount = fetchedTotalAmount * discountRate;
-      const fetchedFinalTotalAmount = fetchedTotalAmount + gstAmount + cgstAmount - discountAmount;
-  
+      const fetchedFinalTotalAmount =
+        fetchedTotalAmount + gstAmount + cgstAmount - discountAmount;
+
       const paymentDetails = {
         gstAmount,
         cgstAmount,
         discountAmount,
         fetchedFinalTotalAmount,
       };
-      res.status(200).json({workDetails,paymentDetails});
+      res.status(200).json({ workDetails, paymentDetails });
     } else {
-      res.status(404).json({ error: 'Notification not found' });
+      res.status(404).json({ error: "Notification not found" });
     }
   } catch (error) {
-    console.error('Error fetching work details:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error fetching work details:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -8292,5 +8649,5 @@ module.exports = {
   getAllTrackingServices,
   pendingBalanceWorkers,
   getDashboardDetails,
-  userWorkerInProgressDetails
+  userWorkerInProgressDetails,
 };

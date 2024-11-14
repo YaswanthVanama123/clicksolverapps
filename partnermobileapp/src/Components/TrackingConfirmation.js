@@ -1,24 +1,23 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, {useState, useRef, useEffect} from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-} from "react-native";
-import axios from "axios";
+} from 'react-native';
+import axios from 'axios';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
-import { useNavigation } from "@react-navigation/native";
+import {useNavigation} from '@react-navigation/native';
 
-const TrackingConfirmation = ({ route }) => {
-  const [otp, setOtp] = useState(Array(4).fill(""));
+const TrackingConfirmation = ({route}) => {
+  const [otp, setOtp] = useState(Array(4).fill(''));
   const inputRefs = useRef([]);
-  const {trackingId}  = route.params;
+  const {trackingId} = route.params;
   const navigation = useNavigation();
   const [decodedId, setDecodedId] = useState(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [focusedIndex, setFocusedIndex] = useState(-1); // To track the focused input
-
 
   const handleChange = (text, index) => {
     if (/^\d?$/.test(text)) {
@@ -30,32 +29,26 @@ const TrackingConfirmation = ({ route }) => {
   };
 
   const handleKeyDown = (e, index) => {
-    if (e.nativeEvent.key === "Backspace" && !otp[index] && index > 0) {
+    if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
       inputRefs.current[index - 1].focus();
     }
   };
 
-
-
   const handleSubmit = async () => {
-    const enteredOtp = otp.join("");
-    try { 
+    const enteredOtp = otp.join('');
+    try {
       const response = await axios.post(
         `${process.env.BackendAPI6}/api/service/tracking/delivery/verification`,
-        { trackingId,enteredOtp }
-      ); 
-      const {encodedId} = response.data
-      if(response.status === 200){
-        navigation.replace("PaymentScreen", { encodedId });
+        {trackingId, enteredOtp},
+      );
+      const {encodedId} = response.data;
+      if (response.status === 200) {
+        navigation.replace('PaymentScreen', {encodedId});
       }
     } catch (error) {
       console.error('Error fetching bookings data:', error);
     }
-    
   };
-
-
-
 
   return (
     <View style={styles.container}>
@@ -74,14 +67,14 @@ const TrackingConfirmation = ({ route }) => {
             key={index}
             style={[
               styles.otpInput,
-              focusedIndex === index && { borderColor: "#ff4500" },
+              focusedIndex === index && {borderColor: '#ff4500'},
             ]}
             value={value}
-            onChangeText={(text) => handleChange(text, index)}
-            onKeyPress={(e) => handleKeyDown(e, index)}
+            onChangeText={text => handleChange(text, index)}
+            onKeyPress={e => handleKeyDown(e, index)}
             maxLength={1}
             keyboardType="numeric"
-            ref={(el) => (inputRefs.current[index] = el)}
+            ref={el => (inputRefs.current[index] = el)}
             onFocus={() => setFocusedIndex(index)}
             onBlur={() => setFocusedIndex(-1)}
           />
@@ -102,48 +95,48 @@ export default TrackingConfirmation;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#fff",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
     padding: 16,
   },
   header: {
-    position: "absolute",
+    position: 'absolute',
     top: 10,
     left: 16,
     right: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center", // Center the header content
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center', // Center the header content
   },
   title: {
     fontSize: 20,
-    color: "#1D2951",
+    color: '#1D2951',
     fontWeight: 'bold',
     textAlign: 'center',
     flex: 1, // Ensures the text takes up available space and centers
   },
   otpContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 32,
   },
   otpInput: {
     width: 40,
     height: 40,
-    textAlign: "center",
+    textAlign: 'center',
     fontSize: 18,
     borderBottomWidth: 2,
-    borderColor: "#1D2951", // Default color
+    borderColor: '#1D2951', // Default color
     marginHorizontal: 5,
-    color: "#212121",
+    color: '#212121',
   },
   error: {
-    color: "red",
+    color: 'red',
     marginBottom: 16,
   },
   submitButton: {
-    backgroundColor: "#ff4500",
+    backgroundColor: '#ff4500',
     flexDirection: 'row',
     width: 120,
     height: 43,
@@ -152,7 +145,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   submitButtonText: {
-    color: "#ffffff",
+    color: '#ffffff',
     fontSize: 16,
   },
 });

@@ -1,6 +1,22 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, BackHandler, Alert, Platform, Linking } from 'react-native';
-import { useNavigation, useRoute, CommonActions, useFocusEffect } from "@react-navigation/native";
+import React, {useEffect, useState, useCallback} from 'react';
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  BackHandler,
+  Alert,
+  Platform,
+  Linking,
+} from 'react-native';
+import {
+  useNavigation,
+  useRoute,
+  CommonActions,
+  useFocusEffect,
+} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import axios from 'axios';
@@ -30,24 +46,28 @@ const PaintingServices = () => {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
         );
         return true;
       };
 
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
 
-      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-    }, [navigation]) 
+      return () =>
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [navigation]),
   );
 
-  const fetchServices = useCallback(async (serviceObject) => {
+  const fetchServices = useCallback(async serviceObject => {
     setLoading(true);
     try {
-      const response = await axios.post(`${process.env.BACKENDAIPE}/api/individual/service`, {
-        serviceObject: serviceObject,
-      }); 
+      const response = await axios.post(
+        `${process.env.BACKENDAIPE}/api/individual/service`,
+        {
+          serviceObject: serviceObject,
+        },
+      );
       const servicesWithIds = response.data.map(service => ({
         ...service,
         id: uuid.v4(),
@@ -60,10 +80,10 @@ const PaintingServices = () => {
     }
   }, []);
 
-  const handleBookCommander = useCallback(async (serviceId) => {
+  const handleBookCommander = useCallback(async serviceId => {
     try {
       // Check if notifications are enabled
-      PushNotification.checkPermissions((permissions) => {
+      PushNotification.checkPermissions(permissions => {
         if (!permissions.alert) {
           // If notifications are not enabled, prompt the user to go to settings
           Alert.alert(
@@ -86,7 +106,7 @@ const PaintingServices = () => {
                 },
               },
             ],
-            { cancelable: false }
+            {cancelable: false},
           );
         } else {
           proceedToBookCommander(serviceId);
@@ -97,35 +117,43 @@ const PaintingServices = () => {
     }
   }, []);
 
-  const proceedToBookCommander = useCallback(async (serviceId) => {
-    try {
-      const cs_token = await EncryptedStorage.getItem('cs_token');
-      if (cs_token) {
-        const response = await axios.get(`${process.env.BACKENDAIPE}/api/user/track/details`, {
-          headers: { Authorization: `Bearer ${cs_token}` },
-        });
+  const proceedToBookCommander = useCallback(
+    async serviceId => {
+      try {
+        const cs_token = await EncryptedStorage.getItem('cs_token');
+        if (cs_token) {
+          const response = await axios.get(
+            `${process.env.BACKENDAIPE}/api/user/track/details`,
+            {
+              headers: {Authorization: `Bearer ${cs_token}`},
+            },
+          );
 
-        const track = response?.data?.track || [];
-        const isTracking = track.some(item => item.serviceBooked === serviceId);
-        if (isTracking) {
-          Alert.alert('Already in tracking');
-        } else {
-          navigation.push('ServiceBooking', { 
-            serviceName: serviceId,
-          });
+          const track = response?.data?.track || [];
+          const isTracking = track.some(
+            item => item.serviceBooked === serviceId,
+          );
+          if (isTracking) {
+            Alert.alert('Already in tracking');
+          } else {
+            navigation.push('ServiceBooking', {
+              serviceName: serviceId,
+            });
+          }
         }
+      } catch (error) {
+        console.error('Error fetching track details:', error);
       }
-    } catch (error) {
-      console.error('Error fetching track details:', error);
-    }
-  }, [navigation]);
+    },
+    [navigation],
+  );
 
   const handleBack = useCallback(() => {
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-      })
+        routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+      }),
     );
   }, [navigation]);
 
@@ -139,17 +167,20 @@ const PaintingServices = () => {
         <Text style={styles.headerTitle}>{name}</Text>
       </View>
 
-
       <View style={styles.banner}>
         <View style={styles.bannerText}>
           <View style={styles.bannerDetails}>
             <Text style={styles.bannerPrice}>Just 149/-</Text>
             <Text style={styles.bannerDescription}>{name}</Text>
-            <Text style={styles.bannerInfo}>Minimum charges for first half and hour</Text>
+            <Text style={styles.bannerInfo}>
+              Minimum charges for first half and hour
+            </Text>
           </View>
         </View>
         <Image
-          source={{ uri: 'https://i.postimg.cc/nLSx6CFs/ec25d95ccdd81fad0f55cc8d83a8222e.png' }}
+          source={{
+            uri: 'https://i.postimg.cc/nLSx6CFs/ec25d95ccdd81fad0f55cc8d83a8222e.png',
+          }}
           style={styles.bannerImage}
         />
       </View>
@@ -166,7 +197,7 @@ const PaintingServices = () => {
 
       {/* Services */}
       <ScrollView style={styles.services}>
-        {subservice.map((service) => (
+        {subservice.map(service => (
           <ServiceItem
             key={service.id}
             title={service.service_name}
@@ -180,26 +211,27 @@ const PaintingServices = () => {
   );
 };
 
-const ServiceItem = React.memo(({ title, imageUrl, handleBookCommander, serviceId }) => (
-  <View style={styles.serviceItem}>
-    <View style={styles.serviceImageContainer}>
-      <Image
-        source={{ uri: imageUrl }}
-        style={styles.serviceImage}
-        resizeMode="stretch"
-      />
+const ServiceItem = React.memo(
+  ({title, imageUrl, handleBookCommander, serviceId}) => (
+    <View style={styles.serviceItem}>
+      <View style={styles.serviceImageContainer}>
+        <Image
+          source={{uri: imageUrl}}
+          style={styles.serviceImage}
+          resizeMode="stretch"
+        />
+      </View>
+      <View style={styles.serviceInfo}>
+        <Text style={styles.serviceTitle}>{title}</Text>
+        <TouchableOpacity
+          style={styles.bookNow}
+          onPress={() => handleBookCommander(serviceId)}>
+          <Text style={styles.bookNowText}>Book Now ➔</Text>
+        </TouchableOpacity>
+      </View>
     </View>
-    <View style={styles.serviceInfo}>
-      <Text style={styles.serviceTitle}>{title}</Text>
-      <TouchableOpacity 
-        style={styles.bookNow}
-        onPress={() => handleBookCommander(serviceId)}
-      >
-        <Text style={styles.bookNowText}>Book Now ➔</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-));
+  ),
+);
 
 const styles = StyleSheet.create({
   container: {
@@ -259,7 +291,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     resizeMode: 'cover',
-    transform: [{ rotate: '0deg' }],
+    transform: [{rotate: '0deg'}],
   },
   loadingContainer: {
     flex: 1,
@@ -306,13 +338,13 @@ const styles = StyleSheet.create({
     width: 110,
     height: 32,
     opacity: 0.88,
-    elevation:5
+    elevation: 5,
   },
   bookNowText: {
     color: '#FFF',
     fontWeight: 'bold',
     fontSize: 13,
-    textAlign: 'center'
+    textAlign: 'center',
   },
 });
 

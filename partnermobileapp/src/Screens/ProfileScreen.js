@@ -1,6 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions } from 'react-native';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  Dimensions,
+} from 'react-native';
+import {useNavigation, CommonActions} from '@react-navigation/native';
 import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
 import Feather from 'react-native-vector-icons/Feather';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -28,8 +35,8 @@ const ProfileScreen = () => {
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: 'MyServices' }],
-      })
+        routes: [{name: 'MyServices'}],
+      }),
     );
   };
 
@@ -37,8 +44,8 @@ const ProfileScreen = () => {
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: 'Notification' }],
-      })
+        routes: [{name: 'Notification'}],
+      }),
     );
   };
 
@@ -59,10 +66,15 @@ const ProfileScreen = () => {
     checkToken();
   }, []);
 
-  const menuItems = ['Profile', 'Edit Skill Registration', 'Wallet', 'About Click Solver'];
+  const menuItems = [
+    'Profile',
+    'Edit Skill Registration',
+    'Wallet',
+    'About Click Solver',
+  ];
 
   return (
-    <View style={[styles.profileContainer, { minHeight: screenHeight }]}>
+    <View style={[styles.profileContainer, {minHeight: screenHeight}]}>
       {isLoggedIn ? (
         <>
           {/* Header */}
@@ -136,7 +148,9 @@ const ProfileScreen = () => {
         /* If not logged in, show login option */
         <View style={styles.loginContainer}>
           <Text style={styles.loginPrompt}>You are not logged in.</Text>
-          <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate('Login')}>
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={() => navigation.navigate('Login')}>
             <Text style={styles.loginButtonText}>Login</Text>
           </TouchableOpacity>
         </View>
@@ -151,7 +165,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   Dimensions,
   StyleSheet,
@@ -9,7 +9,9 @@ import {
   Image,
 } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
-Mapbox.setAccessToken('pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw');
+Mapbox.setAccessToken(
+  'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw',
+);
 import BackgroundGeolocation from 'react-native-background-geolocation';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import haversine from 'haversine';
@@ -19,8 +21,8 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import Octicons from 'react-native-vector-icons/Octicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Foundation from 'react-native-vector-icons/Foundation'
-import { SafeAreaView } from 'react-native-safe-area-context';
+import Foundation from 'react-native-vector-icons/Foundation';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   useNavigation,
   CommonActions,
@@ -30,14 +32,14 @@ import axios from 'axios';
 import messaging from '@react-native-firebase/messaging';
 import PushNotification from 'react-native-push-notification';
 import Feather from 'react-native-vector-icons/Feather';
-import { Buffer } from 'buffer';
+import {Buffer} from 'buffer';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import FontAwesome from 'react-native-vector-icons/FontAwesome'
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
 const HelloWorld = () => {
   const [center, setCenter] = useState([0, 0]);
-  const [workerLocation,setWorkerLocation] = useState([])
+  const [workerLocation, setWorkerLocation] = useState([]);
   const screenHeight = Dimensions.get('window').height;
   const screenWidth = Dimensions.get('window').width;
   const navigation = useNavigation();
@@ -52,21 +54,25 @@ const HelloWorld = () => {
 
   // Function to fetch notifications and update state
   const fetchNotifications = useCallback(async () => {
-    const existingNotifications = await EncryptedStorage.getItem('Requestnotifications');
+    const existingNotifications = await EncryptedStorage.getItem(
+      'Requestnotifications',
+    );
 
-    let notifications = existingNotifications ? JSON.parse(existingNotifications) : [];
+    let notifications = existingNotifications
+      ? JSON.parse(existingNotifications)
+      : [];
 
     const currentDate = new Date();
 
     // Filter notifications received within the past 10 minutes
-    const filteredNotifications = notifications.filter((noti) => {
+    const filteredNotifications = notifications.filter(noti => {
       const [notiDatePart, notiTimePart] = noti.receivedAt.split(', ');
       const [notiDay, notiMonth, notiYear] = notiDatePart.split('/');
       const parsedNotiReceivedAt = `${notiYear}-${notiMonth}-${notiDay}T${notiTimePart}`;
       const notiReceivedAt = new Date(parsedNotiReceivedAt);
 
-      const timeDifferenceInMinutes = (currentDate - notiReceivedAt) / (1000 * 60); // milliseconds to minutes
-
+      const timeDifferenceInMinutes =
+        (currentDate - notiReceivedAt) / (1000 * 60); // milliseconds to minutes
 
       return timeDifferenceInMinutes <= 10;
     });
@@ -78,14 +84,17 @@ const HelloWorld = () => {
     setNotificationsArray(notifications);
 
     // Store updated notifications in local storage
-    await EncryptedStorage.setItem('Requestnotifications', JSON.stringify(notifications));
+    await EncryptedStorage.setItem(
+      'Requestnotifications',
+      JSON.stringify(notifications),
+    );
   }, []);
 
   useFocusEffect(
     useCallback(() => {
       // Fetch notifications when the screen gains focus
       fetchNotifications();
-    }, [fetchNotifications])
+    }, [fetchNotifications]),
   );
 
   const fetchTrackDetails = async () => {
@@ -96,11 +105,11 @@ const HelloWorld = () => {
         const response = await axios.get(
           `${process.env.BackendAPI6}/api/worker/track/details`,
           {
-            headers: { Authorization: `Bearer ${pcs_token}` },
-          }
+            headers: {Authorization: `Bearer ${pcs_token}`},
+          },
         );
 
-        const { route, parameter } = response.data;
+        const {route, parameter} = response.data;
         const params = JSON.parse(parameter);
 
         if (route) {
@@ -120,7 +129,7 @@ const HelloWorld = () => {
   };
 
   const toggleSwitch = async () => {
-    setIsEnabled((prevState) => {
+    setIsEnabled(prevState => {
       const newEnabledState = !prevState;
 
       if (newEnabledState) {
@@ -133,15 +142,14 @@ const HelloWorld = () => {
 
       EncryptedStorage.setItem(
         'trackingEnabled',
-        JSON.stringify(newEnabledState)
-      ).catch((error) => {
+        JSON.stringify(newEnabledState),
+      ).catch(error => {
         console.error('Error saving enabled state:', error);
       });
 
       return newEnabledState;
     });
   };
-
 
   const fetchTrackingState = async () => {
     try {
@@ -158,272 +166,267 @@ const HelloWorld = () => {
     navigation.push('Earnings');
   };
 
-  const calculateDistanceBetweenCoordinates = async (startCoordinates, endCoordinates) => {
+  const calculateDistanceBetweenCoordinates = async (
+    startCoordinates,
+    endCoordinates,
+  ) => {
     try {
-        console.log(startCoordinates,endCoordinates)
-        const apiKey = "iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT"; // Replace with your API key
-       
-        // Format the coordinates as required by the Distance Matrix API
-        const origins = `${startCoordinates[0]},${startCoordinates[1]}`;
-        const destinations = `${endCoordinates[0]},${endCoordinates[1]}`;
-        
+      console.log(startCoordinates, endCoordinates);
+      const apiKey = 'iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT'; // Replace with your API key
 
-        // Construct the API URL
-        const url = `https://api.olamaps.io/routing/v1/distanceMatrix?origins=${origins}&destinations=${destinations}&api_key=${apiKey}`;
+      // Format the coordinates as required by the Distance Matrix API
+      const origins = `${startCoordinates[0]},${startCoordinates[1]}`;
+      const destinations = `${endCoordinates[0]},${endCoordinates[1]}`;
 
-        // Make the API request
-        const response = await axios.get(url, {
-            headers: {
-                'X-Request-Id': 'your-request-id', // Optional, but useful for tracking requests
-            },
-        });
+      // Construct the API URL
+      const url = `https://api.olamaps.io/routing/v1/distanceMatrix?origins=${origins}&destinations=${destinations}&api_key=${apiKey}`;
 
-        console.log("distanceResponse", response.data);
+      // Make the API request
+      const response = await axios.get(url, {
+        headers: {
+          'X-Request-Id': 'your-request-id', // Optional, but useful for tracking requests
+        },
+      });
 
-        // Check if the response contains valid data
-        if (response && response.data && response.data.rows.length > 0) {
-            const elements = response.data.rows[0].elements;
-            
-            if (elements && elements.length > 0) { 
-                const distanceInMeters = elements[0].distance;
-                
-                if (distanceInMeters) {
-                    const distanceInKilometers = (distanceInMeters / 1000).toFixed(2);
-                    const distanceString = `${distanceInKilometers} km`
-                    console.log(`Distance: ${distanceInKilometers} km`);
-                    return distanceInKilometers;
-                } else {
-                    console.log("Distance data is not available.");
-                    return null;
-                }
-            } else {
-                console.log("No elements found in the distance response.");
-                return null;
-            }
-        } else {
-            console.log("No distance found between the specified locations.");
+      console.log('distanceResponse', response.data);
+
+      // Check if the response contains valid data
+      if (response && response.data && response.data.rows.length > 0) {
+        const elements = response.data.rows[0].elements;
+
+        if (elements && elements.length > 0) {
+          const distanceInMeters = elements[0].distance;
+
+          if (distanceInMeters) {
+            const distanceInKilometers = (distanceInMeters / 1000).toFixed(2);
+            const distanceString = `${distanceInKilometers} km`;
+            console.log(`Distance: ${distanceInKilometers} km`);
+            return distanceInKilometers;
+          } else {
+            console.log('Distance data is not available.');
             return null;
-        }
-    } catch (error) {
-        if (error.response) {
-            // Log details of the error response
-            console.error("Error calculating distance:", error.response.data);
+          }
         } else {
-            console.error("Error calculating distance:", error.message);
+          console.log('No elements found in the distance response.');
+          return null;
         }
-    }
-};
-
-const updateFirestoreLocation = async (latitude, longitude) => {
-  try {
-    const Item = await EncryptedStorage.getItem('unique');
-    if (Item) {
-      const locationsCollection = firestore().collection('locations');
-      const locationData = {
-        location: new firestore.GeoPoint(latitude, longitude),
-        timestamp: moment()
-          .tz('Asia/Kolkata')
-          .format('YYYY-MM-DD HH:mm:ss'),
-        worker_id: parseInt(Item, 10),
-      };
-      const snapshot = await locationsCollection
-        .where('worker_id', '==', locationData.worker_id)
-        .limit(1)
-        .get();
-      if (!snapshot.empty) {
-        const docId = snapshot.docs[0].id;
-        await locationsCollection.doc(docId).update({
-          location: locationData.location,
-          timestamp: locationData.timestamp,
-        });
       } else {
-        await locationsCollection.add(locationData);
+        console.log('No distance found between the specified locations.');
+        return null;
+      }
+    } catch (error) {
+      if (error.response) {
+        // Log details of the error response
+        console.error('Error calculating distance:', error.response.data);
+      } else {
+        console.error('Error calculating distance:', error.message);
       }
     }
-  } catch (error) {
-    console.error('Error sending location data to Firestore:', error);
-  }
-};
+  };
 
-
-const initializeGeolocation = () => {
-  let onLocationSubscription;
-  let onGeofenceSubscription;
-
-  const setupGeolocation = async () => {
-    const pcsToken = await EncryptedStorage.getItem('pcs_token');
-
-    if (pcsToken) {
-      const geofences = [
-        {
-          identifier: 'Gampalagudem',
-          radius: 10000, // in meters
-          latitude: 16.998121,
-          longitude: 80.5230137,
-          notifyOnEntry: true,
-          notifyOnExit: true,
-          notifyOnDwell: false,
-          loiteringDelay: 30000,
-        },
-        // Add more geofences if needed
-      ];
-
-      onLocationSubscription = BackgroundGeolocation.onLocation(
-        async (location) => {
-          const { latitude, longitude } = location.coords;
-          setCenter([longitude, latitude]);
-          setWorkerLocation([latitude, longitude]);
-
-          const previousLocation = await EncryptedStorage.getItem(
-            'workerPreviousLocation'
-          );
-
-          let locationData = previousLocation
-            ? JSON.parse(previousLocation)
-            : null;
-
-          if (locationData) {
-            const previousCoords = {
-              latitude: locationData.latitude,
-              longitude: locationData.longitude,
-            };
-            const currentCoords = { latitude, longitude };
-
-            // Calculate distance using Haversine formula
-            const distance = haversine(previousCoords, currentCoords, {
-              unit: 'km',
-            });
-
-            // Update cumulative distance
-            const newCumulativeDistance = cumulativeDistance + distance;
-            setCumulativeDistance(newCumulativeDistance);
-
-            // Check if cumulative distance is equal or exceeds 1 km
-            if (newCumulativeDistance >= 1) {
-              await updateFirestoreLocation(latitude, longitude);
-              setCumulativeDistance(0); // Reset cumulative distance
-              await EncryptedStorage.setItem(
-                'workerPreviousLocation',
-                JSON.stringify({ latitude, longitude })
-              );
-            } else {
-              // Update previous location without resetting cumulative distance
-              await EncryptedStorage.setItem(
-                'workerPreviousLocation',
-                JSON.stringify({ latitude, longitude })
-              );
-            }
-          } else {
-            // First time setting previous location
-            await EncryptedStorage.setItem(
-              'workerPreviousLocation',
-              JSON.stringify({ latitude, longitude })
-            );
-            setCumulativeDistance(0); // Initialize cumulative distance
-          }
+  const updateFirestoreLocation = async (latitude, longitude) => {
+    try {
+      const Item = await EncryptedStorage.getItem('unique');
+      if (Item) {
+        const locationsCollection = firestore().collection('locations');
+        const locationData = {
+          location: new firestore.GeoPoint(latitude, longitude),
+          timestamp: moment().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss'),
+          worker_id: parseInt(Item, 10),
+        };
+        const snapshot = await locationsCollection
+          .where('worker_id', '==', locationData.worker_id)
+          .limit(1)
+          .get();
+        if (!snapshot.empty) {
+          const docId = snapshot.docs[0].id;
+          await locationsCollection.doc(docId).update({
+            location: locationData.location,
+            timestamp: locationData.timestamp,
+          });
+        } else {
+          await locationsCollection.add(locationData);
         }
-      );
+      }
+    } catch (error) {
+      console.error('Error sending location data to Firestore:', error);
+    }
+  };
 
-      onGeofenceSubscription = BackgroundGeolocation.onGeofence(
-        async (geofence) => {
-          if (geofence.action === 'ENTER') {
-            console.log(
-              `Worker has entered the geofence: ${geofence.identifier}`
+  const initializeGeolocation = () => {
+    let onLocationSubscription;
+    let onGeofenceSubscription;
+
+    const setupGeolocation = async () => {
+      const pcsToken = await EncryptedStorage.getItem('pcs_token');
+
+      if (pcsToken) {
+        const geofences = [
+          {
+            identifier: 'Gampalagudem',
+            radius: 10000, // in meters
+            latitude: 16.998121,
+            longitude: 80.5230137,
+            notifyOnEntry: true,
+            notifyOnExit: true,
+            notifyOnDwell: false,
+            loiteringDelay: 30000,
+          },
+          // Add more geofences if needed
+        ];
+
+        onLocationSubscription = BackgroundGeolocation.onLocation(
+          async location => {
+            const {latitude, longitude} = location.coords;
+            setCenter([longitude, latitude]);
+            setWorkerLocation([latitude, longitude]);
+
+            const previousLocation = await EncryptedStorage.getItem(
+              'workerPreviousLocation',
             );
-            // Get current location and send to Firebase
-            BackgroundGeolocation.getCurrentPosition()
-              .then(async (location) => {
-                const { latitude, longitude } = location.coords;
+
+            let locationData = previousLocation
+              ? JSON.parse(previousLocation)
+              : null;
+
+            if (locationData) {
+              const previousCoords = {
+                latitude: locationData.latitude,
+                longitude: locationData.longitude,
+              };
+              const currentCoords = {latitude, longitude};
+
+              // Calculate distance using Haversine formula
+              const distance = haversine(previousCoords, currentCoords, {
+                unit: 'km',
+              });
+
+              // Update cumulative distance
+              const newCumulativeDistance = cumulativeDistance + distance;
+              setCumulativeDistance(newCumulativeDistance);
+
+              // Check if cumulative distance is equal or exceeds 1 km
+              if (newCumulativeDistance >= 1) {
                 await updateFirestoreLocation(latitude, longitude);
                 setCumulativeDistance(0); // Reset cumulative distance
                 await EncryptedStorage.setItem(
                   'workerPreviousLocation',
-                  JSON.stringify({ latitude, longitude })
+                  JSON.stringify({latitude, longitude}),
                 );
-              })
-              .catch((error) => {
-                console.error('Error getting current position:', error);
-              });
-            BackgroundGeolocation.start();
-          } else if (geofence.action === 'EXIT') {
-            console.log(
-              `Worker has exited the geofence: ${geofence.identifier}`
-            );
+              } else {
+                // Update previous location without resetting cumulative distance
+                await EncryptedStorage.setItem(
+                  'workerPreviousLocation',
+                  JSON.stringify({latitude, longitude}),
+                );
+              }
+            } else {
+              // First time setting previous location
+              await EncryptedStorage.setItem(
+                'workerPreviousLocation',
+                JSON.stringify({latitude, longitude}),
+              );
+              setCumulativeDistance(0); // Initialize cumulative distance
+            }
+          },
+        );
+
+        onGeofenceSubscription = BackgroundGeolocation.onGeofence(
+          async geofence => {
+            if (geofence.action === 'ENTER') {
+              console.log(
+                `Worker has entered the geofence: ${geofence.identifier}`,
+              );
+              // Get current location and send to Firebase
+              BackgroundGeolocation.getCurrentPosition()
+                .then(async location => {
+                  const {latitude, longitude} = location.coords;
+                  await updateFirestoreLocation(latitude, longitude);
+                  setCumulativeDistance(0); // Reset cumulative distance
+                  await EncryptedStorage.setItem(
+                    'workerPreviousLocation',
+                    JSON.stringify({latitude, longitude}),
+                  );
+                })
+                .catch(error => {
+                  console.error('Error getting current position:', error);
+                });
+              BackgroundGeolocation.start();
+            } else if (geofence.action === 'EXIT') {
+              console.log(
+                `Worker has exited the geofence: ${geofence.identifier}`,
+              );
+              await updateFirestoreLocation(0, 0); // Send (0, 0) coordinates
+              BackgroundGeolocation.stop();
+              setCumulativeDistance(0); // Reset cumulative distance
+              await EncryptedStorage.setItem(
+                'workerPreviousLocation',
+                JSON.stringify(null),
+              );
+            }
+          },
+        );
+
+        // Listen for location provider changes
+        BackgroundGeolocation.onProviderChange(async event => {
+          if (!event.enabled) {
+            // Location services are disabled
             await updateFirestoreLocation(0, 0); // Send (0, 0) coordinates
             BackgroundGeolocation.stop();
-            setCumulativeDistance(0); // Reset cumulative distance
-            await EncryptedStorage.setItem(
-              'workerPreviousLocation',
-              JSON.stringify(null)
-            );
           }
-        }
-      );
+        });
 
-      // Listen for location provider changes
-      BackgroundGeolocation.onProviderChange(async (event) => {
-        if (!event.enabled) {
-          // Location services are disabled
-          await updateFirestoreLocation(0, 0); // Send (0, 0) coordinates
-          BackgroundGeolocation.stop();
-        }
-      });
-
-      BackgroundGeolocation.ready({
-        desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_HIGH,
-        distanceFilter: 1,
-        stopTimeout: 5,
-        debug: false,
-        logLevel: BackgroundGeolocation.LOG_LEVEL_OFF,
-        stopOnTerminate: false,
-        startOnBoot: true,
-        batchSync: false,
-        autoSync: true,
-      }).then(() => {
-        geofences.forEach((geofence) => {
-          BackgroundGeolocation.addGeofence(geofence).catch((error) => {
-            console.error(
-              `Failed to add geofence for ${geofence.identifier}: `,
-              error
-            );
+        BackgroundGeolocation.ready({
+          desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_HIGH,
+          distanceFilter: 1,
+          stopTimeout: 5,
+          debug: false,
+          logLevel: BackgroundGeolocation.LOG_LEVEL_OFF,
+          stopOnTerminate: false,
+          startOnBoot: true,
+          batchSync: false,
+          autoSync: true,
+        }).then(() => {
+          geofences.forEach(geofence => {
+            BackgroundGeolocation.addGeofence(geofence).catch(error => {
+              console.error(
+                `Failed to add geofence for ${geofence.identifier}: `,
+                error,
+              );
+            });
           });
         });
-      });
-    } else {
-      console.log(
-        'pcs_token is not available, skipping location tracking.'
-      );
-    }
+      } else {
+        console.log('pcs_token is not available, skipping location tracking.');
+      }
+    };
+
+    setupGeolocation();
+
+    return () => {
+      if (onLocationSubscription) {
+        onLocationSubscription.remove();
+      }
+      if (onGeofenceSubscription) {
+        onGeofenceSubscription.remove();
+      }
+    };
   };
 
-  setupGeolocation();
-
-  return () => {
-    if (onLocationSubscription) {
-      onLocationSubscription.remove();
-    }
-    if (onGeofenceSubscription) {
-      onGeofenceSubscription.remove();
-    }
-  };
-};
-  
-  
-
-  const acceptRequest = async (data) => {
+  const acceptRequest = async data => {
     const decodedId = Buffer.from(data, 'base64').toString('ascii');
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const response = await axios.post(
         `${process.env.BackendAPI6}/api/accept/request`,
-        { user_notification_id: decodedId },
-        { headers: { Authorization: `Bearer ${jwtToken}` } }
+        {user_notification_id: decodedId},
+        {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
 
       if (response.status === 200) {
-        const { notificationId } = response.data;
+        const {notificationId} = response.data;
         const encodedNotificationId = Buffer.from(
-          notificationId.toString()
+          notificationId.toString(),
         ).toString('base64');
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
@@ -437,7 +440,7 @@ const initializeGeolocation = () => {
             headers: {
               Authorization: `Bearer ${pcs_token}`,
             },
-          }
+          },
         );
 
         navigation.dispatch(
@@ -446,10 +449,10 @@ const initializeGeolocation = () => {
             routes: [
               {
                 name: 'WorkerNavigation',
-                params: { encodedId: encodedNotificationId },
+                params: {encodedId: encodedNotificationId},
               },
             ],
-          })
+          }),
         );
       } else {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
@@ -464,14 +467,14 @@ const initializeGeolocation = () => {
             headers: {
               Authorization: `Bearer ${pcs_token}`,
             },
-          }
+          },
         );
 
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
         );
       }
     } catch (error) {
@@ -479,29 +482,37 @@ const initializeGeolocation = () => {
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-        })
+          routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+        }),
       );
     }
   };
 
-  const rejectNotification = async (userNotificationId) => {
+  const rejectNotification = async userNotificationId => {
     try {
-      console.log(userNotificationId)
+      console.log(userNotificationId);
       // Retrieve the existing notifications
-      const storedNotifications = await EncryptedStorage.getItem('Requestnotifications');
-      const notifications = storedNotifications ? JSON.parse(storedNotifications) : [];
-  
+      const storedNotifications = await EncryptedStorage.getItem(
+        'Requestnotifications',
+      );
+      const notifications = storedNotifications
+        ? JSON.parse(storedNotifications)
+        : [];
+
       // Filter out the notification with the matching userNotificationId
       const updatedNotifications = notifications.filter(
-        (notification) => notification.data.user_notification_id !== userNotificationId
+        notification =>
+          notification.data.user_notification_id !== userNotificationId,
       );
-      
-      console.log("upda",updatedNotifications)
+
+      console.log('upda', updatedNotifications);
       // Store the updated notifications back in EncryptedStorage
-      await EncryptedStorage.setItem('Requestnotifications', JSON.stringify(updatedNotifications));
+      await EncryptedStorage.setItem(
+        'Requestnotifications',
+        JSON.stringify(updatedNotifications),
+      );
       console.log('Notification removed successfully');
-  
+
       // Update state with the new notifications array
       setNotificationsArray(updatedNotifications);
     } catch (error) {
@@ -511,7 +522,7 @@ const initializeGeolocation = () => {
 
   const filterNotificationsWithinTimeframe = (notifications, minutes) => {
     const currentDate = new Date();
-    return notifications.filter((noti) => {
+    return notifications.filter(noti => {
       const notiReceivedAt = new Date(noti.receivedAt);
       const timeDifferenceInMinutes =
         (currentDate - notiReceivedAt) / (1000 * 60);
@@ -539,8 +550,8 @@ const initializeGeolocation = () => {
 
       await axios.post(
         `${process.env.BackendAPI6}/api/worker/store-fcm-token`,
-        { fcmToken: token },
-        { headers: { Authorization: `Bearer ${pcs_token}` } }
+        {fcmToken: token},
+        {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
     } catch (error) {
       console.error('Error storing FCM token in the backend:', error);
@@ -568,24 +579,6 @@ const initializeGeolocation = () => {
     }
   }, [isEnabled]);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
   useEffect(() => {
     PushNotification.createChannel(
       {
@@ -596,72 +589,74 @@ const initializeGeolocation = () => {
         importance: 4,
         vibrate: true,
       },
-      (created) => console.log(`createChannel returned ''`)
+      created => console.log(`createChannel returned ''`),
     );
 
-    const storeNotificationInBackend = async (notification) => {
+    const storeNotificationInBackend = async notification => {
       try {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         const fcmToken = await EncryptedStorage.getItem('fcm_token');
         await axios.post(
           `${process.env.BackendAPI6}/api/worker/store-notification`,
-          { notification, fcmToken },
-          { headers: { Authorization: `Bearer ${pcs_token}` } }
+          {notification, fcmToken},
+          {headers: {Authorization: `Bearer ${pcs_token}`}},
         );
       } catch (error) {
         console.error('Failed to store notification in backend:', error);
       }
     };
 
-    const storeNotificationLocally = async (notification) => {
-    
-      console.log("called atleast")
+    const storeNotificationLocally = async notification => {
+      console.log('called atleast');
       // Check if notification has notification.data.notification_id
       if (notification.data.screen === 'Acceptance') {
         try {
-          const existingNotifications = await EncryptedStorage.getItem('Requestnotifications');
-          let notifications = existingNotifications ? JSON.parse(existingNotifications) : [];
- 
-    
+          const existingNotifications = await EncryptedStorage.getItem(
+            'Requestnotifications',
+          );
+          let notifications = existingNotifications
+            ? JSON.parse(existingNotifications)
+            : [];
+
           // Add the new notification to the array
           notifications.push(notification);
-         
-    
+
           // Get the receivedAt time from the notification
           const receivedAt = notification.receivedAt; // e.g., "06/10/2024, 11:26:16"
-    
+
           // Manually parse receivedAt (from DD/MM/YYYY, HH:mm:ss to MM/DD/YYYY HH:mm:ss)
           const [datePart, timePart] = receivedAt.split(', ');
           const [day, month, year] = datePart.split('/');
           const parsedReceivedAt = `${year}-${month}-${day}T${timePart}`;
           const notificationDate = new Date(parsedReceivedAt);
-    
+
           const currentDate = new Date();
-    
+
           // Filter notifications received within the past 10 minutes
-          const filteredNotifications = notifications.filter((noti) => {
+          const filteredNotifications = notifications.filter(noti => {
             const [notiDatePart, notiTimePart] = noti.receivedAt.split(', ');
             const [notiDay, notiMonth, notiYear] = notiDatePart.split('/');
             const parsedNotiReceivedAt = `${notiYear}-${notiMonth}-${notiDay}T${notiTimePart}`;
             const notiReceivedAt = new Date(parsedNotiReceivedAt);
-    
-            const timeDifferenceInMinutes = (currentDate - notiReceivedAt) / (1000 * 60); // milliseconds to minutes
-         
-    
+
+            const timeDifferenceInMinutes =
+              (currentDate - notiReceivedAt) / (1000 * 60); // milliseconds to minutes
+
             return timeDifferenceInMinutes <= 10;
           });
-    
+
           // Update the notifications array with the filtered notifications
           notifications = filteredNotifications;
-         
-    
+
           // Update the notifications array and store locally
           setNotificationsArray(notifications);
-          console.log("setNotificationsArray")
+          console.log('setNotificationsArray');
           // Store updated notifications in local storage
-          await EncryptedStorage.setItem('Requestnotifications', JSON.stringify(notifications));
-        
-    
+          await EncryptedStorage.setItem(
+            'Requestnotifications',
+            JSON.stringify(notifications),
+          );
+
           // Also store in backend
           storeNotificationInBackend(notification);
         } catch (error) {
@@ -672,8 +667,8 @@ const initializeGeolocation = () => {
       }
     };
 
-    const unsubscribeOnMessage = messaging().onMessage(async (remoteMessage) => {
-      console.log("Foreground Fcm",remoteMessage)
+    const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
+      console.log('Foreground Fcm', remoteMessage);
       const notificationId = remoteMessage.data.notification_id;
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
@@ -688,20 +683,20 @@ const initializeGeolocation = () => {
             headers: {
               Authorization: `Bearer ${pcs_token}`,
             },
-          }
+          },
         );
 
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
         );
       } else if (
         remoteMessage.data &&
         remoteMessage.data.screen === 'TaskConfirmation'
       ) {
-        navigation.push('TaskConfirmation', { encodedId: notificationId });
+        navigation.push('TaskConfirmation', {encodedId: notificationId});
       }
 
       const notification = {
@@ -743,10 +738,10 @@ const initializeGeolocation = () => {
         const userNotificationId = notification.data.user_notification_id;
         const route = notification.data.route;
         if (notification.action === 'Dismiss') {
-          PushNotification.cancelLocalNotifications({ id: notification.id });
+          PushNotification.cancelLocalNotifications({id: notification.id});
         } else if (notification.userInteraction) {
           if (userNotificationId && route) {
-            navigation.push(route, { encodedId: userNotificationId });
+            navigation.push(route, {encodedId: userNotificationId});
           }
         }
       },
@@ -754,30 +749,35 @@ const initializeGeolocation = () => {
     });
 
     messaging().setBackgroundMessageHandler(async remoteMessage => {
-      console.log("setBackgroundMessageHandler Fcm",remoteMessage)
-      const notificationId = remoteMessage.data.notification_id
+      console.log('setBackgroundMessageHandler Fcm', remoteMessage);
+      const notificationId = remoteMessage.data.notification_id;
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
       if (remoteMessage.data && remoteMessage.data.screen === 'Home') {
-     
-        await axios.post(`${process.env.BackendAPI}/api/worker/action`, {
-          encodedId: "",
-          screen: ''
-        }, { 
-          headers: {
-            Authorization: `Bearer ${pcs_token}`
-          }
-        });
+        await axios.post(
+          `${process.env.BackendAPI}/api/worker/action`,
+          {
+            encodedId: '',
+            screen: '',
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${pcs_token}`,
+            },
+          },
+        );
 
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
         );
-      }else if(remoteMessage.data && remoteMessage.data.screen === 'TaskConfirmation') {
-      
-        navigation.push('TaskConfirmation', { encodedId: notificationId });
+      } else if (
+        remoteMessage.data &&
+        remoteMessage.data.screen === 'TaskConfirmation'
+      ) {
+        navigation.push('TaskConfirmation', {encodedId: notificationId});
       }
       const notification = {
         title: remoteMessage.notification.title,
@@ -800,9 +800,8 @@ const initializeGeolocation = () => {
       storeNotificationLocally(notification);
     });
 
-    const unsubscribeOnNotificationOpenedApp = messaging().onNotificationOpenedApp(
-      async (remoteMessage) => {
-
+    const unsubscribeOnNotificationOpenedApp =
+      messaging().onNotificationOpenedApp(async remoteMessage => {
         const notificationId = remoteMessage.data.notification_id;
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
@@ -817,30 +816,27 @@ const initializeGeolocation = () => {
               headers: {
                 Authorization: `Bearer ${pcs_token}`,
               },
-            }
+            },
           );
 
           navigation.dispatch(
             CommonActions.reset({
               index: 0,
-              routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-            })
+              routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+            }),
           );
         } else if (
           remoteMessage.data &&
           remoteMessage.data.screen === 'TaskConfirmation'
         ) {
-          navigation.push('TaskConfirmation', { encodedId: notificationId });
+          navigation.push('TaskConfirmation', {encodedId: notificationId});
         }
-      }
-    );
+      });
 
     messaging()
       .getInitialNotification()
-      .then(async (remoteMessage) => {
+      .then(async remoteMessage => {
         if (remoteMessage) {
-
-
           const notificationId = remoteMessage.data.notification_id;
           const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
@@ -855,22 +851,20 @@ const initializeGeolocation = () => {
                 headers: {
                   Authorization: `Bearer ${pcs_token}`,
                 },
-              }
+              },
             );
 
             navigation.dispatch(
               CommonActions.reset({
                 index: 0,
-                routes: [
-                  { name: 'Tabs', state: { routes: [{ name: 'Home' }] } },
-                ],
-              })
+                routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+              }),
             );
           } else if (
             remoteMessage.data &&
             remoteMessage.data.screen === 'TaskConfirmation'
           ) {
-            navigation.push('TaskConfirmation', { encodedId: notificationId });
+            navigation.push('TaskConfirmation', {encodedId: notificationId});
           }
 
           const notification = {
@@ -895,12 +889,9 @@ const initializeGeolocation = () => {
         }
       });
 
-
-
     return () => {
       unsubscribeOnMessage();
       unsubscribeOnNotificationOpenedApp();
-      
     };
   }, []);
 
@@ -916,7 +907,7 @@ const initializeGeolocation = () => {
       greetingMessage = 'Good Afternoon';
       icon = <Feather name="sunset" size={16} color="#ff5722" />;
     } else {
-      greetingMessage = 'Good Evening'; 
+      greetingMessage = 'Good Evening';
       icon = <MaterialIcons name="nights-stay" size={16} color="#F24E1E" />;
     }
 
@@ -924,10 +915,9 @@ const initializeGeolocation = () => {
     setGreetingIcon(icon);
   };
 
-  useEffect(() =>{
+  useEffect(() => {
     setGreetingBasedOnTime();
-  },[])
-
+  }, []);
 
   const balanceScreen = () => {
     navigation.push('BalanceScreen');
@@ -954,8 +944,7 @@ const initializeGeolocation = () => {
                 style={[
                   styles.track,
                   isEnabled ? styles.trackEnabled : styles.trackDisabled,
-                ]}
-              >
+                ]}>
                 <View
                   style={[
                     styles.thumb,
@@ -969,22 +958,25 @@ const initializeGeolocation = () => {
           <View>
             <TouchableOpacity
               style={styles.notificationContainer}
-              onPress={() => navigation.push('RatingsScreen')}
-            >
+              onPress={() => navigation.push('RatingsScreen')}>
               <AntDesign name="staro" size={22} color="#656565" />
             </TouchableOpacity>
           </View>
         </View>
         <View style={styles.greeting}>
-            <Text style={styles.greetingText} >
-              {greeting} <Text style={styles.greetingIcon}>{greetingIcon}</Text>
-            </Text>
-            <Text style={styles.userName}>Yaswanth</Text>
-          </View>
+          <Text style={styles.greetingText}>
+            {greeting} <Text style={styles.greetingIcon}>{greetingIcon}</Text>
+          </Text>
+          <Text style={styles.userName}>Yaswanth</Text>
+        </View>
         <View style={styles.moneyContainer}>
           <TouchableOpacity onPress={balanceScreen}>
             <View style={styles.balanceContainer}>
-              <MaterialCommunityIcons name='bank-outline' size={20} color='#4a4a4a' />
+              <MaterialCommunityIcons
+                name="bank-outline"
+                size={20}
+                color="#4a4a4a"
+              />
               <Text style={styles.balanceText}>Balance</Text>
               <Entypo
                 name="chevron-small-down"
@@ -996,7 +988,7 @@ const initializeGeolocation = () => {
           </TouchableOpacity>
           <TouchableOpacity onPress={earningsScreen}>
             <View style={styles.balanceContainer}>
-              <FontAwesome name='money' size={20} color='#4a4a4a'/>
+              <FontAwesome name="money" size={20} color="#4a4a4a" />
               <Text style={styles.balanceText}>Earnings</Text>
               <Entypo
                 name="chevron-small-down"
@@ -1011,8 +1003,7 @@ const initializeGeolocation = () => {
       {isEnabled ? (
         <>
           <Mapbox.MapView
-            style={{ minHeight: screenHeight, minWidth: screenWidth }}
-          >
+            style={{minHeight: screenHeight, minWidth: screenWidth}}>
             <Mapbox.Camera zoomLevel={17} centerCoordinate={center} />
             <Mapbox.PointAnnotation id="current-location" coordinate={center}>
               <View style={styles.markerContainer}>
@@ -1030,87 +1021,103 @@ const initializeGeolocation = () => {
           showsHorizontalScrollIndicator={false}
           pagingEnabled={false}
           contentContainerStyle={styles.scrollContainer}
-          style={styles.messageScrollView}
-        >
-        {notificationsArray.map((notification, index) => {
-    
-          // Parse the title string if it's valid JSON
-          let parsedTitle; 
-          let totalCost = 0
-          const coordinates = notification.data.coordinates.split(',').map(Number);
-          const distance = calculateDistanceBetweenCoordinates(coordinates,workerLocation)
-          console.log(distance)
-          try {
-            parsedTitle = JSON.parse(notification.data.service);
-       
-            totalCost = parsedTitle.reduce((accumulator, service) => {
-              return accumulator + (service.cost || 0); // Default to 0 if cost is undefined
-            }, 0);
-          } catch (error) {
-            console.error('Error parsing title:', error);
-            parsedTitle = []; // Default to an empty array if parsing fails
-          }
+          style={styles.messageScrollView}>
+          {notificationsArray.map((notification, index) => {
+            // Parse the title string if it's valid JSON
+            let parsedTitle;
+            let totalCost = 0;
+            const coordinates = notification.data.coordinates
+              .split(',')
+              .map(Number);
+            const distance = calculateDistanceBetweenCoordinates(
+              coordinates,
+              workerLocation,
+            );
+            console.log(distance);
+            try {
+              parsedTitle = JSON.parse(notification.data.service);
 
-          return (
-            <View key={index} style={styles.messageBox}>
-              <View style={styles.serviceCostContainer}> 
-                <View>
-                  <Text style={styles.secondaryColor}>Service</Text>
-                  {/* Display the original title or an error message */}
-                  
-                  <View style={styles.serviceNamesContainer}>
-                    {/* Map over the parsed title if it's an array */}
-                    {Array.isArray(parsedTitle) ? (
-                      parsedTitle.map((service, serviceIndex) => (
-                        <View key={serviceIndex}>
-                          <Text key={serviceIndex} style={styles.primaryColor}>
-                            {service.serviceName}
-                            {serviceIndex < parsedTitle.length - 1 ? ', ' : ''} {/* Add comma except for the last item */}
-                          </Text>
-                        </View>
-                      ))
-                    ) : (
-                      <Text>No services available</Text> // Fallback if parsedTitle is not an array
+              totalCost = parsedTitle.reduce((accumulator, service) => {
+                return accumulator + (service.cost || 0); // Default to 0 if cost is undefined
+              }, 0);
+            } catch (error) {
+              console.error('Error parsing title:', error);
+              parsedTitle = []; // Default to an empty array if parsing fails
+            }
+
+            return (
+              <View key={index} style={styles.messageBox}>
+                <View style={styles.serviceCostContainer}>
+                  <View>
+                    <Text style={styles.secondaryColor}>Service</Text>
+                    {/* Display the original title or an error message */}
+
+                    <View style={styles.serviceNamesContainer}>
+                      {/* Map over the parsed title if it's an array */}
+                      {Array.isArray(parsedTitle) ? (
+                        parsedTitle.map((service, serviceIndex) => (
+                          <View key={serviceIndex}>
+                            <Text
+                              key={serviceIndex}
+                              style={styles.primaryColor}>
+                              {service.serviceName}
+                              {serviceIndex < parsedTitle.length - 1
+                                ? ', '
+                                : ''}{' '}
+                              {/* Add comma except for the last item */}
+                            </Text>
+                          </View>
+                        ))
+                      ) : (
+                        <Text>No services available</Text> // Fallback if parsedTitle is not an array
+                      )}
+                    </View>
+                  </View>
+                  <View>
+                    <Text style={styles.secondaryColor}>Cost</Text>
+                    <Text style={styles.primaryColor}>₹{totalCost}</Text>
+                  </View>
+                </View>
+                <View style={styles.addressContainer}>
+                  <View>
+                    <Text style={styles.secondaryColor}>Location</Text>
+                    <Text style={styles.address}>
+                      {notification.data.location}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={styles.secondaryColor}>Distance</Text>
+                    {distance > 0 && (
+                      <Text style={styles.primaryColor}>{distance}</Text>
                     )}
                   </View>
                 </View>
-                <View>
-                  <Text style={styles.secondaryColor}>Cost</Text>
-                  <Text style={styles.primaryColor}>₹{totalCost}</Text>
+                <View style={styles.buttonsContainer}>
+                  <View>
+                    {/* <Text style={styles.secondaryColor}>Reject</Text> */}
+                    <TouchableOpacity
+                      onPress={() =>
+                        rejectNotification(
+                          notification.data.user_notification_id,
+                        )
+                      }>
+                      <Entypo name="cross" size={25} color="#9e9e9e" />
+                    </TouchableOpacity>
+                  </View>
+                  <View>
+                    <TouchableOpacity
+                      style={styles.secondaryButton}
+                      onPress={() =>
+                        acceptRequest(notification.data.user_notification_id)
+                      } // Pass item.data to acceptRequest
+                    >
+                      <Text style={styles.secondaryButtonText}>Accept</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-              <View style={styles.addressContainer}> 
-                <View>
-                  <Text style={styles.secondaryColor}>Location</Text>
-                  <Text style={styles.address}>{notification.data.location}</Text>
-                </View>
-                <View>
-                  <Text style={styles.secondaryColor}>Distance</Text>
-                  {distance >0  &&
-                    <Text style={styles.primaryColor}>{distance}</Text>
-                  }
-              
-                </View>
-              </View>
-              <View style={styles.buttonsContainer}>
-                <View>
-                  {/* <Text style={styles.secondaryColor}>Reject</Text> */}
-                  <TouchableOpacity onPress={() => rejectNotification(notification.data.user_notification_id)}>
-                    <Entypo name='cross' size={25} color='#9e9e9e' />
-                  </TouchableOpacity>
-                </View>
-                <View>
-                  <TouchableOpacity
-                    style={styles.secondaryButton}
-                    onPress={() => acceptRequest(notification.data.user_notification_id)} // Pass item.data to acceptRequest
-                  >
-                    <Text style={styles.secondaryButtonText}>Accept</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          );
-        })}
+            );
+          })}
 
           {/* Add more message boxes as needed */}
         </ScrollView>
@@ -1118,19 +1125,26 @@ const initializeGeolocation = () => {
       {messageBoxDisplay && (
         <TouchableOpacity
           style={styles.messageBoxContainer}
-          onPress={() => navigation.replace(screenName, params)}
-        >
-          {console.log("screen params",params)}
+          onPress={() => navigation.replace(screenName, params)}>
+          {console.log('screen params', params)}
           <View style={styles.messageBox1}>
             <View style={styles.timeContainer}>
               {screenName === 'PaymentScreen' ? (
                 <Foundation name="paypal" size={24} color="#ffffff" />
               ) : screenName === 'WorkerNavigation' ? (
-                <MaterialCommunityIcons name="truck" size={24} color="#ffffff" />
+                <MaterialCommunityIcons
+                  name="truck"
+                  size={24}
+                  color="#ffffff"
+                />
               ) : screenName === 'OtpVerification' ? (
                 <Feather name="shield" size={24} color="#ffffff" />
               ) : screenName === 'TimingScreen' ? (
-                <MaterialCommunityIcons name="hammer" size={24} color="#ffffff" />
+                <MaterialCommunityIcons
+                  name="hammer"
+                  size={24}
+                  color="#ffffff"
+                />
               ) : (
                 <Feather name="alert-circle" size={24} color="#000" />
               )}
@@ -1165,7 +1179,6 @@ const initializeGeolocation = () => {
           </View>
         </TouchableOpacity>
       )}
-
     </SafeAreaView>
   );
 };
@@ -1173,7 +1186,6 @@ const initializeGeolocation = () => {
 const screenWidth = Dimensions.get('window').width;
 
 const styles = StyleSheet.create({
-
   messageBoxContainer: {
     backgroundColor: '#ffffff',
     borderRadius: 10,
@@ -1182,15 +1194,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     elevation: 3, // For shadow
-    position: 'absolute',  // Positioning at the bottom
-    bottom: 8,  // Distance from the bottom of the screen
-    left: 10,  // Margin from the left side of the screen
-    right: 10,  // Margin from the right side of the screen,
-    marginHorizontal:'2%'
+    position: 'absolute', // Positioning at the bottom
+    bottom: 8, // Distance from the bottom of the screen
+    left: 10, // Margin from the left side of the screen
+    right: 10, // Margin from the right side of the screen,
+    marginHorizontal: '2%',
   },
-  workerImage:{
-    height:40,
-    width:30
+  workerImage: {
+    height: 40,
+    width: 30,
   },
   messageBox1: {
     flexDirection: 'row',
@@ -1211,19 +1223,18 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: 'bold',
     fontSize: 16,
-    textAlign:'center'
+    textAlign: 'center',
   },
   textContainerText: {
     fontSize: 13,
 
-    paddingBottom:5,
+    paddingBottom: 5,
     fontWeight: 'bold',
     color: '#212121',
     marginLeft: 10,
   },
-  serviceNamesContainer:{
-    flexDirection:'row',
-
+  serviceNamesContainer: {
+    flexDirection: 'row',
   },
   textContainerTextCommander: {
     fontSize: 12,
@@ -1237,51 +1248,50 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  rightIcon:{
-    marginLeft:8
+  rightIcon: {
+    marginLeft: 8,
   },
-  secondaryButton:{
-    backgroundColor:'#FF5722',
-    width:120,
-    height:36,
-    display:'flex',
-    flexDirection:'row',
-    justifyContent:'center',
-    alignItems:'center',
-    borderRadius:10
+  secondaryButton: {
+    backgroundColor: '#FF5722',
+    width: 120,
+    height: 36,
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
   },
   screenContainer: {
     flex: 1,
     backgroundColor: '#ffffff',
-    paddingBottom:70
+    paddingBottom: 70,
   },
-  secondaryButtonText:{
-    color:'#ffffff',
-    fontSize:14,
-    lineHeight:16,
-    fontWeight:'600'
+  secondaryButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    lineHeight: 16,
+    fontWeight: '600',
   },
-  secondaryColor:{
-    color:'#9e9e9e',
-    fontSize:16
+  secondaryColor: {
+    color: '#9e9e9e',
+    fontSize: 16,
   },
-  buttonsContainer:{
-    display:'flex',
-    flexDirection:'row',
-    alignItems:'center',
-    justifyContent:'space-between',
-    marginTop:10
+  buttonsContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
   },
-  serviceCostContainer:{
-    display:'flex',
-    flexDirection:'row',
-    justifyContent:'space-between',
-
+  serviceCostContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
-  addressContainer:{
-    flexDirection:'row',
-    justifyContent:'space-between',
-    alignItems:'flex-start'
+  addressContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   markerContainer: {
     justifyContent: 'center',
@@ -1305,13 +1315,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowRadius: 10,
     elevation: 5, // For Android shadow
-    padding:20,
-    display:'flex',
-    flexDirection:'column',
-    gap:15
+    padding: 20,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 15,
   },
   messageText: {
     fontSize: 16,
@@ -1319,9 +1329,9 @@ const styles = StyleSheet.create({
   },
   greeting: {
     flexDirection: 'column',
-    alignItems:'center',
+    alignItems: 'center',
     color: '#333',
-    marginVertical:10
+    marginVertical: 10,
   },
   greetingText: {
     fontSize: 14,
@@ -1340,12 +1350,12 @@ const styles = StyleSheet.create({
     color: '#4A4A4A',
     lineHeight: 21.09,
   },
-  moneyContainer:{
-    padding:10,
-    display:'flex',
-    flexDirection:'row',
-    justifyContent:'space-around',
-    marginBottom:10,
+  moneyContainer: {
+    padding: 10,
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 10,
   },
   balanceContainer: {
     padding: 10,
@@ -1355,7 +1365,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowRadius: 2,
     elevation: 1,
     display: 'flex',
@@ -1367,20 +1377,20 @@ const styles = StyleSheet.create({
     flex: 1, // Make the text take the available space
     textAlign: 'center', // Center the text
     color: '#212121', // Assuming primary color
-    fontFamily:'Poppins-Bold'
+    fontFamily: 'Poppins-Bold',
   },
   downArrow: {
     marginLeft: 10, // Add space between text and icon if needed
   },
-  
-  primaryColor:{
-    color:'#212121',
-    fontSize:15,
+
+  primaryColor: {
+    color: '#212121',
+    fontSize: 15,
   },
-  address:{
-    color:'#212121',
-    fontSize:12,
-    width:210
+  address: {
+    color: '#212121',
+    fontSize: 12,
+    width: 210,
   },
   container: {
     flexDirection: 'row',
@@ -1413,68 +1423,67 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start', // Moves the thumb to the left when disabled
   },
   text: {
-    color: '#000'
+    color: '#000',
   },
-  workStatus:{
-    color:'#4CAF50',
-    fontSize:15,
-
+  workStatus: {
+    color: '#4CAF50',
+    fontSize: 15,
   },
-  workStatusCOntainer:{
-    display:'flex',
-    alignSelf:'center'
+  workStatusCOntainer: {
+    display: 'flex',
+    alignSelf: 'center',
   },
-  innerSwitch:{
-    display:'flex',
-    flexDirection:'row',
-    gap:10
+  innerSwitch: {
+    display: 'flex',
+    flexDirection: 'row',
+    gap: 10,
   },
-  textCS:{
-  paddingTop:3,
-  paddingRight:5,
-  fontSize:13,
-  color:'#7B6B6E'
+  textCS: {
+    paddingTop: 3,
+    paddingRight: 5,
+    fontSize: 13,
+    color: '#7B6B6E',
   },
-  notificationContainer:{
-    display:'flex',
-    alignSelf:'center'
+  notificationContainer: {
+    display: 'flex',
+    alignSelf: 'center',
   },
-  earningsText:{
-    color:'#ffffff',
-    fontWeight:'600',
-    fontSize:15
+  earningsText: {
+    color: '#ffffff',
+    fontWeight: '600',
+    fontSize: 15,
   },
-  earnings:{
-    padding:10,
-    backgroundColor:'#7B6B6E',
-    display:'flex',
-    flexDirection:'row',
-    justifyContent:'space-between'
+  earnings: {
+    padding: 10,
+    backgroundColor: '#7B6B6E',
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   markerContainer: {
-    backgroundColor: '#ffffff',  // Circle background color
-    borderRadius: 12.5,          // Half of width/height for a perfect circle (35 / 2)
-    justifyContent: 'center',    // Center the icon vertically
-    alignItems: 'center',        // Center the icon horizontally
-    width: 25,                   // Increased width to fit the icon with padding
+    backgroundColor: '#ffffff', // Circle background color
+    borderRadius: 12.5, // Half of width/height for a perfect circle (35 / 2)
+    justifyContent: 'center', // Center the icon vertically
+    alignItems: 'center', // Center the icon horizontally
+    width: 25, // Increased width to fit the icon with padding
     height: 25,
-    paddingBottom:2
+    paddingBottom: 2,
   },
 
-  switchContainer:{
-    padding:10,
-    display:'flex',
-    flexDirection:'row',
-    justifyContent:'space-between',
+  switchContainer: {
+    padding: 10,
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
-  header:{
-    backgroundColor:'#ffffff',
-    display:'flex',
-    flexDirection:'column'
+  header: {
+    backgroundColor: '#ffffff',
+    display: 'flex',
+    flexDirection: 'column',
   },
-  switch:{
-    width:47,
-    height:27
+  switch: {
+    width: 47,
+    height: 27,
   },
   userInitialCircle: {
     width: 40,

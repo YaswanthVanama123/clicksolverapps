@@ -1,26 +1,39 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Alert, BackHandler } from 'react-native';
-import { RadioButton } from 'react-native-paper';
+import React, {useState, useEffect, useCallback} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Alert,
+  BackHandler,
+} from 'react-native';
+import {RadioButton} from 'react-native-paper';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
-import { useNavigation, useRoute, CommonActions, useFocusEffect } from "@react-navigation/native";
+import {
+  useNavigation,
+  useRoute,
+  CommonActions,
+  useFocusEffect,
+} from '@react-navigation/native';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
 import SwipeButton from 'rn-swipe-button';
 import Entypo from 'react-native-vector-icons/Entypo';
 
-const PaymentScanner = ({ route }) => {
+const PaymentScanner = ({route}) => {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [paymentDetails, setPaymentDetails] = useState({});
   const [decodedId, setDecodedId] = useState(null);
-  const [encodedId, setEncodedId] = useState(null); 
+  const [encodedId, setEncodedId] = useState(null);
   const [totalAmount, setTotalAmount] = useState(0);
-  const [titleColor, setTitleColor] = useState("#FF5722"); 
+  const [titleColor, setTitleColor] = useState('#FF5722');
   const [swiped, setSwiped] = useState(false);
-  
+
   const navigation = useNavigation();
 
   useEffect(() => {
-    const { encodedId } = route.params;
+    const {encodedId} = route.params;
     if (encodedId) {
       setEncodedId(encodedId);
       const decoded = atob(encodedId);
@@ -32,12 +45,15 @@ const PaymentScanner = ({ route }) => {
     const fetchPaymentDetails = async () => {
       if (decodedId) {
         try {
-          const response = await axios.post(`${process.env.BackendAPI6}/api/worker/payment/scanner/details`, {
-            notification_id: decodedId,
-          });
+          const response = await axios.post(
+            `${process.env.BackendAPI6}/api/worker/payment/scanner/details`,
+            {
+              notification_id: decodedId,
+            },
+          );
 
-          const { totalAmount: amount, name, service } = response.data;
-          setPaymentDetails({ name, service });
+          const {totalAmount: amount, name, service} = response.data;
+          setPaymentDetails({name, service});
           setTotalAmount(Number(amount) || 0);
         } catch (error) {
           console.error('Error fetching payment details:', error);
@@ -51,8 +67,8 @@ const PaymentScanner = ({ route }) => {
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-      })
+        routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+      }),
     );
     return true;
   };
@@ -61,48 +77,59 @@ const PaymentScanner = ({ route }) => {
     useCallback(() => {
       const handleBackPress = () => onBackPress();
       BackHandler.addEventListener('hardwareBackPress', handleBackPress);
-      return () => BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
-    }, [navigation])
+      return () =>
+        BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
+    }, [navigation]),
   );
 
   const handlePayment = async () => {
     try {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
-      const numberAmmount = Number(totalAmount)
+      const numberAmmount = Number(totalAmount);
       await axios.post(`${process.env.BackendAPI6}/api/user/payed`, {
-        totalAmount:numberAmmount,
+        totalAmount: numberAmmount,
         paymentMethod,
         decodedId,
       });
 
-      await axios.post(`${process.env.BackendAPI6}/api/worker/action`, {
-        encodedId,
-        screen: '',
-      }, { 
-        headers: {
-          Authorization: `Bearer ${pcs_token}`,
+      await axios.post(
+        `${process.env.BackendAPI6}/api/worker/action`,
+        {
+          encodedId,
+          screen: '',
         },
-      });
+        {
+          headers: {
+            Authorization: `Bearer ${pcs_token}`,
+          },
+        },
+      );
 
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: 'ServiceCompleted', params: { encodedId } }],
-        })
+          routes: [{name: 'ServiceCompleted', params: {encodedId}}],
+        }),
       );
     } catch (error) {
       console.error('Error processing payment:', error);
-      Alert.alert("Error", "Failed to process payment.");
+      Alert.alert('Error', 'Failed to process payment.');
     }
   };
 
   const ThumbIcon = () => (
     <View style={styles.thumbContainer}>
       <Text>
-        {swiped ? 
-          <Entypo name="check" size={20} color="#ffffff" style={styles.checkIcon}/> :
+        {swiped ? (
+          <Entypo
+            name="check"
+            size={20}
+            color="#ffffff"
+            style={styles.checkIcon}
+          />
+        ) : (
           <FontAwesome6 name="arrow-right-long" size={18} color="#ffffff" />
-        }
+        )}
       </Text>
     </View>
   );
@@ -111,24 +138,26 @@ const PaymentScanner = ({ route }) => {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.leftIcon} onPress={onBackPress}>
-          <FontAwesome6 name='arrow-left-long' size={20} color='#9e9e9e' />
+          <FontAwesome6 name="arrow-left-long" size={20} color="#9e9e9e" />
         </TouchableOpacity>
         <Text style={styles.screenName}>Payment Scanner</Text>
       </View>
 
       <View style={styles.profileContainer}>
         <Image
-          source={{ uri: 'https://i.postimg.cc/L5drkdQq/Image-2-removebg-preview.png' }} 
+          source={{
+            uri: 'https://i.postimg.cc/L5drkdQq/Image-2-removebg-preview.png',
+          }}
           style={styles.profileImage}
         />
         <Text style={styles.name}>{paymentDetails.name}</Text>
         <Text style={styles.amountText}>Amount</Text>
         <Text style={styles.amount}>₹{totalAmount}</Text>
         <Text style={styles.service}>{paymentDetails.service}</Text>
-        
+
         <View style={styles.qrContainer}>
           <Image
-            source={{ uri: 'https://i.postimg.cc/3RDzkGDh/Image-3.png' }} 
+            source={{uri: 'https://i.postimg.cc/3RDzkGDh/Image-3.png'}}
             style={styles.ScannerImage}
           />
           <Text style={styles.qrText}>Scan QR code to pay</Text>
@@ -147,27 +176,27 @@ const PaymentScanner = ({ route }) => {
       <View>
         <SwipeButton
           title="Collected Amount"
-          titleStyles={{ color: titleColor, fontSize: 16 }} 
-          railBackgroundColor="#ffffff" 
-          railBorderColor='#FF5722'
+          titleStyles={{color: titleColor, fontSize: 16}}
+          railBackgroundColor="#ffffff"
+          railBorderColor="#FF5722"
           railStyles={{
             borderRadius: 25,
-            height: 50, 
+            height: 50,
             backgroundColor: '#FF450000',
             borderColor: '#FF450000',
           }}
-          thumbIconComponent={ThumbIcon} 
-          thumbIconBackgroundColor="#FF5722" 
-          thumbIconBorderColor="#FFFFFF" 
-          thumbIconWidth={50} 
-          thumbIconHeight={50} 
-          onSwipeStart={() => setTitleColor("#802300")} 
+          thumbIconComponent={ThumbIcon}
+          thumbIconBackgroundColor="#FF5722"
+          thumbIconBorderColor="#FFFFFF"
+          thumbIconWidth={50}
+          thumbIconHeight={50}
+          onSwipeStart={() => setTitleColor('#802300')}
           onSwipeSuccess={() => {
             handlePayment();
-            setTitleColor("#FF5722"); 
+            setTitleColor('#FF5722');
             setSwiped(true);
           }}
-          onSwipeFail={() => setTitleColor("#FF5722")}
+          onSwipeFail={() => setTitleColor('#FF5722')}
         />
       </View>
     </View>
@@ -187,8 +216,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   leftIcon: {
-    position: 'absolute', 
-    left: 10, 
+    position: 'absolute',
+    left: 10,
   },
   screenName: {
     color: '#747476',
@@ -253,7 +282,7 @@ const styles = StyleSheet.create({
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center', 
+    justifyContent: 'center',
     paddingVertical: 5,
     position: 'relative',
     marginBottom: 20,

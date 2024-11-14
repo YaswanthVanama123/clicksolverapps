@@ -1,9 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, Platform, PermissionsAndroid } from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  Image,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  Platform,
+  PermissionsAndroid,
+} from 'react-native';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
-import { useNavigation, CommonActions } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {useNavigation, CommonActions} from '@react-navigation/native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 const HomeScreen = () => {
   const [servicecounts, setServicecounts] = useState(0);
@@ -15,34 +24,35 @@ const HomeScreen = () => {
   const [feedback, setFeedback] = useState([]);
   const [workerAverageRating, setWorkerAverageRating] = useState(0);
   const navigation = useNavigation();
-  const [screenName,setScreenName] = useState(null)
-  const [params,setParams] = useState(null)
+  const [screenName, setScreenName] = useState(null);
+  const [params, setParams] = useState(null);
 
   useEffect(() => {
     const fetchTrackDetails = async () => {
       try {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
-        
-        if(pcs_token){
-        const response = await axios.get(`${process.env.BackendAPI}/api/worker/track/details`, {
-          headers: { Authorization: `Bearer ${pcs_token}` },
-        });
-   
-        const { route, parameter } = response.data;
-        const params = JSON.parse(parameter)
-        
-   
-        if(route === "" || route === null || route === undefined ){
-          setMessageBoxDisplay(false)
+
+        if (pcs_token) {
+          const response = await axios.get(
+            `${process.env.BackendAPI}/api/worker/track/details`,
+            {
+              headers: {Authorization: `Bearer ${pcs_token}`},
+            },
+          );
+
+          const {route, parameter} = response.data;
+          const params = JSON.parse(parameter);
+
+          if (route === '' || route === null || route === undefined) {
+            setMessageBoxDisplay(false);
+          } else {
+            setMessageBoxDisplay(true);
+          }
+
+          // Update state with the response data
+          setScreenName(route);
+          setParams(params);
         }
-        else{
-          setMessageBoxDisplay(true) 
-        }
-        
-        // Update state with the response data
-        setScreenName(route);
-        setParams(params);
-      }
       } catch (error) {
         console.error('Error fetching track details:', error);
       }
@@ -59,40 +69,43 @@ const HomeScreen = () => {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Login' }],
-          }) 
+            routes: [{name: 'Login'}],
+          }),
         );
         return;
       }
       try {
-        console.log("back ",process.env.BackendAPI)
-        const response = await axios.get(`${process.env.BackendAPI}/api/worker/life/details`, {
-          headers: {
-            Authorization: `Bearer ${jwtToken}`,
+        console.log('back ', process.env.BackendAPI);
+        const response = await axios.get(
+          `${process.env.BackendAPI}/api/worker/life/details`,
+          {
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+            },
           },
-        });
-        if (response.data === "") {
+        );
+        if (response.data === '') {
           navigation.dispatch(
             CommonActions.reset({
               index: 0,
-              routes: [{ name: 'SkillRegistration' }],
-            })
+              routes: [{name: 'SkillRegistration'}],
+            }),
           );
         }
-        const { profileDetails, averageRating, workerId } = response.data;
-        const { service_counts, money_earned, profile } = profileDetails[0];
+        const {profileDetails, averageRating, workerId} = response.data;
+        const {service_counts, money_earned, profile} = profileDetails[0];
         setServicecounts(service_counts);
         setTotalEarnings(money_earned);
         setProfile(profile);
         setData(profileDetails);
-        const unique = String(workerId)
-        await EncryptedStorage.setItem('unique',(unique));
+        const unique = String(workerId);
+        await EncryptedStorage.setItem('unique', unique);
         setWorkerAverageRating(parseFloat(averageRating).toFixed(1));
         const feedbackData = profileDetails.map(item => ({
           name: item.name,
           feedbackText: item.comment,
           feedbackRating: item.feedback_rating,
-          date: item.created_at
+          date: item.created_at,
         }));
         setFeedback(feedbackData);
       } catch (error) {
@@ -128,20 +141,18 @@ const HomeScreen = () => {
     };
 
     requestLocationPermission();
-
-  }, [])
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
-
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       if (!jwtToken) {
         // Navigate to the login screen if the token is not available
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Login' }],
-          })
+            routes: [{name: 'Login'}],
+          }),
         );
         return;
       }
@@ -154,7 +165,7 @@ const HomeScreen = () => {
             headers: {
               Authorization: `Bearer ${jwtToken}`,
             },
-          }
+          },
         );
       } catch (error) {
         console.error('There was an error fetching the data!', error);
@@ -164,18 +175,16 @@ const HomeScreen = () => {
     fetchData();
   }, []);
 
-
   useEffect(() => {
     const fetchData = async () => {
-
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       if (!jwtToken) {
         // Navigate to the login screen if the token is not available
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Login' }],
-          })
+            routes: [{name: 'Login'}],
+          }),
         );
         return;
       }
@@ -188,9 +197,9 @@ const HomeScreen = () => {
             headers: {
               Authorization: `Bearer ${jwtToken}`,
             },
-          }
+          },
         );
-        if (response.data === "") {
+        if (response.data === '') {
           navigation.navigate('SkillRegistration');
         }
       } catch (error) {
@@ -201,22 +210,43 @@ const HomeScreen = () => {
     fetchData();
   }, []);
 
-  const formatCreatedAt = (createdAt) => {
+  const formatCreatedAt = createdAt => {
     const date = new Date(createdAt);
-    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const monthNames = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
     const month = monthNames[date.getMonth()];
     const day = date.getDate();
     const year = date.getFullYear();
     return `${month} ${day}, ${year}`;
   };
 
-  const renderStars = (rating) => {
+  const renderStars = rating => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
       if (i <= rating) {
-        stars.push(<Text key={i} style={styles.filledStar}>★</Text>);
+        stars.push(
+          <Text key={i} style={styles.filledStar}>
+            ★
+          </Text>,
+        );
       } else {
-        stars.push(<Text key={i} style={styles.emptyStar}>☆</Text>);
+        stars.push(
+          <Text key={i} style={styles.emptyStar}>
+            ☆
+          </Text>,
+        );
       }
     }
     return stars;
@@ -245,9 +275,12 @@ const HomeScreen = () => {
     </View>
   );
 
-  const renderFeedbackItem = ({ item }) => (
+  const renderFeedbackItem = ({item}) => (
     <View style={styles.feedbackItem}>
-      <Text style={styles.customerName}>{item.name} <Text style={styles.rating}>{renderStars(item.feedbackRating)}</Text></Text>
+      <Text style={styles.customerName}>
+        {item.name}{' '}
+        <Text style={styles.rating}>{renderStars(item.feedbackRating)}</Text>
+      </Text>
       <Text style={styles.textColor}>{formatCreatedAt(item.date)}</Text>
       <Text style={styles.feedbackText}>{item.feedbackText}</Text>
     </View>
@@ -255,52 +288,64 @@ const HomeScreen = () => {
 
   return (
     <SafeAreaView>
-    <FlatList
-      ListHeaderComponent={renderHeader}
-      data={data}
-      keyExtractor={(item) => item.notification_id.toString()}
-      renderItem={({ item }) => (
-        <View style={styles.orderItem}>
-          <Text style={styles.columns}>Service ID: {item.notification_id}</Text>
-          <Text style={styles.columns}>Time Worked: {item.time_worked}</Text>
-          <Text style={styles.columns}>Location: {item.city}, {item.area}, {item.pincode}</Text>
-        </View>
-      )}
-      ListFooterComponent={() => (
-        <View style={styles.feedback}>
-          <Text style={styles.sectionTitle}>Customer Feedback <Text style={styles.link}>View All</Text></Text>
-          <FlatList
-            data={feedback}
-            keyExtractor={(item, index) => index.toString()}
-            renderItem={renderFeedbackItem}
-          />
-        </View>
-      )}
-    />
+      <FlatList
+        ListHeaderComponent={renderHeader}
+        data={data}
+        keyExtractor={item => item.notification_id.toString()}
+        renderItem={({item}) => (
+          <View style={styles.orderItem}>
+            <Text style={styles.columns}>
+              Service ID: {item.notification_id}
+            </Text>
+            <Text style={styles.columns}>Time Worked: {item.time_worked}</Text>
+            <Text style={styles.columns}>
+              Location: {item.city}, {item.area}, {item.pincode}
+            </Text>
+          </View>
+        )}
+        ListFooterComponent={() => (
+          <View style={styles.feedback}>
+            <Text style={styles.sectionTitle}>
+              Customer Feedback <Text style={styles.link}>View All</Text>
+            </Text>
+            <FlatList
+              data={feedback}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={renderFeedbackItem}
+            />
+          </View>
+        )}
+      />
       {messageBoxDisplay && (
         <TouchableOpacity
           style={styles.messageBoxContainer}
-          onPress={() => navigation.replace(screenName, params)}
-        >
+          onPress={() => navigation.replace(screenName, params)}>
           <View style={styles.messageBox}>
             <View style={styles.timeContainer}>
               <Text style={styles.timeContainerText}>10 </Text>
               <Text style={styles.timeContainerText}>Mins</Text>
             </View>
             <View>
-              {screenName === "PaymentScreen" ? (
-                <Text style={styles.textContainerText}>Payment in progress</Text>
-              ) : screenName === "WorkerNavigation" ? (
-                <Text style={styles.textContainerText}>User is waiting for your help commander</Text>
-              ): screenName === "OtpVerification" ? (
-                <Text style={styles.textContainerText}>User is waiting for your help commander</Text>
-              ) : screenName === "TimingScreen" ? (
+              {screenName === 'PaymentScreen' ? (
+                <Text style={styles.textContainerText}>
+                  Payment in progress
+                </Text>
+              ) : screenName === 'WorkerNavigation' ? (
+                <Text style={styles.textContainerText}>
+                  User is waiting for your help commander
+                </Text>
+              ) : screenName === 'OtpVerification' ? (
+                <Text style={styles.textContainerText}>
+                  User is waiting for your help commander
+                </Text>
+              ) : screenName === 'TimingScreen' ? (
                 <Text style={styles.textContainerText}>Work in progress</Text>
-              ) 
-              : (
+              ) : (
                 <Text style={styles.textContainerText}>Nothing</Text>
               )}
-              <Text style={styles.textContainerTextCommander}>Yaswanth is solving your problem</Text>
+              <Text style={styles.textContainerTextCommander}>
+                Yaswanth is solving your problem
+              </Text>
             </View>
             <View>
               <Text>Icon</Text>
@@ -313,17 +358,15 @@ const HomeScreen = () => {
       )}
     </SafeAreaView>
   );
-  
 };
-
 
 const styles = StyleSheet.create({
   dashboard: {
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
-  columns:{
-    color:'#000'
+  columns: {
+    color: '#000',
   },
   header: {
     padding: 10,
@@ -332,7 +375,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    color:'#003366'
+    color: '#003366',
   },
   summary: {
     flexDirection: 'row',
@@ -351,8 +394,8 @@ const styles = StyleSheet.create({
     margin: 10,
     minWidth: 200,
   },
-  textColor:{
-    color:'#000'
+  textColor: {
+    color: '#000',
   },
   summaryValue: {
     fontSize: 28,
@@ -377,7 +420,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
-    color:'#000'
+    color: '#000',
   },
   feedback: {
     marginVertical: 20,
@@ -390,7 +433,7 @@ const styles = StyleSheet.create({
   customerName: {
     fontWeight: 'bold',
     fontSize: 16,
-    color:'#000'
+    color: '#000',
   },
   rating: {
     color: '#000',
@@ -420,7 +463,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#fff',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.2,
     shadowRadius: 16,
     elevation: 16,

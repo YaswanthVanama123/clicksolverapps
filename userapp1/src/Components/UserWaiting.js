@@ -1,15 +1,30 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, Alert, BackHandler, StyleSheet, Dimensions, Image } from 'react-native';
+import React, {useEffect, useState, useRef} from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Alert,
+  BackHandler,
+  StyleSheet,
+  Dimensions,
+  Image,
+} from 'react-native';
 import axios from 'axios';
-import { useNavigation, useRoute, CommonActions, useFocusEffect } from '@react-navigation/native';
+import {
+  useNavigation,
+  useRoute,
+  CommonActions,
+  useFocusEffect,
+} from '@react-navigation/native';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import LottieView from 'lottie-react-native';
-import { Buffer } from 'buffer';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
-import Octicons from 'react-native-vector-icons/Octicons'
+import {Buffer} from 'buffer';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Octicons from 'react-native-vector-icons/Octicons';
 import Mapbox from '@rnmapbox/maps';
-Mapbox.setAccessToken('pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw');
-
+Mapbox.setAccessToken(
+  'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw',
+);
 
 const WaitingUser = () => {
   const route = useRoute();
@@ -22,83 +37,117 @@ const WaitingUser = () => {
   const [area, setArea] = useState(null);
   const [pincode, setPincode] = useState(null);
   const [alternatePhoneNumber, setAlternatePhoneNumber] = useState(null);
-  const [location,setLocation] = useState([81.05078857408955,
-    16.699433706595414])
+  const [location, setLocation] = useState([
+    81.05078857408955, 16.699433706595414,
+  ]);
   const [service, setService] = useState(null);
   const [alternateName, setAlternateName] = useState(null);
   const [encodedData, setEncodedData] = useState(null);
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
   const attemptCountRef = useRef(0);
 
-  useEffect(() => { 
+  useEffect(() => {
     if (encodedData && encodedData !== 'No workers found within 2 km radius') {
       try {
         const decoded = Buffer.from(encodedData, 'base64').toString('utf-8');
-        setDecodedId(decoded); 
+        setDecodedId(decoded);
       } catch (error) {
         console.error('Error decoding Base64:', error);
       }
     }
   }, [encodedData]);
 
-  useEffect(() =>{
-    console.log("screnn params",route.params)
-    const { area, city, pincode, alternateName, alternatePhoneNumber, serviceBooked, location } = route.params;
+  useEffect(() => {
+    console.log('screnn params', route.params);
+    const {
+      area,
+      city,
+      pincode,
+      alternateName,
+      alternatePhoneNumber,
+      serviceBooked,
+      location,
+    } = route.params;
     setCity(city);
     setArea(area);
     setPincode(pincode);
     setAlternatePhoneNumber(alternatePhoneNumber);
     setAlternateName(alternateName);
     setService(serviceBooked);
-    setLocation(location)
-  },[])
+    setLocation(location);
+  }, []);
 
   const fetchData = async () => {
-    const { area, city, pincode, alternateName, alternatePhoneNumber, serviceBooked, location } = route.params;
+    const {
+      area,
+      city,
+      pincode,
+      alternateName,
+      alternatePhoneNumber,
+      serviceBooked,
+      location,
+    } = route.params;
     setCity(city);
     setArea(area);
     setPincode(pincode);
     setAlternatePhoneNumber(alternatePhoneNumber);
     setAlternateName(alternateName);
     setService(serviceBooked);
-    setLocation(location)
+    setLocation(location);
 
     try {
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       if (!jwtToken) {
         Alert.alert('Error', 'No token found');
         return;
-      } 
- 
+      }
+
       const response = await axios.post(
         `${process.env.BACKENDAIPE}/api/workers-nearby`,
-        { area, city, pincode, alternateName, alternatePhoneNumber, serviceBooked },
-        { headers: { Authorization: `Bearer ${jwtToken}` } }
+        {
+          area,
+          city,
+          pincode,
+          alternateName,
+          alternatePhoneNumber,
+          serviceBooked,
+        },
+        {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
- 
+
       if (response.status === 200) {
         const encode = response.data;
         setEncodedData(encode);
-        console.log("res",response.data)  
-        console.log(encode)
+        console.log('res', response.data);
+        console.log(encode);
         if (encode && encode !== 'No workers found within 2 km radius') {
           await axios.post(
             `${process.env.BACKENDAIPE}/api/user/action`,
-            { encodedId: encode, screen: 'userwaiting', serviceBooked, area, city, pincode, alternateName, alternatePhoneNumber,location },
-            { headers: { Authorization: `Bearer ${jwtToken}` } }
+            {
+              encodedId: encode,
+              screen: 'userwaiting',
+              serviceBooked,
+              area,
+              city,
+              pincode,
+              alternateName,
+              alternatePhoneNumber,
+              location,
+            },
+            {headers: {Authorization: `Bearer ${jwtToken}`}},
           );
-        }  
-      } else { 
+        }
+      } else {
         Alert.alert('Error', 'Unexpected response status');
       }
     } catch (error) {
       console.error('Error fetching nearby workers:', error);
       Alert.alert('Error', 'Failed to fetch nearby workers');
     }
-  }; 
+  };
 
   useEffect(() => {
-    const { encodedId } = route.params;
+    const {encodedId} = route.params;
     if (encodedId && encodedData !== 'No workers found within 2 km radius') {
       setEncodedData(encodedId);
       try {
@@ -115,21 +164,23 @@ const WaitingUser = () => {
   const handleManualCancel = async () => {
     try {
       if (decodedId) {
-        await axios.post(`${process.env.BACKENDAIPE}/api/user/cancellation`, { user_notification_id: decodedId });
+        await axios.post(`${process.env.BACKENDAIPE}/api/user/cancellation`, {
+          user_notification_id: decodedId,
+        });
 
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
           `${process.env.BACKENDAIPE}/api/user/action/cancel`,
-          { encodedId: encodedData, screen: 'userwaiting' },
-          { headers: { Authorization: `Bearer ${cs_token}` } } 
+          {encodedId: encodedData, screen: 'userwaiting'},
+          {headers: {Authorization: `Bearer ${cs_token}`}},
         );
       }
 
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-        })
+          routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+        }),
       );
     } catch (error) {
       console.error('Error calling cancellation API:', error);
@@ -138,8 +189,8 @@ const WaitingUser = () => {
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-        })
+          routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+        }),
       );
     }
   };
@@ -148,29 +199,34 @@ const WaitingUser = () => {
     attemptCountRef.current += 1;
 
     if (attemptCountRef.current > 3) {
-      Alert.alert("No workers found", "Unable to find workers after 3 attempts. Please try again later.");
+      Alert.alert(
+        'No workers found',
+        'Unable to find workers after 3 attempts. Please try again later.',
+      );
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-        })
+          routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+        }),
       );
       return;
     }
 
     if (decodedId) {
       try {
-        await axios.post(`${process.env.BACKENDAIPE}/api/user/cancellation`, { user_notification_id: decodedId });
+        await axios.post(`${process.env.BACKENDAIPE}/api/user/cancellation`, {
+          user_notification_id: decodedId,
+        });
       } catch (error) {
-        console.error("Error cancelling previous request:", error);
+        console.error('Error cancelling previous request:', error);
       }
     }
 
     const cs_token = await EncryptedStorage.getItem('cs_token');
     await axios.post(
       `${process.env.BACKENDAIPE}/api/user/action/cancel`,
-      { encodedId: encodedData, screen: 'userwaiting' },
-      { headers: { Authorization: `Bearer ${cs_token}` } }
+      {encodedId: encodedData, screen: 'userwaiting'},
+      {headers: {Authorization: `Bearer ${cs_token}`}},
     );
 
     await fetchData();
@@ -190,60 +246,72 @@ const WaitingUser = () => {
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const response = await axios.get(`${process.env.BACKENDAIPE}/api/checking/status`, {
-          params: { user_notification_id: decodedId }
-        });
-    
+        const response = await axios.get(
+          `${process.env.BACKENDAIPE}/api/checking/status`,
+          {
+            params: {user_notification_id: decodedId},
+          },
+        );
+
         console.log('API Response:', response.data);
-    
-        const { status, notification_id } = response.data;
-    
+
+        const {status, notification_id} = response.data;
+
         // Update type checks to accommodate number type for notification_id
         if (typeof status !== 'string' || typeof notification_id !== 'number') {
           throw new TypeError('Unexpected type in API response');
         }
-    
+
         if (status === 'accept') {
           setStatus('accepted');
           // Convert notification_id to a string if needed
-          const encodedNotificationId = Buffer.from(notification_id.toString(), 'utf-8').toString('base64');
+          const encodedNotificationId = Buffer.from(
+            notification_id.toString(),
+            'utf-8',
+          ).toString('base64');
           const cs_token = await EncryptedStorage.getItem('cs_token');
-    
+
           await axios.post(
             `${process.env.BACKENDAIPE}/api/user/action/cancel`,
-            { encodedId: encodedData, screen: 'userwaiting' },
-            { headers: { Authorization: `Bearer ${cs_token}` } }
+            {encodedId: encodedData, screen: 'userwaiting'},
+            {headers: {Authorization: `Bearer ${cs_token}`}},
           );
 
           await axios.post(
             `${process.env.BACKENDAIPE}/api/user/action`,
-            { encodedId: encodedNotificationId, screen: 'UserNavigation', serviceBooked: service },
-            { headers: { Authorization: `Bearer ${cs_token}` } }
+            {
+              encodedId: encodedNotificationId,
+              screen: 'UserNavigation',
+              serviceBooked: service,
+            },
+            {headers: {Authorization: `Bearer ${cs_token}`}},
           );
 
-
-
-    
           navigation.dispatch(
             CommonActions.reset({
               index: 0,
-              routes: [{ name: 'UserNavigation', params: { encodedId: encodedNotificationId, service: service } }]
-            })
+              routes: [
+                {
+                  name: 'UserNavigation',
+                  params: {encodedId: encodedNotificationId, service: service},
+                },
+              ],
+            }),
           );
         }
       } catch (error) {
         console.error('Error checking status:', error);
       }
     };
-    
-    
-    
 
-    if (decodedId && decodedId !== "No workersverified found within 2 km radius") {
-      console.log(decodedId)
+    if (
+      decodedId &&
+      decodedId !== 'No workersverified found within 2 km radius'
+    ) {
+      console.log(decodedId);
       // const intervalId = setInterval(checkStatus, 3000);
       // return () => clearInterval(intervalId);
-      checkStatus()
+      checkStatus();
     }
   }, [decodedId, navigation]);
 
@@ -251,37 +319,43 @@ const WaitingUser = () => {
     React.useCallback(() => {
       const onBackPress = () => {
         Alert.alert('Cancel', 'Are you sure you want to cancel?', [
-          { text: 'No', style: 'cancel' },
-          { text: 'Yes', onPress: handleManualCancel },
+          {text: 'No', style: 'cancel'},
+          {text: 'Yes', onPress: handleManualCancel},
         ]);
         return true;
       };
 
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-    }, [navigation])
+      return () =>
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [navigation]),
   );
 
   useEffect(() => {
     const loadData = async () => {
       try {
         // Retrieve the stored time from EncryptedStorage
-        const storedTime = await EncryptedStorage.getItem(`estimatedTime${service}`);
-        console.log("Stored Time:", storedTime);
-  
+        const storedTime = await EncryptedStorage.getItem(
+          `estimatedTime${service}`,
+        );
+        console.log('Stored Time:', storedTime);
+
         // If no stored time, set it to current time in milliseconds
         if (!storedTime) {
           const currentTime = Date.now(); // in milliseconds
-          await EncryptedStorage.setItem(`estimatedTime${service}`, currentTime.toString());
+          await EncryptedStorage.setItem(
+            `estimatedTime${service}`,
+            currentTime.toString(),
+          );
           setTimeLeft(600); // Set timer to 10 minutes (600 seconds)
         } else {
           // Convert stored time to integer (milliseconds)
           const savedTime = parseInt(storedTime, 10);
           const currentTime = Date.now(); // Current time in milliseconds
-  
+
           // Calculate time difference in seconds
           const timeDifference = Math.floor((currentTime - savedTime) / 1000);
-  
+
           // Calculate remaining time, ensuring it's non-negative
           const remainingTime = 600 - timeDifference; // 10 minutes = 600 seconds
           setTimeLeft(remainingTime > 0 ? remainingTime : 0);
@@ -290,92 +364,94 @@ const WaitingUser = () => {
         console.error('Error loading data from EncryptedStorage:', error);
       }
     };
-  
+
     loadData();
-  
+
     const interval = setInterval(() => {
-      setTimeLeft((prevTime) => (prevTime > 0 ? prevTime - 1 : 0)); // Countdown
+      setTimeLeft(prevTime => (prevTime > 0 ? prevTime - 1 : 0)); // Countdown
     }, 1000); // Update every second
-  
+
     return () => clearInterval(interval); // Cleanup on unmount
   }, []);
-  
 
-    // Format time into MM:SS
-    const formatTime = (seconds) => {
-      const minutes = Math.floor(seconds / 60);
-      const remainingSeconds = seconds % 60;
-      return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
-    };
+  // Format time into MM:SS
+  const formatTime = seconds => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(
+      remainingSeconds,
+    ).padStart(2, '0')}`;
+  };
 
-    return (
-      <View style={styles.container}>
-        {/* Map View Section */}
-        <Mapbox.MapView style={styles.map}>
-          {/* Map camera, centered on the user's location */}
-          <Mapbox.Camera
-            zoomLevel={16}
-            centerCoordinate={location}
-          />  
-    
-          {/* Center Marker on the Map */}
-          <Mapbox.MarkerView coordinate={location}>
-            <Image
-              source={{ uri: 'https://i.postimg.cc/ZRdQkj5d/Screenshot-2024-11-13-164652-removebg-preview.png' }} // Marker image URL
-              style={styles.markerImage}
-            />
-          </Mapbox.MarkerView>
-        </Mapbox.MapView>
-    
-        {/* Message Box Section */}
-        <View style={styles.messageBox}>
-          {/* Button Placeholder */}
-          <View style={styles.innerButton}>
-            <View style={styles.addingMessageBox} />
-          </View>
-    
-          {/* Text Section */}
-          <View style={styles.textContainer}>
-            <View style={styles.detailsContainer}>
-              {/* Searching Text */}
+  return (
+    <View style={styles.container}>
+      {/* Map View Section */}
+      <Mapbox.MapView style={styles.map}>
+        {/* Map camera, centered on the user's location */}
+        <Mapbox.Camera zoomLevel={16} centerCoordinate={location} />
+
+        {/* Center Marker on the Map */}
+        <Mapbox.MarkerView coordinate={location}>
+          <Image
+            source={{
+              uri: 'https://i.postimg.cc/ZRdQkj5d/Screenshot-2024-11-13-164652-removebg-preview.png',
+            }} // Marker image URL
+            style={styles.markerImage}
+          />
+        </Mapbox.MarkerView>
+      </Mapbox.MapView>
+
+      {/* Message Box Section */}
+      <View style={styles.messageBox}>
+        {/* Button Placeholder */}
+        <View style={styles.innerButton}>
+          <View style={styles.addingMessageBox} />
+        </View>
+
+        {/* Text Section */}
+        <View style={styles.textContainer}>
+          <View style={styles.detailsContainer}>
+            {/* Searching Text */}
+            <View style={styles.rowAlignment}>
+              <Text style={styles.searchingText}>
+                Looking best commander for you
+              </Text>
+            </View>
+
+            {/* Service Details */}
+            <View style={styles.rowSpaceAlignment}>
               <View style={styles.rowAlignment}>
-                <Text style={styles.searchingText}>Looking best commander for you</Text>
+                {/* Service Name */}
+                <Text style={styles.serviceName}>AC Repairing</Text>
               </View>
-    
-              {/* Service Details */}
-              <View style={styles.rowSpaceAlignment}>
-                <View style={styles.rowAlignment}>
-                  {/* Service Name */}
-                  <Text style={styles.serviceName}>AC Repairing</Text>
-                </View>
-    
-                {/* Cancel Button */}
-                <TouchableOpacity style={styles.cancelButton} onPress={handleManualCancel}>
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
+
+              {/* Cancel Button */}
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={handleManualCancel}>
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
           </View>
-    
-          {/* Horizontal Divider */}
-          <View style={styles.horizontalLine} />
-    
-          {/* Loading Animation */}
-          <View style={styles.loadingContainer}>
-            {loading && (
-              <LottieView
-                source={require('../assets/waitingLoading.json')}
-                autoPlay
-                loop
-                style={styles.loadingAnimation}
-              />
-            )}
-          </View>
+        </View>
+
+        {/* Horizontal Divider */}
+        <View style={styles.horizontalLine} />
+
+        {/* Loading Animation */}
+        <View style={styles.loadingContainer}>
+          {loading && (
+            <LottieView
+              source={require('../assets/waitingLoading.json')}
+              autoPlay
+              loop
+              style={styles.loadingAnimation}
+            />
+          )}
         </View>
       </View>
-    );
-    
-    
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
@@ -383,174 +459,170 @@ const styles = StyleSheet.create({
     flex: 1,
     // justifyContent: 'center',
     // alignItems: 'center',
-    backgroundColor:'f5f5f5',
+    backgroundColor: 'f5f5f5',
   },
-  locationHeadDetails:{
-    color:'#121212',
-    fontWeight:'bold',
-    fontSize:16
+  locationHeadDetails: {
+    color: '#121212',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
-  rowAlignment:{
-    flexDirection:'row',
-    alignItems:'center',
-    gap:5
+  rowAlignment: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   },
-  serviceName:{
-    color:'#1D2951',
-    fontWeight:'bold',
-    fontSize:18
+  serviceName: {
+    color: '#1D2951',
+    fontWeight: 'bold',
+    fontSize: 18,
   },
-  searchingText:{
-    color:'#212121',
-    fontSize:14,
-    fontWeight:'400',
+  searchingText: {
+    color: '#212121',
+    fontSize: 14,
+    fontWeight: '400',
   },
   horizontalLine: {
     width: Dimensions.get('window').width,
     height: 1, // Height of the line
     backgroundColor: '#E5E7EB', // Color of the line,
 
-    height:5
-},
-  locationDetails:{
-    paddingLeft:10
+    height: 5,
   },
-  textContainer:{
-    padding:15
+  locationDetails: {
+    paddingLeft: 10,
   },
-  pinImg:{
-    height:15,
-    width:15
+  textContainer: {
+    padding: 15,
   },
-  cancelButtonText:{
-    textAlign:'center',
-    color:'#9e9e9e'
+  pinImg: {
+    height: 15,
+    width: 15,
   },
-  cancelButton:{
-    padding:7,
-    borderWidth:0.5,
-    borderColor:'#CEDEEB',
-    width:90,
-    borderRadius:20
+  cancelButtonText: {
+    textAlign: 'center',
+    color: '#9e9e9e',
   },
-  innerButton:{
-    display:'flex',
-    flexDirection:'row',
-    justifyContent:'center'
+  cancelButton: {
+    padding: 7,
+    borderWidth: 0.5,
+    borderColor: '#CEDEEB',
+    width: 90,
+    borderRadius: 20,
   },
-  rowSpaceAlignment:{
-    flexDirection:'row',
-    width:'100%',
-    justifyContent:'space-between'
+  innerButton: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
-  addingMessageBox:{
-    width:60,
-    height:4,
-    backgroundColor:'#E5E7EB',
-    marginTop:10,
-    borderRadius:10,
+  rowSpaceAlignment: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
   },
-  detailsContainer:{
-    padding:10,
-    display:'flex',
-    flexDirection:'column',
-
-
-
+  addingMessageBox: {
+    width: 60,
+    height: 4,
+    backgroundColor: '#E5E7EB',
+    marginTop: 10,
+    borderRadius: 10,
+  },
+  detailsContainer: {
+    padding: 10,
+    display: 'flex',
+    flexDirection: 'column',
   },
   messageBox: {
     position: 'absolute',
-    bottom: 0,                // Aligns it at the bottom
-    height: '44%',            // 40% of the screen height
-    width: '100%',            // Full width of the screen
+    bottom: 0, // Aligns it at the bottom
+    height: '44%', // 40% of the screen height
+    width: '100%', // Full width of the screen
     backgroundColor: '#f8f8f8',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.8,
     shadowRadius: 2,
     elevation: 5,
-    display:'flex',
-    flexDirection:'column',
+    display: 'flex',
+    flexDirection: 'column',
   },
   messageText: {
     fontSize: 18,
     color: '#333',
   },
-  map:{
-    height:"60%"
+  map: {
+    height: '60%',
   },
   markerImage: {
     width: 25, // Adjust size as needed
     height: 50, // Adjust size as needed
     resizeMode: 'contain',
   },
-  locationSubContainer:{
-    backgroundColor:'#d4d6d8',
-    padding:20,
-    marginTop:10,
-    borderRadius:10
+  locationSubContainer: {
+    backgroundColor: '#d4d6d8',
+    padding: 20,
+    marginTop: 10,
+    borderRadius: 10,
   },
-  locationHead:{
-    color:'#68707C',
-    marginLeft:10,
-    fontSize:15,
-    fontWeight:'500'
+  locationHead: {
+    color: '#68707C',
+    marginLeft: 10,
+    fontSize: 15,
+    fontWeight: '500',
   },
-  locationIconContainer:{
+  locationIconContainer: {
     flexDirection: 'row',
     alignItems: 'center', // Center items vertically
   },
-  locationInfoIconContainer:{
+  locationInfoIconContainer: {
     flexDirection: 'row',
   },
-  addressHeading:{
-    color:'rgb(75, 85, 99)'
+  addressHeading: {
+    color: 'rgb(75, 85, 99)',
   },
-  locationMainContainer:{
-    backgroundColor:'#e9e9e6',
-    padding:20,
-    width:'100%',
-    borderRadius:10,
-    marginTop:15,
-    marginBottom:10
+  locationMainContainer: {
+    backgroundColor: '#e9e9e6',
+    padding: 20,
+    width: '100%',
+    borderRadius: 10,
+    marginTop: 15,
+    marginBottom: 10,
   },
-  waitingText:{
-    backgroundColor:'#EFF6FF',
-    padding:10,
-    marginTop:20
+  waitingText: {
+    backgroundColor: '#EFF6FF',
+    padding: 10,
+    marginTop: 20,
   },
-  waitingDetailsContainer:{
-    display:'flex',
-    alignItems:'center'
+  waitingDetailsContainer: {
+    display: 'flex',
+    alignItems: 'center',
   },
   timer: {
     fontSize: 30,
     fontWeight: 'bold',
     color: 'rgb(59, 130, 246)',
-    marginBottom:10
+    marginBottom: 10,
   },
-  loadingContainer:{
+  loadingContainer: {
     // width: Dimensions.get('window').width, // Set width to screen width
-    marginHorizontal:'auto',
-    display:'flex',
-    flexDirection:'row',
-    justifyContent:'center',
-    marginTop:20,
-    height:'100%',
-    
+    marginHorizontal: 'auto',
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 20,
+    height: '100%',
   },
-  estimatedTimeText:{
-    color:'#333333',
-    fontSize:18,
-    fontWeight:'600'
+  estimatedTimeText: {
+    color: '#333333',
+    fontSize: 18,
+    fontWeight: '600',
     // color: 'rgb(59, 130, 246)'
   },
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    fontFamily:'Roboto',
+    fontFamily: 'Roboto',
     marginBottom: 15,
     color: '#000',
   },
@@ -573,7 +645,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: 'center',
     color: 'rgb(30, 64, 175)',
-    marginLeft:10
+    marginLeft: 10,
   },
   button: {
     backgroundColor: '#FF6347',

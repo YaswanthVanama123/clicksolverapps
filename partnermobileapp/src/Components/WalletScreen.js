@@ -1,19 +1,63 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView } from 'react-native';
-import FontAwesome6 from 'react-native-vector-icons/FontAwesome6'
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  SafeAreaView,
+} from 'react-native';
+import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 
 const transactionData = [
-  { id: '1', service: 'SERVICE', details: 'Sc386cfd476c93b334 Jan 11 13:46 PM', amount: '-19', type: 'DEBT', status: 'SUCCESS', statusColor: 'green' },
-  { id: '2', service: 'SERVICE', details: 'Sc386cfd476c93b334 Jan 11 13:46 PM', amount: '-19', type: 'DEBT', status: 'SUCCESS', statusColor: 'green' },
-  { id: '3', service: 'SERVICE', details: 'Sc386cfd476c93b334 Jan 11 13:46 PM', amount: '-19', type: 'DEBT', status: 'FAILURE', statusColor: 'red' },
-  { id: '4', service: 'SERVICE', details: 'Sc386cfd476c93b334 Jan 11 13:46 PM', amount: '14.58', type: 'CREDITS', status: 'SUCCESS', statusColor: 'green' }
+  {
+    id: '1',
+    service: 'SERVICE',
+    details: 'Sc386cfd476c93b334 Jan 11 13:46 PM',
+    amount: '-19',
+    type: 'DEBT',
+    status: 'SUCCESS',
+    statusColor: 'green',
+  },
+  {
+    id: '2',
+    service: 'SERVICE',
+    details: 'Sc386cfd476c93b334 Jan 11 13:46 PM',
+    amount: '-19',
+    type: 'DEBT',
+    status: 'SUCCESS',
+    statusColor: 'green',
+  },
+  {
+    id: '3',
+    service: 'SERVICE',
+    details: 'Sc386cfd476c93b334 Jan 11 13:46 PM',
+    amount: '-19',
+    type: 'DEBT',
+    status: 'FAILURE',
+    statusColor: 'red',
+  },
+  {
+    id: '4',
+    service: 'SERVICE',
+    details: 'Sc386cfd476c93b334 Jan 11 13:46 PM',
+    amount: '14.58',
+    type: 'CREDITS',
+    status: 'SUCCESS',
+    statusColor: 'green',
+  },
 ];
 
 const WalletScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.balanceContainer}>
-      <FontAwesome6 name='arrow-left-long' size={20} color='#9e9e9e' style={styles.leftIcon} />
+        <FontAwesome6
+          name="arrow-left-long"
+          size={20}
+          color="#9e9e9e"
+          style={styles.leftIcon}
+        />
         <Text style={styles.balanceTitle}>Your balance</Text>
         <Text style={styles.balanceAmount}>₹126</Text>
       </View>
@@ -23,8 +67,8 @@ const WalletScreen = () => {
         <View style={styles.transactionContainer}>
           <FlatList
             data={transactionData}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
+            keyExtractor={item => item.id}
+            renderItem={({item}) => (
               <View style={styles.transactionItem}>
                 <View style={styles.transactionDetails}>
                   <View>
@@ -41,7 +85,9 @@ const WalletScreen = () => {
                       <Text style={[styles.transactionType]}>{item.type}</Text>
                     </View>
                     <View>
-                      <Text style={[styles.status, { color: item.statusColor }]}>{item.status}</Text>
+                      <Text style={[styles.status, {color: item.statusColor}]}>
+                        {item.status}
+                      </Text>
                     </View>
                   </View>
                 </View>
@@ -49,17 +95,17 @@ const WalletScreen = () => {
             )}
           />
         </View>
-      <View style={styles.footer}>
-        <View>
-          <Text style={styles.serviceText}>Services</Text>
+        <View style={styles.footer}>
+          <View>
+            <Text style={styles.serviceText}>Services</Text>
+          </View>
+          <View>
+            <Text style={styles.totalAmount}>₹283</Text>
+          </View>
         </View>
-        <View>
-          <Text style={styles.totalAmount}>₹283</Text>
-        </View>
-      </View>
-      <TouchableOpacity style={styles.payNowButton}>
-        <Text style={styles.payNowText}>PAY NOW</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.payNowButton}>
+          <Text style={styles.payNowText}>PAY NOW</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -69,7 +115,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-
   },
   header: {
     display: 'flex',
@@ -78,26 +123,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center', // Center all content horizontally
     paddingVertical: 5,
     position: 'relative',
-    backgroundColor:'f6f6f6'
+    backgroundColor: 'f6f6f6',
   },
   leftIcon: {
     position: 'absolute', // Ensure the icon stays on the left
     left: 10, // Adjust the position to your needs
-    top:10
+    top: 10,
   },
-  statusContainer:{
-    display:'flex',
-    flexDirection:'row',
-    gap:10
+  statusContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+    gap: 10,
   },
-  screenName:{
-    color:'#747476',
-    fontSize:17,
-    fontWeight:'bold'
-
+  screenName: {
+    color: '#747476',
+    fontSize: 17,
+    fontWeight: 'bold',
   },
-  transactionContainer:{
-    padding:10
+  transactionContainer: {
+    padding: 10,
   },
   balanceContainer: {
     backgroundColor: '#F6F6F6',
@@ -109,13 +153,12 @@ const styles = StyleSheet.create({
   balanceTitle: {
     fontSize: 16,
     color: '#747676',
-    paddingTop:10
-
+    paddingTop: 10,
   },
   balanceAmount: {
     fontSize: 54,
     fontWeight: 'bold',
-    color:'#212121'
+    color: '#212121',
   },
   historyContainer: {
     backgroundColor: '#fff',
@@ -144,9 +187,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 2,
-    color:'#212121',
-    paddingBottom:6,
-    paddingTop:2
+    color: '#212121',
+    paddingBottom: 6,
+    paddingTop: 2,
   },
   transactionText: {
     color: '#777',
@@ -154,21 +197,20 @@ const styles = StyleSheet.create({
   },
   transactionAmountContainer: {
     alignItems: 'flex-end',
-    justifyContent:'center',
+    justifyContent: 'center',
     flex: 2,
   },
   amount: {
     fontSize: 21,
     fontWeight: 'bold',
     marginBottom: 2,
-    color:'#212121',
-    paddingBottom:10
+    color: '#212121',
+    paddingBottom: 10,
   },
   transactionType: {
     fontSize: 13,
     fontWeight: 'bold',
-    color:'#9E9E9E',
-    
+    color: '#9E9E9E',
   },
   status: {
     fontSize: 12,
@@ -183,20 +225,20 @@ const styles = StyleSheet.create({
   serviceText: {
     fontSize: 19,
     color: '#797979',
-    fontWeight:'bold'
+    fontWeight: 'bold',
   },
   totalAmount: {
     fontSize: 18,
     fontWeight: 'bold',
-    color:'#212121'
+    color: '#212121',
   },
   payNowButton: {
     backgroundColor: '#FF5722',
     padding: 10,
     borderRadius: 22,
     alignItems: 'center',
-    marginTop:35,
-    marginHorizontal:60
+    marginTop: 35,
+    marginHorizontal: 60,
   },
   payNowText: {
     color: '#fff',

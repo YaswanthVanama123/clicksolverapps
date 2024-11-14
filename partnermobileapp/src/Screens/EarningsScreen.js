@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,9 @@ import {
   SafeAreaView,
 } from 'react-native';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
-import { Calendar } from 'react-native-calendars';
+import {Calendar} from 'react-native-calendars';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import Feather from 'react-native-vector-icons/Feather';
 import axios from 'axios';
 import DestinationCircles from '../Components/DestinationCircles';
@@ -32,10 +32,10 @@ const EarningsScreen = () => {
     rejectedcount: 0,
     pendingcount: 0,
     minutes: 0,
-    service_counts:0,
-    cashback_approved_times:0,
-    cashback_gain:0,
-    cashback:0
+    service_counts: 0,
+    cashback_approved_times: 0,
+    cashback_gain: 0,
+    cashback: 0,
   });
   const navigation = useNavigation();
 
@@ -52,7 +52,7 @@ const EarningsScreen = () => {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       if (!pcs_token) throw new Error('pcs_token not found');
 
-      const payload = endDate ? { startDate: date, endDate: endDate } : { date };
+      const payload = endDate ? {startDate: date, endDate: endDate} : {date};
       const response = await axios.post(
         `${process.env.BackendAPI6}/api/worker/earnings`,
         payload,
@@ -60,10 +60,10 @@ const EarningsScreen = () => {
           headers: {
             Authorization: `Bearer ${pcs_token}`,
           },
-        }
+        },
       );
 
-      console.log(response.data)
+      console.log(response.data);
 
       const {
         total_payment = 0,
@@ -76,7 +76,7 @@ const EarningsScreen = () => {
         total_time_worked_hours = 0,
         service_counts = 0,
         cashback_gain = 0,
-        cashback_approved_times = 0
+        cashback_approved_times = 0,
       } = response.data;
 
       setEarnings({
@@ -89,9 +89,9 @@ const EarningsScreen = () => {
         pendingcount: Number(pendingcount),
         minutes: Number(total_time_worked_hours) * 60,
         service_counts: Number(service_counts),
-        cashback_gain : Number(cashback_gain),
+        cashback_gain: Number(cashback_gain),
         cashback_approved_times: Number(cashback_approved_times),
-        cashback : Number(service_counts) % 6
+        cashback: Number(service_counts) % 6,
       });
     } catch (error) {
       console.error('Error fetching payment details:', error);
@@ -106,32 +106,31 @@ const EarningsScreen = () => {
         return true;
       };
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-    }, [navigation])
+      return () =>
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [navigation]),
   );
 
-  const handleTabClick = (period) => {
+  const handleTabClick = period => {
     setSelectedPeriod(period);
-    
+
     if (period === 'Today') {
       const today = new Date();
       setSelectedDate(today);
       setStartDate(null);
       setEndDate(null);
       partnerEarnings(today);
-    
     } else if (period === 'This Week') {
       const startOfWeek = new Date();
       const day = startOfWeek.getDay(); // 0 (Sunday) to 6 (Saturday)
       startOfWeek.setDate(startOfWeek.getDate() - day); // Set to Sunday
       const endOfWeek = new Date(startOfWeek);
       endOfWeek.setDate(endOfWeek.getDate() + 6); // Set to Saturday
-      
+
       setSelectedDate(startOfWeek);
       setStartDate(startOfWeek);
       setEndDate(endOfWeek);
       partnerEarnings(startOfWeek, endOfWeek);
-    
     } else if (period === 'Select Date') {
       setStartDate(null);
       setEndDate(null);
@@ -139,7 +138,7 @@ const EarningsScreen = () => {
     }
   };
 
-  const selectDate = (day) => {
+  const selectDate = day => {
     const selected = new Date(day.dateString);
 
     if (!startDate || (startDate && endDate)) {
@@ -166,18 +165,29 @@ const EarningsScreen = () => {
       while (current <= end) {
         const dateString = current.toISOString().split('T')[0];
         if (dateString === startDate.toISOString().split('T')[0]) {
-          range[dateString] = { startingDay: true, color: '#4CAF50', textColor: 'white' };
+          range[dateString] = {
+            startingDay: true,
+            color: '#4CAF50',
+            textColor: 'white',
+          };
         } else if (dateString === endDate.toISOString().split('T')[0]) {
-          range[dateString] = { endingDay: true, color: '#4CAF50', textColor: 'white' };
+          range[dateString] = {
+            endingDay: true,
+            color: '#4CAF50',
+            textColor: 'white',
+          };
         } else {
-          range[dateString] = { color: '#4CAF50', textColor: 'white' };
+          range[dateString] = {color: '#4CAF50', textColor: 'white'};
         }
         current.setDate(current.getDate() + 1);
       }
       return range;
     } else if (startDate) {
       return {
-        [startDate.toISOString().split('T')[0]]: { selected: true, selectedColor: '#4CAF50' },
+        [startDate.toISOString().split('T')[0]]: {
+          selected: true,
+          selectedColor: '#4CAF50',
+        },
       };
     }
     return {};
@@ -195,20 +205,28 @@ const EarningsScreen = () => {
           <FontAwesome6 name="arrow-left-long" size={24} color="#4a4a4a" />
         </TouchableOpacity>
         <View style={styles.earningsIconContainer}>
-          <FontAwesome6 name="coins" size={24} color="#FF5722" style={styles.EarningIcon} />
+          <FontAwesome6
+            name="coins"
+            size={24}
+            color="#FF5722"
+            style={styles.EarningIcon}
+          />
           <Text style={styles.screenName}>Earnings</Text>
         </View>
       </View>
 
       {/* Tabs */}
       <View style={styles.tabs}>
-        {['Today', 'This Week', 'Select Date'].map((period) => (
+        {['Today', 'This Week', 'Select Date'].map(period => (
           <TouchableOpacity
             key={period}
             style={[styles.tab, selectedPeriod === period && styles.tabActive]}
-            onPress={() => handleTabClick(period)}
-          >
-            <Text style={[styles.tabText, selectedPeriod === period && styles.tabTextActive]}>
+            onPress={() => handleTabClick(period)}>
+            <Text
+              style={[
+                styles.tabText,
+                selectedPeriod === period && styles.tabTextActive,
+              ]}>
               {period}
             </Text>
           </TouchableOpacity>
@@ -225,9 +243,12 @@ const EarningsScreen = () => {
           {/* Toggle Icon and Message */}
           <TouchableOpacity
             onPress={() => setIsMessageVisible(!isMessageVisible)}
-            style={styles.eyeIconContainer}
-          >
-            <Feather name={isMessageVisible ? 'eye-off' : 'eye'} size={20} color="#4a4a4a" />
+            style={styles.eyeIconContainer}>
+            <Feather
+              name={isMessageVisible ? 'eye-off' : 'eye'}
+              size={20}
+              color="#4a4a4a"
+            />
           </TouchableOpacity>
         </View>
         {isMessageVisible && (
@@ -252,21 +273,39 @@ const EarningsScreen = () => {
       </View>
       <Text style={styles.cashBackAmount}>Cash back ₹100</Text>
       <View style={styles.completedCircle}>
-        <DestinationCircles complete={earnings.cashback} /> 
+        <DestinationCircles complete={earnings.cashback} />
       </View>
 
       {/* Statistics */}
-      <ScrollView contentContainerStyle={styles.statsContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.statsContainer}
+        showsVerticalScrollIndicator={false}>
         {[
-          { value: earnings.payment_count, title: 'Services', color: '#4CAF50' },
-          { value: `${earnings.life_earnings}`, title: 'Total Earnings', color: '#4CAF50' },
-          { value: earnings.minutes.toFixed(1), title: 'Minutes', color: '#4CAF50' },
-          { value: earnings.avgrating.toFixed(1), title: 'Avg Rating', color: '#4CAF50' },
-          { value: earnings.rejectedcount, title: 'Rejected', color: '#ff4436' },
-          { value: earnings.pendingcount, title: 'Not Seen', color: '#ffa500' },
+          {value: earnings.payment_count, title: 'Services', color: '#4CAF50'},
+          {
+            value: `${earnings.life_earnings}`,
+            title: 'Total Earnings',
+            color: '#4CAF50',
+          },
+          {
+            value: earnings.minutes.toFixed(1),
+            title: 'Minutes',
+            color: '#4CAF50',
+          },
+          {
+            value: earnings.avgrating.toFixed(1),
+            title: 'Avg Rating',
+            color: '#4CAF50',
+          },
+          {value: earnings.rejectedcount, title: 'Rejected', color: '#ff4436'},
+          {value: earnings.pendingcount, title: 'Not Seen', color: '#ffa500'},
         ].map((stat, index) => (
-          <View key={index} style={[styles.statBox, { borderLeftColor: stat.color }]}>
-            <Text style={[styles.statValue, { color: stat.color }]}>{stat.value}</Text>
+          <View
+            key={index}
+            style={[styles.statBox, {borderLeftColor: stat.color}]}>
+            <Text style={[styles.statValue, {color: stat.color}]}>
+              {stat.value}
+            </Text>
             <Text style={styles.statTitle}>{stat.title}</Text>
           </View>
         ))}

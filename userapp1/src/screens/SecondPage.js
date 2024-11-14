@@ -1,16 +1,24 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, {useEffect, useRef, useState, useMemo} from 'react';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Feather from 'react-native-vector-icons/Feather';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { useNavigation } from "@react-navigation/native";
+import {useNavigation} from '@react-navigation/native';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Dimensions,
+} from 'react-native';
 import axios from 'axios';
 import uuid from 'react-native-uuid';
 import QuickSearch from '../Components/QuickSearch';
 import LottieView from 'lottie-react-native';
 import Foundation from 'react-native-vector-icons/Foundation';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 function ServiceApp() {
   const [services, setServices] = useState([]);
@@ -23,39 +31,49 @@ function ServiceApp() {
 
   const screenWidth = Dimensions.get('window').width;
   const scrollViewRef = useRef(null);
-  const itemWidth = screenWidth * 0.95; 
+  const itemWidth = screenWidth * 0.95;
   const navigation = useNavigation();
-  const messageBoxWidth = trackScreen.length > 1 ? screenWidth * 0.85 : screenWidth * 0.90
+  const messageBoxWidth =
+    trackScreen.length > 1 ? screenWidth * 0.85 : screenWidth * 0.9;
 
-  const specialOffers = useMemo(() => [
-    {
-      id: '1',
-      title: '20%',
-      subtitle: 'New User Special',
-      description: 'New users get a 20% discount on their first booking across any service category.',
-      imageBACKENDAP: 'https://i.postimg.cc/HsGnL9F1/58d3ebe039b0649cfcabe95ae59f4328.png',
-      backgroundColor: '#FFF4E6',
-      color: '#F24E1E'
-    },
-    {
-      id: '2',
-      title: '50%',
-      subtitle: 'Summer Sale',
-      description: 'Get a 50% discount on all services booked during the summer season.',
-      imageBACKENDAP: 'https://i.postimg.cc/rwtnJ3vB/b08a4579e19f4587bc9915bc0f7502ee.png',
-      backgroundColor: '#E8F5E9',
-      color: '#4CAF50'
-    },
-    {
-      id: '3',
-      title: '30%',
-      subtitle: 'Refer a Friend',
-      description: 'Refer a friend and get 30% off on your next service booking.',
-      imageBACKENDAP: 'https://i.postimg.cc/Kzwh9wZC/4c63fba81d3b7ef9ca889096ad629283.png',
-      backgroundColor: '#E3F2FD',
-      color:'#2196F3'
-    },
-  ], []);
+  const specialOffers = useMemo(
+    () => [
+      {
+        id: '1',
+        title: '20%',
+        subtitle: 'New User Special',
+        description:
+          'New users get a 20% discount on their first booking across any service category.',
+        imageBACKENDAP:
+          'https://i.postimg.cc/HsGnL9F1/58d3ebe039b0649cfcabe95ae59f4328.png',
+        backgroundColor: '#FFF4E6',
+        color: '#F24E1E',
+      },
+      {
+        id: '2',
+        title: '50%',
+        subtitle: 'Summer Sale',
+        description:
+          'Get a 50% discount on all services booked during the summer season.',
+        imageBACKENDAP:
+          'https://i.postimg.cc/rwtnJ3vB/b08a4579e19f4587bc9915bc0f7502ee.png',
+        backgroundColor: '#E8F5E9',
+        color: '#4CAF50',
+      },
+      {
+        id: '3',
+        title: '30%',
+        subtitle: 'Refer a Friend',
+        description:
+          'Refer a friend and get 30% off on your next service booking.',
+        imageBACKENDAP:
+          'https://i.postimg.cc/Kzwh9wZC/4c63fba81d3b7ef9ca889096ad629283.png',
+        backgroundColor: '#E3F2FD',
+        color: '#2196F3',
+      },
+    ],
+    [],
+  );
 
   useEffect(() => {
     fetchServices();
@@ -67,13 +85,16 @@ function ServiceApp() {
     try {
       const cs_token = await EncryptedStorage.getItem('cs_token');
       if (cs_token) {
-        const response = await axios.get(`${process.env.BACKENDAIPE}/api/user/track/details`, {
-          headers: { Authorization: `Bearer ${cs_token}` },
-        });
-    
+        const response = await axios.get(
+          `${process.env.BACKENDAIPE}/api/user/track/details`,
+          {
+            headers: {Authorization: `Bearer ${cs_token}`},
+          },
+        );
+
         const track = response?.data?.track || [];
-        const { user } = response.data;
-     
+        const {user} = response.data;
+
         setName(user || response.data);
         setMessageBoxDisplay(track.length > 0);
         setTrackScreen(track);
@@ -102,12 +123,17 @@ function ServiceApp() {
     setGreeting(greetingMessage);
     setGreetingIcon(icon);
   };
- 
+
   const fetchServices = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${process.env.BACKENDAIPE}/api/servicecategories`);
-      const servicesWithIds = response.data.map(service => ({ ...service, id: uuid.v4() }));
+      const response = await axios.get(
+        `${process.env.BACKENDAIPE}/api/servicecategories`,
+      );
+      const servicesWithIds = response.data.map(service => ({
+        ...service,
+        id: uuid.v4(),
+      }));
       setServices(servicesWithIds);
     } catch (error) {
       console.error('Error fetching services:', error);
@@ -117,26 +143,34 @@ function ServiceApp() {
   };
 
   const handleNotification = () => {
-    navigation.push("Notifications");
+    navigation.push('Notifications');
   };
 
   const handleHelp = () => {
     navigation.push('Help');
   };
 
-  const handleBookCommander = (serviceId) => {
-    navigation.push('serviceCategory', { serviceObject: serviceId });
+  const handleBookCommander = serviceId => {
+    navigation.push('serviceCategory', {serviceObject: serviceId});
   };
 
   const renderSpecialOffers = () => {
     return specialOffers.map(offer => (
-      <View key={offer.id} style={[styles.offerCard, { backgroundColor: offer.backgroundColor }]}>
+      <View
+        key={offer.id}
+        style={[styles.offerCard, {backgroundColor: offer.backgroundColor}]}>
         <View style={styles.offerDetails}>
-          <Text style={[styles.offerTitle, { color: '#ff4500' }]}>{offer.title}</Text>
-          <Text style={[styles.offerSubtitle, { color: '#4a4a4a' }]}>{offer.subtitle}</Text>
-          <Text style={[styles.offerDescription, { color: '#4a4a4a' }]}>{offer.description}</Text>
+          <Text style={[styles.offerTitle, {color: '#ff4500'}]}>
+            {offer.title}
+          </Text>
+          <Text style={[styles.offerSubtitle, {color: '#4a4a4a'}]}>
+            {offer.subtitle}
+          </Text>
+          <Text style={[styles.offerDescription, {color: '#4a4a4a'}]}>
+            {offer.description}
+          </Text>
         </View>
-        <Image source={{ uri: offer.imageBACKENDAP }} style={styles.offerImg} />
+        <Image source={{uri: offer.imageBACKENDAP}} style={styles.offerImg} />
       </View>
     ));
   };
@@ -155,10 +189,18 @@ function ServiceApp() {
 
     return services.map(service => (
       <View key={service.id} style={styles.serviceCard}>
-        <Image source={{ uri: service.service_urls || 'https://via.placeholder.com/100x100' }} style={styles.serviceImg} resizeMode="stretch" />
+        <Image
+          source={{
+            uri: service.service_urls || 'https://via.placeholder.com/100x100',
+          }}
+          style={styles.serviceImg}
+          resizeMode="stretch"
+        />
         <View style={styles.serviceDetails}>
           <Text style={styles.serviceTitle}>{service.service_name}</Text>
-          <TouchableOpacity style={styles.bookButton} onPress={() => handleBookCommander(service.service_name)}>
+          <TouchableOpacity
+            style={styles.bookButton}
+            onPress={() => handleBookCommander(service.service_name)}>
             <Text style={styles.bookButtonText}>Book Now ➔</Text>
           </TouchableOpacity>
         </View>
@@ -171,7 +213,9 @@ function ServiceApp() {
       <View style={styles.header}>
         <View style={styles.userInfo}>
           <View style={styles.userInitialCircle}>
-            <Text style={styles.userInitialText}>{name.charAt(0).toUpperCase()}</Text>
+            <Text style={styles.userInitialText}>
+              {name.charAt(0).toUpperCase()}
+            </Text>
           </View>
           <View style={styles.greeting}>
             <Text style={styles.greetingText}>
@@ -192,13 +236,18 @@ function ServiceApp() {
 
       <QuickSearch />
 
-      <ScrollView contentContainerStyle={styles.scrollViewContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollViewContent}
+        showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Special Offers</Text>
             {/* <Text style={styles.seeAll}>See All</Text> */}
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.offersScrollView}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.offersScrollView}>
             {renderSpecialOffers()}
           </ScrollView>
         </View>
@@ -218,12 +267,11 @@ function ServiceApp() {
           ref={scrollViewRef}
           contentContainerStyle={styles.scrollViewHorizontal}
           showsHorizontalScrollIndicator={false}
-          style={styles.absoluteMessageBox}
-        >
+          style={styles.absoluteMessageBox}>
           {trackScreen.map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={[styles.messageBoxContainer, { width: messageBoxWidth }]} // Apply dynamic width here
+              style={[styles.messageBoxContainer, {width: messageBoxWidth}]} // Apply dynamic width here
               onPress={() =>
                 navigation.replace(item.screen, {
                   encodedId: item.encodedId,
@@ -235,8 +283,7 @@ function ServiceApp() {
                   serviceBooked: item.serviceBooked,
                   location: item.location,
                 })
-              }
-            >
+              }>
               <View style={styles.messageBox1}>
                 <View style={styles.startingContainer}>
                   <View style={styles.timeContainer}>
@@ -244,14 +291,21 @@ function ServiceApp() {
                     {item.screen === 'Paymentscreen' ? (
                       <Foundation name="paypal" size={24} color="#ffffff" />
                     ) : item.screen === 'UserNavigation' ? (
-                      <MaterialCommunityIcons name="truck" size={24} color="#ffffff" />
+                      <MaterialCommunityIcons
+                        name="truck"
+                        size={24}
+                        color="#ffffff"
+                      />
                     ) : item.screen === 'userwaiting' ? (
                       <Feather name="search" size={24} color="#ffffff" />
-                    )
-                    : item.screen === 'OtpVerification' ? (
+                    ) : item.screen === 'OtpVerification' ? (
                       <Feather name="shield" size={24} color="#ffffff" />
                     ) : item.screen === 'worktimescreen' ? (
-                      <MaterialCommunityIcons name="hammer" size={24} color="#ffffff" />
+                      <MaterialCommunityIcons
+                        name="hammer"
+                        size={24}
+                        color="#ffffff"
+                      />
                     ) : (
                       <Feather name="alert-circle" size={24} color="#000" />
                     )}
@@ -262,7 +316,8 @@ function ServiceApp() {
                         ? item.serviceBooked
                             .slice(0, 2) // Take only the first 2 items
                             .map(service => service.serviceName)
-                            .join(', ') + (item.serviceBooked.length > 2 ? '...' : '') // Add "..." if there are more than 2 items
+                            .join(', ') +
+                          (item.serviceBooked.length > 2 ? '...' : '') // Add "..." if there are more than 2 items
                         : 'Switch board & Socket repairing'}
                     </Text>
                     <Text style={styles.textContainerTextCommander}>
@@ -332,7 +387,7 @@ const styles = StyleSheet.create({
   },
   userInitialText: {
     fontSize: 18,
-    color: '#333', 
+    color: '#333',
     fontWeight: 'bold',
   },
   scrollViewContent: {
@@ -471,9 +526,9 @@ const styles = StyleSheet.create({
     elevation: 3,
     width: screenWidth * 0.9, // Set width to 80% of screen width for peek effect
   },
-  startingContainer:{
-    flexDirection:'row',
-    alignItems:'center'
+  startingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   messageBox1: {
     flexDirection: 'row',
@@ -489,21 +544,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  
+
   textContainerText: {
     fontSize: 14,
     paddingBottom: 5,
     fontWeight: 'bold',
     color: '#212121',
     marginLeft: 10,
-    width:'95%'
+    width: '95%',
   },
   textContainerTextCommander: {
     fontSize: 12,
     color: '#9e9e9e',
     marginLeft: 10,
   },
-  
+
   rightIcon: {
     marginLeft: 8,
   },
@@ -523,8 +578,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
-  rightIcon:{
-    marginLeft:8
+  rightIcon: {
+    marginLeft: 8,
   },
   waitingText: {
     fontSize: 12,

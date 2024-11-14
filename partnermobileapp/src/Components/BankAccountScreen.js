@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -7,14 +7,14 @@ import {
   StyleSheet,
   ScrollView,
   Dimensions,
-  SafeAreaView
+  SafeAreaView,
 } from 'react-native';
 
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
-import { useNavigation } from "@react-navigation/native";
+import {useNavigation} from '@react-navigation/native';
 
 const BankAccountScreen = () => {
   const [bank, setBank] = useState('');
@@ -30,10 +30,16 @@ const BankAccountScreen = () => {
 
     if (!bank) newErrors.bank = 'Bank Name is required.';
     if (!accountNumber) newErrors.accountNumber = 'Account Number is required.';
-    if (!confirmAccountNumber) newErrors.confirmAccountNumber = 'Confirm Account Number is required.';
+    if (!confirmAccountNumber)
+      newErrors.confirmAccountNumber = 'Confirm Account Number is required.';
     if (!ifscCode) newErrors.ifscCode = 'IFSC CODE is required.';
-    if (!accountHolderName) newErrors.accountHolderName = "Account Holder's Name is required.";
-    if (accountNumber && confirmAccountNumber && accountNumber !== confirmAccountNumber) {
+    if (!accountHolderName)
+      newErrors.accountHolderName = "Account Holder's Name is required.";
+    if (
+      accountNumber &&
+      confirmAccountNumber &&
+      accountNumber !== confirmAccountNumber
+    ) {
       newErrors.confirmAccountNumber = 'Account numbers do not match.';
     }
 
@@ -52,19 +58,19 @@ const BankAccountScreen = () => {
         accountHolderName,
       };
       try {
-        const pcsToken = await EncryptedStorage.getItem("pcs_token");
+        const pcsToken = await EncryptedStorage.getItem('pcs_token');
         if (!pcsToken) {
           console.error('No pcs_token found.');
           navigation.replace('Login');
         }
         const response = await axios.post(
           `${process.env.BackendAPI6}/api/account/submit`,
-          bankAccountDetails, 
+          bankAccountDetails,
           {
             headers: {
               Authorization: `Bearer ${pcsToken}`,
-            }
-          }
+            },
+          },
         );
         if (response.status === 200) {
           navigation.replace('PartnerSteps');
@@ -80,7 +86,12 @@ const BankAccountScreen = () => {
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
           <View>
-            <FontAwesome6 name='arrow-left-long' size={20} color='#9e9e9e' style={styles.leftIcon} />
+            <FontAwesome6
+              name="arrow-left-long"
+              size={20}
+              color="#9e9e9e"
+              style={styles.leftIcon}
+            />
           </View>
           <View>
             <Ionicons name="help-circle-outline" size={25} color="#9e9e9e" />
@@ -90,87 +101,122 @@ const BankAccountScreen = () => {
         <View style={styles.form}>
           <View style={styles.inputContainer}>
             <TextInput
-              style={[styles.input, errors.bank && { borderBottomColor: '#ff4500' }]}
+              style={[
+                styles.input,
+                errors.bank && {borderBottomColor: '#ff4500'},
+              ]}
               placeholder="Bank Name"
               placeholderTextColor="#9e9e9e"
-              fontWeight='bold'
+              fontWeight="bold"
               value={bank}
-              onChangeText={(text) => {
+              onChangeText={text => {
                 setBank(text);
-                if (errors.bank) setErrors(prev => ({ ...prev, bank: null }));
+                if (errors.bank) setErrors(prev => ({...prev, bank: null}));
               }}
             />
             {errors.bank && <Text style={styles.errorText}>{errors.bank}</Text>}
           </View>
           <View style={styles.inputContainer}>
             <TextInput
-              style={[styles.input, errors.accountNumber && { borderBottomColor: '#ff4500' }]}
+              style={[
+                styles.input,
+                errors.accountNumber && {borderBottomColor: '#ff4500'},
+              ]}
               placeholder="Account number"
               placeholderTextColor="#9e9e9e"
-              fontWeight='bold'
-              keyboardType='numeric'
+              fontWeight="bold"
+              keyboardType="numeric"
               value={accountNumber}
-              onChangeText={(text) => {
+              onChangeText={text => {
                 setAccountNumber(text);
-                if (errors.accountNumber) setErrors(prev => ({ ...prev, accountNumber: null }));
+                if (errors.accountNumber)
+                  setErrors(prev => ({...prev, accountNumber: null}));
               }}
             />
-            {errors.accountNumber && <Text style={styles.errorText}>{errors.accountNumber}</Text>}
+            {errors.accountNumber && (
+              <Text style={styles.errorText}>{errors.accountNumber}</Text>
+            )}
           </View>
           <View style={styles.inputContainer}>
             <TextInput
-              style={[styles.input, errors.confirmAccountNumber && { borderBottomColor: '#ff4500' }]}
+              style={[
+                styles.input,
+                errors.confirmAccountNumber && {borderBottomColor: '#ff4500'},
+              ]}
               placeholder="Confirm Account number"
               placeholderTextColor="#9e9e9e"
-              fontWeight='bold'
-              keyboardType='numeric'
+              fontWeight="bold"
+              keyboardType="numeric"
               value={confirmAccountNumber}
-              onChangeText={(text) => {
+              onChangeText={text => {
                 setConfirmAccountNumber(text);
                 if (accountNumber && text !== accountNumber) {
-                  setErrors(prev => ({ ...prev, confirmAccountNumber: 'Account numbers do not match.' }));
+                  setErrors(prev => ({
+                    ...prev,
+                    confirmAccountNumber: 'Account numbers do not match.',
+                  }));
                 } else {
-                  setErrors(prev => ({ ...prev, confirmAccountNumber: null }));
+                  setErrors(prev => ({...prev, confirmAccountNumber: null}));
                 }
               }}
             />
-            {errors.confirmAccountNumber && <Text style={styles.errorText}>{errors.confirmAccountNumber}</Text>}
+            {errors.confirmAccountNumber && (
+              <Text style={styles.errorText}>
+                {errors.confirmAccountNumber}
+              </Text>
+            )}
           </View>
           <View style={styles.inputContainer}>
             <TextInput
-              style={[styles.input, errors.ifscCode && { borderBottomColor: '#ff4500' }]}
+              style={[
+                styles.input,
+                errors.ifscCode && {borderBottomColor: '#ff4500'},
+              ]}
               placeholder="IFSC CODE"
               placeholderTextColor="#9e9e9e"
-              fontWeight='bold'
+              fontWeight="bold"
               value={ifscCode}
-              onChangeText={(text) => {
+              onChangeText={text => {
                 setIfscCode(text);
-                if (errors.ifscCode) setErrors(prev => ({ ...prev, ifscCode: null }));
+                if (errors.ifscCode)
+                  setErrors(prev => ({...prev, ifscCode: null}));
               }}
             />
-            {errors.ifscCode && <Text style={styles.errorText}>{errors.ifscCode}</Text>}
+            {errors.ifscCode && (
+              <Text style={styles.errorText}>{errors.ifscCode}</Text>
+            )}
           </View>
           <View style={styles.lastInputContainer}>
             <TextInput
-              style={[styles.input, errors.accountHolderName && { borderBottomColor: '#ff4500' }]}
+              style={[
+                styles.input,
+                errors.accountHolderName && {borderBottomColor: '#ff4500'},
+              ]}
               placeholder="Account holder's name"
               placeholderTextColor="#9e9e9e"
-              fontWeight='bold'
+              fontWeight="bold"
               value={accountHolderName}
-              onChangeText={(text) => {
+              onChangeText={text => {
                 setAccountHolderName(text);
-                if (errors.accountHolderName) setErrors(prev => ({ ...prev, accountHolderName: null }));
+                if (errors.accountHolderName)
+                  setErrors(prev => ({...prev, accountHolderName: null}));
               }}
             />
-            {errors.accountHolderName && <Text style={styles.errorText}>{errors.accountHolderName}</Text>}
+            {errors.accountHolderName && (
+              <Text style={styles.errorText}>{errors.accountHolderName}</Text>
+            )}
           </View>
           <Text style={styles.helpText}>
-            Need help finding these numbers? <Text style={styles.learnMoreText}>Learn more</Text>
+            Need help finding these numbers?{' '}
+            <Text style={styles.learnMoreText}>Learn more</Text>
           </Text>
           <Text style={styles.acceptTerms}>
-            By adding this bank account, I agree to PayMe T& Cs regarding topping up from bank account.
+            By adding this bank account, I agree to PayMe T& Cs regarding
+            topping up from bank account.
           </Text>
-          <TouchableOpacity style={styles.button} onPress={handleAddBankAccount}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleAddBankAccount}>
             <Text style={styles.buttonText}>Add bank account</Text>
           </TouchableOpacity>
         </View>
@@ -186,11 +232,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fafafa',
   },
-  inputContainer:{
+  inputContainer: {
     marginBottom: 40,
   },
-  lastInputContainer:{
-    marginBottom:20
+  lastInputContainer: {
+    marginBottom: 20,
   },
   input: {
     borderBottomWidth: 1,
@@ -200,7 +246,7 @@ const styles = StyleSheet.create({
     color: '#747676',
   },
   errorText: {
-    color: '#ff4500', 
+    color: '#ff4500',
     fontSize: 14,
     marginBottom: 10,
   },
@@ -210,7 +256,7 @@ const styles = StyleSheet.create({
     paddingLeft: 5,
   },
   acceptTerms: {
-    color: "#212121",
+    color: '#212121',
     paddingBottom: 20,
     fontWeight: '600',
   },

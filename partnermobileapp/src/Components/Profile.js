@@ -1,9 +1,17 @@
 import {useState, useEffect} from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, Button, TouchableOpacity } from 'react-native';
-import FontAwesome6 from 'react-native-vector-icons/FontAwesome6'; 
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  ScrollView,
+  Button,
+  TouchableOpacity,
+} from 'react-native';
+import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
-import { useNavigation } from '@react-navigation/native'; // Import navigation hook
+import {useNavigation} from '@react-navigation/native'; // Import navigation hook
 
 const Profile = () => {
   const [profileDetails, SetProfileDetails] = useState([]);
@@ -19,11 +27,14 @@ const Profile = () => {
           return; // Exit early
         }
 
-        const response = await axios.get(`${process.env.BackendAPI6}/api/worker/profile/details`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
+        const response = await axios.get(
+          `${process.env.BackendAPI6}/api/worker/profile/details`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           },
-        });
+        );
         SetProfileDetails(response.data[0]);
         console.log(response.data);
       } catch (error) {
@@ -34,11 +45,21 @@ const Profile = () => {
     fetchProfile();
   }, []);
 
-  const formatDate = (created_at) => {
+  const formatDate = created_at => {
     const date = new Date(created_at);
     const monthNames = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     const day = date.getDate();
     const month = monthNames[date.getMonth()];
@@ -51,8 +72,8 @@ const Profile = () => {
       await EncryptedStorage.removeItem('pcs_token');
       await EncryptedStorage.removeItem('partnerSteps');
       await EncryptedStorage.removeItem('start_time');
-      await EncryptedStorage.removeItem('notifications')
-      navigation.replace("Login")
+      await EncryptedStorage.removeItem('notifications');
+      navigation.replace('Login');
       // Update state to reflect the logout
     } catch (error) {
       console.error('Error logging out:', error);
@@ -64,22 +85,27 @@ const Profile = () => {
     navigation.navigate('Login'); // Replace 'Login' with the correct route name
   };
 
-
   // Conditionally render login button if no token exists
   if (!tokenExists) {
     return (
       <View style={styles.container}>
         <View style={styles.loginContainer}>
           <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: 'https://i.postimg.cc/jSJS7rDH/1727646707169dp7gkvhw.png' }} // Replace with your worker image URL or local asset
-          style={styles.workerImage}
-        />
-        </View>
-        <Text style={styles.loginMessage}>Please Login, you are currently not logined</Text>
-        <TouchableOpacity style={styles.arrivalButton} onPress={handleLoginPress}>
-          <Text style={styles.arrivalButtonText}>Login</Text>
-        </TouchableOpacity>
+            <Image
+              source={{
+                uri: 'https://i.postimg.cc/jSJS7rDH/1727646707169dp7gkvhw.png',
+              }} // Replace with your worker image URL or local asset
+              style={styles.workerImage}
+            />
+          </View>
+          <Text style={styles.loginMessage}>
+            Please Login, you are currently not logined
+          </Text>
+          <TouchableOpacity
+            style={styles.arrivalButton}
+            onPress={handleLoginPress}>
+            <Text style={styles.arrivalButtonText}>Login</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -88,14 +114,19 @@ const Profile = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <FontAwesome6 name='arrow-left-long' size={20} color='#9e9e9e' style={styles.leftIcon} />
+        <FontAwesome6
+          name="arrow-left-long"
+          size={20}
+          color="#9e9e9e"
+          style={styles.leftIcon}
+        />
         <Text style={styles.screenName}>Profile</Text>
       </View>
       <View style={styles.profileSection}>
         <View style={styles.profileImageContainer}>
-          <Image 
-            source={{ uri: profileDetails.profile }} 
-            style={styles.profileImage} 
+          <Image
+            source={{uri: profileDetails.profile}}
+            style={styles.profileImage}
           />
         </View>
         <Text style={styles.profileName}>{profileDetails.name}</Text>
@@ -105,7 +136,9 @@ const Profile = () => {
         <View style={styles.detailRow}>
           <View>
             <Text style={styles.detailLabel}>Contact No.</Text>
-            <Text style={styles.detailValue}>{profileDetails.phone_number}</Text>
+            <Text style={styles.detailValue}>
+              {profileDetails.phone_number}
+            </Text>
           </View>
           <View>
             <Text style={styles.detailLabel}>Gender</Text>
@@ -130,7 +163,9 @@ const Profile = () => {
       <View style={styles.section}>
         <View style={styles.detailColumn}>
           <Text style={styles.detailLabel}>Created At</Text>
-          <Text style={styles.detailValue}>{formatDate(profileDetails.created_at)}</Text>
+          <Text style={styles.detailValue}>
+            {formatDate(profileDetails.created_at)}
+          </Text>
         </View>
       </View>
       <View style={styles.buttonContainer}>
@@ -150,71 +185,70 @@ const styles = StyleSheet.create({
     // justifyContent: 'center',
     // alignItems: 'center',
   },
-  buttonContainer:{
-    display:'flex',
-    flexDirection:'row',
-    justifyContent:'center',
-    marginVertical:30
+  buttonContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginVertical: 30,
   },
   doneButton: {
-    borderWidth:1,
-    borderColor:'#FF5722',
+    borderWidth: 1,
+    borderColor: '#FF5722',
     backgroundColor: '#ffffff',
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
-    marginTop:10,
-    width:'60%',
-
+    marginTop: 10,
+    width: '60%',
   },
   doneText: {
     color: '#FF5722',
     fontSize: 15,
     fontWeight: 'bold',
   },
-  imageContainer:{
-    flexDirection:'row',
-    justifyContent:'center',
-    marginBottom:30
+  imageContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 30,
   },
-  workerImage:{
-    height:200,
-    width:150
+  workerImage: {
+    height: 200,
+    width: 150,
   },
   arrivalButton: {
-    borderColor:'#FF5722',
+    borderColor: '#FF5722',
     backgroundColor: '#FF5722',
-    borderWidth:1,
+    borderWidth: 1,
     borderRadius: 5,
     padding: 15,
     alignItems: 'center',
     marginTop: 20,
-    marginHorizontal:45
+    marginHorizontal: 45,
   },
   arrivalButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  ProfileHead:{
-    fontSize:20,
-    color:'#212121',
-    fontWeight:'bold',
-    paddingBottom:20
+  ProfileHead: {
+    fontSize: 20,
+    color: '#212121',
+    fontWeight: 'bold',
+    paddingBottom: 20,
   },
-  loginContainer:{
-    padding:20
+  loginContainer: {
+    padding: 20,
   },
   loginMessage: {
     fontSize: 18,
     color: '#212121',
     marginBottom: 20,
-    textAlign:'center'
+    textAlign: 'center',
   },
   header: {
     display: 'flex',
     flexDirection: 'row',
-    alignItems: 'center', 
+    alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 5,
     position: 'relative',
@@ -223,7 +257,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 18,
     fontWeight: 'bold',
-    color:'#747676'
+    color: '#747676',
   },
   profileSection: {
     alignItems: 'center',
@@ -231,12 +265,12 @@ const styles = StyleSheet.create({
   },
   leftIcon: {
     position: 'absolute',
-    left: 10, 
+    left: 10,
   },
   screenName: {
-    color:'#747476',
-    fontSize:17,
-    fontWeight:'bold'
+    color: '#747476',
+    fontSize: 17,
+    fontWeight: 'bold',
   },
   profileImageContainer: {
     height: 80,
@@ -256,7 +290,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 17,
     fontWeight: 'bold',
-    color:'#212121'
+    color: '#212121',
   },
   section: {
     backgroundColor: '#ffffff',
@@ -264,7 +298,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowRadius: 10,
     elevation: 2,
   },
@@ -288,7 +322,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowRadius: 10,
     elevation: 5,
   },

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Button, TextInput, StyleSheet, Alert } from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {View, Button, TextInput, StyleSheet, Alert} from 'react-native';
 import auth from '@react-native-firebase/auth';
 
 function LoginAuth() {
@@ -22,7 +22,10 @@ function LoginAuth() {
     const cleanedPhoneNumber = phoneNumber.replace(/\s+/g, ''); // Remove any spaces
     const isValid = /^\+\d{1,3}\d{6,14}$/.test(cleanedPhoneNumber);
     if (!isValid) {
-      Alert.alert('Invalid Phone Number', 'Please enter a valid phone number in E.164 format.');
+      Alert.alert(
+        'Invalid Phone Number',
+        'Please enter a valid phone number in E.164 format.',
+      );
     }
     return isValid;
   };

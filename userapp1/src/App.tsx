@@ -1,12 +1,12 @@
-import React, { useEffect, useRef } from 'react';
-import { NavigationContainer, CommonActions } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import React, {useEffect, useRef} from 'react';
+import {NavigationContainer, CommonActions} from '@react-navigation/native';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import axios from 'axios';
 import messaging from '@react-native-firebase/messaging';
 import PushNotification from 'react-native-push-notification';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { PermissionsAndroid } from 'react-native';
+import {PermissionsAndroid} from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
 import Entypo from 'react-native-vector-icons/Entypo';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -42,8 +42,8 @@ const Tab = createBottomTabNavigator();
 function TabNavigator() {
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
+      screenOptions={({route}) => ({
+        tabBarIcon: ({focused, color, size}) => {
           size = focused ? 28 : 24;
           let iconName;
 
@@ -61,20 +61,45 @@ function TabNavigator() {
             return <Feather name={iconName} size={size} color={color} />;
           } else if (route.name === 'Account') {
             iconName = 'account-outline';
-            return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
+            return (
+              <MaterialCommunityIcons
+                name={iconName}
+                size={size}
+                color={color}
+              />
+            );
           }
         },
         tabBarActiveTintColor: '#ff4500',
         tabBarInactiveTintColor: 'gray',
-        tabBarLabelStyle: { fontSize: 12 },
-        tabBarStyle: { height: 60, paddingBottom: 5, paddingTop: 5 },
-      })}
-    >
-      <Tab.Screen name="Home" component={ServiceApp} options={{ headerShown: false }} />
-      <Tab.Screen name="Bookings" component={RecentServices} options={{ headerShown: false }} />
-      <Tab.Screen name="ServiceInProgress" component={ServiceInProgress} options={{ headerShown: false }} />
-      <Tab.Screen name="Native" component={ServiceTrackingListScreen} options={{ headerShown: false }} />
-      <Tab.Screen name="Account" component={ProfileScreen} options={{ headerShown: false }} />
+        tabBarLabelStyle: {fontSize: 12},
+        tabBarStyle: {height: 60, paddingBottom: 5, paddingTop: 5},
+      })}>
+      <Tab.Screen
+        name="Home"
+        component={ServiceApp}
+        options={{headerShown: false}}
+      />
+      <Tab.Screen
+        name="Bookings"
+        component={RecentServices}
+        options={{headerShown: false}}
+      />
+      <Tab.Screen
+        name="ServiceInProgress"
+        component={ServiceInProgress}
+        options={{headerShown: false}}
+      />
+      <Tab.Screen
+        name="Native"
+        component={ServiceTrackingListScreen}
+        options={{headerShown: false}}
+      />
+      <Tab.Screen
+        name="Account"
+        component={ProfileScreen}
+        options={{headerShown: false}}
+      />
     </Tab.Navigator>
   );
 }
@@ -107,7 +132,7 @@ function App() {
         buttonNeutral: 'Ask Me Later',
         buttonNegative: 'Cancel',
         buttonPositive: 'OK',
-      }
+      },
     );
     if (granted === PermissionsAndroid.RESULTS.GRANTED) {
       console.log('You can use the notifications');
@@ -125,8 +150,8 @@ function App() {
       if (cs_token) {
         await axios.post(
           `${process.env.BACKENDAIPE}/api/user/store-fcm-token`,
-          { fcmToken: token },
-          { headers: { Authorization: `Bearer ${cs_token}` } }
+          {fcmToken: token},
+          {headers: {Authorization: `Bearer ${cs_token}`}},
         );
       }
     } catch (error) {
@@ -141,8 +166,8 @@ function App() {
       const fcmToken = await EncryptedStorage.getItem('fcm_token');
       await axios.post(
         `${process.env.BACKENDAIPE}/api/user/store-notification`,
-        { notification, fcmToken },
-        { headers: { Authorization: `Bearer ${pcs_token}` } }
+        {notification, fcmToken},
+        {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
       console.log('Notification stored in backend:', notification);
     } catch (error) {
@@ -153,10 +178,17 @@ function App() {
   // Store notification locally
   async function storeNotificationLocally(notification) {
     try {
-      const existingNotifications = await EncryptedStorage.getItem('notifications');
-      let notifications = existingNotifications ? JSON.parse(existingNotifications) : [];
+      const existingNotifications = await EncryptedStorage.getItem(
+        'notifications',
+      );
+      let notifications = existingNotifications
+        ? JSON.parse(existingNotifications)
+        : [];
       notifications.push(notification);
-      await EncryptedStorage.setItem('notifications', JSON.stringify(notifications));
+      await EncryptedStorage.setItem(
+        'notifications',
+        JSON.stringify(notifications),
+      );
       console.log('Notification stored locally:', notification);
       storeNotificationInBackend(notification);
     } catch (error) {
@@ -181,22 +213,28 @@ function App() {
     const navigationActions = {
       UserNavigation: () =>
         navigationRef.current.dispatch(
-          CommonActions.navigate('UserNavigation', { encodedId: encodedNotificationId })
+          CommonActions.navigate('UserNavigation', {
+            encodedId: encodedNotificationId,
+          }),
         ),
       worktimescreen: () =>
         navigationRef.current.dispatch(
-          CommonActions.navigate('worktimescreen', { encodedId: encodedNotificationId })
+          CommonActions.navigate('worktimescreen', {
+            encodedId: encodedNotificationId,
+          }),
         ),
       Paymentscreen: () =>
         navigationRef.current.dispatch(
-          CommonActions.navigate('Paymentscreen', { encodedId: encodedNotificationId })
+          CommonActions.navigate('Paymentscreen', {
+            encodedId: encodedNotificationId,
+          }),
         ),
       Home: () =>
         navigationRef.current.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
         ),
     };
 
@@ -210,7 +248,7 @@ function App() {
     PushNotification.configure({
       onNotification: function (notification) {
         if (notification.userInteraction) {
-          handleNotificationNavigation({ data: notification.data });
+          handleNotificationNavigation({data: notification.data});
         }
       },
     });
@@ -230,11 +268,11 @@ function App() {
         importance: 4,
         vibrate: true,
       },
-      (created) => console.log(`createChannel returned '${created}'`)
+      created => console.log(`createChannel returned '${created}'`),
     );
 
     // Foreground message handler
-    const unsubscribeOnMessage = messaging().onMessage(async (remoteMessage) => {
+    const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
       console.log('A new FCM message arrived!', JSON.stringify(remoteMessage));
       await handleNotificationNavigation(remoteMessage);
 
@@ -269,8 +307,11 @@ function App() {
     });
 
     // Background and quit state message handler
-    messaging().setBackgroundMessageHandler(async (remoteMessage) => {
-      console.log('Message handled in the background!', JSON.stringify(remoteMessage));
+    messaging().setBackgroundMessageHandler(async remoteMessage => {
+      console.log(
+        'Message handled in the background!',
+        JSON.stringify(remoteMessage),
+      );
       await handleNotificationNavigation(remoteMessage);
 
       const notification = {
@@ -293,9 +334,12 @@ function App() {
     // When the app is opened from a quit state
     messaging()
       .getInitialNotification()
-      .then(async (remoteMessage) => {
+      .then(async remoteMessage => {
         if (remoteMessage) {
-          console.log('Notification caused app to open from quit state:', JSON.stringify(remoteMessage));
+          console.log(
+            'Notification caused app to open from quit state:',
+            JSON.stringify(remoteMessage),
+          );
           await handleNotificationNavigation(remoteMessage);
 
           const notification = {
@@ -317,12 +361,14 @@ function App() {
       });
 
     // When a notification is opened from the background state
-    const unsubscribeOnNotificationOpenedApp = messaging().onNotificationOpenedApp(
-      async (remoteMessage) => {
-        console.log('Notification opened from background state:', JSON.stringify(remoteMessage));
+    const unsubscribeOnNotificationOpenedApp =
+      messaging().onNotificationOpenedApp(async remoteMessage => {
+        console.log(
+          'Notification opened from background state:',
+          JSON.stringify(remoteMessage),
+        );
         await handleNotificationNavigation(remoteMessage);
-      }
-    );
+      });
 
     return () => {
       unsubscribeOnMessage();
@@ -337,28 +383,108 @@ function App() {
   return (
     <NavigationContainer ref={navigationRef}>
       <Stack.Navigator>
-        <Stack.Screen name="Tabs" component={TabNavigator} options={{ headerShown: false }} />
-        <Stack.Screen name="UserLocation" component={UserLocation} options={{ headerShown: false }} />
-        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="userwaiting" component={UserWaiting} options={{ headerShown: false }} />
-        <Stack.Screen name="UserNavigation" component={Navigation} options={{ headerShown: false }} />
-        <Stack.Screen name="worktimescreen" component={TimingScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Paymentscreen" component={Payment} options={{ headerShown: false }} />
-        <Stack.Screen name="Rating" component={Rating} options={{ headerShown: false }} />
-        <Stack.Screen name="ServiceBooking" component={SingleService} options={{ headerShown: false }} />
-        <Stack.Screen name="RecentServices" component={RecentServices} options={{ headerShown: false }} />
-        <Stack.Screen name="serviceCategory" component={PaintingServices} options={{ headerShown: false }} />
-        <Stack.Screen name="SearchItem" component={SearchItem} options={{ headerShown: false }} />
-        <Stack.Screen name="SignupDetails" component={SignUpScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="LocationSearch" component={LocationSearch} options={{ headerShown: false }} />
-        <Stack.Screen name="EditProfile" component={EditProfile} options={{ headerShown: false }} />
-        <Stack.Screen name="ServiceTrackingItem" component={ServiceTrackingItemScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="serviceBookingItem" component={ServiceBookingItem} options={{ headerShown: false }} />
-        <Stack.Screen name="Notifications" component={UserNotifications} options={{ headerShown: false }} />
-        <Stack.Screen name="Help" component={Help} options={{ headerShown: false }} />
-        <Stack.Screen name="ServiceInProgress" component={ServiceInProgress} options={{ headerShown: false }} />
+        <Stack.Screen
+          name="Tabs"
+          component={TabNavigator}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="UserLocation"
+          component={UserLocation}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="userwaiting"
+          component={UserWaiting}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="UserNavigation"
+          component={Navigation}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="worktimescreen"
+          component={TimingScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="Paymentscreen"
+          component={Payment}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="Rating"
+          component={Rating}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="ServiceBooking"
+          component={SingleService}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="RecentServices"
+          component={RecentServices}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="serviceCategory"
+          component={PaintingServices}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="SearchItem"
+          component={SearchItem}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="SignupDetails"
+          component={SignUpScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="LocationSearch"
+          component={LocationSearch}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="EditProfile"
+          component={EditProfile}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="ServiceTrackingItem"
+          component={ServiceTrackingItemScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="serviceBookingItem"
+          component={ServiceBookingItem}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="Notifications"
+          component={UserNotifications}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="Help"
+          component={Help}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="ServiceInProgress"
+          component={ServiceInProgress}
+          options={{headerShown: false}}
+        />
       </Stack.Navigator>
-    </NavigationContainer> 
+    </NavigationContainer>
   );
 }
 

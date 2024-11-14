@@ -1,8 +1,17 @@
 import axios from 'axios';
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Dimensions, Modal } from 'react-native';
+import React, {useEffect, useState, useCallback} from 'react';
+import {
+  View,
+  Text,
+  Image,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  Modal,
+} from 'react-native';
 import Swiper from 'react-native-swiper';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import {useNavigation, useRoute} from '@react-navigation/native';
 import Entypo from 'react-native-vector-icons/Entypo';
 import Icon from 'react-native-vector-icons/Ionicons';
 import EncryptedStorage from 'react-native-encrypted-storage';
@@ -16,16 +25,24 @@ const SingleService = () => {
   const [totalAmount, setTotalAmount] = useState(10);
   const [originalTotal, setOriginalAmount] = useState(0);
   const route = useRoute();
-  const { serviceName } = route.params;
+  const {serviceName} = route.params;
 
   const fetchDetails = useCallback(async () => {
     try {
-      const response = await axios.post(`${process.env.BACKENDAIPE}/api/single/service`, {
-        serviceName,
-      });
-      const { relatedServices } = response.data;
+      const response = await axios.post(
+        `${process.env.BACKENDAIPE}/api/single/service`,
+        {
+          serviceName,
+        },
+      );
+      const {relatedServices} = response.data;
       setServices(relatedServices);
-      setQuantities(relatedServices.reduce((acc, service) => ({ ...acc, [service.main_service_id]: 0 }), {}));
+      setQuantities(
+        relatedServices.reduce(
+          (acc, service) => ({...acc, [service.main_service_id]: 0}),
+          {},
+        ),
+      );
     } catch (error) {
       console.error('Error fetching services:', error);
     }
@@ -40,7 +57,7 @@ const SingleService = () => {
           const parsedCart = JSON.parse(storedCart);
           if (Array.isArray(parsedCart)) {
             setBookedServices(parsedCart);
-  
+
             // Update quantities from booked services
             const parsedQuantities = parsedCart.reduce((acc, service) => {
               acc[service.main_service_id] = service.quantity;
@@ -53,10 +70,9 @@ const SingleService = () => {
         console.error('Error fetching stored cart:', error);
       }
     };
-  
+
     fetchDetails().then(fetchStoredCart);
   }, [fetchDetails, serviceName]);
-  
 
   useEffect(() => {
     const total = services.reduce((acc, service) => {
@@ -64,18 +80,18 @@ const SingleService = () => {
       const cost = parseFloat(service.cost) || 0;
       return acc + calculateDiscount(cost, quantity);
     }, 0);
-  
+
     const originalTotal = services.reduce((acc, service) => {
       const quantity = quantities[service.main_service_id] || 0;
       const cost = parseFloat(service.cost) || 0;
       return acc + cost * quantity;
     }, 0);
-  
+
     setTotalAmount(total);
     setOriginalAmount(originalTotal);
-  
+
     const booked = services
-      .map((service) => {
+      .map(service => {
         const quantity = quantities[service.main_service_id];
         if (quantity > 0) {
           return {
@@ -91,9 +107,9 @@ const SingleService = () => {
         return null;
       })
       .filter(Boolean);
-  
+
     setBookedServices(booked);
-  
+
     // Store the updated booked services in EncryptedStorage only if there are items to store
     if (booked.length > 0) {
       const storeCart = async () => {
@@ -107,10 +123,9 @@ const SingleService = () => {
       storeCart();
     }
   }, [quantities, services, serviceName]);
-  
 
   const handleQuantityChange = (id, delta) => {
-    setQuantities((prev) => ({
+    setQuantities(prev => ({
       ...prev,
       [id]: Math.max(0, (prev[id] || 0) + delta),
     }));
@@ -119,8 +134,8 @@ const SingleService = () => {
   const calculateDiscount = (cost, quantity) => {
     if (quantity === 1) return cost;
     if (quantity === 2) return cost * quantity * 0.85;
-    if (quantity === 3) return cost * quantity * 0.80;
-    return cost * quantity * 0.70;
+    if (quantity === 3) return cost * quantity * 0.8;
+    return cost * quantity * 0.7;
   };
 
   const handleBookNow = () => {
@@ -129,7 +144,7 @@ const SingleService = () => {
 
   const bookService = () => {
     setModalVisible(false);
-    navigation.push('UserLocation', { serviceName: bookedServices });
+    navigation.push('UserLocation', {serviceName: bookedServices});
   };
 
   const handleBackPress = () => {
@@ -149,10 +164,18 @@ const SingleService = () => {
         </View>
 
         <View style={styles.carouselContainer}>
-          <Swiper style={styles.wrapper} autoplay autoplayTimeout={3} showsPagination={false}>
-            {services.map((service) => (
+          <Swiper
+            style={styles.wrapper}
+            autoplay
+            autoplayTimeout={3}
+            showsPagination={false}>
+            {services.map(service => (
               <View key={service.main_service_id}>
-                <Image source={{ uri: service.service_urls[0] }} style={styles.carouselImage} resizeMode="cover" />
+                <Image
+                  source={{uri: service.service_urls[0]}}
+                  style={styles.carouselImage}
+                  resizeMode="cover"
+                />
               </View>
             ))}
           </Swiper>
@@ -162,7 +185,9 @@ const SingleService = () => {
           <View style={styles.serviceDetails}>
             <Text style={styles.serviceTitle}>{serviceName}</Text>
             <View style={styles.priceContainer}>
-              <Text style={styles.Sparetext}>Spare parts, if required, will incur additional charges</Text>
+              <Text style={styles.Sparetext}>
+                Spare parts, if required, will incur additional charges
+              </Text>
             </View>
           </View>
         </View>
@@ -170,28 +195,48 @@ const SingleService = () => {
         <View style={styles.horizantalLine} />
 
         <View style={styles.recomendedContainer}>
-          {services.map((service) => (
-            <TouchableOpacity key={service.main_service_id} style={styles.recomendedCard}>
+          {services.map(service => (
+            <TouchableOpacity
+              key={service.main_service_id}
+              style={styles.recomendedCard}>
               <View style={styles.recomendedCardDetails}>
-                <Text style={styles.recomendedCardDetailsHead}>{service.service_tag}</Text>
-                <Text style={styles.recomendedCardDetailsDescription} numberOfLines={2}>
+                <Text style={styles.recomendedCardDetailsHead}>
+                  {service.service_tag}
+                </Text>
+                <Text
+                  style={styles.recomendedCardDetailsDescription}
+                  numberOfLines={2}>
                   {service.service_details.about}
                 </Text>
-                <Text style={styles.recomendedCardDetailsRating}>₹{service.cost}</Text>
+                <Text style={styles.recomendedCardDetailsRating}>
+                  ₹{service.cost}
+                </Text>
                 <View style={styles.addButton}>
-                  <TouchableOpacity onPress={() => handleQuantityChange(service.main_service_id, -1)}>
+                  <TouchableOpacity
+                    onPress={() =>
+                      handleQuantityChange(service.main_service_id, -1)
+                    }>
                     <Entypo name="minus" size={20} color="#4a4a4a" />
                   </TouchableOpacity>
                   <Text style={styles.addButtonText}>
-                    {quantities[service.main_service_id] > 0 ? quantities[service.main_service_id] : 'Add'}
+                    {quantities[service.main_service_id] > 0
+                      ? quantities[service.main_service_id]
+                      : 'Add'}
                   </Text>
-                  <TouchableOpacity onPress={() => handleQuantityChange(service.main_service_id, 1)}>
+                  <TouchableOpacity
+                    onPress={() =>
+                      handleQuantityChange(service.main_service_id, 1)
+                    }>
                     <Entypo name="plus" size={20} color="#4a4a4a" />
                   </TouchableOpacity>
                 </View>
               </View>
               {service.service_details.urls && (
-                <Image source={{ uri: service.service_details.urls }} style={styles.recomendedImage} resizeMode="stretch" />
+                <Image
+                  source={{uri: service.service_details.urls}}
+                  style={styles.recomendedImage}
+                  resizeMode="stretch"
+                />
               )}
             </TouchableOpacity>
           ))}
@@ -201,22 +246,32 @@ const SingleService = () => {
       {totalAmount > 0 && (
         <View style={styles.cartContainer}>
           <View>
-            {bookedServices.some((service) => service.originalCost !== service.cost) && (
+            {bookedServices.some(
+              service => service.originalCost !== service.cost,
+            ) && (
               <Text style={styles.originalAmount}>
                 <Text style={styles.crossedText}>₹{originalTotal}</Text>
               </Text>
             )}
             <Text style={styles.ammount}>Total: ₹{totalAmount}</Text>
           </View>
-          <TouchableOpacity onPress={handleBookNow} style={styles.buttonContainer}>
+          <TouchableOpacity
+            onPress={handleBookNow}
+            style={styles.buttonContainer}>
             <Text style={styles.buttonText}>Book Now</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      <Modal transparent animationType="slide" visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+      <Modal
+        transparent
+        animationType="slide"
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalContainer}>
-          <TouchableOpacity style={styles.crossIconContainer} onPress={() => setModalVisible(false)}>
+          <TouchableOpacity
+            style={styles.crossIconContainer}
+            onPress={() => setModalVisible(false)}>
             <View style={styles.crossIcon}>
               <Entypo name="cross" size={20} color="#4a4a4a" />
             </View>
@@ -227,17 +282,42 @@ const SingleService = () => {
               <View style={styles.itemContainers}>
                 {bookedServices.map((service, index) => (
                   <View key={index} style={styles.itemContainer}>
-                    {service.url ? <Image source={{ uri: service.url }} style={styles.recomendedModalImage} resizeMode="stretch" />: 
-                    <Image source={{ uri: "https://postimage.png" }} style={styles.recomendedModalImage} resizeMode="stretch" />}
+                    {service.url ? (
+                      <Image
+                        source={{uri: service.url}}
+                        style={styles.recomendedModalImage}
+                        resizeMode="stretch"
+                      />
+                    ) : (
+                      <Image
+                        source={{uri: 'https://postimage.png'}}
+                        style={styles.recomendedModalImage}
+                        resizeMode="stretch"
+                      />
+                    )}
                     <View style={styles.descriptionContainer}>
-                      <Text style={styles.recomendedCardDetailsHead}>{service.serviceName}</Text>
-                      <Text style={styles.recomendedCardDetailsDescription} numberOfLines={2}>{service.description}</Text>
+                      <Text style={styles.recomendedCardDetailsHead}>
+                        {service.serviceName}
+                      </Text>
+                      <Text
+                        style={styles.recomendedCardDetailsDescription}
+                        numberOfLines={2}>
+                        {service.description}
+                      </Text>
                       <View style={styles.addButton}>
-                        <TouchableOpacity onPress={() => handleQuantityChange(service.main_service_id, -1)}>
+                        <TouchableOpacity
+                          onPress={() =>
+                            handleQuantityChange(service.main_service_id, -1)
+                          }>
                           <Entypo name="minus" size={20} color="#4a4a4a" />
                         </TouchableOpacity>
-                        <Text style={styles.addButtonText}>{quantities[service.main_service_id]}</Text>
-                        <TouchableOpacity onPress={() => handleQuantityChange(service.main_service_id, 1)}>
+                        <Text style={styles.addButtonText}>
+                          {quantities[service.main_service_id]}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() =>
+                            handleQuantityChange(service.main_service_id, 1)
+                          }>
                           <Entypo name="plus" size={20} color="#4a4a4a" />
                         </TouchableOpacity>
                       </View>
@@ -260,27 +340,27 @@ const SingleService = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop:0,
+    marginTop: 0,
     backgroundColor: '#FFFFFF',
   },
   itemContainer: {
     flexDirection: 'row',
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 30,
-    width: '100%'
+    width: '100%',
   },
   scrollContainer: {
-    flex:1,
+    flex: 1,
     marginBottom: 80,
   },
   itemContainers: {
     flexDirection: 'column',
     width: '100%',
-    gap: 20
+    gap: 20,
   },
   descriptionContainer: {
-    width: '45%'
+    width: '45%',
   },
   originalAmount: {
     fontSize: 16,
@@ -314,7 +394,7 @@ const styles = StyleSheet.create({
     color: '#212121',
     fontSize: 15,
     paddingBottom: 10,
-    paddingTop: 5
+    paddingTop: 5,
   },
   recomendedCardDetailsDescription: {
     color: '#4a4a4a',
@@ -350,16 +430,16 @@ const styles = StyleSheet.create({
   recomendedContainer: {
     padding: 20,
     marginBottom: 50,
-    paddingTop: 0
+    paddingTop: 0,
   },
   serviceDetails: {
     padding: 20,
-    paddingTop: 5
+    paddingTop: 5,
   },
   horizantalLine: {
     width: '100%',
     height: 5,
-    backgroundColor: '#f5f5f5'
+    backgroundColor: '#f5f5f5',
   },
   priceContainer: {
     marginTop: 5,
@@ -414,14 +494,14 @@ const styles = StyleSheet.create({
   crossIcon: {
     padding: 10,
     backgroundColor: '#FFFFFF',
-    borderRadius: 50
+    borderRadius: 50,
   },
   crossIconContainer: {
     marginRight: 10,
     marginBottom: 10,
   },
   ammount: {
-    color: '#212121'
+    color: '#212121',
   },
   cartContainer: {
     position: 'absolute',
@@ -434,7 +514,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 25,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
@@ -444,11 +524,11 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
     width: 120,
-    alignItems: 'center'
+    alignItems: 'center',
   },
   buttonText: {
     color: '#FFFFFF',
-    fontWeight: '500'
+    fontWeight: '500',
   },
   bookButton: {
     backgroundColor: '#ff4500',
@@ -456,13 +536,13 @@ const styles = StyleSheet.create({
     padding: 8,
     alignItems: 'center',
     borderRadius: 10,
-    elevation:5
+    elevation: 5,
   },
   Sparetext: {
     color: '#4a4a4a',
     opacity: 0.8,
     fontSize: 14,
-    width: '90%'
+    width: '90%',
   },
   modalContainer: {
     flex: 1,
@@ -483,14 +563,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
-    color: '#1D2951'
+    color: '#1D2951',
   },
   modalTotal: {
     fontSize: 16,
     fontWeight: '500',
     paddingBottom: 10,
     paddingTop: 10,
-    color: '#4a4a4a'
+    color: '#4a4a4a',
   },
   modalButtonText: {
     color: '#ffffff',

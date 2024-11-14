@@ -1,9 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text,Image, TextInput, StyleSheet, TouchableOpacity, Alert, BackHandler, Animated, ScrollView } from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {
+  View,
+  Text,
+  Image,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  BackHandler,
+  Animated,
+  ScrollView,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
-import { useNavigation, useRoute, CommonActions, useFocusEffect } from '@react-navigation/native';
-
+import {
+  useNavigation,
+  useRoute,
+  CommonActions,
+  useFocusEffect,
+} from '@react-navigation/native';
 
 const Rating = () => {
   const [rating, setRating] = useState(null); // Set to null initially to show all emojis
@@ -12,7 +27,7 @@ const Rating = () => {
   const [selectedRatingType, setSelectedRatingType] = useState('worker');
   const route = useRoute();
   const navigation = useNavigation();
-  const encodedId = "MTQxNg==";
+  const encodedId = 'MTQxNg==';
   const [emojiAnimations, setEmojiAnimations] = useState([
     new Animated.Value(1),
     new Animated.Value(1),
@@ -37,19 +52,20 @@ const Rating = () => {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
         );
         return true;
       };
 
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
 
-      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-    }, [])
+      return () =>
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, []),
   );
 
-  const handleEmojiPress = (index) => {
+  const handleEmojiPress = index => {
     setRating(index); // Set the selected emoji index
     Animated.sequence([
       Animated.timing(emojiAnimations[index], {
@@ -73,13 +89,16 @@ const Rating = () => {
         comments,
         ratingFor: selectedRatingType === 'worker' ? 'Worker' : 'App',
       };
-      const response = await axios.post(`${process.env.BACKENDAIPE}/api/user/feedback`, data);
+      const response = await axios.post(
+        `${process.env.BACKENDAIPE}/api/user/feedback`,
+        data,
+      );
       Alert.alert('Feedback submitted:', response.data.message);
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-        })
+          routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+        }),
       );
     } catch (error) {
       console.error('Error submitting feedback:', error);
@@ -87,7 +106,7 @@ const Rating = () => {
     }
   };
 
-  const toggleRatingType = (type) => {
+  const toggleRatingType = type => {
     setSelectedRatingType(type);
   };
 
@@ -108,13 +127,13 @@ const Rating = () => {
       <View>
         <Text style={styles.commanderName}>Commander</Text>
         <TextInput
-        style={[styles.Commanderinput]}
-        placeholder="Comment, if any?"
-        placeholderTextColor="#aaa"
-        value="Yaswanth"
-        onChangeText={setComments}
-        editable={false}
-      />
+          style={[styles.Commanderinput]}
+          placeholder="Comment, if any?"
+          placeholderTextColor="#aaa"
+          value="Yaswanth"
+          onChangeText={setComments}
+          editable={false}
+        />
       </View>
       {/* Display the selected emoji above, if any */}
       {rating !== null && (
@@ -122,15 +141,16 @@ const Rating = () => {
           <Animated.Text
             style={[
               styles.selectedEmoji,
-              { transform: [{ scale: emojiAnimations[rating] }] },
-            ]}
-          >
+              {transform: [{scale: emojiAnimations[rating]}]},
+            ]}>
             {emojis[rating]}
           </Animated.Text>
-          <Text style={[styles.emojiLabel, styles.glowText]}>{emojiLabels[rating]}</Text>
+          <Text style={[styles.emojiLabel, styles.glowText]}>
+            {emojiLabels[rating]}
+          </Text>
         </View>
       )}
-      
+
       {/* Display all emojis in a row */}
       <View style={styles.emojisContainer}>
         {emojis.map((emoji, index) => (
@@ -139,9 +159,11 @@ const Rating = () => {
               <Animated.Text
                 style={[
                   styles.emoji,
-                  { opacity: rating === index ? 1 : 0.5, transform: [{ scale: emojiAnimations[index] }] },
-                ]}
-              >
+                  {
+                    opacity: rating === index ? 1 : 0.5,
+                    transform: [{scale: emojiAnimations[index]}],
+                  },
+                ]}>
                 {emoji}
               </Animated.Text>
             </TouchableOpacity>
@@ -152,25 +174,37 @@ const Rating = () => {
 
       {/* Rating type selector and comments input */}
       <View style={styles.radioContainer}>
-        <TouchableOpacity style={styles.radioRow} onPress={() => toggleRatingType('worker')}>
+        <TouchableOpacity
+          style={styles.radioRow}
+          onPress={() => toggleRatingType('worker')}>
           <Icon
-            name={selectedRatingType === 'worker' ? "radio-button-checked" : "radio-button-unchecked"}
+            name={
+              selectedRatingType === 'worker'
+                ? 'radio-button-checked'
+                : 'radio-button-unchecked'
+            }
             size={20}
-            color={selectedRatingType === 'app' ? "#4a4a4a" : "#ff4500"}
+            color={selectedRatingType === 'app' ? '#4a4a4a' : '#ff4500'}
           />
           <Text style={styles.radioLabel}>Rating for Worker</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.radioRow} onPress={() => toggleRatingType('app')}>
+        <TouchableOpacity
+          style={styles.radioRow}
+          onPress={() => toggleRatingType('app')}>
           <Icon
-            name={selectedRatingType === 'app' ? "radio-button-checked" : "radio-button-unchecked"}
+            name={
+              selectedRatingType === 'app'
+                ? 'radio-button-checked'
+                : 'radio-button-unchecked'
+            }
             size={20}
-            color={selectedRatingType === 'app' ? "#ff4500" : "#4a4a4a"} 
+            color={selectedRatingType === 'app' ? '#ff4500' : '#4a4a4a'}
           />
           <Text style={styles.radioLabel}>Rating for App</Text>
         </TouchableOpacity>
       </View>
       <TextInput
-        style={[styles.input,styles.textarea]}
+        style={[styles.input, styles.textarea]}
         multiline
         numberOfLines={4}
         placeholder="Comment, if any?"
@@ -196,42 +230,42 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     color: '#000',
-    marginBottom:20
+    marginBottom: 20,
   },
-  commanderName:{
-    color:'#9e9e9e',
-    paddingVertical:10,
-    fontSize:15,
-    fontWeight:'bold'
+  commanderName: {
+    color: '#9e9e9e',
+    paddingVertical: 10,
+    fontSize: 15,
+    fontWeight: 'bold',
   },
-  experienceText:{
-    color:'#4a4a4a',
-    textAlign:'center'
+  experienceText: {
+    color: '#4a4a4a',
+    textAlign: 'center',
   },
-  profileContainer:{
-    flexDirection:'row',
-    alignItems:'center',
+  profileContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
 
-    gap:10,
-    marginVertical:15,
-    marginBottom:20
+    gap: 10,
+    marginVertical: 15,
+    marginBottom: 20,
   },
-  detailsContainer:{
-    flexDirection:'column'
+  detailsContainer: {
+    flexDirection: 'column',
   },
-  profileImage:{
-    width:60,
-    height:60,
-    borderRadius:30
+  profileImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
   },
-  profession:{
-    color:'#4a4a4a',
-    fontSize:14
+  profession: {
+    color: '#4a4a4a',
+    fontSize: 14,
   },
-  workerName:{
-    color:'#9e9e9e',
-    fontWeight:'bold',
-    fontSize:17,
+  workerName: {
+    color: '#9e9e9e',
+    fontWeight: 'bold',
+    fontSize: 17,
   },
   ratingLabel: {
     fontSize: 18,
@@ -266,8 +300,7 @@ const styles = StyleSheet.create({
   },
   glowText: {
     color: '#212121',
-    fontWeight:'bold'
-
+    fontWeight: 'bold',
   },
   radioContainer: {
     flexDirection: 'column',
@@ -286,7 +319,7 @@ const styles = StyleSheet.create({
   textarea: {
     height: 100,
     textAlignVertical: 'top',
-    marginBottom:20
+    marginBottom: 20,
   },
   input: {
     borderWidth: 1,
@@ -297,7 +330,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000',
   },
-  Commanderinput:{
+  Commanderinput: {
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 5,
@@ -305,7 +338,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontSize: 16,
     color: '#9e9e9e',
-    paddingLeft:15
+    paddingLeft: 15,
   },
   submitButton: {
     backgroundColor: '#ff4500',

@@ -1,10 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {
+  StyleSheet,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import {useRoute, useNavigation} from '@react-navigation/native';
 
 const SignUpScreen = () => {
   const [fullName, setFullName] = useState('');
@@ -14,7 +21,7 @@ const SignUpScreen = () => {
   const navigation = useNavigation();
 
   useEffect(() => {
-    const { phone_number } = route.params || {};
+    const {phone_number} = route.params || {};
     if (phone_number) {
       setPhoneNumber(phone_number);
     }
@@ -22,21 +29,27 @@ const SignUpScreen = () => {
 
   const handleSignUp = async () => {
     try {
-      const response = await axios.post(`${process.env.BackendAPI6}/api/worker/signup`, {
-        fullName,
-        email,
-        phoneNumber,
-      }); 
+      const response = await axios.post(
+        `${process.env.BackendAPI6}/api/worker/signup`,
+        {
+          fullName,
+          email,
+          phoneNumber,
+        },
+      );
 
-      const { worker } = response.data;
+      const {worker} = response.data;
       console.log(response.data);
       if (worker) {
         await EncryptedStorage.setItem('sign_up', 'true');
-        navigation.replace("PartnerSteps");
+        navigation.replace('PartnerSteps');
       }
     } catch (error) {
       console.error('Sign up error:', error);
-      Alert.alert('Sign Up Failed', 'An error occurred during sign up. Please try again.');
+      Alert.alert(
+        'Sign Up Failed',
+        'An error occurred during sign up. Please try again.',
+      );
     }
   };
 
@@ -69,7 +82,7 @@ const SignUpScreen = () => {
   );
 };
 
-const InputField = ({ placeholder, value, onChangeText, icon, keyboardType }) => (
+const InputField = ({placeholder, value, onChangeText, icon, keyboardType}) => (
   <View style={[styles.inputContainer, icon && styles.emailContainer]}>
     {icon}
     <TextInput

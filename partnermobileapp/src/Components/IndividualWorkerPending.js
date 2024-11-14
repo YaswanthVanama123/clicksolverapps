@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, {useEffect, useState, useMemo, useCallback} from 'react';
 import {
   View,
   Text,
@@ -14,9 +14,9 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Entypo from 'react-native-vector-icons/Entypo';
 import SwipeButton from 'rn-swipe-button';
-import { Dropdown } from 'react-native-element-dropdown';
-import { RadioButton, Checkbox } from 'react-native-paper';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import {Dropdown} from 'react-native-element-dropdown';
+import {RadioButton, Checkbox} from 'react-native-paper';
+import {useRoute, useNavigation} from '@react-navigation/native';
 import axios from 'axios';
 
 const IndividualWorkerPending = () => {
@@ -27,8 +27,8 @@ const IndividualWorkerPending = () => {
   const [address, setAddress] = useState({});
   const [isEditVisible, setEditVisible] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('');
-  const { workerId } = useRoute().params;
-  console.log(workerId)
+  const {workerId} = useRoute().params;
+  console.log(workerId);
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [issues, setIssues] = useState([]); // Array to store multiple issues
   const [currentIssueCategory, setCurrentIssueCategory] = useState(null);
@@ -43,88 +43,104 @@ const IndividualWorkerPending = () => {
   const [text, setText] = useState('');
 
   // Define ThumbIcon as a separate component
-  const ThumbIcon = useCallback(() => (
-    <View style={styles.thumbContainer}>
-      {swiped ? (
-        <Entypo name="check" size={20} color="#ff4500" style={styles.checkIcon} />
-      ) : (
-        <FontAwesome6 name="arrow-right-long" size={15} color="#ff4500" />
-      )}
-    </View>
-  ), [swiped]);
-
-
+  const ThumbIcon = useCallback(
+    () => (
+      <View style={styles.thumbContainer}>
+        {swiped ? (
+          <Entypo
+            name="check"
+            size={20}
+            color="#ff4500"
+            style={styles.checkIcon}
+          />
+        ) : (
+          <FontAwesome6 name="arrow-right-long" size={15} color="#ff4500" />
+        )}
+      </View>
+    ),
+    [swiped],
+  );
 
   const handleEditPress = () => {
-    setEditVisible((prev) => !prev);
-    setSelectedStatus("");
+    setEditVisible(prev => !prev);
+    setSelectedStatus('');
   };
 
   const addIssue = () => {
     if (!currentIssueCategory || !currentIssueDescription.trim()) {
-      Alert.alert('Validation Error', 'Please select a category and describe the issue.');
+      Alert.alert(
+        'Validation Error',
+        'Please select a category and describe the issue.',
+      );
       return;
     }
-  
+
     const newIssue = {
       category: currentIssueCategory,
       description: currentIssueDescription.trim(),
       id: Date.now(), // Unique identifier for each issue
     };
-  
-    setIssues((prevIssues) => [...prevIssues, newIssue]);
+
+    setIssues(prevIssues => [...prevIssues, newIssue]);
     // Reset current issue inputs
     setCurrentIssueCategory(null);
     setCurrentIssueDescription('');
   };
 
-  const removeIssue = (id) => {
-    setIssues((prevIssues) => prevIssues.filter((issue) => issue.id !== id));
+  const removeIssue = id => {
+    setIssues(prevIssues => prevIssues.filter(issue => issue.id !== id));
   };
-  
 
-  const handleStatusChange = (status) => {
+  const handleStatusChange = status => {
     setSelectedStatus(status);
     Alert.alert(
       'Confirm Change',
       `Are you sure you want to change the status to "${status}"?`,
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Yes', onPress: () => applyStatusChange(status) },
-      ]
+        {text: 'Cancel', style: 'cancel'},
+        {text: 'Yes', onPress: () => applyStatusChange(status)},
+      ],
     );
   };
 
-  const handleApproved = async () =>{
-    const response = await axios.post(`${process.env.BackendAPI6}/api/worker/approved`, {
+  const handleApproved = async () => {
+    const response = await axios.post(
+      `${process.env.BackendAPI6}/api/worker/approved`,
+      {
         workerId,
-      });
-      if (response.status === 200){
-        Alert.alert('worker approved');
-      }
-  }
+      },
+    );
+    if (response.status === 200) {
+      Alert.alert('worker approved');
+    }
+  };
 
-  const submitAllIssues = async () =>{
+  const submitAllIssues = async () => {
     try {
-        await axios.post(`${process.env.BackendAPI6}/api/update/worker/issues`, {
+      await axios.post(`${process.env.BackendAPI6}/api/update/worker/issues`, {
+        workerId,
+        issues,
+      });
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
+
+    console.log(issues);
+  };
+
+  const applyStatusChange = async newStatus => {
+    try {
+      await axios.post(
+        `${process.env.BackendAPI6}/api/aprove/tracking/update/status`,
+        {
           workerId,
-          issues,
-        });
-
-      } catch (error) {
-        console.error('Failed to update status:', error);
-      }
-    
-    console.log(issues)
-  }
-
-  const applyStatusChange = async (newStatus) => {
-    try {
-      await axios.post(`${process.env.BackendAPI6}/api/aprove/tracking/update/status`, {
-        workerId,
-        newStatus,
-      });
-      setDetails((prevDetails) => ({ ...prevDetails, verification_status: newStatus }));
+          newStatus,
+        },
+      );
+      setDetails(prevDetails => ({
+        ...prevDetails,
+        verification_status: newStatus,
+      }));
       setSelectedStatus('');
       setEditVisible(false);
     } catch (error) {
@@ -149,16 +165,17 @@ const IndividualWorkerPending = () => {
       try {
         const response = await axios.post(
           `${process.env.BackendAPI6}/api/individual/worker/pending/verification`,
-          { workerId }
+          {workerId},
         );
-        const { data } = response.data;
+        const {data} = response.data;
         if (data && data.length > 0) {
           const workerDetails = data[0];
-          const workerIssues = workerDetails.issues
-          setIssues(workerIssues)
+          const workerIssues = workerDetails.issues;
+          setIssues(workerIssues);
           if (
             !personalDetails ||
-            JSON.stringify(personalDetails) !== JSON.stringify(workerDetails.personaldetails)
+            JSON.stringify(personalDetails) !==
+              JSON.stringify(workerDetails.personaldetails)
           ) {
             setPersonalDetails(workerDetails.personaldetails);
             setAddress(workerDetails.address);
@@ -215,7 +232,9 @@ const IndividualWorkerPending = () => {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Approval Status</Text>
             <TouchableOpacity onPress={handleEditPress}>
-              <Text style={styles.editText}>{isEditVisible ? 'Cancel' : 'Edit'}</Text>
+              <Text style={styles.editText}>
+                {isEditVisible ? 'Cancel' : 'Edit'}
+              </Text>
             </TouchableOpacity>
           </View>
           <View style={styles.timelineContainer}>
@@ -231,7 +250,7 @@ const IndividualWorkerPending = () => {
                     <View
                       style={[
                         styles.lineSegment,
-                        { backgroundColor: getTimelineData[index + 1].iconColor },
+                        {backgroundColor: getTimelineData[index + 1].iconColor},
                       ]}
                     />
                   )}
@@ -241,14 +260,16 @@ const IndividualWorkerPending = () => {
                   <Text style={styles.timelineTime}>{item.time}</Text>
                 </View>
                 <View style={styles.statusEditContainer}>
-                {isEditVisible && item.isSelectable && (
-                  <RadioButton
-                    value={item.title}
-                    status={selectedStatus === item.title ? 'checked' : 'unchecked'}
-                    color="#ff4500"
-                    onPress={() => handleStatusChange(item.title)}
-                  />
-                )}
+                  {isEditVisible && item.isSelectable && (
+                    <RadioButton
+                      value={item.title}
+                      status={
+                        selectedStatus === item.title ? 'checked' : 'unchecked'
+                      }
+                      color="#ff4500"
+                      onPress={() => handleStatusChange(item.title)}
+                    />
+                  )}
                 </View>
               </View>
             ))}
@@ -276,18 +297,18 @@ const IndividualWorkerPending = () => {
           />
 
           <Text style={styles.label}>Gender</Text>
-          <View >
+          <View>
             <View style={styles.row}>
               <View
                 style={[
                   styles.genderRow,
                   personalDetails.gender === 'male' && styles.checked,
-                ]}
-              >
+                ]}>
                 <RadioButton
                   value="male"
-              
-                  status={personalDetails.gender === 'male' ? 'checked' : 'unchecked'}
+                  status={
+                    personalDetails.gender === 'male' ? 'checked' : 'unchecked'
+                  }
                   color="#FF5722"
                 />
                 <Text style={styles.radioText}>Male</Text>
@@ -297,11 +318,14 @@ const IndividualWorkerPending = () => {
                 style={[
                   styles.genderRow,
                   personalDetails.gender === 'female' && styles.checked,
-                ]}
-              >
+                ]}>
                 <RadioButton
                   value="female"
-                  status={personalDetails.gender === 'female' ? 'checked' : 'unchecked'}
+                  status={
+                    personalDetails.gender === 'female'
+                      ? 'checked'
+                      : 'unchecked'
+                  }
                   color="#FF5722"
                 />
                 <Text style={styles.radioText}>Female</Text>
@@ -410,20 +434,15 @@ const IndividualWorkerPending = () => {
             editable={false}
           />
 
-        <View
+          <View
             style={[
               styles.checkboxGrid,
               details.subservices.length > 0 && styles.checked,
-            ]}
-          >
-            {details.subservices.map((item) => (
+            ]}>
+            {details.subservices.map(item => (
               <View key={item.id} style={styles.checkboxContainer}>
                 <Checkbox
-                  status={
-                    details.subservices
-                      ? 'checked'
-                      : 'unchecked'
-                  }
+                  status={details.subservices ? 'checked' : 'unchecked'}
                   color="#FF5722"
                 />
                 <Text style={styles.label}>{item}</Text>
@@ -435,83 +454,83 @@ const IndividualWorkerPending = () => {
         {/* Proof Image Section */}
         <View style={styles.proofImageContainer}>
           <View style={styles.proofImageWrapper}>
-            <Image
-              source={{ uri: details.proof }}
-              style={styles.imagePreview}
-            />
+            <Image source={{uri: details.proof}} style={styles.imagePreview} />
             <Text style={styles.proofText}>Proof</Text>
           </View>
         </View>
 
         {/* Issues Raised Section */}
         <View style={styles.issueContainer}>
-            <Text style={styles.issueHeader}>Issues Raised</Text>
-            {/* Dropdown for selecting issue category */}
-            <Dropdown
-                style={styles.dropdown}
-                containerStyle={styles.dropdownContainer}
-                data={statuses.map((status) => ({ label: status, value: status }))}
-                placeholderStyle={styles.placeholderStyle}
-                selectedTextStyle={styles.selectedTextStyle}
-                iconStyle={styles.iconStyle}
-                labelField="label"
-                valueField="value"
-                placeholder="Select Issue Category"
-                value={currentIssueCategory}
-                onChange={(item) => setCurrentIssueCategory(item.value)}
-                renderRightIcon={() => (
-                <FontAwesome name="chevron-down" size={14} color="#9e9e9e" />
-                )}
-                renderItem={(item) => (
-                <View style={styles.dropdownItem}>
-                    <Text style={styles.dropdownItemText}>{item.label}</Text>
-                </View>
-                )}
-            />
+          <Text style={styles.issueHeader}>Issues Raised</Text>
+          {/* Dropdown for selecting issue category */}
+          <Dropdown
+            style={styles.dropdown}
+            containerStyle={styles.dropdownContainer}
+            data={statuses.map(status => ({label: status, value: status}))}
+            placeholderStyle={styles.placeholderStyle}
+            selectedTextStyle={styles.selectedTextStyle}
+            iconStyle={styles.iconStyle}
+            labelField="label"
+            valueField="value"
+            placeholder="Select Issue Category"
+            value={currentIssueCategory}
+            onChange={item => setCurrentIssueCategory(item.value)}
+            renderRightIcon={() => (
+              <FontAwesome name="chevron-down" size={14} color="#9e9e9e" />
+            )}
+            renderItem={item => (
+              <View style={styles.dropdownItem}>
+                <Text style={styles.dropdownItemText}>{item.label}</Text>
+              </View>
+            )}
+          />
 
-            {/* TextInput for issue description */}
-            <TextInput
-                style={styles.textArea}
-                value={currentIssueDescription}
-                onChangeText={setCurrentIssueDescription}
-                multiline
-                numberOfLines={5}
-                placeholder="Describe the issue..."
-                placeholderTextColor="#999"
-            />
+          {/* TextInput for issue description */}
+          <TextInput
+            style={styles.textArea}
+            value={currentIssueDescription}
+            onChangeText={setCurrentIssueDescription}
+            multiline
+            numberOfLines={5}
+            placeholder="Describe the issue..."
+            placeholderTextColor="#999"
+          />
 
-            {/* Add Issue Button */}
-            <View style={styles.addButtonContainer}>
-                <TouchableOpacity style={styles.addButton} onPress={addIssue}>
-                <Text style={styles.addButtonText}>Add +</Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* Display List of Added Issues */}
-            {issues.length > 0 && (
-                <View style={styles.addedIssuesContainer}>
-                {issues.map((issue) => (
-            <View key={issue.id} style={styles.addedIssueItem}>
-            <View style={styles.issueDetails}>
-                <Text style={styles.issueCategory}>{issue.category}</Text>
-                <Text style={styles.issueDescription}>{issue.description}</Text>
-            </View>
-            <TouchableOpacity onPress={() => removeIssue(issue.id)}>
-                <FontAwesome name="trash" size={20} color="#ff4500" />
+          {/* Add Issue Button */}
+          <View style={styles.addButtonContainer}>
+            <TouchableOpacity style={styles.addButton} onPress={addIssue}>
+              <Text style={styles.addButtonText}>Add +</Text>
             </TouchableOpacity>
+          </View>
+
+          {/* Display List of Added Issues */}
+          {issues.length > 0 && (
+            <View style={styles.addedIssuesContainer}>
+              {issues.map(issue => (
+                <View key={issue.id} style={styles.addedIssueItem}>
+                  <View style={styles.issueDetails}>
+                    <Text style={styles.issueCategory}>{issue.category}</Text>
+                    <Text style={styles.issueDescription}>
+                      {issue.description}
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={() => removeIssue(issue.id)}>
+                    <FontAwesome name="trash" size={20} color="#ff4500" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Submit All Issues Button */}
+          <View style={styles.submitButtonContainer}>
+            <TouchableOpacity
+              style={styles.submitButton}
+              onPress={submitAllIssues}>
+              <Text style={styles.submitText}>Submit Issues</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      ))}
-    </View>
-  )}
-
-  {/* Submit All Issues Button */}
-  <View style={styles.submitButtonContainer}>
-    <TouchableOpacity style={styles.submitButton} onPress={submitAllIssues}>
-      <Text style={styles.submitText}>Submit Issues</Text>
-    </TouchableOpacity>
-  </View>
-</View>
-
 
         <View style={styles.horizontalLine} />
 
@@ -519,7 +538,7 @@ const IndividualWorkerPending = () => {
         <View style={styles.swipeButton}>
           <SwipeButton
             title="Approve"
-            titleStyles={{ color: titleColor, fontSize: 16, fontWeight: '500' }}
+            titleStyles={{color: titleColor, fontSize: 16, fontWeight: '500'}}
             railBackgroundColor="#FF5722"
             railBorderColor="#FF5722"
             height={40}
@@ -532,13 +551,13 @@ const IndividualWorkerPending = () => {
             thumbIconBackgroundColor="#FFFFFF"
             thumbIconBorderColor="#FFFFFF"
             thumbIconWidth={40}
-            thumbIconStyles={{ height: 30, width: 30, borderRadius: 20 }}
+            thumbIconStyles={{height: 30, width: 30, borderRadius: 20}}
             onSwipeStart={() => setTitleColor('#B0B0B0')}
             onSwipeSuccess={() => {
               console.log('Approved');
               setTitleColor('#FFFFFF');
               setSwiped(true);
-              handleApproved()
+              handleApproved();
             }}
             onSwipeFail={() => setTitleColor('#FFFFFF')}
           />
@@ -564,7 +583,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
     shadowRadius: 4,
     backgroundColor: '#ffffff',
@@ -628,7 +647,6 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     marginHorizontal: 5,
-
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -660,7 +678,6 @@ const styles = StyleSheet.create({
   lineSegment: {
     width: 2,
     height: 40,
-
   },
   timelineTextContainer: {
     flex: 1,
@@ -675,14 +692,14 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#4a4a4a',
   },
-//   statusEditContainer:{
-//     flexDirection:'row',
-//     alignItems:'flex-start',
-//   },
+  //   statusEditContainer:{
+  //     flexDirection:'row',
+  //     alignItems:'flex-start',
+  //   },
   genderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems:'center',
+    alignItems: 'center',
     marginBottom: 15,
   },
   genderOption: {
@@ -846,7 +863,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     elevation: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.2,
     shadowRadius: 2,
   },
@@ -881,22 +898,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
   },
-  row:{
-    flexDirection:'row',
-    justifyContent:'space-between',
-    alignItems:'center'
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  submitButton:{
-    color:'#212121',
-    flexDirection:'column',
-    alignItems:'center',
-    justifyContent:'center',
-    backgroundColor:'#FFFFFF',
-    borderRadius:5,
-    borderWidth:2,
-    borderColor:'#4a4a4a',
-    width:150,
-    height:40
+  submitButton: {
+    color: '#212121',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: '#4a4a4a',
+    width: 150,
+    height: 40,
   },
   submitText: {
     color: '#212121',

@@ -1,18 +1,18 @@
-import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
-import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import {useNavigation, useRoute, CommonActions} from '@react-navigation/native';
+import React, {useEffect, useState, useMemo} from 'react';
+import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-import FontAwesome6 from 'react-native-vector-icons/FontAwesome6'
+import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
-import EncryptedStorage from "react-native-encrypted-storage";
+import EncryptedStorage from 'react-native-encrypted-storage';
 import SwipeButton from 'rn-swipe-button';
 import Feather from 'react-native-vector-icons/Feather';
-import Entypo from 'react-native-vector-icons/Entypo'
+import Entypo from 'react-native-vector-icons/Entypo';
 
 const TaskConfirmation = () => {
   const route = useRoute();
-  const { encodedId } = route.params;
+  const {encodedId} = route.params;
   const [decodedId, setDecodedId] = useState(null);
   const [details, setDetails] = useState({
     city: null,
@@ -22,10 +22,10 @@ const TaskConfirmation = () => {
     pincode: null,
     service: null,
   });
-  const [paymentDetails,setPaymentDetails] = useState({})
+  const [paymentDetails, setPaymentDetails] = useState({});
   const [titleColor, setTitleColor] = useState('#FFFFFF');
   const [swiped, setSwiped] = useState(false);
-  const [serviceArray, setServiceArray] = useState([])
+  const [serviceArray, setServiceArray] = useState([]);
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -35,27 +35,39 @@ const TaskConfirmation = () => {
     }
   }, [encodedId]);
 
-  const ThumbIcon = useMemo(() => () => (
-    <View style={styles.thumbContainer}>
-      <Text>
-        {swiped ? (
-          <Entypo name="check" size={20} color="#ff4500" style={styles.checkIcon} />
-        ) : (
-          <FontAwesome6 name="arrow-right-long" size={15} color="#ff4500" />
-        )}
-      </Text>
-    </View>
-  ), [swiped]);
+  const ThumbIcon = useMemo(
+    () => () =>
+      (
+        <View style={styles.thumbContainer}>
+          <Text>
+            {swiped ? (
+              <Entypo
+                name="check"
+                size={20}
+                color="#ff4500"
+                style={styles.checkIcon}
+              />
+            ) : (
+              <FontAwesome6 name="arrow-right-long" size={15} color="#ff4500" />
+            )}
+          </Text>
+        </View>
+      ),
+    [swiped],
+  );
 
   useEffect(() => {
     if (decodedId) {
       const fetchPaymentDetails = async () => {
         try {
-          const response = await axios.post(`${process.env.BackendAPI6}/api/worker/details`, {
-            notification_id: decodedId,
-          });
-          console.log(response.data)
-          const {workDetails,paymentDetails} = response.data
+          const response = await axios.post(
+            `${process.env.BackendAPI6}/api/worker/details`,
+            {
+              notification_id: decodedId,
+            },
+          );
+          console.log(response.data);
+          const {workDetails, paymentDetails} = response.data;
           setDetails({
             city: workDetails.city,
             area: workDetails.area,
@@ -64,8 +76,8 @@ const TaskConfirmation = () => {
             alternatePhoneNumber: workDetails.alternate_phone_number,
             service: workDetails.service_booked,
           });
-          setPaymentDetails(paymentDetails)
-          setServiceArray(workDetails.service_booked)
+          setPaymentDetails(paymentDetails);
+          setServiceArray(workDetails.service_booked);
         } catch (error) {
           console.error('Error fetching payment details:', error);
         }
@@ -77,32 +89,43 @@ const TaskConfirmation = () => {
   const handleComplete = async () => {
     const encoded = btoa(decodedId);
     try {
-      const response = await axios.post(`${process.env.BackendAPI6}/api/worker/confirm/completed`, {
-        notification_id: decodedId, 
-        encodedId: encoded,
-      });
+      const response = await axios.post(
+        `${process.env.BackendAPI6}/api/worker/confirm/completed`,
+        {
+          notification_id: decodedId,
+          encodedId: encoded,
+        },
+      );
 
       if (response.status === 200) {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
-        
-        await axios.post(`${process.env.BackendAPI6}/api/worker/action`, {
-          encodedId: encoded,
-          screen: 'PaymentScreen',
-        }, {
-          headers: {
-            Authorization: `Bearer ${pcs_token}`,
-          },
-        });
 
-        navigation.dispatch(CommonActions.reset({
-          index: 0,
-          routes: [{ name: 'PaymentScreen', params: { encodedId: encoded } }],
-        }));
+        await axios.post(
+          `${process.env.BackendAPI6}/api/worker/action`,
+          {
+            encodedId: encoded,
+            screen: 'PaymentScreen',
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${pcs_token}`,
+            },
+          },
+        );
+
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{name: 'PaymentScreen', params: {encodedId: encoded}}],
+          }),
+        );
       } else {
-        navigation.dispatch(CommonActions.reset({
-          index: 0,
-          routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-        }));
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
+        );
       }
     } catch (error) {
       console.error('Error completing task:', error);
@@ -110,10 +133,12 @@ const TaskConfirmation = () => {
   };
 
   const handlePress = () => {
-    navigation.dispatch(CommonActions.reset({
-      index: 0,
-      routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-    }));
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+      }),
+    );
   };
 
   return (
@@ -125,10 +150,10 @@ const TaskConfirmation = () => {
           <MaterialIcons name="filter-list" size={24} color="#000" />
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.cardContainer}>
         <View style={styles.iconContainer}>
-          <FontAwesome5 name='hammer' size={20} color="#FFFFFF" />
+          <FontAwesome5 name="hammer" size={20} color="#FFFFFF" />
         </View>
         <View>
           <Text style={styles.completionText}>Work Completion request</Text>
@@ -138,24 +163,27 @@ const TaskConfirmation = () => {
 
       <View style={styles.successContainer}>
         <View style={styles.successIcon}>
-          <FontAwesome6 name="check" size={25} color="#FFFFFF" style={styles.checkIcon} />
+          <FontAwesome6
+            name="check"
+            size={25}
+            color="#FFFFFF"
+            style={styles.checkIcon}
+          />
         </View>
         <Text style={styles.completeText}>Completed</Text>
       </View>
 
-      <View style={styles.detailsContainer}> 
+      <View style={styles.detailsContainer}>
         <View style={styles.detailsCard}>
           <View>
-            <Feather name='user' size={20} color='#4a4a4a' />
+            <Feather name="user" size={20} color="#4a4a4a" />
           </View>
           <View>
             <Text style={styles.completionText}>Yaswanth</Text>
           </View>
         </View>
         <View>
-          <Text style={styles.location}>
-           {details.area}
-          </Text>
+          <Text style={styles.location}>{details.area}</Text>
         </View>
       </View>
 
@@ -163,54 +191,66 @@ const TaskConfirmation = () => {
         <Text style={styles.detailsText}>Payment Details</Text>
       </View>
       <View style={styles.sectionContainer}>
-          <View style={styles.PaymentItemContainer}>
-            {serviceArray.map((service, index) => (
-              <View key={index} style={styles.paymentRow}>
-                <Text style={styles.paymentLabel}>{service.serviceName}</Text>
-                <Text style={styles.paymentValue}>₹{service.cost}.00</Text>
-              </View>
-            ))}
-            <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>SGST (5%)</Text>
-              <Text style={styles.paymentValue}>₹{paymentDetails.cgstAmount}.00</Text>
+        <View style={styles.PaymentItemContainer}>
+          {serviceArray.map((service, index) => (
+            <View key={index} style={styles.paymentRow}>
+              <Text style={styles.paymentLabel}>{service.serviceName}</Text>
+              <Text style={styles.paymentValue}>₹{service.cost}.00</Text>
             </View>
-            <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>CGST (5%)</Text>
-              <Text style={styles.paymentValue}>₹{paymentDetails.gstAmount}.00</Text>
-            </View>
-            <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>Cashback (5%)</Text>
-              <Text style={styles.paymentValue}>₹{paymentDetails.discountAmount}.00</Text>
-            </View>
-            <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>Pay Via Scan</Text>
-              <Text style={styles.paymentValue}>Grand Total ₹{paymentDetails.fetchedFinalTotalAmount}.00</Text>
-            </View>
+          ))}
+          <View style={styles.paymentRow}>
+            <Text style={styles.paymentLabel}>SGST (5%)</Text>
+            <Text style={styles.paymentValue}>
+              ₹{paymentDetails.cgstAmount}.00
+            </Text>
+          </View>
+          <View style={styles.paymentRow}>
+            <Text style={styles.paymentLabel}>CGST (5%)</Text>
+            <Text style={styles.paymentValue}>
+              ₹{paymentDetails.gstAmount}.00
+            </Text>
+          </View>
+          <View style={styles.paymentRow}>
+            <Text style={styles.paymentLabel}>Cashback (5%)</Text>
+            <Text style={styles.paymentValue}>
+              ₹{paymentDetails.discountAmount}.00
+            </Text>
+          </View>
+          <View style={styles.paymentRow}>
+            <Text style={styles.paymentLabel}>Pay Via Scan</Text>
+            <Text style={styles.paymentValue}>
+              Grand Total ₹{paymentDetails.fetchedFinalTotalAmount}.00
+            </Text>
           </View>
         </View>
+      </View>
 
-        <View style={styles.swipeButton}>
-          <SwipeButton
-            title="Completed"
-            titleStyles={{ color: titleColor, fontSize: 16, fontWeight: '500' }}
-            railBackgroundColor="#FF5722"
-            railBorderColor="#FF5722"
-            height={40}
-            railStyles={{ borderRadius: 20, backgroundColor: '#FF572200', borderColor: '#FF572200' }}
-            thumbIconComponent={ThumbIcon}
-            thumbIconBackgroundColor="#FFFFFF"
-            thumbIconBorderColor="#FFFFFF"
-            thumbIconWidth={40}
-            thumbIconStyles={{ height: 30, width: 30, borderRadius: 20 }}
-            onSwipeStart={() => setTitleColor('#B0B0B0')}
-            onSwipeSuccess={() => {
-              handleComplete();
-              setTitleColor('#FFFFFF');
-              setSwiped(true);
-            }}
-            onSwipeFail={() => setTitleColor('#FFFFFF')}
-          />
-        </View>
+      <View style={styles.swipeButton}>
+        <SwipeButton
+          title="Completed"
+          titleStyles={{color: titleColor, fontSize: 16, fontWeight: '500'}}
+          railBackgroundColor="#FF5722"
+          railBorderColor="#FF5722"
+          height={40}
+          railStyles={{
+            borderRadius: 20,
+            backgroundColor: '#FF572200',
+            borderColor: '#FF572200',
+          }}
+          thumbIconComponent={ThumbIcon}
+          thumbIconBackgroundColor="#FFFFFF"
+          thumbIconBorderColor="#FFFFFF"
+          thumbIconWidth={40}
+          thumbIconStyles={{height: 30, width: 30, borderRadius: 20}}
+          onSwipeStart={() => setTitleColor('#B0B0B0')}
+          onSwipeSuccess={() => {
+            handleComplete();
+            setTitleColor('#FFFFFF');
+            setSwiped(true);
+          }}
+          onSwipeFail={() => setTitleColor('#FFFFFF')}
+        />
+      </View>
 
       {/* <View style={styles.confirmationContainer}>
         <View style={styles.taskHeader}>
@@ -254,22 +294,22 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
 
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
     shadowRadius: 4,
     backgroundColor: '#ffffff',
     zIndex: 1, // Ensure header is above other components
   },
-  completionText:{
-    color:'#212121',
-    fontWeight:'bold'
+  completionText: {
+    color: '#212121',
+    fontWeight: 'bold',
   },
-  timeText:{
-    color:'#9e9e9e'
+  timeText: {
+    color: '#9e9e9e',
   },
-  swipeButton:{
-    marginHorizontal:20,
-    marginBottom:10
+  swipeButton: {
+    marginHorizontal: 20,
+    marginBottom: 10,
   },
   headerTitle: {
     fontSize: 18,
@@ -280,43 +320,43 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
     padding: 10,
     width: '90%',
   },
-  detailsContainer:{
+  detailsContainer: {
     flexDirection: 'column',
-    gap:10,
+    gap: 10,
     paddingHorizontal: 16,
     paddingVertical: 16,
     elevation: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
     shadowRadius: 4,
     backgroundColor: '#ffffff',
-    zIndex: 1, 
-    margin:20,
-    padding:10,
-    borderRadius:10
+    zIndex: 1,
+    margin: 20,
+    padding: 10,
+    borderRadius: 10,
   },
-  detailsCard:{
-    flexDirection:'row',
-    gap:10
+  detailsCard: {
+    flexDirection: 'row',
+    gap: 10,
   },
-  detailsText:{
-    color:'#212121',
-    fontSize:15,
-    fontWeight:'bold'
+  detailsText: {
+    color: '#212121',
+    fontSize: 15,
+    fontWeight: 'bold',
   },
-  paymentDetails:{
-    padding:10,
-    paddingHorizontal:30,
-    backgroundColor:'#f5f5f5',
-    marginBottom:10
+  paymentDetails: {
+    padding: 10,
+    paddingHorizontal: 30,
+    backgroundColor: '#f5f5f5',
+    marginBottom: 10,
   },
   paymentLabel: {
     fontSize: 14,
@@ -325,30 +365,30 @@ const styles = StyleSheet.create({
   paymentValue: {
     fontSize: 14,
     color: '#212121',
-    fontWeight:'bold'
+    fontWeight: 'bold',
   },
   paymentRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 4,
   },
-  PaymentItemContainer:{
-    paddingLeft:16,
-    flexDirection:'column',
-    gap:5
+  PaymentItemContainer: {
+    paddingLeft: 16,
+    flexDirection: 'column',
+    gap: 5,
   },
   sectionContainer: {
     marginBottom: 16,
-    paddingLeft:16,
-    paddingRight:16,
-    width:'95%'
+    paddingLeft: 16,
+    paddingRight: 16,
+    width: '95%',
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#212121',
     marginBottom: 8,
-    paddingBottom:15
+    paddingBottom: 15,
   },
   sectionBookedTitle: {
     fontSize: 16,
@@ -356,24 +396,24 @@ const styles = StyleSheet.create({
     color: '#212121',
     marginBottom: 8,
   },
-  location:{
-    color:'#9e9e9e'
+  location: {
+    color: '#9e9e9e',
   },
-  successContainer:{
-    flexDirection:'column',
-    alignItems:'center'
+  successContainer: {
+    flexDirection: 'column',
+    alignItems: 'center',
   },
-  successIcon:{
-    width:60,
-    height:60,
-    backgroundColor:'#4CAF50',
-    borderRadius:30,
-    alignItems:'center',
-    justifyContent:'center'
+  successIcon: {
+    width: 60,
+    height: 60,
+    backgroundColor: '#4CAF50',
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  completeText:{
-    color:'#212121',
-    fontWeight:'bold'
+  completeText: {
+    color: '#212121',
+    fontWeight: 'bold',
   },
   taskHeader: {
     marginBottom: 30,
@@ -387,14 +427,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
-  iconContainer:{
-    height:50,
-    width:50,
-    backgroundColor:'#ff5722',
-    borderRadius:25,
-    flexDirection:'column',
-    justifyContent:'center',
-    alignItems:'center'
+  iconContainer: {
+    height: 50,
+    width: 50,
+    backgroundColor: '#ff5722',
+    borderRadius: 25,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   taskText: {
     fontSize: 16,
@@ -418,22 +458,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
   },
-  cardContainer:{
+  cardContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap:10,
+    gap: 10,
     paddingHorizontal: 16,
     paddingVertical: 16,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
     shadowRadius: 4,
     backgroundColor: '#ffffff',
-    zIndex: 1, 
-    margin:20,
-    padding:10,
-    borderRadius:10
+    zIndex: 1,
+    margin: 20,
+    padding: 10,
+    borderRadius: 10,
   },
   completedButton: {
     backgroundColor: '#000',

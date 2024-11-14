@@ -1,20 +1,42 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { StyleSheet, View, Dimensions, PermissionsAndroid, Platform, TextInput, FlatList, Text, TouchableOpacity, Modal, Button, Pressable, Alert, BackHandler } from 'react-native';
+import React, {useEffect, useRef, useState, useCallback} from 'react';
+import {
+  StyleSheet,
+  View,
+  Dimensions,
+  PermissionsAndroid,
+  Platform,
+  TextInput,
+  FlatList,
+  Text,
+  TouchableOpacity,
+  Modal,
+  Button,
+  Pressable,
+  Alert,
+  BackHandler,
+} from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import Geolocation from 'react-native-geolocation-service';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { CommonActions, useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {
+  CommonActions,
+  useNavigation,
+  useFocusEffect,
+  useRoute,
+} from '@react-navigation/native';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import EvilIcons from 'react-native-vector-icons/AntDesign';
 import Octicons from 'react-native-vector-icons/Octicons';
-import { Places,Routing } from 'ola-maps'; // Import Ola Maps Places module
+import {Places, Routing} from 'ola-maps'; // Import Ola Maps Places module
 
 // Set Mapbox access token
-Mapbox.setAccessToken('pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw');
+Mapbox.setAccessToken(
+  'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw',
+);
 
-const placesClient = new Places("iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT");
+const placesClient = new Places('iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT');
 const UserLocation = () => {
   const navigation = useNavigation();
   const [location, setLocation] = useState(null);
@@ -27,15 +49,21 @@ const UserLocation = () => {
   const [alternateName, setAlternateName] = useState('');
   const [service, setService] = useState([]); // Changed from 'Sample Service' to an array
   const route = useRoute();
-  const { serviceName, suggestion } = route.params;
+  const {serviceName, suggestion} = route.params;
   const mapRef = useRef(null);
   const [cityError, setCityError] = useState('');
   const [areaError, setAreaError] = useState('');
   const [pincodeError, setPincodeError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [nameError, setNameError] = useState('');
-  const [startCoordinates,setStartCoordinates] =useState( { latitude: 16.69834, longitude: 81.05022 });
-  const [endCoordinates,setEndCoordinates] = useState({ latitude: 16.50695, longitude: 80.61539 });
+  const [startCoordinates, setStartCoordinates] = useState({
+    latitude: 16.69834,
+    longitude: 81.05022,
+  });
+  const [endCoordinates, setEndCoordinates] = useState({
+    latitude: 16.50695,
+    longitude: 80.61539,
+  });
 
   useEffect(() => {
     if (serviceName) {
@@ -46,16 +74,15 @@ const UserLocation = () => {
     }
   }, [route.params]);
 
-//   useEffect(()=>{
-//       // Example usage:
+  //   useEffect(()=>{
+  //       // Example usage:
 
-
-//       calculateDistanceBetweenCoordinates(startCoordinates, endCoordinates).then(distance => {
-//     if (distance !== null) {
-//         console.log(`Calculated Distance: ${distanceInKilometers.toFixed(2)} km`);
-//     }
-// })
-//   },[])
+  //       calculateDistanceBetweenCoordinates(startCoordinates, endCoordinates).then(distance => {
+  //     if (distance !== null) {
+  //         console.log(`Calculated Distance: ${distanceInKilometers.toFixed(2)} km`);
+  //     }
+  // })
+  //   },[])
 
   useEffect(() => {
     const requestLocationPermission = async () => {
@@ -77,16 +104,18 @@ const UserLocation = () => {
           }
         }
         Geolocation.getCurrentPosition(
-          (position) => {
-            const { latitude, longitude } = suggestion ? suggestion : position.coords;
+          position => {
+            const {latitude, longitude} = suggestion
+              ? suggestion
+              : position.coords;
             fetchAndSetPlaceDetails(latitude, longitude);
             setLocation([longitude, latitude]);
             sendDataToServer(longitude, latitude);
           },
-          (error) => {
+          error => {
             console.error('Geolocation error:', error);
           },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
+          {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
         );
       } catch (err) {
         console.warn(err);
@@ -104,111 +133,108 @@ const UserLocation = () => {
       };
 
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-    }, [])
+      return () =>
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, []),
   );
 
   const fetchAndSetPlaceDetails = useCallback(async (latitude, longitude) => {
     try {
-        // Use Ola Maps Places reverse geocode
-        const response = await placesClient.reverse_geocode(latitude, longitude);
-        const place = response.body.results[0];
-        // console.log("details", JSON.stringify(response.body, null, 2)); // For detailed inspection
-        
-        if (response && response.body && response.body.results.length > 0) {
-            const addressComponents = response.body.results[0].address_components;
+      // Use Ola Maps Places reverse geocode
+      const response = await placesClient.reverse_geocode(latitude, longitude);
+      const place = response.body.results[0];
+      // console.log("details", JSON.stringify(response.body, null, 2)); // For detailed inspection
 
-            // Extract city, prioritizing 'sublocality' if it seems to match the desired result
-            const city = addressComponents.find(component => 
-                component.types.includes("sublocality") || // Prioritize sublocality first
-                component.types.includes("locality") ||
-                component.types.includes("administrative_area_level_3") ||
-                component.types.includes("administrative_area_level_2")
-            )?.long_name || '';
+      if (response && response.body && response.body.results.length > 0) {
+        const addressComponents = response.body.results[0].address_components;
 
-            // Extract area information, using a broader range of potential sources
-            const area = place.formatted_address || '';
+        // Extract city, prioritizing 'sublocality' if it seems to match the desired result
+        const city =
+          addressComponents.find(
+            component =>
+              component.types.includes('sublocality') || // Prioritize sublocality first
+              component.types.includes('locality') ||
+              component.types.includes('administrative_area_level_3') ||
+              component.types.includes('administrative_area_level_2'),
+          )?.long_name || '';
 
-            // Extract pincode directly from 'postal_code'
-            const pincode = addressComponents.find(component => 
-                component.types.includes("postal_code")
-            )?.short_name || '';
+        // Extract area information, using a broader range of potential sources
+        const area = place.formatted_address || '';
 
-            setCity(city);
-            setArea(area);
-            setPincode(pincode);
-        } else {
-            console.warn("No address details found.");
-        }
+        // Extract pincode directly from 'postal_code'
+        const pincode =
+          addressComponents.find(component =>
+            component.types.includes('postal_code'),
+          )?.short_name || '';
+
+        setCity(city);
+        setArea(area);
+        setPincode(pincode);
+      } else {
+        console.warn('No address details found.');
+      }
     } catch (error) {
-        console.error('Failed to fetch place details using Ola Maps:', error);
+      console.error('Failed to fetch place details using Ola Maps:', error);
     }
-}, []);
-
+  }, []);
 
   // Function to calculate the distance between two coordinates using Ola Maps Routes
-  
-  const calculateDistanceBetweenCoordinates = async (startCoordinates, endCoordinates) => {
+
+  const calculateDistanceBetweenCoordinates = async (
+    startCoordinates,
+    endCoordinates,
+  ) => {
     try {
-        const apiKey = "iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT"; // Replace with your API key
+      const apiKey = 'iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT'; // Replace with your API key
 
-        // Format the coordinates as required by the Distance Matrix API
-        const origins = `${startCoordinates.latitude},${startCoordinates.longitude}`;
-        const destinations = `${endCoordinates.latitude},${endCoordinates.longitude}`;
+      // Format the coordinates as required by the Distance Matrix API
+      const origins = `${startCoordinates.latitude},${startCoordinates.longitude}`;
+      const destinations = `${endCoordinates.latitude},${endCoordinates.longitude}`;
 
-        // Construct the API URL
-        const url = `https://api.olamaps.io/routing/v1/distanceMatrix?origins=${origins}&destinations=${destinations}&api_key=${apiKey}`;
+      // Construct the API URL
+      const url = `https://api.olamaps.io/routing/v1/distanceMatrix?origins=${origins}&destinations=${destinations}&api_key=${apiKey}`;
 
-        // Make the API request
-        const response = await axios.get(url, {
-            headers: {
-                'X-Request-Id': 'your-request-id', // Optional, but useful for tracking requests
-            },
-        });
+      // Make the API request
+      const response = await axios.get(url, {
+        headers: {
+          'X-Request-Id': 'your-request-id', // Optional, but useful for tracking requests
+        },
+      });
 
-        console.log("distanceResponse", response.data);
+      console.log('distanceResponse', response.data);
 
-        // Check if the response contains valid data
-        if (response && response.data && response.data.rows.length > 0) {
-            const elements = response.data.rows[0].elements;
-            
-            if (elements && elements.length > 0) {
-                const distanceInMeters = elements[0].distance;
-                
-                if (distanceInMeters) {
-                    const distanceInKilometers = (distanceInMeters / 1000).toFixed(2);
-                    console.log(`Distance: ${distanceInKilometers} km`);
-                    return distanceInKilometers;
-                } else {
-                    console.log("Distance data is not available.");
-                    return null;
-                }
-            } else {
-                console.log("No elements found in the distance response.");
-                return null;
-            }
-        } else {
-            console.log("No distance found between the specified locations.");
+      // Check if the response contains valid data
+      if (response && response.data && response.data.rows.length > 0) {
+        const elements = response.data.rows[0].elements;
+
+        if (elements && elements.length > 0) {
+          const distanceInMeters = elements[0].distance;
+
+          if (distanceInMeters) {
+            const distanceInKilometers = (distanceInMeters / 1000).toFixed(2);
+            console.log(`Distance: ${distanceInKilometers} km`);
+            return distanceInKilometers;
+          } else {
+            console.log('Distance data is not available.');
             return null;
-        }
-    } catch (error) {
-        if (error.response) {
-            // Log details of the error response
-            console.error("Error calculating distance:", error.response.data);
+          }
         } else {
-            console.error("Error calculating distance:", error.message);
+          console.log('No elements found in the distance response.');
+          return null;
         }
+      } else {
+        console.log('No distance found between the specified locations.');
+        return null;
+      }
+    } catch (error) {
+      if (error.response) {
+        // Log details of the error response
+        console.error('Error calculating distance:', error.response.data);
+      } else {
+        console.error('Error calculating distance:', error.message);
+      }
     }
-};
-
-
-
-
-  
-
-
-
-
+  };
 
   const sendDataToServer = useCallback(async (longitude, latitude) => {
     try {
@@ -219,7 +245,7 @@ const UserLocation = () => {
       }
       const response = await axios.post(
         `${process.env.BACKENDAIPE}/api/user/location`,
-        { longitude: String(longitude), latitude: String(latitude) },
+        {longitude: String(longitude), latitude: String(latitude)},
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -237,16 +263,16 @@ const UserLocation = () => {
 
   const handleCrosshairsPress = () => {
     Geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
+      position => {
+        const {latitude, longitude} = position.coords;
         setLocation([longitude, latitude]);
         sendDataToServer(longitude, latitude);
         fetchAndSetPlaceDetails(latitude, longitude);
       },
-      (error) => {
+      error => {
         console.error('Geolocation error:', error);
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
+      {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
     );
   };
 
@@ -258,11 +284,14 @@ const UserLocation = () => {
         console.error('No token found');
         return;
       }
-      const response = await axios.get(`${process.env.BACKENDAIPE}/api/get/user`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await axios.get(
+        `${process.env.BACKENDAIPE}/api/get/user`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
       const data = response.data;
       setAlternatePhoneNumber(data.phone_number || '');
       setAlternateName(data.name);
@@ -318,12 +347,12 @@ const UserLocation = () => {
               },
             },
           ],
-        })
+        }),
       );
     }
   };
 
-  const handlePressLocation = (e) => {
+  const handlePressLocation = e => {
     const coordinates = e.geometry.coordinates;
     setLocation(coordinates);
     const [lon, lat] = coordinates;
@@ -348,7 +377,7 @@ const UserLocation = () => {
           style={styles.searchBox}
           placeholder="Search location ..."
           placeholderTextColor="#1D2951"
-          onFocus={() => navigation.push('LocationSearch', { serviceName })}
+          onFocus={() => navigation.push('LocationSearch', {serviceName})}
           value={suggestion ? suggestion.title : ''}
         />
         <View style={styles.iconContainer}>
@@ -362,14 +391,13 @@ const UserLocation = () => {
           </TouchableOpacity>
         </View>
       </View>
-      <View style={[styles.container, { height: screenHeight * 0.75 }]}>
+      <View style={[styles.container, {height: screenHeight * 0.75}]}>
         <Mapbox.MapView
           ref={mapRef}
           style={styles.map}
           zoomEnabled={true}
           styleURL="mapbox://styles/mapbox/streets-v11"
-          onPress={handlePressLocation}
-        >
+          onPress={handlePressLocation}>
           {location && (
             <>
               <Mapbox.Camera zoomLevel={18} centerCoordinate={location} />
@@ -382,12 +410,12 @@ const UserLocation = () => {
           )}
         </Mapbox.MapView>
       </View>
-      <View style={[styles.bookingCard, { height: screenHeight * 0.3 }]}>
+      <View style={[styles.bookingCard, {height: screenHeight * 0.3}]}>
         <View>
           <View style={styles.flatContainer}>
             <FlatList
               data={service}
-              renderItem={({ item }) => (
+              renderItem={({item}) => (
                 <View style={styles.serviceItem}>
                   <View>
                     <Text style={styles.serviceName}>{item.serviceName}</Text>
@@ -404,7 +432,9 @@ const UserLocation = () => {
             />
           </View>
           <View style={styles.horizantalLine} />
-          <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmLocation}>
+          <TouchableOpacity
+            style={styles.confirmButton}
+            onPress={handleConfirmLocation}>
             <Text style={styles.confirmButtonText}>Confirm Location</Text>
           </TouchableOpacity>
         </View>
@@ -414,11 +444,12 @@ const UserLocation = () => {
           transparent={true}
           visible={showMessageBox}
           animationType="slide"
-          onRequestClose={() => setShowMessageBox(false)}
-        >
+          onRequestClose={() => setShowMessageBox(false)}>
           <View style={styles.messageBoxBackdrop}>
             <View style={styles.messageBox}>
-              <Text style={styles.completeAddressHead}>Enter complete address!</Text>
+              <Text style={styles.completeAddressHead}>
+                Enter complete address!
+              </Text>
               <Text style={styles.label}>City</Text>
               <View style={styles.inputView}>
                 <TextInput
@@ -427,7 +458,9 @@ const UserLocation = () => {
                   value={city}
                   onChangeText={setCity}
                 />
-                {cityError ? <Text style={styles.errorText}>{cityError}</Text> : null}
+                {cityError ? (
+                  <Text style={styles.errorText}>{cityError}</Text>
+                ) : null}
               </View>
               <Text style={styles.label}>Area</Text>
               <View style={styles.inputView}>
@@ -437,7 +470,9 @@ const UserLocation = () => {
                   value={area}
                   onChangeText={setArea}
                 />
-                {areaError ? <Text style={styles.errorText}>{areaError}</Text> : null}
+                {areaError ? (
+                  <Text style={styles.errorText}>{areaError}</Text>
+                ) : null}
               </View>
               <Text style={styles.label}>Pincode</Text>
               <View style={styles.inputView}>
@@ -447,7 +482,9 @@ const UserLocation = () => {
                   value={pincode}
                   onChangeText={setPincode}
                 />
-                {pincodeError ? <Text style={styles.errorText}>{pincodeError}</Text> : null}
+                {pincodeError ? (
+                  <Text style={styles.errorText}>{pincodeError}</Text>
+                ) : null}
               </View>
               <Text style={styles.label}>Phone number</Text>
               <View style={styles.inputView}>
@@ -458,7 +495,9 @@ const UserLocation = () => {
                   value={alternatePhoneNumber}
                   onChangeText={setAlternatePhoneNumber}
                 />
-                {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
+                {phoneError ? (
+                  <Text style={styles.errorText}>{phoneError}</Text>
+                ) : null}
               </View>
               <Text style={styles.label}>Name</Text>
               <View style={styles.inputView}>
@@ -468,12 +507,18 @@ const UserLocation = () => {
                   value={alternateName}
                   onChangeText={setAlternateName}
                 />
-                {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
+                {nameError ? (
+                  <Text style={styles.errorText}>{nameError}</Text>
+                ) : null}
               </View>
-              <TouchableOpacity style={styles.bookButton} onPress={handleBookCommander}>
+              <TouchableOpacity
+                style={styles.bookButton}
+                onPress={handleBookCommander}>
                 <Text style={styles.bookButtonText}>Book Commander</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.closeButton} onPress={() => setShowMessageBox(false)}>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowMessageBox(false)}>
                 <Text style={styles.closeButtonText}>×</Text>
               </TouchableOpacity>
             </View>
@@ -504,10 +549,10 @@ const styles = StyleSheet.create({
   serviceName: {
     fontSize: 15,
     color: '#212121',
-    width:80,
+    width: 80,
     fontWeight: '500',
-    flex: 1,  // Ensures the service name takes remaining space
-    textAlign: 'left',  // Aligns the service name to the left
+    flex: 1, // Ensures the service name takes remaining space
+    textAlign: 'left', // Aligns the service name to the left
   },
   quantityContainer: {
     backgroundColor: '#EFDCCB',
@@ -518,7 +563,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     width: 70,
     alignItems: 'center',
-    marginHorizontal: 10,  // Add some margin between the items
+    marginHorizontal: 10, // Add some margin between the items
   },
   quantity: {
     fontSize: 14,
@@ -588,7 +633,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 85,
     elevation: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.8,
     shadowRadius: 2,
     color: '#1D2951',

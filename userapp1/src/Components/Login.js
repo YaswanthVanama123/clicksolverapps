@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {View, TextInput, Button, StyleSheet, Alert} from 'react-native';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import {useNavigation, CommonActions} from '@react-navigation/native';
 
 const Login = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -14,13 +14,17 @@ const Login = () => {
       try {
         const csToken = await EncryptedStorage.getItem('cs_token');
         if (csToken) {
-          const response = await axios.post(`${process.env.BACKEND}/api/validate-token`, {}, {
-            headers: {
-              'Authorization': `Bearer ${csToken}`,
+          const response = await axios.post(
+            `${process.env.BACKEND}/api/validate-token`,
+            {},
+            {
+              headers: {
+                Authorization: `Bearer ${csToken}`,
+              },
             },
-          });
+          );
           if (response.data.isValid) {
-            navigation.replace('Tabs', { screen: 'Home' });
+            navigation.replace('Tabs', {screen: 'Home'});
           }
         }
       } catch (error) {
@@ -32,7 +36,9 @@ const Login = () => {
 
   const loginBackend = async () => {
     try {
-      const response = await axios.post(`${process.env.BACKEND}/api/login`, { phone_number: phoneNumber });
+      const response = await axios.post(`${process.env.BACKEND}/api/login`, {
+        phone_number: phoneNumber,
+      });
       return response.data.token;
     } catch (error) {
       throw new Error('Error logging in: ' + error.message);
@@ -53,8 +59,8 @@ const Login = () => {
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-        })
+          routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+        }),
       );
     } catch (error) {
       console.error('Login error:', error);

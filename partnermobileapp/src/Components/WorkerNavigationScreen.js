@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, {useEffect, useState, useCallback, useRef} from 'react';
 import {
   View,
   StyleSheet,
@@ -13,12 +13,17 @@ import {
   TouchableOpacity,
   Easing,
   Dimensions,
-  Modal
+  Modal,
 } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
-import { useRoute, useNavigation, CommonActions, useFocusEffect } from '@react-navigation/native';
+import {
+  useRoute,
+  useNavigation,
+  CommonActions,
+  useFocusEffect,
+} from '@react-navigation/native';
 import Geolocation from '@react-native-community/geolocation';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
@@ -28,10 +33,11 @@ import SwipeButton from 'rn-swipe-button';
 import Entypo from 'react-native-vector-icons/Entypo';
 
 // Set your Mapbox access token here
-Mapbox.setAccessToken('pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw');
+Mapbox.setAccessToken(
+  'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw',
+);
 const startMarker = require('./assets/start-marker.png');
 const endMarker = require('./assets/end-marker.png');
-
 
 const WorkerNavigationScreen = () => {
   const route = useRoute();
@@ -47,10 +53,11 @@ const WorkerNavigationScreen = () => {
   const [titleColor, setTitleColor] = useState('#FFFFFF');
   const [swiped, setSwiped] = useState(false);
   const [reasonModalVisible, setReasonModalVisible] = useState(false);
-  const [confirmationModalVisible, setConfirmationModalVisible] = useState(false);
+  const [confirmationModalVisible, setConfirmationModalVisible] =
+    useState(false);
 
   useEffect(() => {
-    const { encodedId } = route.params;
+    const {encodedId} = route.params;
     if (encodedId) {
       try {
         setDecodedId(atob(encodedId));
@@ -72,7 +79,7 @@ const WorkerNavigationScreen = () => {
               buttonNeutral: 'Ask Me Later',
               buttonNegative: 'Cancel',
               buttonPositive: 'OK',
-            }
+            },
           );
           if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
             console.log('Location permission denied');
@@ -96,9 +103,12 @@ const WorkerNavigationScreen = () => {
 
   const checkCancellationStatus = async () => {
     try {
-      const response = await axios.get(`${process.env.BackendAPI6}/api/worker/cancelled/status`, {
-        params: { notification_id: decodedId },
-      });
+      const response = await axios.get(
+        `${process.env.BackendAPI6}/api/worker/cancelled/status`,
+        {
+          params: {notification_id: decodedId},
+        },
+      );
 
       if (response.data.notificationStatus === 'usercanceled') {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
@@ -109,15 +119,15 @@ const WorkerNavigationScreen = () => {
             screen: '',
           },
           {
-            headers: { Authorization: `Bearer ${pcs_token}` },
-          }
+            headers: {Authorization: `Bearer ${pcs_token}`},
+          },
         );
 
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
         );
       }
     } catch (error) {
@@ -130,7 +140,12 @@ const WorkerNavigationScreen = () => {
       <View style={styles.thumbContainer}>
         <Text>
           {swiped ? (
-            <Entypo name="check" size={20} color="#ff4500" style={styles.checkIcon} />
+            <Entypo
+              name="check"
+              size={20}
+              color="#ff4500"
+              style={styles.checkIcon}
+            />
           ) : (
             <FontAwesome6 name="arrow-right-long" size={18} color="#ff4500" />
           )}
@@ -141,9 +156,12 @@ const WorkerNavigationScreen = () => {
 
   const fetchAddressDetails = useCallback(async () => {
     try {
-      const response = await axios.get(`${process.env.BackendAPI6}/api/user/address/details`, {
-        params: { notification_id: decodedId },
-      });
+      const response = await axios.get(
+        `${process.env.BackendAPI6}/api/user/address/details`,
+        {
+          params: {notification_id: decodedId},
+        },
+      );
       setAddressDetails(response.data);
     } catch (error) {
       console.error('Error fetching address details:', error);
@@ -152,14 +170,17 @@ const WorkerNavigationScreen = () => {
 
   const fetchLocationDetails = async () => {
     try {
-      const response = await axios.post(`${process.env.BackendAPI6}/api/service/location/navigation`, {
-        notification_id: decodedId,
-      });
+      const response = await axios.post(
+        `${process.env.BackendAPI6}/api/service/location/navigation`,
+        {
+          notification_id: decodedId,
+        },
+      );
 
-      const { startPoint, endPoint } = response.data;
+      const {startPoint, endPoint} = response.data;
       setLocationDetails({
-        startPoint: startPoint.map((coord) => parseFloat(coord)),
-        endPoint: endPoint.map((coord) => parseFloat(coord)),
+        startPoint: startPoint.map(coord => parseFloat(coord)),
+        endPoint: endPoint.map(coord => parseFloat(coord)),
       });
     } catch (error) {
       console.error('Error fetching location details:', error);
@@ -169,51 +190,53 @@ const WorkerNavigationScreen = () => {
   const handleCancelBooking = async () => {
     setConfirmationModalVisible(false);
     setReasonModalVisible(false);
-  
+
     try {
       const response = await axios.post(
         `${process.env.BackendAPI6}/api/worker/work/cancel`,
-        { notification_id: decodedId }
+        {notification_id: decodedId},
       );
-  
-      console.log(response)
+
+      console.log(response);
       if (response.status === 200) {
-        const pcs_token = await EncryptedStorage.getItem('pcs_token'); 
-  
+        const pcs_token = await EncryptedStorage.getItem('pcs_token');
+
         if (!pcs_token) {
           Alert.alert('Error', 'User token not found.');
           return;
         }
-  
+
         // Send data to the backend
         await axios.post(
-          `${process.env.BackendAPI6}/api/worker/action`, 
+          `${process.env.BackendAPI6}/api/worker/action`,
           {
             encodedId: '',
-            screen: ''
-          }, 
-          { 
+            screen: '',
+          },
+          {
             headers: {
-              Authorization: `Bearer ${pcs_token}`
-            }
-          }
+              Authorization: `Bearer ${pcs_token}`,
+            },
+          },
         );
-  
+
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }]
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
         );
       } else {
-        Alert.alert('Cancellation failed', 'Your cancellation time of 2 minutes is over.');
+        Alert.alert(
+          'Cancellation failed',
+          'Your cancellation time of 2 minutes is over.',
+        );
       }
     } catch (error) {
       console.error('Error cancelling booking:', error);
       Alert.alert('Error', 'There was an error processing your cancellation.');
     }
   };
-  
 
   useEffect(() => {
     if (locationDetails.startPoint && locationDetails.endPoint) {
@@ -221,10 +244,10 @@ const WorkerNavigationScreen = () => {
         try {
           const response = await axios.get(
             `https://api.mapbox.com/directions/v5/mapbox/driving/${locationDetails.startPoint.join(
-              ','
+              ',',
             )};${locationDetails.endPoint.join(
-              ','
-            )}?alternatives=true&steps=true&geometries=geojson&access_token=pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw`
+              ',',
+            )}?alternatives=true&steps=true&geometries=geojson&access_token=pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw`,
           );
 
           if (response.data.routes.length > 0) {
@@ -242,9 +265,9 @@ const WorkerNavigationScreen = () => {
 
   const handleLocationReached = () => {
     const encodedNotificationId = btoa(decodedId);
-    navigation.push('OtpVerification', { encodedId: encodedNotificationId });
+    navigation.push('OtpVerification', {encodedId: encodedNotificationId});
   };
- 
+
   const handleCancelModal = () => {
     setReasonModalVisible(true);
   };
@@ -259,7 +282,6 @@ const WorkerNavigationScreen = () => {
 
   const closeConfirmationModal = () => {
     setConfirmationModalVisible(false);
-
   };
 
   useFocusEffect(
@@ -268,27 +290,30 @@ const WorkerNavigationScreen = () => {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
         );
         return true;
       };
 
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-    }, [navigation])
+      return () =>
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [navigation]),
   );
 
   const openGoogleMaps = () => {
     Geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
+      position => {
+        const {latitude, longitude} = position.coords;
         const url = `https://www.google.com/maps/dir/?api=1&origin=${latitude},${longitude}&destination=${locationDetails.endPoint[1]},${locationDetails.endPoint[0]}&travelmode=driving`;
-        Linking.openURL(url).catch((err) => console.error('Error opening Google Maps:', err));
+        Linking.openURL(url).catch(err =>
+          console.error('Error opening Google Maps:', err),
+        );
       },
-      (error) => {
+      error => {
         console.error('Error getting current location:', error);
-      }
+      },
     );
   };
 
@@ -323,7 +348,6 @@ const WorkerNavigationScreen = () => {
     };
   }
 
-
   // Compute bounding box
   useEffect(() => {
     if (locationDetails && routeData && routeData.coordinates) {
@@ -338,7 +362,7 @@ const WorkerNavigationScreen = () => {
     }
   }, [locationDetails, routeData]);
 
-  const computeBoundingBox = (coordinates) => {
+  const computeBoundingBox = coordinates => {
     let minX, minY, maxX, maxY;
 
     for (let coord of coordinates) {
@@ -363,12 +387,9 @@ const WorkerNavigationScreen = () => {
     };
   };
 
-
-
-
   return (
     <View style={styles.container}>
-<Mapbox.MapView style={styles.map}>
+      <Mapbox.MapView style={styles.map}>
         <Mapbox.Camera
           bounds={
             cameraBounds
@@ -415,8 +436,7 @@ const WorkerNavigationScreen = () => {
             shape={{
               type: 'Feature',
               geometry: routeData,
-            }}
-          >
+            }}>
             <Mapbox.LineLayer id="routeLine" style={styles.routeLine} />
           </Mapbox.ShapeSource>
         )}
@@ -424,43 +444,64 @@ const WorkerNavigationScreen = () => {
       <TouchableOpacity style={styles.cancelButton} onPress={handleCancelModal}>
         <Text style={styles.cancelText}>Cancel</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.googleMapsButton} onPress={openGoogleMaps}>
+      <TouchableOpacity
+        style={styles.googleMapsButton}
+        onPress={openGoogleMaps}>
         <Text style={styles.googleMapsText}>Google Maps</Text>
-        <MaterialCommunityIcons name="navigation-variant" size={20} color="#C1C1C1" />
+        <MaterialCommunityIcons
+          name="navigation-variant"
+          size={20}
+          color="#C1C1C1"
+        />
       </TouchableOpacity>
       {/* Reason Selection Modal */}
       <Modal
         animationType="slide"
         transparent={true}
         visible={reasonModalVisible}
-        onRequestClose={closeReasonModal}
-      >
+        onRequestClose={closeReasonModal}>
         <View style={styles.modalOverlay}>
-          <TouchableOpacity onPress={closeReasonModal} style={styles.backButtonContainer}>
+          <TouchableOpacity
+            onPress={closeReasonModal}
+            style={styles.backButtonContainer}>
             <AntDesign name="arrowleft" size={20} color="black" />
           </TouchableOpacity>
 
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>What is the reason for your cancellation?</Text>
-            <Text style={styles.modalSubtitle}>Could you let us know why you're canceling?</Text>
+            <Text style={styles.modalTitle}>
+              What is the reason for your cancellation?
+            </Text>
+            <Text style={styles.modalSubtitle}>
+              Could you let us know why you're canceling?
+            </Text>
 
-            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
+            <TouchableOpacity
+              style={styles.reasonButton}
+              onPress={openConfirmationModal}>
               <Text style={styles.reasonText}>Accidentally clicked</Text>
               <AntDesign name="right" size={16} color="#4a4a4a" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
+            <TouchableOpacity
+              style={styles.reasonButton}
+              onPress={openConfirmationModal}>
               <Text style={styles.reasonText}>Health Issue</Text>
               <AntDesign name="right" size={16} color="#4a4a4a" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
+            <TouchableOpacity
+              style={styles.reasonButton}
+              onPress={openConfirmationModal}>
               <Text style={styles.reasonText}>Another Work get</Text>
               <AntDesign name="right" size={16} color="#4a4a4a" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
+            <TouchableOpacity
+              style={styles.reasonButton}
+              onPress={openConfirmationModal}>
               <Text style={styles.reasonText}>Problem to my vehicle</Text>
               <AntDesign name="right" size={16} color="#4a4a4a" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
+            <TouchableOpacity
+              style={styles.reasonButton}
+              onPress={openConfirmationModal}>
               <Text style={styles.reasonText}>Others</Text>
               <AntDesign name="right" size={16} color="#4a4a4a" />
             </TouchableOpacity>
@@ -473,22 +514,28 @@ const WorkerNavigationScreen = () => {
         animationType="slide"
         transparent={true}
         visible={confirmationModalVisible}
-        onRequestClose={closeConfirmationModal}
-      >
+        onRequestClose={closeConfirmationModal}>
         <View style={styles.modalOverlay}>
-        <View style={styles.crossContainer}>
-          <TouchableOpacity onPress={closeConfirmationModal} style={styles.backButtonContainer}>
-            <Entypo name="cross" size={20} color="black" />
-          </TouchableOpacity>
+          <View style={styles.crossContainer}>
+            <TouchableOpacity
+              onPress={closeConfirmationModal}
+              style={styles.backButtonContainer}>
+              <Entypo name="cross" size={20} color="black" />
+            </TouchableOpacity>
           </View>
 
           <View style={styles.confirmationModalContainer}>
-            <Text style={styles.confirmationTitle}>Are you sure you want to cancel this Service?</Text>
+            <Text style={styles.confirmationTitle}>
+              Are you sure you want to cancel this Service?
+            </Text>
             <Text style={styles.confirmationSubtitle}>
-            The user is waiting for your help to solve their issue. Please avoid clicking cancel and assist them as soon as possible
+              The user is waiting for your help to solve their issue. Please
+              avoid clicking cancel and assist them as soon as possible
             </Text>
 
-            <TouchableOpacity style={styles.confirmButton} onPress={handleCancelBooking}>
+            <TouchableOpacity
+              style={styles.confirmButton}
+              onPress={handleCancelBooking}>
               <Text style={styles.confirmButtonText}>Cancel my service</Text>
             </TouchableOpacity>
           </View>
@@ -513,9 +560,7 @@ const WorkerNavigationScreen = () => {
             />
             <View style={styles.locationDetails}>
               {/* <Text style={styles.locationTitle}>{addressDetails.city}</Text> */}
-              <Text style={styles.locationAddress}>
-                {addressDetails.area}
-              </Text>
+              <Text style={styles.locationAddress}>{addressDetails.area}</Text>
             </View>
           </View>
 
@@ -537,10 +582,10 @@ const WorkerNavigationScreen = () => {
           <Text style={styles.pickupText}>You are at pickup location</Text>
 
           {/* Arrival Button */}
-          <View style={{ paddingTop: 20 }}>
+          <View style={{paddingTop: 20}}>
             <SwipeButton
               title="I've Arrived"
-              titleStyles={{ color: titleColor }}
+              titleStyles={{color: titleColor}}
               railBackgroundColor="#FF5722"
               railBorderColor="#FF5722"
               railStyles={{
@@ -672,7 +717,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -5 },
+    shadowOffset: {width: 0, height: -5},
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 10,
@@ -686,8 +731,8 @@ const styles = StyleSheet.create({
   },
   locationContainer: {
     flexDirection: 'row',
-    width:'90%',
-    justifyContent:'space-between',
+    width: '90%',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginVertical: 10,
   },
@@ -702,8 +747,7 @@ const styles = StyleSheet.create({
   locationAddress: {
     fontSize: 14,
     color: '#212121',
-    fontWeight:'450',
-    
+    fontWeight: '450',
   },
   serviceType: {
     fontSize: 16,
@@ -724,122 +768,121 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButtonContainer: {
-    width:40,
-    height:40,     
-    flexDirection:'column',
-    alignItems:'center',
-    justifyContent:'center',      // Distance from the left side of the screen
-      backgroundColor: 'white', // Background color for the circular container
-      borderRadius: 50,    // Rounds the container to make it circular
-          // Padding to make the icon container larger
-      elevation: 5,        // Elevation for shadow effect (Android)
-      shadowColor: '#000', // Shadow color (iOS)
-      shadowOffset: { width: 0, height: 2 }, // Shadow offset (iOS)
-      shadowOpacity: 0.2,  // Shadow opacity (iOS)
-      shadowRadius: 4,     // Shadow radius (iOS)
-      zIndex: 1,   
-      marginHorizontal:10,        // Ensures the icon is above other elements,
-      marginBottom:5
+    width: 40,
+    height: 40,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center', // Distance from the left side of the screen
+    backgroundColor: 'white', // Background color for the circular container
+    borderRadius: 50, // Rounds the container to make it circular
+    // Padding to make the icon container larger
+    elevation: 5, // Elevation for shadow effect (Android)
+    shadowColor: '#000', // Shadow color (iOS)
+    shadowOffset: {width: 0, height: 2}, // Shadow offset (iOS)
+    shadowOpacity: 0.2, // Shadow opacity (iOS)
+    shadowRadius: 4, // Shadow radius (iOS)
+    zIndex: 1,
+    marginHorizontal: 10, // Ensures the icon is above other elements,
+    marginBottom: 5,
   },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      justifyContent: 'flex-end',
-    },
-    modalContainer: {
-      backgroundColor: 'white',
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      padding: 20,
-      paddingBottom: 30,
-    },
-    backButton: {
-      alignSelf: 'flex-start',
-      marginBottom: 10,
-    },
-    modalTitle: {
-      fontSize: 18,
-      fontWeight: 'bold',
-      textAlign:'center',
-      marginBottom: 5,
-      color: '#000',
-    },
-    modalSubtitle: {
-      fontSize: 14,
-      color: '#666',
-      textAlign:'center',
-      marginBottom: 10,
-      borderBottomWidth: 1,
-      borderBottomColor: '#eee',
-      paddingBottom:10
-    },
-    reasonButton: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingVertical: 15,
-      borderBottomWidth: 1,
-      borderBottomColor: '#eee',
-    },
-    reasonText: {
-      fontSize: 16,
-      color: '#333',
-    },
-    closeButton: {
-      marginTop: 15,
-      padding: 10,
-      backgroundColor: '#ddd',
-      borderRadius: 5,
-    },
-    closeText: {
-      fontSize: 16,
-      color: '#555',
-    },
-  
-  
-    crossContainer:{
-      flexDirection:'row',
-      justifyContent:'flex-end'
-    },
-    confirmationModalContainer: {
-      backgroundColor: 'white',
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      paddingTop: 40,
-      paddingBottom: 30,
-      paddingHorizontal: 20,
-      alignItems: 'center',
-    },
-    confirmationTitle: {
-      fontSize: 18,
-      fontWeight: 'bold',
-      textAlign: 'center',
-      paddingBottom: 10,
-      marginBottom:5,
-      color: '#000',
-      borderBottomWidth: 1,
-      borderBottomColor: '#eee',
-    },
-    confirmationSubtitle: {
-      fontSize: 14,
-      color: '#666',
-      textAlign: 'center',
-      marginBottom: 20,
-      paddingBottom:10,
-      paddingTop:10
-    },
-    confirmButton: {
-      backgroundColor: '#FF4500',
-      borderRadius: 40,
-      paddingVertical: 15,
-      paddingHorizontal: 40,
-      alignItems: 'center',
-    },
-    confirmButtonText: {
-      color: 'white',
-      fontSize: 16,
-      fontWeight: 'bold',
-    },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 30,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    marginBottom: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 5,
+    color: '#000',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    paddingBottom: 10,
+  },
+  reasonButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  reasonText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  closeButton: {
+    marginTop: 15,
+    padding: 10,
+    backgroundColor: '#ddd',
+    borderRadius: 5,
+  },
+  closeText: {
+    fontSize: 16,
+    color: '#555',
+  },
+
+  crossContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  confirmationModalContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 40,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  confirmationTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    paddingBottom: 10,
+    marginBottom: 5,
+    color: '#000',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  confirmationSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+    paddingBottom: 10,
+    paddingTop: 10,
+  },
+  confirmButton: {
+    backgroundColor: '#FF4500',
+    borderRadius: 40,
+    paddingVertical: 15,
+    paddingHorizontal: 40,
+    alignItems: 'center',
+  },
+  confirmButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });
 
 export default WorkerNavigationScreen;

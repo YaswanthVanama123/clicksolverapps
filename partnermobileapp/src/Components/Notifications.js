@@ -1,9 +1,17 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
-import EncryptedStorage from "react-native-encrypted-storage";
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+  Dimensions,
+} from 'react-native';
+import EncryptedStorage from 'react-native-encrypted-storage';
 import uuid from 'react-native-uuid';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 
 const Notifications = () => {
   const [notificationsArray, setNotificationsArray] = useState([]);
@@ -11,7 +19,9 @@ const Notifications = () => {
 
   // Fetch notifications from local storage
   const fetchNotifications = async () => {
-    const existingNotifications = await EncryptedStorage.getItem('Requestnotifications');
+    const existingNotifications = await EncryptedStorage.getItem(
+      'Requestnotifications',
+    );
     if (existingNotifications) {
       setNotificationsArray(JSON.parse(existingNotifications));
     } else {
@@ -24,17 +34,19 @@ const Notifications = () => {
   }, []);
 
   // Handle the notification click
-  const handleNotificationClick = (data) => {
-    const { screen, targetUrl } = data; // Extract the screen or target URL from the notification data
-    console.log("Navigating to:", screen);
+  const handleNotificationClick = data => {
+    const {screen, targetUrl} = data; // Extract the screen or target URL from the notification data
+    console.log('Navigating to:', screen);
 
     // Navigate based on the notification's data
     if (screen) {
-      navigation.navigate(screen, { userNotificationId: data.user_notification_id });
+      navigation.navigate(screen, {
+        userNotificationId: data.user_notification_id,
+      });
     } else if (targetUrl) {
-      navigation.navigate('WebViewScreen', { url: targetUrl }); // Example of opening a WebView
+      navigation.navigate('WebViewScreen', {url: targetUrl}); // Example of opening a WebView
     } else {
-      console.log("No screen or targetUrl found.");
+      console.log('No screen or targetUrl found.');
     }
   };
 
@@ -72,12 +84,12 @@ const Notifications = () => {
   //   </View>
   // );
 
-  const renderItem = ({ item }) =>{ 
+  const renderItem = ({item}) => {
     let parsedTitle;
-    let totalCost = 0
+    let totalCost = 0;
     try {
       parsedTitle = JSON.parse(item.title);
-      console.log(parsedTitle)
+      console.log(parsedTitle);
       totalCost = parsedTitle.reduce((accumulator, service) => {
         return accumulator + (service.cost || 0); // Default to 0 if cost is undefined
       }, 0);
@@ -86,56 +98,61 @@ const Notifications = () => {
       parsedTitle = []; // Default to an empty array if parsing fails
     }
     return (
-    <View style={styles.messageBox}>
-      <View style={styles.serviceCostContainer}>
-        <View>
-          <Text style={styles.secondaryColor}>Service</Text>
-          <View style={styles.serviceNamesContainer}>
-                    {/* Map over the parsed title if it's an array */}
-                    {Array.isArray(parsedTitle) ? (
-                      parsedTitle.map((service, serviceIndex) => (
-                        <View key={serviceIndex}>
-                          <Text key={serviceIndex} style={styles.primaryColor}>
-                            {service.serviceName}
-                            {serviceIndex < parsedTitle.length - 1 ? ', ' : ''} {/* Add comma except for the last item */}
-                          </Text>
-                        </View>
-                      ))
-                    ) : (
-                      <Text>No services available</Text> // Fallback if parsedTitle is not an array
-                    )}
+      <View style={styles.messageBox}>
+        <View style={styles.serviceCostContainer}>
+          <View>
+            <Text style={styles.secondaryColor}>Service</Text>
+            <View style={styles.serviceNamesContainer}>
+              {/* Map over the parsed title if it's an array */}
+              {Array.isArray(parsedTitle) ? (
+                parsedTitle.map((service, serviceIndex) => (
+                  <View key={serviceIndex}>
+                    <Text key={serviceIndex} style={styles.primaryColor}>
+                      {service.serviceName}
+                      {serviceIndex < parsedTitle.length - 1 ? ', ' : ''}{' '}
+                      {/* Add comma except for the last item */}
+                    </Text>
                   </View>
+                ))
+              ) : (
+                <Text>No services available</Text> // Fallback if parsedTitle is not an array
+              )}
+            </View>
+          </View>
+          <View>
+            <Text style={styles.secondaryColor}>Cost</Text>
+            <Text style={styles.primaryColor}>{totalCost}</Text>
+          </View>
         </View>
         <View>
-          <Text style={styles.secondaryColor}>Cost</Text>
-          <Text style={styles.primaryColor}>{totalCost}</Text>
+          <Text style={styles.secondaryColor}>Location</Text>
+          <Text style={styles.primaryColor}>{item.body}</Text>
+          <Text
+            style={[
+              styles.secondaryColor,
+              {paddingTop: 5, textAlign: 'right'},
+            ]}>
+            {item.data.time}
+          </Text>
         </View>
-      </View>
-      <View>
-        <Text style={styles.secondaryColor}>Location</Text>
-        <Text style={styles.primaryColor}>{item.body}</Text>
-        <Text style={[styles.secondaryColor,{paddingTop:5,textAlign:'right'}]}>{item.data.time}</Text>
-      </View>
-      <View style={styles.buttonsContainer}>
-        <View>
-          <Text style={styles.secondaryColor}>Reject</Text>
+        <View style={styles.buttonsContainer}>
+          <View>
+            <Text style={styles.secondaryColor}>Reject</Text>
           </View>
           <View>
             <TouchableOpacity
               style={styles.secondaryButton}
-              onPress={() => acceptRequest(notification.data.user_notification_id)} // Pass item.data to acceptRequest
-              >
-            <Text style={styles.secondaryButtonText}>Accept</Text>
+              onPress={() =>
+                acceptRequest(notification.data.user_notification_id)
+              } // Pass item.data to acceptRequest
+            >
+              <Text style={styles.secondaryButtonText}>Accept</Text>
             </TouchableOpacity>
           </View>
         </View>
-    </View>
-  )
-}
-
-
-
-  
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.screenContainer}>
@@ -187,9 +204,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 10,
   },
-  serviceNamesContainer:{
-    flexDirection:'row',
-
+  serviceNamesContainer: {
+    flexDirection: 'row',
   },
   secondaryButton: {
     backgroundColor: '#FF5722',

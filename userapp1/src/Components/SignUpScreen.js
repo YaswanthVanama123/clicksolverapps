@@ -1,10 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ImageBackground, KeyboardAvoidingView } from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {
+  StyleSheet,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  ImageBackground,
+  KeyboardAvoidingView,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { useRoute, useNavigation, CommonActions } from '@react-navigation/native';
+import {useRoute, useNavigation, CommonActions} from '@react-navigation/native';
 
 const SignUpScreen = () => {
   const [fullName, setFullName] = useState('');
@@ -13,12 +22,13 @@ const SignUpScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
 
-  const BG_IMAGE_URL = 'https://i.postimg.cc/rFFQLGRh/Picsart-24-10-01-15-38-43-205.jpg';
+  const BG_IMAGE_URL =
+    'https://i.postimg.cc/rFFQLGRh/Picsart-24-10-01-15-38-43-205.jpg';
   const LOGO_URL = 'https://i.postimg.cc/hjjpy2SW/Button-1.png';
   const FLAG_ICON_URL = 'https://i.postimg.cc/C1hkm5sR/india-flag-icon-29.png';
 
   useEffect(() => {
-    const { phone_number } = route.params || {};
+    const {phone_number} = route.params || {};
     if (phone_number) {
       setPhoneNumber(phone_number);
     }
@@ -26,26 +36,32 @@ const SignUpScreen = () => {
 
   const handleSignUp = async () => {
     try {
-      const response = await axios.post(`${process.env.BACKENDAIPE}/api/user/signup`, {
-        fullName,
-        email,
-        phoneNumber,
-      });
+      const response = await axios.post(
+        `${process.env.BACKENDAIPE}/api/user/signup`,
+        {
+          fullName,
+          email,
+          phoneNumber,
+        },
+      );
 
-      const { token } = response.data;
-      console.log(response.data); 
+      const {token} = response.data;
+      console.log(response.data);
       if (token) {
         await EncryptedStorage.setItem('cs_token', token);
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
         );
       }
     } catch (error) {
       console.error('Sign up error:', error);
-      Alert.alert('Sign Up Failed', 'An error occurred during sign up. Please try again.');
+      Alert.alert(
+        'Sign Up Failed',
+        'An error occurred during sign up. Please try again.',
+      );
     }
   };
 
@@ -53,13 +69,11 @@ const SignUpScreen = () => {
     <View style={styles.container}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ImageBackground
-          source={{ uri: BG_IMAGE_URL }}
+          source={{uri: BG_IMAGE_URL}}
           style={styles.backgroundImage}
-          resizeMode="stretch"
-        >
+          resizeMode="stretch">
           <TouchableOpacity style={styles.backButton}>
             <FontAwesome6 name="arrow-left-long" size={24} color="#1D2951" />
           </TouchableOpacity>
@@ -89,7 +103,7 @@ const SignUpScreen = () => {
   );
 };
 
-const InputField = ({ placeholder, value, onChangeText, icon, keyboardType }) => (
+const InputField = ({placeholder, value, onChangeText, icon, keyboardType}) => (
   <View style={styles.inputContainer}>
     {icon && <View style={styles.iconContainer}>{icon}</View>}
     <TextInput
@@ -109,8 +123,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#fff',
   },
-  keyboardAvoidingView: { flex: 1 },
-  backgroundImage: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  keyboardAvoidingView: {flex: 1},
+  backgroundImage: {flex: 1, justifyContent: 'center', alignItems: 'center'},
   backButton: {
     position: 'absolute',
     top: 20,
@@ -146,10 +160,10 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: '#FF5722',
     paddingVertical: 11,
-    width:'50%',
+    width: '50%',
     borderRadius: 10,
     alignItems: 'center',
-    justifyContent:'center',
+    justifyContent: 'center',
     elevation: 5,
     marginTop: 25,
   },

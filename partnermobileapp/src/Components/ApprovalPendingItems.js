@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 
 const ApprovalPendingItems = () => {
   const navigation = useNavigation();
@@ -39,11 +39,21 @@ const ApprovalPendingItems = () => {
     },
   ]);
 
-  const formatDate = (created_at) => {
+  const formatDate = created_at => {
     const date = new Date(created_at);
     const monthNames = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     const day = date.getDate();
     const month = monthNames[date.getMonth()];
@@ -52,28 +62,26 @@ const ApprovalPendingItems = () => {
   };
 
   useEffect(() => {
-    const fetchPendingItems = async () => {  
+    const fetchPendingItems = async () => {
       try {
         const response = await axios.get(
-            `${process.env.BackendAPI6}/api/workers/pending/verification`
-          );
-          const data = response.data.data; // Assuming the response structure is { data: [...] }
-          console.log(JSON.stringify(data, null, 2));
-          
-          const pendingWorkers = data.map((worker) => {
-            const { verification_status, created_at, issues, worker_id } = worker;
-            return {
-              title: verification_status,
-              date: formatDate(created_at), // Assuming formatDate is a function you have defined
-              issues: issues || {}, // Default to an empty object if no issues are present
-              workerId: worker_id
-            };
-          });
-          
-          // Set the formatted array to the statuses state
-          setStatuses(pendingWorkers);
-          
-           
+          `${process.env.BackendAPI6}/api/workers/pending/verification`,
+        );
+        const data = response.data.data; // Assuming the response structure is { data: [...] }
+        console.log(JSON.stringify(data, null, 2));
+
+        const pendingWorkers = data.map(worker => {
+          const {verification_status, created_at, issues, worker_id} = worker;
+          return {
+            title: verification_status,
+            date: formatDate(created_at), // Assuming formatDate is a function you have defined
+            issues: issues || {}, // Default to an empty object if no issues are present
+            workerId: worker_id,
+          };
+        });
+
+        // Set the formatted array to the statuses state
+        setStatuses(pendingWorkers);
       } catch (error) {
         console.error('Error fetching bookings data:', error);
       }
@@ -84,28 +92,57 @@ const ApprovalPendingItems = () => {
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState([]);
 
-  const filterOptions = ['Mobile Number Verified', 'Details Verified', 'Profile and Proof Verified', 'Bank Account Verified'];
+  const filterOptions = [
+    'Mobile Number Verified',
+    'Details Verified',
+    'Profile and Proof Verified',
+    'Bank Account Verified',
+  ];
 
   const getStatusDetails = (title, issues) => {
     if (issues && Object.keys(issues).length > 0) {
-      return { icon: 'error-outline', statusColor: '#FFA500', statusText: 'Issues Found' };
+      return {
+        icon: 'error-outline',
+        statusColor: '#FFA500',
+        statusText: 'Issues Found',
+      };
     }
 
     switch (title) {
       case 'Mobile Number Verified':
-        return { icon: 'phone-iphone', statusColor: '#ff4500', statusText: 'Verified' };
+        return {
+          icon: 'phone-iphone',
+          statusColor: '#ff4500',
+          statusText: 'Verified',
+        };
       case 'Details Verified':
-        return { icon: 'account-box', statusColor: '#ff4500', statusText: 'Verified' };
+        return {
+          icon: 'account-box',
+          statusColor: '#ff4500',
+          statusText: 'Verified',
+        };
       case 'Profile and Proof Verified':
-        return { icon: 'assignment', statusColor: '#ff4500', statusText: 'Verified' };
+        return {
+          icon: 'assignment',
+          statusColor: '#ff4500',
+          statusText: 'Verified',
+        };
       case 'Bank Account Verified':
-        return { icon: 'account-balance', statusColor: '#ff4500', statusText: 'Verified' };
+        return {
+          icon: 'account-balance',
+          statusColor: '#ff4500',
+          statusText: 'Verified',
+        };
       default:
-        return { icon: 'help-outline', statusColor: '#808080', statusText: 'Unknown' };
+        return {
+          icon: 'help-outline',
+          statusColor: '#808080',
+          statusText: 'Unknown',
+        };
     }
   };
 
-  const toggleFilter = (status) => {
+  const toggleFilter = status => {
     const updatedFilters = selectedFilters.includes(status)
       ? selectedFilters.filter(s => s !== status)
       : [...selectedFilters, status];
@@ -113,19 +150,19 @@ const ApprovalPendingItems = () => {
     setSelectedFilters(updatedFilters);
   };
 
-  const filteredStatuses = statuses.filter((status) => {
+  const filteredStatuses = statuses.filter(status => {
     if (selectedFilters.length > 0 && !selectedFilters.includes(status.title)) {
       return false;
     }
     return true;
   });
 
-  const handleItemPress = (workerId) => {
-    navigation.push('IndividualWorkerPending', { workerId });
+  const handleItemPress = workerId => {
+    navigation.push('IndividualWorkerPending', {workerId});
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{flex: 1}}>
       <View style={styles.headerContainer}>
         <Text style={styles.headerText}>Approval Pending Items</Text>
         <TouchableOpacity onPress={() => setIsFilterVisible(!isFilterVisible)}>
@@ -134,9 +171,15 @@ const ApprovalPendingItems = () => {
       </View>
       <ScrollView contentContainerStyle={styles.container}>
         {filteredStatuses.map((item, index) => {
-          const { icon, statusColor, statusText } = getStatusDetails(item.title, item.issues);
+          const {icon, statusColor, statusText} = getStatusDetails(
+            item.title,
+            item.issues,
+          );
           return (
-            <TouchableOpacity key={index} style={styles.cardContainer} onPress={() => handleItemPress(item.workerId)}>
+            <TouchableOpacity
+              key={index}
+              style={styles.cardContainer}
+              onPress={() => handleItemPress(item.workerId)}>
               <View style={styles.iconContainer}>
                 <MaterialIcons name={icon} size={28} color={statusColor} />
               </View>
@@ -144,7 +187,8 @@ const ApprovalPendingItems = () => {
                 <Text style={styles.itemTitle}>{item.title}</Text>
                 <Text style={styles.itemDate}>Scheduled for: {item.date}</Text>
               </View>
-              <View style={[styles.statusButton, { backgroundColor: statusColor }]}>
+              <View
+                style={[styles.statusButton, {backgroundColor: statusColor}]}>
                 <Text style={styles.statusText}>{statusText}</Text>
               </View>
             </TouchableOpacity>
@@ -156,9 +200,16 @@ const ApprovalPendingItems = () => {
         <View style={styles.dropdownContainer}>
           <Text style={styles.dropdownTitle}>PROJECT TYPE</Text>
           {filterOptions.map((option, index) => (
-            <TouchableOpacity key={index} style={styles.dropdownOption} onPress={() => toggleFilter(option)}>
+            <TouchableOpacity
+              key={index}
+              style={styles.dropdownOption}
+              onPress={() => toggleFilter(option)}>
               <MaterialIcons
-                name={selectedFilters.includes(option) ? "check-box" : "check-box-outline-blank"}
+                name={
+                  selectedFilters.includes(option)
+                    ? 'check-box'
+                    : 'check-box-outline-blank'
+                }
                 size={20}
                 color="#4a4a4a"
               />
@@ -202,7 +253,7 @@ const styles = StyleSheet.create({
     padding: 10,
     elevation: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.3,
     shadowRadius: 4,
     zIndex: 10,
@@ -231,7 +282,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,

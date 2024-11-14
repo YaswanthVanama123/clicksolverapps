@@ -1,7 +1,16 @@
 import React from 'react';
-import { ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Button, Image } from 'react-native';
+import {
+  ScrollView,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Button,
+  Image,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Picker } from '@react-native-picker/picker';
+import {Picker} from '@react-native-picker/picker';
 
 const RegistrationForm = () => {
   return (
@@ -25,7 +34,10 @@ const RegistrationForm = () => {
           <TextInput placeholder="Male / Female" style={styles.input} />
         </View>
         <View style={styles.inputRow}>
-          <TextInput placeholder="Years of Work Experience" style={styles.input} />
+          <TextInput
+            placeholder="Years of Work Experience"
+            style={styles.input}
+          />
           <TextInput placeholder="Date of Birth" style={styles.input} />
         </View>
         <View style={styles.inputRow}>

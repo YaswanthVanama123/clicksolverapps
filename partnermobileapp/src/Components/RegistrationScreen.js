@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -11,15 +11,15 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { Dropdown } from 'react-native-element-dropdown';
-import { RadioButton, Checkbox } from 'react-native-paper';
-import { launchImageLibrary } from 'react-native-image-picker';
+import {Dropdown} from 'react-native-element-dropdown';
+import {RadioButton, Checkbox} from 'react-native-paper';
+import {launchImageLibrary} from 'react-native-image-picker';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import SwipeButton from 'rn-swipe-button';
 import Entypo from 'react-native-vector-icons/Entypo';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 
 const RegistrationScreen = () => {
   const [formData, setFormData] = useState({
@@ -45,23 +45,23 @@ const RegistrationScreen = () => {
   const [titleColor, setTitleColor] = useState('#FF5722');
   const [errorFields, setErrorFields] = useState({});
   const [skillCategoryItems, setSkillCategoryItems] = useState([
-    { label: 'Electrician', value: 'electrician' },
-    { label: 'Plumber', value: 'plumber' },
-    { label: 'Carpenter', value: 'carpenter' },
+    {label: 'Electrician', value: 'electrician'},
+    {label: 'Plumber', value: 'plumber'},
+    {label: 'Carpenter', value: 'carpenter'},
   ]);
   const [phoneNumber, setPhoneNumber] = useState('');
   const navigation = useNavigation();
 
   const educationItems = [
-    { label: 'High School', value: 'highschool' },
-    { label: "Bachelor's", value: 'bachelor' },
-    { label: "Master's", value: 'master' },
+    {label: 'High School', value: 'highschool'},
+    {label: "Bachelor's", value: 'bachelor'},
+    {label: "Master's", value: 'master'},
   ];
 
   const experienceItems = [
-    { label: '0-1 Year', value: '0-1' },
-    { label: '1-3 years', value: '1-3' },
-    { label: 'more than 3 years', value: '3+' },
+    {label: '0-1 Year', value: '0-1'},
+    {label: '1-3 years', value: '1-3'},
+    {label: 'more than 3 years', value: '3+'},
   ];
 
   const ThumbIcon = () => {
@@ -69,7 +69,12 @@ const RegistrationScreen = () => {
       <View style={styles.thumbContainer}>
         <Text>
           {swiped ? (
-            <Entypo name="check" size={20} color="#FF5722" style={styles.checkIcon} />
+            <Entypo
+              name="check"
+              size={20}
+              color="#FF5722"
+              style={styles.checkIcon}
+            />
           ) : (
             <FontAwesome6 name="arrow-right-long" size={18} color="#FF5722" />
           )}
@@ -78,15 +83,15 @@ const RegistrationScreen = () => {
     );
   };
 
-  const handleCheckboxChange = (serviceName) => {
+  const handleCheckboxChange = serviceName => {
     const isChecked = formData.subSkills.includes(serviceName);
     const updatedSubSkills = isChecked
-      ? formData.subSkills.filter((skill) => skill !== serviceName)
+      ? formData.subSkills.filter(skill => skill !== serviceName)
       : [...formData.subSkills, serviceName];
-    setFormData({ ...formData, subSkills: updatedSubSkills });
+    setFormData({...formData, subSkills: updatedSubSkills});
   };
 
-  const uploadImage = async (uri) => {
+  const uploadImage = async uri => {
     const apiKey = '287b4ba48139a6a59e75b5a8266bbea2';
     const apiUrl = 'https://api.imgbb.com/1/upload';
 
@@ -100,7 +105,7 @@ const RegistrationScreen = () => {
 
     const response = await fetch(apiUrl, {
       method: 'POST',
-      body: imageData,  
+      body: imageData,
     });
 
     if (!response.ok) {
@@ -134,7 +139,7 @@ const RegistrationScreen = () => {
 
     try {
       const pcsToken = await EncryptedStorage.getItem('pcs_token');
-      if (!pcsToken) { 
+      if (!pcsToken) {
         console.error('No pcs_token found.');
         navigation.replace('Login');
         return;
@@ -147,7 +152,7 @@ const RegistrationScreen = () => {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
           },
-        }
+        },
       );
       if (response.status === 200) {
         navigation.replace('PartnerSteps');
@@ -157,26 +162,28 @@ const RegistrationScreen = () => {
     }
   };
 
-  const fetchServices = async () => { 
-   
+  const fetchServices = async () => {
     try {
       const pcsToken = await EncryptedStorage.getItem('pcs_token');
-      
+
       if (!pcsToken) {
         console.error('No pcs_token found.');
         navigation.replace('Login');
         return;
-      } 
+      }
 
-      const response = await axios.get(`${process.env.BackendAPI6}/api/service/categories`, {
-        headers: {
-          Authorization: `Bearer ${pcsToken}`,
+      const response = await axios.get(
+        `${process.env.BackendAPI6}/api/service/categories`,
+        {
+          headers: {
+            Authorization: `Bearer ${pcsToken}`,
+          },
         },
-      });
-      console.log("pc",pcsToken)
+      );
+      console.log('pc', pcsToken);
       setPhoneNumber(response.data[0].phone_numbers[0]);
       const data = response.data;
-      const mappedData = data.map((item) => ({
+      const mappedData = data.map(item => ({
         label: item.service_name,
         value: item.service_name,
       }));
@@ -186,21 +193,21 @@ const RegistrationScreen = () => {
     }
   };
 
-  const handleImagePick = async (fieldName) => {
+  const handleImagePick = async fieldName => {
     const options = {
       mediaType: 'photo',
       quality: 1,
       selectionLimit: 1,
     };
 
-    launchImageLibrary(options, async (response) => {
+    launchImageLibrary(options, async response => {
       if (response.didCancel) {
         console.log('User cancelled image picker');
       } else if (response.error) {
         console.error('ImagePicker Error: ', response.error);
         Alert.alert('Error', 'Failed to pick image.');
       } else if (response.assets) {
-        const { uri } = response.assets[0];
+        const {uri} = response.assets[0];
         try {
           const imageUrl = await uploadImage(uri);
           handleInputChange(fieldName, imageUrl);
@@ -213,8 +220,8 @@ const RegistrationScreen = () => {
   };
 
   const handleInputChange = async (field, value) => {
-    setFormData({ ...formData, [field]: value });
-    setErrorFields((prev) => ({ ...prev, [field]: false }));
+    setFormData({...formData, [field]: value});
+    setErrorFields(prev => ({...prev, [field]: false}));
 
     if (field === 'skillCategory') {
       try {
@@ -222,10 +229,10 @@ const RegistrationScreen = () => {
           `${process.env.BackendAPI6}/api/subservice/checkboxes`,
           {
             selectedService: value,
-          }
+          },
         );
         const data = response.data;
-        const mappedData = data.map((item) => ({
+        const mappedData = data.map(item => ({
           id: item.service_id,
           label: item.service_tag,
         }));
@@ -241,7 +248,12 @@ const RegistrationScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity>
-          <FontAwesome6 name="arrow-left-long" size={20} color="#333" style={styles.leftIcon} />
+          <FontAwesome6
+            name="arrow-left-long"
+            size={20}
+            color="#333"
+            style={styles.leftIcon}
+          />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Registration</Text>
       </View>
@@ -255,9 +267,11 @@ const RegistrationScreen = () => {
             <TextInput
               style={[styles.input, errorFields.firstName && styles.errorInput]}
               value={formData.firstName}
-              onChangeText={(value) => handleInputChange('firstName', value)}
+              onChangeText={value => handleInputChange('firstName', value)}
             />
-            {errorFields.firstName && <Text style={styles.errorText}>This field is required.</Text>}
+            {errorFields.firstName && (
+              <Text style={styles.errorText}>This field is required.</Text>
+            )}
           </View>
 
           <Text style={styles.label}>Last Name</Text>
@@ -265,9 +279,11 @@ const RegistrationScreen = () => {
             <TextInput
               style={[styles.input, errorFields.lastName && styles.errorInput]}
               value={formData.lastName}
-              onChangeText={(value) => handleInputChange('lastName', value)}
+              onChangeText={value => handleInputChange('lastName', value)}
             />
-            {errorFields.lastName && <Text style={styles.errorText}>This field is required.</Text>}
+            {errorFields.lastName && (
+              <Text style={styles.errorText}>This field is required.</Text>
+            )}
           </View>
 
           <Text style={styles.label}>Gender</Text>
@@ -295,7 +311,10 @@ const RegistrationScreen = () => {
           <Text style={styles.label}>Work Experience (Years)</Text>
           <View style={styles.inputContainer}>
             <Dropdown
-              style={[styles.dropdown, errorFields.workExperience && styles.errorInput]}
+              style={[
+                styles.dropdown,
+                errorFields.workExperience && styles.errorInput,
+              ]}
               containerStyle={styles.dropdownContainer}
               data={experienceItems}
               placeholderStyle={styles.placeholderStyle}
@@ -305,11 +324,11 @@ const RegistrationScreen = () => {
               valueField="value"
               placeholder="Select your experience"
               value={formData.workExperience}
-              onChange={(item) => handleInputChange('workExperience', item.value)}
+              onChange={item => handleInputChange('workExperience', item.value)}
               renderRightIcon={() => (
                 <FontAwesome name="chevron-down" size={14} color="#9e9e9e" />
               )}
-              renderItem={(item) => (
+              renderItem={item => (
                 <View style={styles.dropdownItem}>
                   <Text style={styles.dropdownItemText}>{item.label}</Text>
                 </View>
@@ -325,15 +344,20 @@ const RegistrationScreen = () => {
             <TextInput
               style={[styles.input, errorFields.dob && styles.errorInput]}
               value={formData.dob}
-              onChangeText={(value) => handleInputChange('dob', value)}
+              onChangeText={value => handleInputChange('dob', value)}
             />
-            {errorFields.dob && <Text style={styles.errorText}>This field is required.</Text>}
+            {errorFields.dob && (
+              <Text style={styles.errorText}>This field is required.</Text>
+            )}
           </View>
 
           <Text style={styles.label}>Education</Text>
           <View style={styles.inputContainer}>
             <Dropdown
-              style={[styles.dropdown, errorFields.education && styles.errorInput]}
+              style={[
+                styles.dropdown,
+                errorFields.education && styles.errorInput,
+              ]}
               containerStyle={styles.dropdownContainer}
               data={educationItems}
               placeholderStyle={styles.placeholderStyle}
@@ -343,11 +367,11 @@ const RegistrationScreen = () => {
               valueField="value"
               placeholder="Select Education"
               value={formData.education}
-              onChange={(item) => handleInputChange('education', item.value)}
+              onChange={item => handleInputChange('education', item.value)}
               renderRightIcon={() => (
                 <FontAwesome name="chevron-down" size={14} color="#9e9e9e" />
               )}
-              renderItem={(item) => (
+              renderItem={item => (
                 <View style={styles.dropdownItem}>
                   <Text style={styles.dropdownItemText}>{item.label}</Text>
                 </View>
@@ -389,9 +413,11 @@ const RegistrationScreen = () => {
             <TextInput
               style={[styles.input, errorFields.doorNo && styles.errorInput]}
               value={formData.doorNo}
-              onChangeText={(value) => handleInputChange('doorNo', value)}
+              onChangeText={value => handleInputChange('doorNo', value)}
             />
-            {errorFields.doorNo && <Text style={styles.errorText}>This field is required.</Text>}
+            {errorFields.doorNo && (
+              <Text style={styles.errorText}>This field is required.</Text>
+            )}
           </View>
 
           <Text style={styles.label}>Landmark</Text>
@@ -399,9 +425,11 @@ const RegistrationScreen = () => {
             <TextInput
               style={[styles.input, errorFields.landmark && styles.errorInput]}
               value={formData.landmark}
-              onChangeText={(value) => handleInputChange('landmark', value)}
+              onChangeText={value => handleInputChange('landmark', value)}
             />
-            {errorFields.landmark && <Text style={styles.errorText}>This field is required.</Text>}
+            {errorFields.landmark && (
+              <Text style={styles.errorText}>This field is required.</Text>
+            )}
           </View>
 
           <Text style={styles.label}>City</Text>
@@ -409,9 +437,11 @@ const RegistrationScreen = () => {
             <TextInput
               style={[styles.input, errorFields.city && styles.errorInput]}
               value={formData.city}
-              onChangeText={(value) => handleInputChange('city', value)}
+              onChangeText={value => handleInputChange('city', value)}
             />
-            {errorFields.city && <Text style={styles.errorText}>This field is required.</Text>}
+            {errorFields.city && (
+              <Text style={styles.errorText}>This field is required.</Text>
+            )}
           </View>
 
           <Text style={styles.label}>Pin Code</Text>
@@ -419,9 +449,11 @@ const RegistrationScreen = () => {
             <TextInput
               style={[styles.input, errorFields.pincode && styles.errorInput]}
               value={formData.pincode}
-              onChangeText={(value) => handleInputChange('pincode', value)}
+              onChangeText={value => handleInputChange('pincode', value)}
             />
-            {errorFields.pincode && <Text style={styles.errorText}>This field is required.</Text>}
+            {errorFields.pincode && (
+              <Text style={styles.errorText}>This field is required.</Text>
+            )}
           </View>
 
           <Text style={styles.label}>District</Text>
@@ -429,9 +461,11 @@ const RegistrationScreen = () => {
             <TextInput
               style={[styles.input, errorFields.district && styles.errorInput]}
               value={formData.district}
-              onChangeText={(value) => handleInputChange('district', value)}
+              onChangeText={value => handleInputChange('district', value)}
             />
-            {errorFields.district && <Text style={styles.errorText}>This field is required.</Text>}
+            {errorFields.district && (
+              <Text style={styles.errorText}>This field is required.</Text>
+            )}
           </View>
 
           <Text style={styles.label}>State</Text>
@@ -439,9 +473,11 @@ const RegistrationScreen = () => {
             <TextInput
               style={[styles.input, errorFields.state && styles.errorInput]}
               value={formData.state}
-              onChangeText={(value) => handleInputChange('state', value)}
+              onChangeText={value => handleInputChange('state', value)}
             />
-            {errorFields.state && <Text style={styles.errorText}>This field is required.</Text>}
+            {errorFields.state && (
+              <Text style={styles.errorText}>This field is required.</Text>
+            )}
           </View>
         </View>
 
@@ -452,7 +488,10 @@ const RegistrationScreen = () => {
           <Text style={styles.label}>Select Service Category</Text>
           <View>
             <Dropdown
-              style={[styles.dropdown, errorFields.skillCategory && styles.errorInput]}
+              style={[
+                styles.dropdown,
+                errorFields.skillCategory && styles.errorInput,
+              ]}
               containerStyle={styles.dropdownContainer}
               data={skillCategoryItems}
               placeholderStyle={styles.placeholderStyle}
@@ -462,11 +501,11 @@ const RegistrationScreen = () => {
               valueField="value"
               placeholder="Select Service Category"
               value={formData.skillCategory}
-              onChange={(item) => handleInputChange('skillCategory', item.value)}
+              onChange={item => handleInputChange('skillCategory', item.value)}
               renderRightIcon={() => (
                 <FontAwesome name="chevron-down" size={14} color="#9e9e9e" />
               )}
-              renderItem={(item) => (
+              renderItem={item => (
                 <View style={styles.dropdownItem}>
                   <Text style={styles.dropdownItemText}>{item.label}</Text>
                 </View>
@@ -478,11 +517,13 @@ const RegistrationScreen = () => {
           </View>
 
           <View style={styles.checkboxGrid}>
-            {subServices.map((item) => (
+            {subServices.map(item => (
               <View key={item.id} style={styles.checkboxContainer}>
                 <Checkbox
                   status={
-                    formData.subSkills.includes(item.label) ? 'checked' : 'unchecked'
+                    formData.subSkills.includes(item.label)
+                      ? 'checked'
+                      : 'unchecked'
                   }
                   onPress={() => handleCheckboxChange(item.label)}
                   color="#FF5722"
@@ -510,7 +551,7 @@ const RegistrationScreen = () => {
               <View style={styles.image1}>
                 {formData.profileImageUri && (
                   <Image
-                    source={{ uri: formData.profileImageUri }}
+                    source={{uri: formData.profileImageUri}}
                     style={styles.imagePreview}
                   />
                 )}
@@ -518,7 +559,7 @@ const RegistrationScreen = () => {
               <View style={styles.image2}>
                 {formData.proofImageUri && (
                   <Image
-                    source={{ uri: formData.proofImageUri }}
+                    source={{uri: formData.proofImageUri}}
                     style={styles.imagePreview}
                   />
                 )}
@@ -529,8 +570,7 @@ const RegistrationScreen = () => {
               <View>
                 <TouchableOpacity
                   style={styles.uploadButton}
-                  onPress={() => handleImagePick('profileImageUri')}
-                >
+                  onPress={() => handleImagePick('profileImageUri')}>
                   <Icon name="image" size={24} color="#9e9e9e" />
                   <Text style={styles.fileText}>Choose File</Text>
                 </TouchableOpacity>
@@ -541,8 +581,7 @@ const RegistrationScreen = () => {
               <View>
                 <TouchableOpacity
                   style={styles.uploadButton}
-                  onPress={() => handleImagePick('proofImageUri')}
-                >
+                  onPress={() => handleImagePick('proofImageUri')}>
                   <Icon name="file-upload" size={24} color="#9e9e9e" />
                   <Text style={styles.fileText}>Choose File</Text>
                 </TouchableOpacity>
@@ -556,11 +595,11 @@ const RegistrationScreen = () => {
 
         <View style={styles.swiperButton}>
           <SwipeButton
-            forceReset={(reset) => {
+            forceReset={reset => {
               forceResetButton = reset;
             }}
             title="Submit to Commander"
-            titleStyles={{ color: titleColor, fontSize: 16 }}
+            titleStyles={{color: titleColor, fontSize: 16}}
             railBackgroundColor="#FF5722"
             railBorderColor="#FF5722"
             railStyles={{
@@ -724,7 +763,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     elevation: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.2,
     shadowRadius: 2,
   },

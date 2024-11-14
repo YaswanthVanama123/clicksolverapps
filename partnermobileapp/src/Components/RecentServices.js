@@ -1,40 +1,61 @@
-import { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, SafeAreaView, Modal, TouchableWithoutFeedback } from 'react-native';
+import {useState, useEffect} from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+  Modal,
+  TouchableWithoutFeedback,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons'; // for check, cross, sort icons
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'; // for wallet and bank icons
 import Feather from 'react-native-vector-icons/Feather';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import Entypo from 'react-native-vector-icons/Entypo';
-import axios from 'axios'; 
-import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
+import {useNavigation} from '@react-navigation/native';
 
-const ServiceItem = ({ item, formatDate }) => {
+const ServiceItem = ({item, formatDate}) => {
   const navigation = useNavigation();
 
   return (
-    <TouchableOpacity style={styles.itemContainer} onPress={() =>{
-      navigation.push("serviceBookingItem", { tracking_id: item.notification_id });
-    }}>
+    <TouchableOpacity
+      style={styles.itemContainer}
+      onPress={() => {
+        navigation.push('serviceBookingItem', {
+          tracking_id: item.notification_id,
+        });
+      }}>
       <View style={styles.itemMainContainer}>
         <View style={styles.iconContainer}>
           {item.payment_type === 'cash' ? (
-            <Entypo name='wallet' size={20} color="white" />
+            <Entypo name="wallet" size={20} color="white" />
           ) : (
-            <MaterialCommunityIcons name='bank' size={20} color="white" />
+            <MaterialCommunityIcons name="bank" size={20} color="white" />
           )}
         </View>
         <View style={styles.itemDetails}>
-          <Text style={styles.title}>{item.service_booked ? item.service_booked[0].serviceName : item.service}</Text>
+          <Text style={styles.title}>
+            {item.service_booked
+              ? item.service_booked[0].serviceName
+              : item.service}
+          </Text>
           <Text style={styles.schedule}>{formatDate(item.created_at)}</Text>
         </View>
         <View>
           <Text style={styles.price}>₹{item.payment}</Text>
-          <Text style={styles.paymentDetails}>{item.payment_type === 'cash' ? 'Paid to you' : 'Paid to click solver'}</Text>
+          <Text style={styles.paymentDetails}>
+            {item.payment_type === 'cash'
+              ? 'Paid to you'
+              : 'Paid to click solver'}
+          </Text>
         </View>
       </View>
     </TouchableOpacity>
   );
-}; 
+};
 
 const RecentServices = () => {
   const [bookingsData, setBookingsData] = useState([]);
@@ -48,13 +69,16 @@ const RecentServices = () => {
     const fetchBookings = async () => {
       try {
         const token = await EncryptedStorage.getItem('pcs_token');
-        if (!token) throw new Error("Token not found");
+        if (!token) throw new Error('Token not found');
 
-        const response = await axios.get(`${process.env.BackendAPI6}/api/worker/bookings`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
+        const response = await axios.get(
+          `${process.env.BackendAPI6}/api/worker/bookings`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           },
-        });
+        );
         setBookingsData(response.data);
         setFilteredData(response.data); // Initially display all data
       } catch (error) {
@@ -65,30 +89,45 @@ const RecentServices = () => {
     fetchBookings();
   }, []);
 
-  const formatDate = (created_at) => {
+  const formatDate = created_at => {
     const date = new Date(created_at);
     const monthNames = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
-    return `${monthNames[date.getMonth()]} ${String(date.getDate()).padStart(2, '0')}, ${date.getFullYear()}`;
+    return `${monthNames[date.getMonth()]} ${String(date.getDate()).padStart(
+      2,
+      '0',
+    )}, ${date.getFullYear()}`;
   };
 
-  const toggleFilter = (status) => {
+  const toggleFilter = status => {
     const updatedFilters = selectedFilters.includes(status)
       ? selectedFilters.filter(s => s !== status)
       : [...selectedFilters, status];
-    
+
     setSelectedFilters(updatedFilters);
 
     // Apply filter immediately
-    const filtered = updatedFilters.length > 0
-      ? bookingsData.filter(item => {
-          const itemStatus = item.payment !== null ? 'Completed' : 'Cancelled';
-          return updatedFilters.includes(itemStatus);
-        })
-      : bookingsData;
-    
+    const filtered =
+      updatedFilters.length > 0
+        ? bookingsData.filter(item => {
+            const itemStatus =
+              item.payment !== null ? 'Completed' : 'Cancelled';
+            return updatedFilters.includes(itemStatus);
+          })
+        : bookingsData;
+
     setFilteredData(filtered);
   };
 
@@ -106,7 +145,9 @@ const RecentServices = () => {
             <Feather name="shopping-cart" size={18} color="#212121" />
             <Text style={styles.headerTitle}>My services</Text>
           </View>
-          <TouchableOpacity onPress={() => setIsFilterVisible(!isFilterVisible)} style={styles.sortContainerRight}>
+          <TouchableOpacity
+            onPress={() => setIsFilterVisible(!isFilterVisible)}
+            style={styles.sortContainerRight}>
             <Text style={styles.sortText}>Sort by Status</Text>
             <Icon name="filter-list" size={24} color="#000" />
           </TouchableOpacity>
@@ -117,9 +158,16 @@ const RecentServices = () => {
           <View style={styles.dropdownContainer}>
             <Text style={styles.dropdownTitle}>SORT BY STATUS</Text>
             {filterOptions.map((option, index) => (
-              <TouchableOpacity key={index} style={styles.dropdownOption} onPress={() => toggleFilter(option)}>
+              <TouchableOpacity
+                key={index}
+                style={styles.dropdownOption}
+                onPress={() => toggleFilter(option)}>
                 <Icon
-                  name={selectedFilters.includes(option) ? "check-box" : "check-box-outline-blank"}
+                  name={
+                    selectedFilters.includes(option)
+                      ? 'check-box'
+                      : 'check-box-outline-blank'
+                  }
                   size={20}
                   color="#4a4a4a"
                 />
@@ -132,7 +180,9 @@ const RecentServices = () => {
         <View style={styles.serviceContainer}>
           <FlatList
             data={filteredData}
-            renderItem={({ item }) => <ServiceItem item={item} formatDate={formatDate} />}
+            renderItem={({item}) => (
+              <ServiceItem item={item} formatDate={formatDate} />
+            )}
             keyExtractor={(item, index) => index.toString()}
           />
         </View>
@@ -154,7 +204,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
     shadowRadius: 4,
     backgroundColor: '#ffffff',
@@ -190,7 +240,7 @@ const styles = StyleSheet.create({
     padding: 10,
     elevation: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.3,
     shadowRadius: 4,
     zIndex: 10, // Ensure dropdown is above other items
@@ -224,7 +274,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     shadowColor: '#000',
     elevation: 1,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, {useState, useCallback} from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -13,10 +13,11 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import {useNavigation, CommonActions} from '@react-navigation/native';
 
 // Image URLs
-const BG_IMAGE_URL = 'https://i.postimg.cc/rFFQLGRh/Picsart-24-10-01-15-38-43-205.jpg';
+const BG_IMAGE_URL =
+  'https://i.postimg.cc/rFFQLGRh/Picsart-24-10-01-15-38-43-205.jpg';
 const LOGO_URL = 'https://i.postimg.cc/hjjpy2SW/Button-1.png';
 const FLAG_ICON_URL = 'https://i.postimg.cc/C1hkm5sR/india-flag-icon-29.png';
 
@@ -25,9 +26,12 @@ const LoginScreen = () => {
   const navigation = useNavigation();
 
   // Function to call the backend API for login
-  const loginBackend = useCallback(async (phoneNumber) => {
+  const loginBackend = useCallback(async phoneNumber => {
     try {
-      const response = await axios.post(`${process.env.BACKENDAIPE}/api/user/login`, { phone_number: phoneNumber });
+      const response = await axios.post(
+        `${process.env.BACKENDAIPE}/api/user/login`,
+        {phone_number: phoneNumber},
+      );
       return response;
     } catch (error) {
       console.error('Error during backend login:', error);
@@ -37,26 +41,25 @@ const LoginScreen = () => {
 
   // Main login function
   const login = useCallback(async () => {
-    if (!phoneNumber) return;  // Early return if phone number is empty
+    if (!phoneNumber) return; // Early return if phone number is empty
 
     try {
       const response = await loginBackend(phoneNumber);
-      const { status, data } = response;
-      console.log("status",status)
+      const {status, data} = response;
+      console.log('status', status);
       if (status === 200) {
         // Worker already signed up
-        const { token } = data;
+        const {token} = data;
         await EncryptedStorage.setItem('cs_token', token);
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
         );
-
       } else if (status === 205) {
         // Worker not signed up, navigate to signup
-        navigation.navigate('SignupDetails', { phone_number: phoneNumber });
+        navigation.navigate('SignupDetails', {phone_number: phoneNumber});
       }
     } catch (error) {
       console.error('Error during login:', error);
@@ -67,18 +70,16 @@ const LoginScreen = () => {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ImageBackground
-          source={{ uri: BG_IMAGE_URL }}
+          source={{uri: BG_IMAGE_URL}}
           style={styles.backgroundImage}
-          resizeMode="stretch"
-        >
+          resizeMode="stretch">
           <View style={styles.contentOverlay}>
             {/* Logo and Heading */}
             <View style={styles.description}>
               <View style={styles.logoContainer}>
-                <Image source={{ uri: LOGO_URL }} style={styles.logo} />
+                <Image source={{uri: LOGO_URL}} style={styles.logo} />
                 <Text style={styles.heading}>
                   Click <Text style={styles.solverText}>Solver</Text>
                 </Text>
@@ -90,7 +91,7 @@ const LoginScreen = () => {
             {/* Mobile Input */}
             <View style={styles.inputContainer}>
               <View style={styles.countryCodeContainer}>
-                <Image source={{ uri: FLAG_ICON_URL }} style={styles.flagIcon} />
+                <Image source={{uri: FLAG_ICON_URL}} style={styles.flagIcon} />
                 <Text style={styles.picker}>91</Text>
               </View>
               <TextInput
@@ -115,17 +116,32 @@ const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  keyboardAvoidingView: { flex: 1 },
-  backgroundImage: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  solverText: { color: '#212121', fontWeight: 'bold' },
-  description: { flexDirection: 'column', marginLeft: 10 },
-  contentOverlay: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 },
-  logoContainer: { flexDirection: 'row', gap: 10, alignItems: 'center' },
-  logo: { width: 60, height: 60, marginBottom: 10 },
-  heading: { fontSize: 26, lineHeight: 26, fontWeight: 'bold', color: '#212121', width: 100 },
-  subheading: { fontSize: 16, fontWeight: 'bold', color: '#333' },
-  tagline: { fontSize: 14, color: '#666', textAlign: 'center', paddingBottom: 70 },
+  container: {flex: 1},
+  keyboardAvoidingView: {flex: 1},
+  backgroundImage: {flex: 1, justifyContent: 'center', alignItems: 'center'},
+  solverText: {color: '#212121', fontWeight: 'bold'},
+  description: {flexDirection: 'column', marginLeft: 10},
+  contentOverlay: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  logoContainer: {flexDirection: 'row', gap: 10, alignItems: 'center'},
+  logo: {width: 60, height: 60, marginBottom: 10},
+  heading: {
+    fontSize: 26,
+    lineHeight: 26,
+    fontWeight: 'bold',
+    color: '#212121',
+    width: 100,
+  },
+  subheading: {fontSize: 16, fontWeight: 'bold', color: '#333'},
+  tagline: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    paddingBottom: 70,
+  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -145,9 +161,16 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     width: 80,
   },
-  flagIcon: { width: 24, height: 24 },
-  picker: { fontSize: 17, color: '#212121', padding: 10, fontWeight: 'bold' },
-  input: { flex: 1, height: 56, paddingLeft: 10, color: '#212121', fontSize: 16, fontWeight: 'bold' },
+  flagIcon: {width: 24, height: 24},
+  picker: {fontSize: 17, color: '#212121', padding: 10, fontWeight: 'bold'},
+  input: {
+    flex: 1,
+    height: 56,
+    paddingLeft: 10,
+    color: '#212121',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   button: {
     backgroundColor: '#FF5722',
     paddingVertical: 15,
@@ -158,7 +181,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     marginTop: 25,
   },
-  buttonText: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
+  buttonText: {color: '#ffffff', fontSize: 16, fontWeight: 'bold'},
 });
 
 export default LoginScreen;

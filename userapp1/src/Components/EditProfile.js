@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   SafeAreaView,
   Image,
 } from 'react-native';
-import { useRoute, useNavigation, CommonActions } from '@react-navigation/native';
+import {useRoute, useNavigation, CommonActions} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
@@ -17,13 +17,13 @@ const EditProfile = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  
+
   const route = useRoute();
   const navigation = useNavigation();
 
   const fetchProfileDetails = async () => {
-    const { details } = route.params;
-    console.log("Fetched Details: ", details); // Debug log
+    const {details} = route.params;
+    console.log('Fetched Details: ', details); // Debug log
     setEmail(details.email);
     setPhone(details.phoneNumber);
     setFullName(details.name);
@@ -32,33 +32,41 @@ const EditProfile = () => {
   const updateProfile = async () => {
     try {
       const jwtToken = await EncryptedStorage.getItem('cs_token');
-      console.log("JWT Token: ", jwtToken); // Log the JWT token for debugging
+      console.log('JWT Token: ', jwtToken); // Log the JWT token for debugging
 
       if (!jwtToken) {
-        console.error("No JWT token found");
+        console.error('No JWT token found');
         return;
       }
 
-      console.log("Sending request to update profile with name:", fullName, email, phone); // Debug log
-      const response = await axios.post(`${process.env.BACKENDAIPE}/api/user/details/update`, 
-        { name: fullName, email, phone }, {
-        headers: { Authorization: `Bearer ${jwtToken}` }
-      });
+      console.log(
+        'Sending request to update profile with name:',
+        fullName,
+        email,
+        phone,
+      ); // Debug log
+      const response = await axios.post(
+        `${process.env.BACKENDAIPE}/api/user/details/update`,
+        {name: fullName, email, phone},
+        {
+          headers: {Authorization: `Bearer ${jwtToken}`},
+        },
+      );
 
-      console.log("Response from server: ", response.status);
+      console.log('Response from server: ', response.status);
 
       if (response.status === 200) {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Account' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Account'}]}}],
+          }),
         );
       } else {
-        console.error("Failed to update profile. Status: ", response.status);
+        console.error('Failed to update profile. Status: ', response.status);
       }
     } catch (error) {
-      console.error("Error response: ", error.response?.data || error.message);
+      console.error('Error response: ', error.response?.data || error.message);
     }
   };
 
@@ -69,7 +77,12 @@ const EditProfile = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Icon name="arrow-back" size={24} color="#000" onPress={() => navigation.goBack()} />
+        <Icon
+          name="arrow-back"
+          size={24}
+          color="#000"
+          onPress={() => navigation.goBack()}
+        />
         <Text style={styles.headerText}>Edit Profile</Text>
       </View>
 
@@ -138,13 +151,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginLeft: 10,
-    color:'#1D2951',
-    textAlign:'center'
+    color: '#1D2951',
+    textAlign: 'center',
   },
   form: {
     marginTop: 10,
-    flexDirection:'column',
-    gap:10
+    flexDirection: 'column',
+    gap: 10,
   },
   label: {
     fontSize: 14,
@@ -159,8 +172,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     backgroundColor: '#f9f9f9',
-    color:'#212121',
-    fontSize:16
+    color: '#212121',
+    fontSize: 16,
   },
   inputWithIcon: {
     flexDirection: 'row',
@@ -174,8 +187,8 @@ const styles = StyleSheet.create({
   inputText: {
     flex: 1,
     marginLeft: 10,
-    color:'#212121',
-    fontSize:16
+    color: '#212121',
+    fontSize: 16,
   },
   phoneInputContainer: {
     flexDirection: 'row',
@@ -185,7 +198,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     backgroundColor: '#f9f9f9',
-
   },
   flagIcon: {
     width: 24,
@@ -195,12 +207,12 @@ const styles = StyleSheet.create({
   callingCode: {
     marginRight: 10,
     fontSize: 16,
-    color:'#212121'
+    color: '#212121',
   },
   phoneInput: {
     flex: 1,
-    color:'#212121',
-    fontSize:16
+    color: '#212121',
+    fontSize: 16,
   },
   button: {
     backgroundColor: '#FF4500',

@@ -1,7 +1,14 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import React, {useCallback, useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+} from 'react-native';
 import Entypo from 'react-native-vector-icons/Entypo';
-import { useNavigation, CommonActions } from "@react-navigation/native";
+import {useNavigation, CommonActions} from '@react-navigation/native';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -41,17 +48,16 @@ const dummyTransactions = [
     date: '30 Oct 2024',
     status: 'Credited to you',
   },
-
 ];
 
-const TransactionItem = ({ item }) => (
+const TransactionItem = ({item}) => (
   <View style={styles.transactionContainer}>
     <View style={styles.paymentContainer}>
       <View style={styles.iconContainer}>
         {item.payment.toLowerCase() === 'paid by cash' ? (
-          <Entypo name='wallet' size={20} color="white" />
+          <Entypo name="wallet" size={20} color="white" />
         ) : (
-          <MaterialCommunityIcons name='bank' size={20} color="white" />
+          <MaterialCommunityIcons name="bank" size={20} color="white" />
         )}
       </View>
       <View style={styles.paymentDetails}>
@@ -59,30 +65,49 @@ const TransactionItem = ({ item }) => (
         <Text style={styles.nameText}>{item.name}</Text>
       </View>
       <View style={styles.paymentDetails}>
-        <Text style={item.amount.startsWith('-') ? styles.amountNegative : styles.amountPositive}>{item.amount}</Text>
+        <Text
+          style={
+            item.amount.startsWith('-')
+              ? styles.amountNegative
+              : styles.amountPositive
+          }>
+          {item.amount}
+        </Text>
         <Text style={styles.timeText}>{item.time}</Text>
       </View>
     </View>
   </View>
 );
 
-const PaymentHistoryCard = ({ item }) => (
+const PaymentHistoryCard = ({item}) => (
   <View style={styles.cardPaymentContainer}>
     <View style={styles.iconWrapper}>
       <MaterialCommunityIcons
-        name={item.type === 'Paid' ? 'arrow-top-right' : item.type === 'Received' ? 'arrow-bottom-left' : 'wrench'}
+        name={
+          item.type === 'Paid'
+            ? 'arrow-top-right'
+            : item.type === 'Received'
+            ? 'arrow-bottom-left'
+            : 'wrench'
+        }
         size={20}
-        color='white'
+        color="white"
       />
     </View>
     <View style={styles.detailsWrapper}>
-      <Text style={styles.typeText}>{item.type === 'Paid' ? 'Paid to click solver' : 'Received from click solver'}</Text>
+      <Text style={styles.typeText}>
+        {item.type === 'Paid'
+          ? 'Paid to click solver'
+          : 'Received from click solver'}
+      </Text>
       <Text style={styles.companyText}>{item.name}</Text>
       <Text style={styles.dateText}>{item.date}</Text>
     </View>
     <View style={styles.amountWrapper}>
       <Text style={styles.amountText}>{item.amount}</Text>
-      <Text style={styles.statusText}>{item.type === 'Paid' ? 'Debited from you' : 'Credited to you'}</Text>
+      <Text style={styles.statusText}>
+        {item.type === 'Paid' ? 'Debited from you' : 'Credited to you'}
+      </Text>
     </View>
   </View>
 );
@@ -98,8 +123,8 @@ const BalanceScreen = () => {
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-      })
+        routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+      }),
     );
   };
 
@@ -111,7 +136,7 @@ const BalanceScreen = () => {
       const response = await axios.post(
         `${process.env.BackendAPI6}/api/balance/ammount`,
         {},
-        { headers: { Authorization: `Bearer ${pcs_token}` } }
+        {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
 
       let totalBalance = 0;
@@ -119,19 +144,27 @@ const BalanceScreen = () => {
         let amount;
         const paymentType = transaction.payment_type.toLowerCase();
         const paymentValue = Number(transaction.payment);
-        const deduction = paymentType === 'cash' ? paymentValue * 0.12 : paymentValue * 0.88;
-        amount = `${paymentType === 'cash' ? '-' : '+'} ₹${deduction.toFixed(2)}`;
+        const deduction =
+          paymentType === 'cash' ? paymentValue * 0.12 : paymentValue * 0.88;
+        amount = `${paymentType === 'cash' ? '-' : '+'} ₹${deduction.toFixed(
+          2,
+        )}`;
         totalBalance += paymentType === 'cash' ? -deduction : deduction;
 
         const date = new Date(transaction.end_time);
-        const formattedTime = `${date.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}`;
+        const formattedTime = `${date.toLocaleDateString([], {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })}`;
 
         return {
           id: index.toString(),
           amount,
           time: formattedTime,
           service: 'Electrician',
-          payment: paymentType === 'cash' ? 'Paid by Cash' : `Paid to Click Solver`,
+          payment:
+            paymentType === 'cash' ? 'Paid by Cash' : `Paid to Click Solver`,
           name: transaction.name,
         };
       });
@@ -154,50 +187,87 @@ const BalanceScreen = () => {
       <View style={styles.headContainer}>
         <View style={styles.header}>
           <TouchableOpacity onPress={backToHome} style={styles.leftIcon}>
-            <FontAwesome6 name='arrow-left-long' size={24} color='#9e9e9e' />
+            <FontAwesome6 name="arrow-left-long" size={24} color="#9e9e9e" />
           </TouchableOpacity>
         </View>
         <View style={styles.balanceContainer}>
           <View style={styles.balanceTitleContainer}>
             <Text style={styles.balanceTitle}>Balance </Text>
-            <TouchableOpacity onPress={() => setIsMessageVisible(!isMessageVisible)}>
-              <Feather name={isMessageVisible ? 'eye-off' : 'eye'} size={20} color='#4a4a4a' />
+            <TouchableOpacity
+              onPress={() => setIsMessageVisible(!isMessageVisible)}>
+              <Feather
+                name={isMessageVisible ? 'eye-off' : 'eye'}
+                size={20}
+                color="#4a4a4a"
+              />
             </TouchableOpacity>
           </View>
-          <Text style={[styles.balanceAmount, isBalanceNegative && styles.negativeBalance]}>
+          <Text
+            style={[
+              styles.balanceAmount,
+              isBalanceNegative && styles.negativeBalance,
+            ]}>
             ₹{balance ?? -200}
           </Text>
           {isMessageVisible && (
             <View style={styles.messageBox}>
-              <Text style={styles.messageText}>The total service charge and payment history</Text>
+              <Text style={styles.messageText}>
+                The total service charge and payment history
+              </Text>
             </View>
           )}
         </View>
         <View style={styles.cardContainer}>
           <TouchableOpacity
-            style={[styles.card, activeCard === 'ServiceHistory' && styles.activeCard]}
-            onPress={() => setActiveCard('ServiceHistory')}
-          >
-            <Text style={[styles.cardText, activeCard === 'ServiceHistory' && styles.activeCardText]}>Service Charge</Text>
+            style={[
+              styles.card,
+              activeCard === 'ServiceHistory' && styles.activeCard,
+            ]}
+            onPress={() => setActiveCard('ServiceHistory')}>
+            <Text
+              style={[
+                styles.cardText,
+                activeCard === 'ServiceHistory' && styles.activeCardText,
+              ]}>
+              Service Charge
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.card, activeCard === 'TransactionHistory' && styles.activeCard]}
-            onPress={() => setActiveCard('TransactionHistory')}
-          >
-            <Text style={[styles.cardText, activeCard === 'TransactionHistory' && styles.activeCardText]}>Payment history</Text>
+            style={[
+              styles.card,
+              activeCard === 'TransactionHistory' && styles.activeCard,
+            ]}
+            onPress={() => setActiveCard('TransactionHistory')}>
+            <Text
+              style={[
+                styles.cardText,
+                activeCard === 'TransactionHistory' && styles.activeCardText,
+              ]}>
+              Payment history
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
       <View style={styles.scrollContainer}>
         <FlatList
-          data={activeCard === 'ServiceHistory' ? transactions : dummyTransactions}
-          renderItem={({ item }) => activeCard === 'ServiceHistory' ? <TransactionItem item={item} /> : <PaymentHistoryCard item={item} />}
+          data={
+            activeCard === 'ServiceHistory' ? transactions : dummyTransactions
+          }
+          renderItem={({item}) =>
+            activeCard === 'ServiceHistory' ? (
+              <TransactionItem item={item} />
+            ) : (
+              <PaymentHistoryCard item={item} />
+            )
+          }
           keyExtractor={item => item.id}
           contentContainerStyle={styles.flatlistContainer}
         />
       </View>
       {isBalanceNegative && (
-        <TouchableOpacity style={styles.payNowButton} onPress={() => console.log('Pay Now pressed')}>
+        <TouchableOpacity
+          style={styles.payNowButton}
+          onPress={() => console.log('Pay Now pressed')}>
           <Text style={styles.payNowButtonText}>Pay Now</Text>
         </TouchableOpacity>
       )}
@@ -225,7 +295,7 @@ const styles = StyleSheet.create({
   },
   balanceTitleContainer: {
     flexDirection: 'row',
-    gap:5,
+    gap: 5,
     alignItems: 'center',
   },
   messageBox: {
@@ -235,7 +305,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: 'center',
   },
-  messageText: { 
+  messageText: {
     fontSize: 14,
     color: '#4a4a4a',
   },
@@ -270,15 +340,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.25,
     shadowRadius: 5,
     elevation: 5,
   },
   activeCard: {
-    borderWidth:1,
+    borderWidth: 1,
     borderColor: '#FF5722',
-
   },
   cardText: {
     fontSize: 13,
@@ -302,7 +371,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.25,
     shadowRadius: 5,
     elevation: 1,
@@ -362,7 +431,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal:'20%'
+    marginHorizontal: '20%',
   },
   payNowButtonText: {
     color: '#ffffff',
@@ -379,7 +448,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     marginHorizontal: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -12,15 +12,15 @@ import {
 import Feather from 'react-native-vector-icons/Feather';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { Dropdown } from 'react-native-element-dropdown';
-import { RadioButton, Checkbox } from 'react-native-paper';
-import { launchImageLibrary } from 'react-native-image-picker';
+import {Dropdown} from 'react-native-element-dropdown';
+import {RadioButton, Checkbox} from 'react-native-paper';
+import {launchImageLibrary} from 'react-native-image-picker';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import SwipeButton from 'rn-swipe-button';
 import Entypo from 'react-native-vector-icons/Entypo';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import uuid from 'react-native-uuid';
 
 const RegistrationScreen = () => {
@@ -28,21 +28,21 @@ const RegistrationScreen = () => {
   const [titleColor, setTitleColor] = useState('#FF5722');
   const [errorFields, setErrorFields] = useState({});
   const [educationItems] = useState([
-    { label: 'High School', value: 'highschool' },
-    { label: "Bachelor's", value: 'bachelor' },
-    { label: "Master's", value: 'master' },
+    {label: 'High School', value: 'highschool'},
+    {label: "Bachelor's", value: 'bachelor'},
+    {label: "Master's", value: 'master'},
   ]);
   const [swiped, setSwiped] = useState(false);
   const [experienceItems] = useState([
-    { label: '0-1 Year', value: '0-1' },
-    { label: '1-3 years', value: '1-3' },
-    { label: 'more than 3 years', value: '3+' },
+    {label: '0-1 Year', value: '0-1'},
+    {label: '1-3 years', value: '1-3'},
+    {label: 'more than 3 years', value: '3+'},
   ]);
   const navigation = useNavigation();
   const [skillCategoryItems, setSkillCategoryItems] = useState([
-    { label: 'Electrician', value: 'electrician' },
-    { label: 'Plumber', value: 'plumber' },
-    { label: 'Carpenter', value: 'carpenter' },
+    {label: 'Electrician', value: 'electrician'},
+    {label: 'Plumber', value: 'plumber'},
+    {label: 'Carpenter', value: 'carpenter'},
   ]);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [formData, setFormData] = useState({
@@ -65,16 +65,16 @@ const RegistrationScreen = () => {
   });
   const [isEditing, setIsEditing] = useState(false);
 
-  const handleCheckboxChange = (serviceName) => {
+  const handleCheckboxChange = serviceName => {
     const isChecked = formData.subSkills.includes(serviceName);
     const updatedSubSkills = isChecked
-      ? formData.subSkills.filter((skill) => skill !== serviceName)
+      ? formData.subSkills.filter(skill => skill !== serviceName)
       : [...formData.subSkills, serviceName];
 
-    setFormData({ ...formData, subSkills: updatedSubSkills });
+    setFormData({...formData, subSkills: updatedSubSkills});
   };
 
-  const uploadImage = async (uri) => {
+  const uploadImage = async uri => {
     const apiKey = '287b4ba48139a6a59e75b5a8266bbea2';
     const apiUrl = 'https://api.imgbb.com/1/upload';
 
@@ -153,7 +153,7 @@ const RegistrationScreen = () => {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
           },
-        }
+        },
       );
       if (response.status === 200) {
         navigation.replace('PartnerSteps');
@@ -170,18 +170,18 @@ const RegistrationScreen = () => {
         console.error('No pcs_token found.');
         navigation.replace('Login');
       }
-      const response = await axios.get( 
+      const response = await axios.get(
         `${process.env.BackendAPI6}/api/service/categories`,
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
           },
-        }
+        },
       );
       setPhoneNumber(response.data[0].phone_numbers[0]);
       const data = response.data;
-      console.log(data[0])
-      const mappedData = data.map((item) => ({
+      console.log(data[0]);
+      const mappedData = data.map(item => ({
         label: item.service_name,
         value: item.service_name,
       }));
@@ -208,28 +208,27 @@ const RegistrationScreen = () => {
       await EncryptedStorage.removeItem('start_work_time');
       await EncryptedStorage.removeItem('start_work_time');
 
-
       navigation.replace('Login');
     } catch (error) {
       console.error('Error logging out:', error);
     }
   };
 
-  const handleImagePick = async (fieldName) => {
+  const handleImagePick = async fieldName => {
     const options = {
       mediaType: 'photo',
       quality: 1,
       selectionLimit: 1,
     };
 
-    launchImageLibrary(options, async (response) => {
+    launchImageLibrary(options, async response => {
       if (response.didCancel) {
         console.log('User cancelled image picker');
       } else if (response.error) {
         console.error('ImagePicker Error: ', response.error);
         Alert.alert('Error', 'Failed to pick image.');
       } else if (response.assets) {
-        const { uri } = response.assets[0];
+        const {uri} = response.assets[0];
         try {
           const imageUrl = await uploadImage(uri);
           console.log('Uploaded Image URL:', imageUrl);
@@ -243,18 +242,18 @@ const RegistrationScreen = () => {
   };
 
   const handleInputChange = async (field, value) => {
-    setFormData({ ...formData, [field]: value });
-    setErrorFields((prev) => ({ ...prev, [field]: false }));
+    setFormData({...formData, [field]: value});
+    setErrorFields(prev => ({...prev, [field]: false}));
     if (field === 'skillCategory') {
       try {
         const response = await axios.post(
           `${process.env.BackendAPI6}/api/subservice/checkboxes`,
           {
             selectedService: value,
-          }
+          },
         );
         const data = response.data;
-        const mappedData = data.map((item) => ({
+        const mappedData = data.map(item => ({
           id: item.service_id,
           label: item.service_tag,
         }));
@@ -269,7 +268,7 @@ const RegistrationScreen = () => {
   const fetchDetails = async () => {
     try {
       const pcsToken = await EncryptedStorage.getItem('pcs_token');
-      console.log("details",pcsToken)
+      console.log('details', pcsToken);
       if (!pcsToken) {
         console.error('No pcs_token found.');
         navigation.replace('Login');
@@ -280,7 +279,7 @@ const RegistrationScreen = () => {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
           },
-        }
+        },
       );
       const data = response.data;
       const subservices = data.subservices;
@@ -304,7 +303,7 @@ const RegistrationScreen = () => {
         subSkills: data.subservices || [],
       });
 
-      const mappedData = subservices.map((item) => ({
+      const mappedData = subservices.map(item => ({
         id: uuid.v4(),
         label: item,
       }));
@@ -315,7 +314,7 @@ const RegistrationScreen = () => {
   };
 
   const handleEdit = () => {
-    setIsEditing((prev) => !prev);
+    setIsEditing(prev => !prev);
   };
 
   useEffect(() => {
@@ -327,7 +326,7 @@ const RegistrationScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={handleEdit} style={styles.editContainer}>
-        <Feather name="edit" size={24} color="#333" />
+          <Feather name="edit" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Profile</Text>
       </View>
@@ -340,7 +339,7 @@ const RegistrationScreen = () => {
             style={[styles.input, errorFields.firstName && styles.errorInput]}
             value={formData.firstName}
             editable={isEditing}
-            onChangeText={(value) => handleInputChange('firstName', value)}
+            onChangeText={value => handleInputChange('firstName', value)}
           />
           {errorFields.firstName && (
             <Text style={styles.errorText}>This field is required.</Text>
@@ -350,7 +349,7 @@ const RegistrationScreen = () => {
             style={[styles.input, errorFields.lastName && styles.errorInput]}
             value={formData.lastName}
             editable={isEditing}
-            onChangeText={(value) => handleInputChange('lastName', value)}
+            onChangeText={value => handleInputChange('lastName', value)}
           />
           {errorFields.lastName && (
             <Text style={styles.errorText}>This field is required.</Text>
@@ -362,11 +361,9 @@ const RegistrationScreen = () => {
                 style={[
                   styles.genderRow,
                   formData.gender === 'male' && styles.checked,
-                ]}
-              >
+                ]}>
                 <RadioButton
                   value="male"
-      
                   status={formData.gender === 'male' ? 'checked' : 'unchecked'}
                   onPress={() => {
                     handleInputChange('gender', 'male');
@@ -380,12 +377,12 @@ const RegistrationScreen = () => {
                 style={[
                   styles.genderRow,
                   formData.gender === 'female' && styles.checked,
-                ]}
-              >
+                ]}>
                 <RadioButton
                   value="female"
-             
-                  status={formData.gender === 'female' ? 'checked' : 'unchecked'}
+                  status={
+                    formData.gender === 'female' ? 'checked' : 'unchecked'
+                  }
                   onPress={() => {
                     handleInputChange('gender', 'female');
                   }}
@@ -398,7 +395,10 @@ const RegistrationScreen = () => {
 
           <Text style={styles.label}>Work Experience (Years)</Text>
           <Dropdown
-            style={[styles.dropdown, errorFields.workExperience && styles.errorInput]}
+            style={[
+              styles.dropdown,
+              errorFields.workExperience && styles.errorInput,
+            ]}
             containerStyle={styles.dropdownContainer}
             disable={!isEditing}
             data={experienceItems}
@@ -410,12 +410,12 @@ const RegistrationScreen = () => {
             valueField="value"
             placeholder="Select your experience"
             value={formData.workExperience}
-            onChange={(item) => handleInputChange('workExperience', item.value)}
+            onChange={item => handleInputChange('workExperience', item.value)}
             renderRightIcon={() => (
               <FontAwesome name="chevron-down" size={14} color="#9e9e9e" />
             )}
             disabled={isEditing}
-            renderItem={(item) => (
+            renderItem={item => (
               <View style={styles.dropdownItem}>
                 <Text style={styles.dropdownItemText}>{item.label}</Text>
               </View>
@@ -429,14 +429,17 @@ const RegistrationScreen = () => {
             style={[styles.input, errorFields.dob && styles.errorInput]}
             value={formData.dob}
             editable={isEditing}
-            onChangeText={(value) => handleInputChange('dob', value)}
+            onChangeText={value => handleInputChange('dob', value)}
           />
           {errorFields.dob && (
             <Text style={styles.errorText}>This field is required.</Text>
           )}
           <Text style={styles.label}>Education</Text>
           <Dropdown
-            style={[styles.dropdown, errorFields.education && styles.errorInput]}
+            style={[
+              styles.dropdown,
+              errorFields.education && styles.errorInput,
+            ]}
             containerStyle={styles.dropdownContainer}
             disable={!isEditing}
             data={educationItems}
@@ -448,11 +451,11 @@ const RegistrationScreen = () => {
             valueField="value"
             placeholder="Select Education"
             value={formData.education}
-            onChange={(item) => handleInputChange('education', item.value)}
+            onChange={item => handleInputChange('education', item.value)}
             renderRightIcon={() => (
               <FontAwesome name="chevron-down" size={14} color="#9e9e9e" />
             )}
-            renderItem={(item) => (
+            renderItem={item => (
               <View style={styles.dropdownItem}>
                 <Text style={styles.dropdownItemText}>{item.label}</Text>
               </View>
@@ -483,7 +486,7 @@ const RegistrationScreen = () => {
             )}
           </View>
         </View>
-        <View style={styles.horizantalLine}/>
+        <View style={styles.horizantalLine} />
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Address / Residential Details</Text>
 
@@ -492,7 +495,7 @@ const RegistrationScreen = () => {
             style={[styles.input, errorFields.doorNo && styles.errorInput]}
             value={formData.doorNo}
             editable={isEditing}
-            onChangeText={(value) => handleInputChange('doorNo', value)}
+            onChangeText={value => handleInputChange('doorNo', value)}
           />
           {errorFields.doorNo && (
             <Text style={styles.errorText}>This field is required.</Text>
@@ -502,7 +505,7 @@ const RegistrationScreen = () => {
             style={[styles.input, errorFields.landmark && styles.errorInput]}
             value={formData.landmark}
             editable={isEditing}
-            onChangeText={(value) => handleInputChange('landmark', value)}
+            onChangeText={value => handleInputChange('landmark', value)}
           />
           {errorFields.landmark && (
             <Text style={styles.errorText}>This field is required.</Text>
@@ -513,7 +516,7 @@ const RegistrationScreen = () => {
             style={[styles.input, errorFields.city && styles.errorInput]}
             value={formData.city}
             editable={isEditing}
-            onChangeText={(value) => handleInputChange('city', value)}
+            onChangeText={value => handleInputChange('city', value)}
           />
           {errorFields.city && (
             <Text style={styles.errorText}>This field is required.</Text>
@@ -524,7 +527,7 @@ const RegistrationScreen = () => {
             style={[styles.input, errorFields.pincode && styles.errorInput]}
             value={formData.pincode}
             editable={isEditing}
-            onChangeText={(value) => handleInputChange('pincode', value)}
+            onChangeText={value => handleInputChange('pincode', value)}
           />
           {errorFields.pincode && (
             <Text style={styles.errorText}>This field is required.</Text>
@@ -535,7 +538,7 @@ const RegistrationScreen = () => {
             style={[styles.input, errorFields.district && styles.errorInput]}
             value={formData.district}
             editable={isEditing}
-            onChangeText={(value) => handleInputChange('district', value)}
+            onChangeText={value => handleInputChange('district', value)}
           />
           {errorFields.district && (
             <Text style={styles.errorText}>This field is required.</Text>
@@ -546,19 +549,22 @@ const RegistrationScreen = () => {
             style={[styles.input, errorFields.state && styles.errorInput]}
             value={formData.state}
             editable={isEditing}
-            onChangeText={(value) => handleInputChange('state', value)}
+            onChangeText={value => handleInputChange('state', value)}
           />
           {errorFields.state && (
             <Text style={styles.errorText}>This field is required.</Text>
           )}
         </View>
-        <View style={styles.horizantalLine}/>
+        <View style={styles.horizantalLine} />
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Skill Details</Text>
 
           <Text style={styles.label}>Select Service Category</Text>
           <Dropdown
-            style={[styles.dropdown, errorFields.skillCategory && styles.Service]}
+            style={[
+              styles.dropdown,
+              errorFields.skillCategory && styles.Service,
+            ]}
             containerStyle={styles.dropdownContainer}
             data={skillCategoryItems}
             disable={!isEditing}
@@ -570,11 +576,11 @@ const RegistrationScreen = () => {
             valueField="value"
             placeholder="Select Service Category"
             value={formData.skillCategory}
-            onChange={(item) => handleInputChange('skillCategory', item.value)}
+            onChange={item => handleInputChange('skillCategory', item.value)}
             renderRightIcon={() => (
               <FontAwesome name="chevron-down" size={14} color="#9e9e9e" />
             )}
-            renderItem={(item) => (
+            renderItem={item => (
               <View style={styles.dropdownItem}>
                 <Text style={styles.dropdownItemText}>{item.label}</Text>
               </View>
@@ -588,9 +594,8 @@ const RegistrationScreen = () => {
             style={[
               styles.checkboxGrid,
               formData.subSkills.length > 0 && styles.checked,
-            ]}
-          >
-            {subServices.map((item) => (
+            ]}>
+            {subServices.map(item => (
               <View key={item.id} style={styles.checkboxContainer}>
                 <Checkbox
                   status={
@@ -606,7 +611,7 @@ const RegistrationScreen = () => {
             ))}
           </View>
         </View>
-        <View style={styles.horizantalLine}/>
+        <View style={styles.horizantalLine} />
         {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>Upload Details</Text>
 
@@ -671,11 +676,11 @@ const RegistrationScreen = () => {
         <View>
           {isEditing ? (
             <SwipeButton
-              forceReset={(reset) => {
+              forceReset={reset => {
                 forceResetButton = reset;
               }}
-              title="Submit to Commander" 
-              titleStyles={{ color: titleColor, fontSize: 16 }}
+              title="Submit to Commander"
+              titleStyles={{color: titleColor, fontSize: 16}}
               railBackgroundColor="#ffffff"
               railBorderColor="#EFDCCB"
               railStyles={{
@@ -699,7 +704,9 @@ const RegistrationScreen = () => {
             />
           ) : (
             <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.doneButton} onPress={handleLogout}>
+              <TouchableOpacity
+                style={styles.doneButton}
+                onPress={handleLogout}>
                 <Text style={styles.doneText}>Logout</Text>
               </TouchableOpacity>
             </View>
@@ -716,11 +723,10 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
     backgroundColor: '#FFFFFF',
   },
-  scrollContainer:{
+  scrollContainer: {
     flex: 1,
     paddingBottom: 0,
     backgroundColor: '#FFFFFF',
-
   },
   placeholderStyle: {
     color: '#212121',
@@ -793,7 +799,7 @@ const styles = StyleSheet.create({
     marginRight: 30,
   },
   checkboxGrid: {
-    flexDirection:'column'
+    flexDirection: 'column',
   },
   radioText: {
     fontSize: 16,
@@ -814,13 +820,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     paddingBottom: 12,
-    elevation: 1, 
+    elevation: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5, 
-    shadowRadius: 5, 
-    backgroundColor: '#FFFFFF', 
-    zIndex: 1, 
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.5,
+    shadowRadius: 5,
+    backgroundColor: '#FFFFFF',
+    zIndex: 1,
   },
   iconStyle: {
     width: 20,
@@ -843,10 +849,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  horizantalLine:{
-    height:2,
-    width:'100%',
-    backgroundColor:'#F5F5F5'
+  horizantalLine: {
+    height: 2,
+    width: '100%',
+    backgroundColor: '#F5F5F5',
   },
   section: {
     backgroundColor: '#FFFFFF',
@@ -889,7 +895,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     elevation: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.2,
     shadowRadius: 2,
   },

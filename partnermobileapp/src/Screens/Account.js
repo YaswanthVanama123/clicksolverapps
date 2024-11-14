@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {View, Text, Button, StyleSheet} from 'react-native';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 
 const AccountScreen = () => {
   const [hasToken, setHasToken] = useState(false);
@@ -33,7 +33,7 @@ const AccountScreen = () => {
   const handleLogin = () => {
     navigation.navigate('Login'); // Navigate to the Login screen
   };
- 
+
   return (
     <View style={styles.container}>
       {hasToken ? (

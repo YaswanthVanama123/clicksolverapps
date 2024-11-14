@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, {useMemo, useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -12,15 +12,15 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { RadioButton } from 'react-native-paper';
+import {RadioButton} from 'react-native-paper';
 import axios from 'axios';
 import Geolocation from '@react-native-community/geolocation';
-import { useRoute, useNavigation } from "@react-navigation/native";
+import {useRoute, useNavigation} from '@react-navigation/native';
 
 const ServiceInProgressScreen = () => {
   // Define statuses and display names
-  const statuses = ["In Progress", "Work started", "Work Completed"];
-  const statusKeys = ["accept", "arrived", "workCompleted"];
+  const statuses = ['In Progress', 'Work started', 'Work Completed'];
+  const statusKeys = ['accept', 'arrived', 'workCompleted'];
   const statusDisplayNames = {
     accept: 'In Progress',
     arrived: 'Work started',
@@ -30,9 +30,11 @@ const ServiceInProgressScreen = () => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const { data: { data, paymentDetails } } = await axios.post(
+        const {
+          data: {data, paymentDetails},
+        } = await axios.post(
           `${process.env.BackendAPI6}/api/user/work/progress/details`,
-          { tracking_id }
+          {tracking_id},
         );
         setDetails(data);
         setPaymentDetails(paymentDetails);
@@ -42,7 +44,7 @@ const ServiceInProgressScreen = () => {
       }
     };
     fetchBookings();
-  },[])
+  }, []);
 
   // Initial services with statuses
   const initialServices = [
@@ -87,8 +89,8 @@ const ServiceInProgressScreen = () => {
   const [editingSelectedStatus, setEditingSelectedStatus] = useState('');
 
   // Function to generate timeline data
-  const generateTimelineData = (status) => {
-    return statusKeys.map((statusKey) => ({
+  const generateTimelineData = status => {
+    return statusKeys.map(statusKey => ({
       key: statusKey,
       title: statusDisplayNames[statusKey],
       time: status[statusKey] || null,
@@ -99,7 +101,7 @@ const ServiceInProgressScreen = () => {
   };
 
   // Function to get current status as a string
-  const getCurrentStatus = (status) => {
+  const getCurrentStatus = status => {
     for (let i = statusKeys.length - 1; i >= 0; i--) {
       if (status[statusKeys[i]]) {
         return statusKeys[i];
@@ -111,25 +113,28 @@ const ServiceInProgressScreen = () => {
   // Function to handle service completion
   const handleServiceCompletion = () => {
     // Update the status of all services to 'workCompleted'
-    setServices((prevServices) =>
-      prevServices.map((service) => {
-        const updatedStatus = { ...service.status };
+    setServices(prevServices =>
+      prevServices.map(service => {
+        const updatedStatus = {...service.status};
         const currentTime = new Date().toLocaleTimeString([], {
           hour: '2-digit',
           minute: '2-digit',
         });
         updatedStatus.workCompleted = currentTime;
-        return { ...service, status: updatedStatus };
-      })
+        return {...service, status: updatedStatus};
+      }),
     );
 
-    Alert.alert('Service Completed', 'You have marked the service as workCompleted.');
+    Alert.alert(
+      'Service Completed',
+      'You have marked the service as workCompleted.',
+    );
     // Navigate to another screen if needed
     // navigation.navigate('SomeOtherScreen');
   };
 
   // Function to handle Edit button press
-  const handleEditPress = (serviceId) => {
+  const handleEditPress = serviceId => {
     if (editingServiceId === serviceId) {
       // If already editing, cancel editing
       setEditingServiceId(null);
@@ -155,7 +160,7 @@ const ServiceInProgressScreen = () => {
           text: 'Yes',
           onPress: () => applyStatusChange(serviceId, statusKey),
         },
-      ]
+      ],
     );
   };
 
@@ -168,20 +173,20 @@ const ServiceInProgressScreen = () => {
     });
 
     // Update the status based on selected value
-    setServices((prevServices) =>
-      prevServices.map((service) => {
+    setServices(prevServices =>
+      prevServices.map(service => {
         if (service.id === serviceId) {
-          const updatedStatus = { ...service.status };
+          const updatedStatus = {...service.status};
           for (let i = 0; i <= selectedStatusIndex; i++) {
             const key = statusKeys[i];
             if (!updatedStatus[key]) {
               updatedStatus[key] = currentTime;
             }
           }
-          return { ...service, status: updatedStatus };
+          return {...service, status: updatedStatus};
         }
         return service;
-      })
+      }),
     );
 
     // Exit editing mode
@@ -192,7 +197,12 @@ const ServiceInProgressScreen = () => {
     <View style={styles.mainContainer}>
       {/* Header */}
       <View style={styles.headerContainer}>
-        <FontAwesome6 name='arrow-left-long' size={20} color='#212121' style={styles.leftIcon} />
+        <FontAwesome6
+          name="arrow-left-long"
+          size={20}
+          color="#212121"
+          style={styles.leftIcon}
+        />
         <Text style={styles.headerText}>Service In Progress</Text>
       </View>
 
@@ -209,22 +219,24 @@ const ServiceInProgressScreen = () => {
             <View style={styles.detailsRow}>
               <Icon name="calendar-today" size={20} color="#ff4500" />
               <Text style={styles.detailText}>
-                Work started <Text style={styles.highLightText}>24th Oct 2023 9:00 PM</Text>
+                Work started{' '}
+                <Text style={styles.highLightText}>24th Oct 2023 9:00 PM</Text>
               </Text>
             </View>
             <View style={styles.detailsRow}>
               <Icon name="location-on" size={20} color="#ff4500" />
               <Text style={styles.detailText}>
-                Location: <Text style={styles.highLightText}>123 Main Street, City</Text>
+                Location:{' '}
+                <Text style={styles.highLightText}>123 Main Street, City</Text>
               </Text>
             </View>
           </View>
           <View>
-            <View style={{ marginTop: 20 }}>
-              {services.map((service) => {
+            <View style={{marginTop: 20}}>
+              {services.map(service => {
                 const timelineData = useMemo(
                   () => generateTimelineData(service.status),
-                  [service.status]
+                  [service.status],
                 );
 
                 const currentStatus = getCurrentStatus(service.status);
@@ -233,11 +245,13 @@ const ServiceInProgressScreen = () => {
                   <View style={styles.ServiceCardsContainer} key={service.id}>
                     <View style={styles.technicianContainer}>
                       <Image
-                        source={{ uri: service.image }}
+                        source={{uri: service.image}}
                         style={styles.technicianImage}
                       />
                       <View style={styles.technicianDetails}>
-                        <Text style={styles.technicianName}>{service.name}</Text>
+                        <Text style={styles.technicianName}>
+                          {service.name}
+                        </Text>
                         <Text style={styles.technicianTitle}>
                           Quantity : {service.quantity}
                         </Text>
@@ -257,11 +271,16 @@ const ServiceInProgressScreen = () => {
                     {/* Timeline Section */}
                     <View style={styles.sectionContainer}>
                       <View style={styles.serviceTimeLineContainer}>
-                        <Text style={styles.sectionTitle}>Service Timeline</Text>
+                        <Text style={styles.sectionTitle}>
+                          Service Timeline
+                        </Text>
                         {currentStatus !== 'workCompleted' && (
-                          <TouchableOpacity onPress={() => handleEditPress(service.id)}>
+                          <TouchableOpacity
+                            onPress={() => handleEditPress(service.id)}>
                             <Text style={styles.editText}>
-                              {editingServiceId === service.id ? 'Cancel' : 'Edit'}
+                              {editingServiceId === service.id
+                                ? 'Cancel'
+                                : 'Edit'}
                             </Text>
                           </TouchableOpacity>
                         )}
@@ -279,29 +298,39 @@ const ServiceInProgressScreen = () => {
                                 <View
                                   style={[
                                     styles.lineSegment,
-                                    { backgroundColor: timelineData[index + 1].iconColor },
+                                    {
+                                      backgroundColor:
+                                        timelineData[index + 1].iconColor,
+                                    },
                                   ]}
                                 />
                               )}
                             </View>
                             <View style={styles.timelineContent}>
                               <View style={styles.timelineTextContainer}>
-                                <Text style={styles.timelineText}>{item.title}</Text>
+                                <Text style={styles.timelineText}>
+                                  {item.title}
+                                </Text>
                                 <Text style={styles.timelineTime}>
                                   {item.time ? item.time : 'Pending'}
                                 </Text>
                               </View>
-                              {editingServiceId === service.id && !item.time && (
-                                <RadioButton
-                                  value={item.key}
-                                  status={editingSelectedStatus === item.key ? 'checked' : 'unchecked'}
-                                  onPress={() => {
-                                    setEditingSelectedStatus(item.key);
-                                    handleStatusChange(service.id, item.key);
-                                  }}
-                                  color="#ff4500"
-                                />
-                              )}
+                              {editingServiceId === service.id &&
+                                !item.time && (
+                                  <RadioButton
+                                    value={item.key}
+                                    status={
+                                      editingSelectedStatus === item.key
+                                        ? 'checked'
+                                        : 'unchecked'
+                                    }
+                                    onPress={() => {
+                                      setEditingSelectedStatus(item.key);
+                                      handleStatusChange(service.id, item.key);
+                                    }}
+                                    color="#ff4500"
+                                  />
+                                )}
                             </View>
                           </View>
                         ))}
@@ -314,7 +343,9 @@ const ServiceInProgressScreen = () => {
           </View>
 
           {/* Service Completed Button */}
-          <TouchableOpacity style={styles.button} onPress={handleServiceCompletion}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleServiceCompletion}>
             <Text style={styles.buttonText}>Service Completed</Text>
           </TouchableOpacity>
         </View>
@@ -351,10 +382,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     zIndex: 1, // Ensure header is above other components
   },
-  leftIcon:{
-    position:'absolute',
-    top:15,
-    left:10
+  leftIcon: {
+    position: 'absolute',
+    top: 15,
+    left: 10,
   },
   headerText: {
     color: '#212121',
@@ -493,4 +524,3 @@ const styles = StyleSheet.create({
 });
 
 export default ServiceInProgressScreen;
- 

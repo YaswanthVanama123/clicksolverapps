@@ -1,11 +1,26 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, TextInput, FlatList, StyleSheet, Text, TouchableOpacity, Dimensions, Image, BackHandler, ScrollView } from 'react-native';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
+import {
+  View,
+  TextInput,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  Dimensions,
+  Image,
+  BackHandler,
+  ScrollView,
+} from 'react-native';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Entypo from 'react-native-vector-icons/Entypo';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { CommonActions, useFocusEffect, useNavigation } from '@react-navigation/native';
+import {
+  CommonActions,
+  useFocusEffect,
+  useNavigation,
+} from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
 
 const SearchItem = () => {
@@ -48,11 +63,11 @@ const SearchItem = () => {
   const updatePlaceholder = useCallback(() => {
     const word = additionalTexts[currentIndex];
     if (currentWordIndex < word.length) {
-      setPlaceholderText((prev) => prev + word[currentWordIndex]);
-      setCurrentWordIndex((prev) => prev + 1);
+      setPlaceholderText(prev => prev + word[currentWordIndex]);
+      setCurrentWordIndex(prev => prev + 1);
     } else {
       setPlaceholderText(initialPlaceholder);
-      setCurrentIndex((prev) => (prev + 1) % additionalTexts.length);
+      setCurrentIndex(prev => (prev + 1) % additionalTexts.length);
       setCurrentWordIndex(0);
     }
   }, [currentIndex, currentWordIndex, additionalTexts, initialPlaceholder]);
@@ -65,24 +80,26 @@ const SearchItem = () => {
   useEffect(() => {
     const recentServicesList = async () => {
       try {
-        const recentarray = await EncryptedStorage.getItem("recentServices");
+        const recentarray = await EncryptedStorage.getItem('recentServices');
         if (recentarray) {
           setRecentSearches(JSON.parse(recentarray));
         }
       } catch (error) {
         console.error('Error fetching recent services:', error);
       }
-    }; 
+    };
     recentServicesList();
   }, []);
 
-  const handleInputChange = async (query) => {
+  const handleInputChange = async query => {
     setSearchQuery(query);
     if (query.length > 0) {
       setIsFocused(true);
       setLoading(true);
       try {
-        const response = await axios.get(`${process.env.BACKENDAIPE}/api/services?search=${query}`);
+        const response = await axios.get(
+          `${process.env.BACKENDAIPE}/api/services?search=${query}`,
+        );
         setSuggestions(response.data);
       } catch (error) {
         console.error('Error fetching search suggestions:', error);
@@ -96,19 +113,27 @@ const SearchItem = () => {
     }
   };
 
-  const storeRecentService = useCallback(async (service) => {
+  const storeRecentService = useCallback(async service => {
     try {
-      const existingServicesJson = await EncryptedStorage.getItem('recentServices');
+      const existingServicesJson = await EncryptedStorage.getItem(
+        'recentServices',
+      );
       let updatedServices;
       if (existingServicesJson) {
         const existingServices = JSON.parse(existingServicesJson);
-        updatedServices = existingServices.filter(existingService => existingService.main_service_id !== service.main_service_id);
+        updatedServices = existingServices.filter(
+          existingService =>
+            existingService.main_service_id !== service.main_service_id,
+        );
         updatedServices.push(service);
       } else {
         updatedServices = [service];
       }
       updatedServices = updatedServices.slice(-5);
-      await EncryptedStorage.setItem('recentServices', JSON.stringify(updatedServices));
+      await EncryptedStorage.setItem(
+        'recentServices',
+        JSON.stringify(updatedServices),
+      );
     } catch (error) {
       console.error('Error storing recent service:', error);
     }
@@ -120,17 +145,24 @@ const SearchItem = () => {
     setIsFocused(true);
   }, []);
 
-  const handleServiceClick = useCallback((item) => {
-    storeRecentService(item);
-    navigation.push("ServiceBooking", { serviceName: item.service_category });
-  }, [navigation, storeRecentService]);
+  const handleServiceClick = useCallback(
+    item => {
+      storeRecentService(item);
+      navigation.push('ServiceBooking', {serviceName: item.service_category});
+    },
+    [navigation, storeRecentService],
+  );
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity style={styles.suggestionItem} onPress={() => handleServiceClick(item)}>
-      <Image source={{ uri: item.service_urls }} style={styles.suggestionImage} />
+  const renderItem = ({item}) => (
+    <TouchableOpacity
+      style={styles.suggestionItem}
+      onPress={() => handleServiceClick(item)}>
+      <Image source={{uri: item.service_urls}} style={styles.suggestionImage} />
       <View style={styles.textContainer}>
         <Text style={styles.SuggestionText}>{item.service_tag}</Text>
-        <Text style={styles.SuggestionDescription} numberOfLines={2}>{item.service_details.about}</Text>
+        <Text style={styles.SuggestionDescription} numberOfLines={2}>
+          {item.service_details.about}
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -141,10 +173,17 @@ const SearchItem = () => {
     }
     return (
       recentSearches.length > 0 &&
-      recentSearches.map((item) => (
-        <TouchableOpacity key={item.main_service_id} style={styles.recentItem} onPress={() => navigation.push("ServiceBooking", { serviceName: item.service_category })}>
+      recentSearches.map(item => (
+        <TouchableOpacity
+          key={item.main_service_id}
+          style={styles.recentItem}
+          onPress={() =>
+            navigation.push('ServiceBooking', {
+              serviceName: item.service_category,
+            })
+          }>
           <View style={styles.recentIcon}>
-            <Entypo name="back-in-time" size={30} color='#d7d7d7' />
+            <Entypo name="back-in-time" size={30} color="#d7d7d7" />
           </View>
           <Text style={styles.recentText}>{item.service_tag}</Text>
         </TouchableOpacity>
@@ -158,22 +197,23 @@ const SearchItem = () => {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
         );
         return true;
       };
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-    }, [navigation])
+      return () =>
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [navigation]),
   );
 
   const handleHome = useCallback(() => {
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-      })
+        routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+      }),
     );
   }, [navigation]);
 
@@ -182,22 +222,29 @@ const SearchItem = () => {
       if (inputRef.current) {
         inputRef.current.focus();
       }
-    }, [])
+    }, []),
   );
 
-  const renderTrendingSearches = useCallback(() => (
-    trendingSearches.map((item, index) => (
-      <TouchableOpacity key={index} style={styles.trendingItem}>
-        <Text style={styles.trendingText}>{item}</Text>
-      </TouchableOpacity>
-    ))
-  ), [trendingSearches]);
+  const renderTrendingSearches = useCallback(
+    () =>
+      trendingSearches.map((item, index) => (
+        <TouchableOpacity key={index} style={styles.trendingItem}>
+          <Text style={styles.trendingText}>{item}</Text>
+        </TouchableOpacity>
+      )),
+    [trendingSearches],
+  );
 
   return (
     <View style={styles.mainContainer}>
       <View style={styles.searchBar}>
         <TouchableOpacity onPress={handleHome}>
-          <AntDesign name="arrowleft" size={20} color="#000" style={styles.icon} />
+          <AntDesign
+            name="arrowleft"
+            size={20}
+            color="#000"
+            style={styles.icon}
+          />
         </TouchableOpacity>
         <View style={styles.searchInputContainer}>
           <TextInput
@@ -219,14 +266,21 @@ const SearchItem = () => {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 50, flexGrow: 1 }}>
-      <View style={[styles.horizontalLine, { width: screenWidth, height: 4 }]} />
+      <ScrollView contentContainerStyle={{paddingBottom: 50, flexGrow: 1}}>
+        <View
+          style={[styles.horizontalLine, {width: screenWidth, height: 4}]}
+        />
         {searchQuery && suggestions.length === 0 && (
           <View style={styles.noResultsContainer}>
             <MaterialIcons name="search-off" size={45} color="#000" />
             <Text style={styles.noResultsText}>No results found</Text>
-            <Text style={styles.noResultsSubText}>We couldn't find what you were looking for. Please check your keywords again!</Text>
-            <View style={[styles.horizontalLine, { width: screenWidth, height: 8 }]} />
+            <Text style={styles.noResultsSubText}>
+              We couldn't find what you were looking for. Please check your
+              keywords again!
+            </Text>
+            <View
+              style={[styles.horizontalLine, {width: screenWidth, height: 8}]}
+            />
             <View style={styles.trendingSearchesContainer}>
               <Text style={styles.sectionTitle}>Trending searches</Text>
               <View style={styles.trendingItemsContainer}>
@@ -251,7 +305,9 @@ const SearchItem = () => {
               <Text style={styles.sectionTitle}>Recents</Text>
               {renderRecentSearches()}
             </View>
-            <View style={[styles.horizontalLine, { width: screenWidth, height: 8 }]} />
+            <View
+              style={[styles.horizontalLine, {width: screenWidth, height: 8}]}
+            />
             <View style={styles.trendingSearchesContainer}>
               <Text style={styles.sectionTitle}>Trending searches</Text>
               <View style={styles.trendingItemsContainer}>
@@ -265,7 +321,7 @@ const SearchItem = () => {
           <FlatList
             data={suggestions}
             renderItem={renderItem}
-            keyExtractor={(item) => item.main_service_id.toString()}
+            keyExtractor={item => item.main_service_id.toString()}
             style={styles.suggestionsList}
             keyboardShouldPersistTaps="handled"
           />
@@ -275,7 +331,7 @@ const SearchItem = () => {
   );
 };
 
-export default SearchItem
+export default SearchItem;
 
 const styles = StyleSheet.create({
   mainContainer: {
@@ -283,9 +339,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   recentIcon: {
-    padding:5,
-    backgroundColor:'#F8F8F8',
-    borderRadius:10,
+    padding: 5,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 10,
   },
   container: {
     width: '100%',
@@ -296,8 +352,8 @@ const styles = StyleSheet.create({
     marginTop: 30,
   },
   loadingAnimation: {
-    width:'100%',
-    height:100
+    width: '100%',
+    height: 100,
   },
   noResultsText: {
     fontSize: 20,
@@ -309,7 +365,7 @@ const styles = StyleSheet.create({
     color: '#777777',
     textAlign: 'center',
     marginVertical: 20,
-    padding:6
+    padding: 6,
   },
   horizontalLine: {
     backgroundColor: '#F0F0F0',
@@ -343,7 +399,7 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
     color: '#1D2951',
     fontWeight: '600',
-    fontSize:14
+    fontSize: 14,
   },
   searchSuggestionsContainer: {
     marginTop: 15,
@@ -360,14 +416,14 @@ const styles = StyleSheet.create({
   },
   recentItem: {
     display: 'flex',
-    flexDirection:'row',
-    gap:20,
+    flexDirection: 'row',
+    gap: 20,
     paddingVertical: 10,
   },
   recentText: {
     color: '#000',
-    display:'flex',
-    alignSelf:'center'
+    display: 'flex',
+    alignSelf: 'center',
   },
   trendingSearchesContainer: {
     marginBottom: 15,
@@ -396,7 +452,7 @@ const styles = StyleSheet.create({
   suggestionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap:15,
+    gap: 15,
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
@@ -412,12 +468,12 @@ const styles = StyleSheet.create({
   },
   SuggestionText: {
     color: '#1D2951',
-    fontWeight:'500',
+    fontWeight: '500',
     fontSize: 16,
   },
-  SuggestionDescription:{
-    fontSize:12,
-    color:'#4a4a4a'
+  SuggestionDescription: {
+    fontSize: 12,
+    color: '#4a4a4a',
   },
   subText: {
     color: '#777',

@@ -1,6 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ImageBackground, Image } from 'react-native';
-import Entypo from 'react-native-vector-icons/Entypo'
+import React, {useState, useEffect} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ImageBackground,
+  Image,
+} from 'react-native';
+import Entypo from 'react-native-vector-icons/Entypo';
 
 const VerificationScreen = () => {
   const [timer, setTimer] = useState(120); // 2 minutes timer
@@ -8,7 +16,7 @@ const VerificationScreen = () => {
 
   useEffect(() => {
     const countdown = setInterval(() => {
-      setTimer((prevTimer) => (prevTimer > 0 ? prevTimer - 1 : 0));
+      setTimer(prevTimer => (prevTimer > 0 ? prevTimer - 1 : 0));
     }, 1000);
     return () => clearInterval(countdown);
   }, []);
@@ -27,10 +35,11 @@ const VerificationScreen = () => {
 
   return (
     <ImageBackground
-      source={{ uri: 'https://i.postimg.cc/zB1C8frj/Picsart-24-10-01-15-26-57-512-1.jpg' }} // Add your background image here
+      source={{
+        uri: 'https://i.postimg.cc/zB1C8frj/Picsart-24-10-01-15-26-57-512-1.jpg',
+      }} // Add your background image here
       style={styles.background}
-      resizeMode="stretch"
-    >
+      resizeMode="stretch">
       <View style={styles.container}>
         <Text style={styles.title}>Verification Code</Text>
         <Text style={styles.instruction}>
@@ -45,7 +54,7 @@ const VerificationScreen = () => {
               keyboardType="numeric"
               maxLength={1}
               value={digit}
-              onChangeText={(value) => handleCodeChange(index, value)}
+              onChangeText={value => handleCodeChange(index, value)}
             />
           ))}
         </View>
@@ -57,9 +66,9 @@ const VerificationScreen = () => {
         <View style={styles.contactContainer}>
           <Text style={styles.contactText}>Contact us:</Text>
           <View style={styles.socialIcons}>
-            <Entypo name='mail' size={15} color='#9e9e9e' />
-            <Entypo name='facebook' size={15} color='#9e9e9e' />
-            <Entypo name='instagram' size={15} color='#9e9e9e' />
+            <Entypo name="mail" size={15} color="#9e9e9e" />
+            <Entypo name="facebook" size={15} color="#9e9e9e" />
+            <Entypo name="instagram" size={15} color="#9e9e9e" />
           </View>
           <Text style={styles.email}>Clicksolver@yahoo.com</Text>
         </View>
@@ -73,12 +82,12 @@ const styles = StyleSheet.create({
     flex: 1,
     resizeMode: 'cover',
   },
-  number:{
+  number: {
     fontSize: 16,
     textAlign: 'center',
     marginBottom: 30,
-    color:'#212121',
-    fontWeight:'bold'
+    color: '#212121',
+    fontWeight: 'bold',
   },
   container: {
     flex: 1,
@@ -90,19 +99,19 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     marginBottom: 20,
-    color:'#212121'
+    color: '#212121',
   },
   instruction: {
     fontSize: 16,
     textAlign: 'center',
-    color:'#9e9e9e'
+    color: '#9e9e9e',
   },
   codeContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     width: '80%',
     marginBottom: 20,
-    gap:10
+    gap: 10,
   },
   codeInput: {
     borderWidth: 1,
@@ -112,18 +121,18 @@ const styles = StyleSheet.create({
     height: 45,
     textAlign: 'center',
     fontSize: 18,
-    color:'#212121'
+    color: '#212121',
   },
   timer: {
     fontSize: 18,
     fontWeight: '#800',
     marginBottom: 20,
-    color:'#212121'
+    color: '#212121',
   },
   submitButton: {
     backgroundColor: '#ff6c37',
-    justifyContent: 'center',  // Ensures vertical centering
-    alignItems: 'center',      // Ensures horizontal centering
+    justifyContent: 'center', // Ensures vertical centering
+    alignItems: 'center', // Ensures horizontal centering
     paddingVertical: 15,
     paddingHorizontal: 40,
     borderRadius: 10,
@@ -135,7 +144,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  
+
   contactContainer: {
     alignItems: 'center',
   },
@@ -146,7 +155,7 @@ const styles = StyleSheet.create({
   socialIcons: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap:5,
+    gap: 5,
     marginBottom: 10,
   },
   icon: {
@@ -157,7 +166,7 @@ const styles = StyleSheet.create({
   email: {
     fontSize: 12,
     color: '#9e9e9e',
-    paddingBottom:30
+    paddingBottom: 30,
   },
 });
 

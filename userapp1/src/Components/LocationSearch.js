@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {
   View,
   Text,
@@ -11,22 +11,22 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import Entypo from 'react-native-vector-icons/Entypo';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { Places } from 'ola-maps'; // Import the Places module from ola-maps
+import {useNavigation, useRoute} from '@react-navigation/native';
+import {Places} from 'ola-maps'; // Import the Places module from ola-maps
 
-const placesClient = new Places("iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT"); // Initialize the Places client with your API key
+const placesClient = new Places('iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT'); // Initialize the Places client with your API key
 
-const LocationSearch = () => { 
+const LocationSearch = () => {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [serviceArray, setServiceArray] = useState([]);
   const route = useRoute();
   const navigation = useNavigation();
-  const { serviceName } = route.params;
+  const {serviceName} = route.params;
   const inputRef = useRef(null);
 
   // Fetch and set place details using ola-maps Places client
-  const fetchAndSetPlaceDetails = useCallback(async (query) => {
+  const fetchAndSetPlaceDetails = useCallback(async query => {
     try {
       // Use the ola-maps Places client to get autocomplete results
       const response = await placesClient.autocomplete(query);
@@ -64,26 +64,34 @@ const LocationSearch = () => {
     inputRef.current?.focus();
   }, []);
 
-  const handleSuggestionPress = useCallback((item) => {
-    setQuery(item.title);
-    navigation.push('UserLocation', { serviceName, suggestion: item });
-    setSuggestions([]);
-  }, [navigation, serviceName]);
+  const handleSuggestionPress = useCallback(
+    item => {
+      setQuery(item.title);
+      navigation.push('UserLocation', {serviceName, suggestion: item});
+      setSuggestions([]);
+    },
+    [navigation, serviceName],
+  );
 
-  const renderItem = useCallback(({ item }) => (
-    <TouchableOpacity style={styles.item} onPress={() => handleSuggestionPress(item)}>
-      <View style={styles.iconContainer}>
-        <Icon name="location-on" size={24} color="#6e6e6e" />
-      </View>
-      <View style={styles.textContainer}>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.address}>{item.address}</Text>
-      </View>
-      <TouchableOpacity>
-        <Icon name="favorite-border" size={24} color="#6e6e6e" />
+  const renderItem = useCallback(
+    ({item}) => (
+      <TouchableOpacity
+        style={styles.item}
+        onPress={() => handleSuggestionPress(item)}>
+        <View style={styles.iconContainer}>
+          <Icon name="location-on" size={24} color="#6e6e6e" />
+        </View>
+        <View style={styles.textContainer}>
+          <Text style={styles.title}>{item.title}</Text>
+          <Text style={styles.address}>{item.address}</Text>
+        </View>
+        <TouchableOpacity>
+          <Icon name="favorite-border" size={24} color="#6e6e6e" />
+        </TouchableOpacity>
       </TouchableOpacity>
-    </TouchableOpacity>
-  ), [handleSuggestionPress]);
+    ),
+    [handleSuggestionPress],
+  );
 
   return (
     <SafeAreaView style={styles.container}>

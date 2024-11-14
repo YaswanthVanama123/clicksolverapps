@@ -1,16 +1,24 @@
 import axios from 'axios';
-import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, Easing } from 'react-native';
+import React, {useState, useMemo, useEffect} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  Animated,
+  Easing,
+} from 'react-native';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { RadioButton } from 'react-native-paper';
+import {RadioButton} from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useNavigation,CommonActions } from '@react-navigation/native';
- 
-const ApprovalStatusScreen = () => { 
+import {useNavigation, CommonActions} from '@react-navigation/native';
+
+const ApprovalStatusScreen = () => {
   const [selectedStatus, setSelectedStatus] = useState('');
   const [showLogout, setShowLogout] = useState(false);
-  const [userName, setUserName] = useState(''); 
+  const [userName, setUserName] = useState('');
   const [userService, setUserService] = useState('');
   const [verificationStatus, setVerificationStatus] = useState('');
   const [issues, setIssues] = useState([]);
@@ -23,61 +31,61 @@ const ApprovalStatusScreen = () => {
     'Bank account Verified',
   ];
 
-  useEffect(() => {  
-    const fetchApprovalDetails = async () => {  
+  useEffect(() => {
+    const fetchApprovalDetails = async () => {
       try {
-        const pcs_token = await EncryptedStorage.getItem("pcs_token");
-        
+        const pcs_token = await EncryptedStorage.getItem('pcs_token');
+
         if (!pcs_token) {
-          throw new Error("PCS token is missing.");
+          throw new Error('PCS token is missing.');
         }
-  
+
         const response = await axios.post(
           `${process.env.BackendAPI6}/api/check/approval/verification/status`,
           {},
           {
             headers: {
               Authorization: `Bearer ${pcs_token}`,
-            }
-          }
+            },
+          },
         );
-  
-        const { status } = response;
-        console.log(response)
-  
+
+        const {status} = response;
+        console.log(response);
+
         if (status === 201) {
-          await EncryptedStorage.setItem("verification","true")
+          await EncryptedStorage.setItem('verification', 'true');
           navigation.dispatch(
             CommonActions.reset({
               index: 0,
-              routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-            })
+              routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+            }),
           );
         } else if (status === 200) {
-          const {data} = response
+          const {data} = response;
           console.log('Fetched approval data:', response.data); // Debugging
           setUserName(data.name || '');
           setUserService(data.service || '');
           setVerificationStatus(data.verification_status || '');
           setIssues(Array.isArray(data.issues) ? data.issues : []); // Ensure issues is always an array
         }
-  
       } catch (error) {
         console.error('Error fetching approval status data:', error);
         setIssues([]); // Reset issues on error
       }
     };
-  
+
     fetchApprovalDetails();
   }, [navigation]); // Adding navigation as a dependency if needed for dynamic updates
-  
 
   const getTimelineData = useMemo(() => {
     const currentStatusIndex = statuses.indexOf(verificationStatus);
 
     return statuses.map((status, index) => {
       // Check if the status has an issue associated by matching the category
-      const hasIssue = Array.isArray(issues) && issues.some(issue => issue.category === status);
+      const hasIssue =
+        Array.isArray(issues) &&
+        issues.some(issue => issue.category === status);
 
       return {
         title: status,
@@ -96,11 +104,11 @@ const ApprovalStatusScreen = () => {
         duration: 2000,
         easing: Easing.linear,
         useNativeDriver: true,
-      })
+      }),
     ).start();
   }, [rotation]);
 
-  const toggleLogout = () => setShowLogout((prev) => !prev);
+  const toggleLogout = () => setShowLogout(prev => !prev);
 
   const handleLogout = async () => {
     try {
@@ -118,18 +126,27 @@ const ApprovalStatusScreen = () => {
       navigation.replace('Login');
     } catch (error) {
       console.error('Error during logout:', error);
-      Alert.alert('Logout Failed', 'An error occurred while trying to logout. Please try again.');
+      Alert.alert(
+        'Logout Failed',
+        'An error occurred while trying to logout. Please try again.',
+      );
     }
   };
 
   const handleSetupChange = () => {
     if (selectedStatus) {
-      if(selectedStatus === "Details Verified" || selectedStatus === "Profile and Proof Verified"){
-        navigation.push("WorkerProfile");
-      } else if(selectedStatus === "Bank account Verified"){
-        navigation.push("BankAccountScreen");
+      if (
+        selectedStatus === 'Details Verified' ||
+        selectedStatus === 'Profile and Proof Verified'
+      ) {
+        navigation.push('WorkerProfile');
+      } else if (selectedStatus === 'Bank account Verified') {
+        navigation.push('BankAccountScreen');
       }
-      Alert.alert('Status Change', `You have selected to change status to: ${selectedStatus}`);
+      Alert.alert(
+        'Status Change',
+        `You have selected to change status to: ${selectedStatus}`,
+      );
     } else {
       Alert.alert('No Status Selected', 'Please select a status to proceed.');
     }
@@ -161,19 +178,23 @@ const ApprovalStatusScreen = () => {
       <View style={styles.ContentContainer}>
         <View style={styles.profileContainer}>
           <View style={styles.profileCircle}>
-            <Text style={styles.profileInitials}>{userName.charAt(0).toUpperCase()}</Text>
+            <Text style={styles.profileInitials}>
+              {userName.charAt(0).toUpperCase()}
+            </Text>
           </View>
           <View style={styles.profileTextContainer}>
             <Text style={styles.userName}>{userName}</Text>
             <Text style={styles.userTitle}>{userService}</Text>
           </View>
         </View>
-        <Text style={styles.statusText}>Your profile is under review by the administrator.</Text>
+        <Text style={styles.statusText}>
+          Your profile is under review by the administrator.
+        </Text>
 
         <View style={styles.innerContainerLine}>
           {getTimelineData.map((item, index) => (
             <View key={index} style={styles.timelineItem}>
-              <View style={{ alignItems: 'center' }}>
+              <View style={{alignItems: 'center'}}>
                 <MaterialCommunityIcons
                   name="circle"
                   size={14}
@@ -181,7 +202,12 @@ const ApprovalStatusScreen = () => {
                   style={styles.timelineIcon}
                 />
                 {index !== getTimelineData.length - 1 && (
-                  <View style={[styles.lineSegment, { backgroundColor: item.lineColor }]} />
+                  <View
+                    style={[
+                      styles.lineSegment,
+                      {backgroundColor: item.lineColor},
+                    ]}
+                  />
                 )}
               </View>
               <View style={styles.timelineTextContainer}>
@@ -190,7 +216,9 @@ const ApprovalStatusScreen = () => {
               {item.isSelectable && (
                 <RadioButton
                   value={item.title}
-                  status={selectedStatus === item.title ? 'checked' : 'unchecked'}
+                  status={
+                    selectedStatus === item.title ? 'checked' : 'unchecked'
+                  }
                   onPress={() => setSelectedStatus(item.title)}
                   color="#ff4500"
                   style={styles.radioButton}
@@ -199,21 +227,26 @@ const ApprovalStatusScreen = () => {
             </View>
           ))}
         </View>
-        
+
         {/* Issues Section */}
         {Array.isArray(issues) && issues.length > 0 && (
           <View style={styles.issuesContainer}>
             <Text style={styles.issuesTitle}>Issues Raised:</Text>
             {issues.map((issue, index) => (
-              <Text key={index} style={styles.issueText}>• {issue.description}</Text>
+              <Text key={index} style={styles.issueText}>
+                • {issue.description}
+              </Text>
             ))}
           </View>
         )}
 
         <Text style={styles.noteText}>
-          Please check back later or modify your profile if any issues are reported.
+          Please check back later or modify your profile if any issues are
+          reported.
         </Text>
-        <TouchableOpacity style={styles.setupChangeButton} onPress={handleSetupChange}>
+        <TouchableOpacity
+          style={styles.setupChangeButton}
+          onPress={handleSetupChange}>
           <Text style={styles.setupChangeText}>Setup Change</Text>
         </TouchableOpacity>
       </View>
@@ -225,14 +258,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-  
   },
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding:10,
-    backgroundColor:'#f5f5f5'
+    padding: 10,
+    backgroundColor: '#f5f5f5',
   },
   headerText: {
     fontSize: 18,
@@ -256,7 +288,7 @@ const styles = StyleSheet.create({
     padding: 10,
     width: 70,
     borderRadius: 5,
-    elevation:2,
+    elevation: 2,
     position: 'absolute',
     top: 50,
     right: 10,
@@ -265,8 +297,8 @@ const styles = StyleSheet.create({
     color: '#4a4a4a',
     fontWeight: 'bold',
   },
-  ContentContainer:{
-    padding:16
+  ContentContainer: {
+    padding: 16,
   },
   profileContainer: {
     flexDirection: 'row',
@@ -363,7 +395,7 @@ const styles = StyleSheet.create({
     color: '#212121',
     textAlign: 'center',
 
-    marginVertical:20
+    marginVertical: 20,
   },
   setupChangeButton: {
     backgroundColor: '#FF5722',

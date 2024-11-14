@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Button, Image } from 'react-native';
+import React, {useState} from 'react';
+import {View, Button, Image} from 'react-native';
 import axios from 'axios';
 
 export default function App() {
@@ -11,7 +11,7 @@ export default function App() {
         transactionId: 'TX32321849644234',
         amount: 1000,
         storeId: '234555',
-        terminalId: '894237'
+        terminalId: '894237',
       });
       setQrData(response.data.data.qrString);
     } catch (error) {
@@ -22,7 +22,12 @@ export default function App() {
   return (
     <View>
       <Button title="Generate QR" onPress={generateQr} />
-      {qrData && <Image source={{ uri: `data:image/png;base64,${qrData}` }} style={{ width: 200, height: 200 }} />}
+      {qrData && (
+        <Image
+          source={{uri: `data:image/png;base64,${qrData}`}}
+          style={{width: 200, height: 200}}
+        />
+      )}
     </View>
   );
 }

@@ -1,11 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TouchableWithoutFeedback } from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import axios from "axios";
+import axios from 'axios';
 import uuid from 'react-native-uuid';
-import { useNavigation } from "@react-navigation/native";
+import {useNavigation} from '@react-navigation/native';
 
 const AdministratorAllTrackings = () => {
   const [serviceData, setServiceData] = useState([]);
@@ -14,16 +21,18 @@ const AdministratorAllTrackings = () => {
   const [selectedFilters, setSelectedFilters] = useState([]);
   const navigation = useNavigation();
 
-  const filterOptions = ["Collected Item", "Work started", "Work Completed"];
+  const filterOptions = ['Collected Item', 'Work started', 'Work Completed'];
 
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const token = await EncryptedStorage.getItem('pcs_token'); 
-        if (!token) throw new Error("Token not found");
+        const token = await EncryptedStorage.getItem('pcs_token');
+        if (!token) throw new Error('Token not found');
 
-        const response = await axios.get(`${process.env.BackendAPI6}/api/all/tracking/services`, {
-        });
+        const response = await axios.get(
+          `${process.env.BackendAPI6}/api/all/tracking/services`,
+          {},
+        );
         setServiceData(response.data);
         setFilteredData(response.data); // Initially display all data
       } catch (error) {
@@ -31,34 +40,50 @@ const AdministratorAllTrackings = () => {
       }
     };
 
-    fetchBookings(); 
+    fetchBookings();
   }, []);
 
-  const formatDate = (created_at) => {
+  const formatDate = created_at => {
     const date = new Date(created_at);
     const monthNames = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
-    return `${monthNames[date.getMonth()]} ${String(date.getDate()).padStart(2, '0')}, ${date.getFullYear()}`;
+    return `${monthNames[date.getMonth()]} ${String(date.getDate()).padStart(
+      2,
+      '0',
+    )}, ${date.getFullYear()}`;
   };
 
-  const handleCardPress = (trackingId) => {
-    navigation.push('ServiceTrackingItem', { tracking_id: trackingId });
+  const handleCardPress = trackingId => {
+    navigation.push('ServiceTrackingItem', {tracking_id: trackingId});
   };
 
-  const toggleFilter = (status) => {
+  const toggleFilter = status => {
     const updatedFilters = selectedFilters.includes(status)
       ? selectedFilters.filter(s => s !== status)
       : [...selectedFilters, status];
-    
+
     setSelectedFilters(updatedFilters);
 
     // Apply filter immediately
-    const filtered = updatedFilters.length > 0
-      ? serviceData.filter(item => updatedFilters.includes(item.service_status))
-      : serviceData;
-    
+    const filtered =
+      updatedFilters.length > 0
+        ? serviceData.filter(item =>
+            updatedFilters.includes(item.service_status),
+          )
+        : serviceData;
+
     setFilteredData(filtered);
   };
 
@@ -68,24 +93,46 @@ const AdministratorAllTrackings = () => {
     }
   };
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity style={styles.itemContainer} onPress={() => handleCardPress(item.tracking_id)}>
+  const renderItem = ({item}) => (
+    <TouchableOpacity
+      style={styles.itemContainer}
+      onPress={() => handleCardPress(item.tracking_id)}>
       <View style={styles.serviceIconContainer}>
-        <MaterialCommunityIcons name={item.service_status === 'Work Completed' ? "check-circle" : item.service_status === 'Work started' ? "hammer" : "truck"} size={24} color='#ffffff' />
+        <MaterialCommunityIcons
+          name={
+            item.service_status === 'Work Completed'
+              ? 'check-circle'
+              : item.service_status === 'Work started'
+              ? 'hammer'
+              : 'truck'
+          }
+          size={24}
+          color="#ffffff"
+        />
       </View>
       <View style={styles.itemTextContainer}>
         <Text style={styles.itemTitle}>{item.service_status}</Text>
-        <Text style={styles.itemDate}>Scheduled for: {formatDate(item.created_at)}</Text>
+        <Text style={styles.itemDate}>
+          Scheduled for: {formatDate(item.created_at)}
+        </Text>
       </View>
-      <View style={[styles.statusLabel, 
-        item.service_status === 'Collected Item' ? styles.inProgress : 
-        item.service_status === 'Work Completed' ? styles.completed : 
-        styles.onTheWay
-      ]}>
+      <View
+        style={[
+          styles.statusLabel,
+          item.service_status === 'Collected Item'
+            ? styles.inProgress
+            : item.service_status === 'Work Completed'
+            ? styles.completed
+            : styles.onTheWay,
+        ]}>
         <Text style={styles.statusText}>
-          {item.service_status === 'Work Completed' ? 'Completed' : 
-           item.service_status === 'Work started' ? 'In Progress' : 
-           item.service_status === 'Collected Item' ? 'Item Collected' : 'On the Way'}
+          {item.service_status === 'Work Completed'
+            ? 'Completed'
+            : item.service_status === 'Work started'
+            ? 'In Progress'
+            : item.service_status === 'Collected Item'
+            ? 'Item Collected'
+            : 'On the Way'}
         </Text>
       </View>
     </TouchableOpacity>
@@ -98,7 +145,8 @@ const AdministratorAllTrackings = () => {
         <View style={styles.headerContainer}>
           <Icon name="arrow-back" size={24} color="#000" />
           <Text style={styles.headerTitle}>Service Tracking</Text>
-          <TouchableOpacity onPress={() => setIsFilterVisible(!isFilterVisible)}>
+          <TouchableOpacity
+            onPress={() => setIsFilterVisible(!isFilterVisible)}>
             <Icon name="filter-list" size={24} color="#000" />
           </TouchableOpacity>
         </View>
@@ -108,9 +156,16 @@ const AdministratorAllTrackings = () => {
           <View style={styles.dropdownContainer}>
             <Text style={styles.dropdownTitle}>PROJECT TYPE</Text>
             {filterOptions.map((option, index) => (
-              <TouchableOpacity key={index} style={styles.dropdownOption} onPress={() => toggleFilter(option)}>
+              <TouchableOpacity
+                key={index}
+                style={styles.dropdownOption}
+                onPress={() => toggleFilter(option)}>
                 <Icon
-                  name={selectedFilters.includes(option) ? "check-box" : "check-box-outline-blank"}
+                  name={
+                    selectedFilters.includes(option)
+                      ? 'check-box'
+                      : 'check-box-outline-blank'
+                  }
                   size={20}
                   color="#4a4a4a"
                 />
@@ -147,7 +202,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
     shadowRadius: 4,
     backgroundColor: '#ffffff',
@@ -168,7 +223,7 @@ const styles = StyleSheet.create({
     padding: 10,
     elevation: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.3,
     shadowRadius: 4,
     zIndex: 10, // Ensure dropdown is above other items
@@ -191,7 +246,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingHorizontal: 16,
-    paddingTop:10
+    paddingTop: 10,
   },
   itemContainer: {
     flexDirection: 'row',
@@ -203,12 +258,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     elevation: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
   trackingItems: {
-    flex:1, 
+    flex: 1,
   },
   serviceIconContainer: {
     width: 50,

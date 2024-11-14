@@ -1,16 +1,42 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TouchableWithoutFeedback, Image } from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  Image,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import axios from "axios";
+import axios from 'axios';
 import uuid from 'react-native-uuid';
-import { useNavigation } from "@react-navigation/native";
+import {useNavigation} from '@react-navigation/native';
 
 const PendingCashbackWorkers = () => {
   const [serviceData, setServiceData] = useState([
-    {id:1,name:"Yaswanth",profession:"Electrician",pending:200,created_at:"Oct 31 2024"},
-    {id:2,name:"Gandhi",profession:"Plumber",pending:200,created_at:"Oct 31 2024"},
-    {id:3,name:"Yaswanth",profession:"Electrician",pending:200,created_at:"Oct 31 2024"},
+    {
+      id: 1,
+      name: 'Yaswanth',
+      profession: 'Electrician',
+      pending: 200,
+      created_at: 'Oct 31 2024',
+    },
+    {
+      id: 2,
+      name: 'Gandhi',
+      profession: 'Plumber',
+      pending: 200,
+      created_at: 'Oct 31 2024',
+    },
+    {
+      id: 3,
+      name: 'Yaswanth',
+      profession: 'Electrician',
+      pending: 200,
+      created_at: 'Oct 31 2024',
+    },
   ]);
   const [filteredData, setFilteredData] = useState([]);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
@@ -20,31 +46,38 @@ const PendingCashbackWorkers = () => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const response = await axios.get(`${process.env.BackendAPI6}/api/workers/pending/cashback`, {
-        });
-        console.log(response.data)
-        setServiceData(response.data)
+        const response = await axios.get(
+          `${process.env.BackendAPI6}/api/workers/pending/cashback`,
+          {},
+        );
+        console.log(response.data);
+        setServiceData(response.data);
       } catch (error) {
         console.error('Error fetching bookings data:', error);
       }
     };
 
-    fetchBookings(); 
+    fetchBookings();
   }, []);
 
-  const formatDate = (created_at) => {
+  const formatDate = created_at => {
     const date = new Date(created_at);
-    return `${String(date.getDate()).padStart(2, '0')} ${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
+    return `${String(date.getDate()).padStart(2, '0')} ${date.toLocaleString(
+      'default',
+      {month: 'short'},
+    )} ${date.getFullYear()}`;
   };
 
-  const handleCardPress = (worker_id) => {
-    console.log(worker_id)
-    navigation.push('WorkerPendingCashback', { worker_id: worker_id });
+  const handleCardPress = worker_id => {
+    console.log(worker_id);
+    navigation.push('WorkerPendingCashback', {worker_id: worker_id});
   };
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity style={styles.itemContainer} onPress={() => handleCardPress(item.worker_id)}>
-      <Image source={{ uri: item.profile }} style={styles.profile} />
+  const renderItem = ({item}) => (
+    <TouchableOpacity
+      style={styles.itemContainer}
+      onPress={() => handleCardPress(item.worker_id)}>
+      <Image source={{uri: item.profile}} style={styles.profile} />
       <View style={styles.itemTextContainer}>
         <Text style={styles.itemTitle}>{item.name}</Text>
         <Text style={styles.itemSubtitle}>{item.service}</Text>
@@ -62,7 +95,8 @@ const PendingCashbackWorkers = () => {
         <View style={styles.headerContainer}>
           <Icon name="arrow-back" size={24} color="#000" />
           <Text style={styles.headerTitle}>Pending Cashback</Text>
-          <TouchableOpacity onPress={() => setIsFilterVisible(!isFilterVisible)}>
+          <TouchableOpacity
+            onPress={() => setIsFilterVisible(!isFilterVisible)}>
             <Icon name="filter-list" size={24} color="#000" />
           </TouchableOpacity>
         </View>
@@ -73,12 +107,12 @@ const PendingCashbackWorkers = () => {
           </View>
         )}
         <View style={styles.contentContainer}>
-        <FlatList
-          data={serviceData}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
-        />
+          <FlatList
+            data={serviceData}
+            renderItem={renderItem}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.listContainer}
+          />
         </View>
       </View>
     </TouchableWithoutFeedback>
@@ -117,7 +151,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
@@ -131,9 +165,9 @@ const styles = StyleSheet.create({
   itemTextContainer: {
     flex: 1,
   },
-  contentContainer:{
-    flex:1,
-    paddingTop:20
+  contentContainer: {
+    flex: 1,
+    paddingTop: 20,
   },
   itemTitle: {
     fontSize: 16,

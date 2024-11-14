@@ -1,9 +1,20 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, StyleSheet, BackHandler, TouchableOpacity } from "react-native";
-import { useNavigation, useRoute, CommonActions, useFocusEffect } from "@react-navigation/native";
+import React, {useState, useEffect, useCallback} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  BackHandler,
+  TouchableOpacity,
+} from 'react-native';
+import {
+  useNavigation,
+  useRoute,
+  CommonActions,
+  useFocusEffect,
+} from '@react-navigation/native';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import axios from "axios";
-import Svg, { Circle } from 'react-native-svg';
+import axios from 'axios';
+import Svg, {Circle} from 'react-native-svg';
 
 const TimingScreen = () => {
   const [hours, setHours] = useState(0);
@@ -17,7 +28,7 @@ const TimingScreen = () => {
   const [strokeDashoffset, setStrokeDashoffset] = useState(0);
 
   const route = useRoute();
-  const { encodedId } = route.params;
+  const {encodedId} = route.params;
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -28,27 +39,34 @@ const TimingScreen = () => {
 
   const handleCheck = useCallback(async () => {
     try {
-      const response = await axios.post(`${process.env.BACKENDAIPE}/api/task/confirm/status`, {
-        notification_id: decodedId,
-      });
+      const response = await axios.post(
+        `${process.env.BACKENDAIPE}/api/task/confirm/status`,
+        {
+          notification_id: decodedId,
+        },
+      );
 
       if (response.status === 200) {
         const cs_token = await EncryptedStorage.getItem('cs_token');
 
-        await axios.post(`${process.env.BACKENDAIPE}/api/user/action`, {
-          encodedId: encodedId,
-          screen: 'Paymentscreen'
-        }, {
-          headers: {
-            Authorization: `Bearer ${cs_token}`
-          }
-        });
+        await axios.post(
+          `${process.env.BACKENDAIPE}/api/user/action`,
+          {
+            encodedId: encodedId,
+            screen: 'Paymentscreen',
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${cs_token}`,
+            },
+          },
+        );
 
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Paymentscreen', params: { encodedId: encodedId } }],
-          })
+            routes: [{name: 'Paymentscreen', params: {encodedId: encodedId}}],
+          }),
         );
       }
     } catch (error) {
@@ -67,7 +85,7 @@ const TimingScreen = () => {
   useEffect(() => {
     let interval;
     if (isWaiting && timeLeft > 0) {
-      interval = setInterval(() => setTimeLeft((prevTime) => prevTime - 1), 1000);
+      interval = setInterval(() => setTimeLeft(prevTime => prevTime - 1), 1000);
     } else if (timeLeft === 0 && isWaiting) {
       setIsWaiting(false);
     }
@@ -76,23 +94,26 @@ const TimingScreen = () => {
 
   useEffect(() => {
     if (seconds === 60) {
-      setMinutes((prevMinutes) => prevMinutes + 1);
+      setMinutes(prevMinutes => prevMinutes + 1);
       setSeconds(0);
     }
     if (minutes === 60) {
-      setHours((prevHours) => prevHours + 1);
+      setHours(prevHours => prevHours + 1);
       setMinutes(0);
     }
   }, [seconds, minutes]);
 
   const handleCancelMessageBox = async () => {
     try {
-      const response = await axios.post(`${process.env.BACKENDAIPE}/api/work/completion/cancel`, {
-        notification_id: decodedId,
-      });
+      const response = await axios.post(
+        `${process.env.BACKENDAIPE}/api/work/completion/cancel`,
+        {
+          notification_id: decodedId,
+        },
+      );
 
       if (response.status === 200) {
-        await EncryptedStorage.setItem("messageBox", JSON.stringify(false));
+        await EncryptedStorage.setItem('messageBox', JSON.stringify(false));
         setShowMessage(false);
       }
     } catch (error) {
@@ -106,34 +127,37 @@ const TimingScreen = () => {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
         );
         return true;
       };
 
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-    }, [navigation])
+      return () =>
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [navigation]),
   );
 
-  const getCurrentTimestamp = (dateString) => {
+  const getCurrentTimestamp = dateString => {
     const date = dateString ? new Date(dateString) : new Date();
     if (isNaN(date.getTime())) {
-      throw new Error("Invalid date string");
+      throw new Error('Invalid date string');
     }
 
-    const options = { timeZone: 'Asia/Kolkata', hour12: false };
+    const options = {timeZone: 'Asia/Kolkata', hour12: false};
     const timeString = date.toLocaleTimeString('en-US', options);
 
     return timeString;
   };
 
-  const differenceTime = (dateString) => {
-    const startedTime = getCurrentTimestamp(dateString).split(":").map(Number);
-    const currentTime = getCurrentTimestamp().split(":").map(Number);
+  const differenceTime = dateString => {
+    const startedTime = getCurrentTimestamp(dateString).split(':').map(Number);
+    const currentTime = getCurrentTimestamp().split(':').map(Number);
 
-    let [hours, minutes, seconds] = currentTime.map((cur, i) => cur - startedTime[i]);
+    let [hours, minutes, seconds] = currentTime.map(
+      (cur, i) => cur - startedTime[i],
+    );
     if (seconds < 0) {
       seconds += 60;
       minutes--;
@@ -146,7 +170,10 @@ const TimingScreen = () => {
       hours += 24;
     }
 
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(
+      2,
+      '0',
+    )}:${String(seconds).padStart(2, '0')}`;
   };
 
   useEffect(() => {
@@ -154,16 +181,20 @@ const TimingScreen = () => {
       if (decodedId) {
         try {
           const storedStartTime = await EncryptedStorage.getItem('start_time');
-          const messageBox = JSON.parse(await EncryptedStorage.getItem("messageBox"));
+          const messageBox = JSON.parse(
+            await EncryptedStorage.getItem('messageBox'),
+          );
           if (messageBox) setShowMessage(true);
 
           if (storedStartTime) {
             const startTimeData = JSON.parse(storedStartTime);
-            const matchingEntry = startTimeData.find(entry => entry.encoded_id === encodedId);
+            const matchingEntry = startTimeData.find(
+              entry => entry.encoded_id === encodedId,
+            );
 
             if (matchingEntry) {
               const convertedTime = differenceTime(matchingEntry.worked_time);
-              const [hh, mm, ss] = convertedTime.split(":");
+              const [hh, mm, ss] = convertedTime.split(':');
               setHours(parseInt(hh));
               setMinutes(parseInt(mm));
               setSeconds(parseInt(ss));
@@ -171,20 +202,29 @@ const TimingScreen = () => {
             }
           }
 
-          const response = await axios.post(`${process.env.BACKENDAIPE}/api/work/time/started`, {
-            notification_id: decodedId,
-          });
+          const response = await axios.post(
+            `${process.env.BACKENDAIPE}/api/work/time/started`,
+            {
+              notification_id: decodedId,
+            },
+          );
 
-          const { worked_time } = response.data;
+          const {worked_time} = response.data;
           const convertedTime = differenceTime(worked_time);
-          const [hh, mm, ss] = convertedTime.split(":");
+          const [hh, mm, ss] = convertedTime.split(':');
           setHours(parseInt(hh));
           setMinutes(parseInt(mm));
           setSeconds(parseInt(ss));
 
-          await EncryptedStorage.setItem('start_time', JSON.stringify([...JSON.parse(storedStartTime || '[]'), { encoded_id: encodedId, worked_time }]));
+          await EncryptedStorage.setItem(
+            'start_time',
+            JSON.stringify([
+              ...JSON.parse(storedStartTime || '[]'),
+              {encoded_id: encodedId, worked_time},
+            ]),
+          );
         } catch (error) {
-          console.error("Error starting timing:", error);
+          console.error('Error starting timing:', error);
         }
       }
     };
@@ -195,7 +235,10 @@ const TimingScreen = () => {
   useEffect(() => {
     let interval = null;
     if (isActive) {
-      interval = setInterval(() => setSeconds((prevSeconds) => prevSeconds + 1), 1000);
+      interval = setInterval(
+        () => setSeconds(prevSeconds => prevSeconds + 1),
+        1000,
+      );
     }
     return () => clearInterval(interval);
   }, [isActive]);
@@ -203,18 +246,21 @@ const TimingScreen = () => {
   const handleCompleteClick = async () => {
     if (decodedId) {
       try {
-        const response = await axios.post(`${process.env.BACKENDAIPE}/api/work/time/completed/request`, {
-          notification_id: decodedId,
-        });
+        const response = await axios.post(
+          `${process.env.BACKENDAIPE}/api/work/time/completed/request`,
+          {
+            notification_id: decodedId,
+          },
+        );
 
         if (response.status === 200) {
           setShowMessage(true);
-          await EncryptedStorage.setItem("messageBox", JSON.stringify(true));
+          await EncryptedStorage.setItem('messageBox', JSON.stringify(true));
           setTimeLeft(60);
           setIsWaiting(true);
         }
       } catch (error) {
-        console.error("Error completing work:", error);
+        console.error('Error completing work:', error);
       }
     }
   };
@@ -231,7 +277,9 @@ const TimingScreen = () => {
       </View>
       <View style={styles.chargeInfo}>
         <Text style={styles.mainText}>The minimum charge is 149₹</Text>
-        <Text style={styles.subText}>Next Every half hour, you will be charged for 49₹</Text>
+        <Text style={styles.subText}>
+          Next Every half hour, you will be charged for 49₹
+        </Text>
         <Text style={styles.subText}>The minimum charge is 30 minutes</Text>
       </View>
       <View style={styles.progressWrapper}>
@@ -279,13 +327,19 @@ const TimingScreen = () => {
               <Text style={styles.timerText}>{timeLeft}s</Text>
             </View>
             <Text style={styles.statusText}>
-              {isWaiting ? 'Waiting for worker response...' : 'No response received'}
+              {isWaiting
+                ? 'Waiting for worker response...'
+                : 'No response received'}
             </Text>
-            <TouchableOpacity style={styles.resendButton} onPress={handleCancelMessageBox}>
+            <TouchableOpacity
+              style={styles.resendButton}
+              onPress={handleCancelMessageBox}>
               <Text style={styles.resendButtonText}>Cancel</Text>
             </TouchableOpacity>
             {!isWaiting && (
-              <TouchableOpacity style={styles.resendButton} onPress={handleCompleteClick}>
+              <TouchableOpacity
+                style={styles.resendButton}
+                onPress={handleCompleteClick}>
                 <Text style={styles.resendButtonText}>Resend Request</Text>
               </TouchableOpacity>
             )}
@@ -296,10 +350,10 @@ const TimingScreen = () => {
   );
 };
 
-const TimeBox = ({ label, value }) => (
+const TimeBox = ({label, value}) => (
   <View style={styles.timeBox}>
     <Text style={styles.timeLabel}>{label}</Text>
-    <Text style={styles.timeValue}>{String(value).padStart(2, "0")}</Text>
+    <Text style={styles.timeValue}>{String(value).padStart(2, '0')}</Text>
   </View>
 );
 
@@ -355,7 +409,7 @@ const styles = StyleSheet.create({
     padding: 20,
     textAlign: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,

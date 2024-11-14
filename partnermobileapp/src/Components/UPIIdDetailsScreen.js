@@ -1,5 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import React, {useState} from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+} from 'react-native';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
@@ -16,7 +23,7 @@ const UPIIdDetailsScreen = () => {
 
     setError('');
     try {
-      const pcsToken = await EncryptedStorage.getItem("pcs_token");
+      const pcsToken = await EncryptedStorage.getItem('pcs_token');
       if (!pcsToken) {
         console.error('No pcs_token found.');
         return navigation.replace('Login');
@@ -24,8 +31,8 @@ const UPIIdDetailsScreen = () => {
 
       const response = await axios.post(
         `${process.env.BackendAPI6}/api/upi/submit`,
-        { upi_id: upiId },
-        { headers: { Authorization: `Bearer ${pcsToken}` } }
+        {upi_id: upiId},
+        {headers: {Authorization: `Bearer ${pcsToken}`}},
       );
 
       if (response.status === 200) {
@@ -39,7 +46,12 @@ const UPIIdDetailsScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <FontAwesome6 name='arrow-left-long' size={20} color='#9e9e9e' style={styles.leftIcon} />
+        <FontAwesome6
+          name="arrow-left-long"
+          size={20}
+          color="#9e9e9e"
+          style={styles.leftIcon}
+        />
         <Text style={styles.title}>UPI Id details</Text>
         <Ionicons name="help-circle-outline" size={25} color="#9e9e9e" />
       </View>

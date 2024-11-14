@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,10 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-import { useNavigation } from "@react-navigation/native";
+import {useNavigation} from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Feather from 'react-native-vector-icons/Feather';
-import { Calendar } from 'react-native-calendars';
+import {Calendar} from 'react-native-calendars';
 import Icon from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 
@@ -26,45 +26,69 @@ const DashboardScreen = () => {
   const [endDate, setEndDate] = useState(null);
   const [greeting, setGreeting] = useState('');
   const [greetingIcon, setGreetingIcon] = useState(null);
-  const navigation = useNavigation()
+  const navigation = useNavigation();
 
   const dashboardItems = [
-    { id: 1, label: 'Service Tracking', icon: 'chart-bar', color: '#ff4500', screen:'AdministratorAllTrackings' },
-    { id: 2, label: 'Worker Approval Pendings', icon: 'user-check', color: '#ff4500', screen:'ApprovalPendingItems' },
-    { id: 3, label: 'Pending Cashback', icon: 'tag', color: '#ff4500' ,screen : "PendingCashbackWorkers"},
-    { id: 4, label: 'Pending Balance', icon: 'wallet', color: '#ff4500', screen: "PendingBalanceWorkers" },
+    {
+      id: 1,
+      label: 'Service Tracking',
+      icon: 'chart-bar',
+      color: '#ff4500',
+      screen: 'AdministratorAllTrackings',
+    },
+    {
+      id: 2,
+      label: 'Worker Approval Pendings',
+      icon: 'user-check',
+      color: '#ff4500',
+      screen: 'ApprovalPendingItems',
+    },
+    {
+      id: 3,
+      label: 'Pending Cashback',
+      icon: 'tag',
+      color: '#ff4500',
+      screen: 'PendingCashbackWorkers',
+    },
+    {
+      id: 4,
+      label: 'Pending Balance',
+      icon: 'wallet',
+      color: '#ff4500',
+      screen: 'PendingBalanceWorkers',
+    },
   ];
 
   const statsItems = [
-    { id: 1, label: 'No of Workers', value: 50 },
-    { id: 2, label: 'No of Users', value: 50 },
-    { id: 3, label: 'No of Services', value: 50 },
-    { id: 4, label: 'No of cancels', value: 50 },
-    { id: 5, label: 'No of user cancels', value: 50 },
-    { id: 6, label: 'No of worker cancels', value: 50 },
-    { id: 7, label: 'Total Earnings', value: 50 },
-    { id: 8, label: 'Total Profit', value: 50 },
-    { id: 9, label: 'Cashback given', value: 50 },
-    { id: 10, label: 'Cashback Money', value: 50 },
-    { id: 11, label: 'Pending Balance', value: 50 },
-    { id: 12, label: 'Pending Balance workers', value: 50 },
+    {id: 1, label: 'No of Workers', value: 50},
+    {id: 2, label: 'No of Users', value: 50},
+    {id: 3, label: 'No of Services', value: 50},
+    {id: 4, label: 'No of cancels', value: 50},
+    {id: 5, label: 'No of user cancels', value: 50},
+    {id: 6, label: 'No of worker cancels', value: 50},
+    {id: 7, label: 'Total Earnings', value: 50},
+    {id: 8, label: 'Total Profit', value: 50},
+    {id: 9, label: 'Cashback given', value: 50},
+    {id: 10, label: 'Cashback Money', value: 50},
+    {id: 11, label: 'Pending Balance', value: 50},
+    {id: 12, label: 'Pending Balance workers', value: 50},
   ];
 
-  const handleAdministratorScreen = (screen) =>{
-    navigation.push(screen)
-  }
+  const handleAdministratorScreen = screen => {
+    navigation.push(screen);
+  };
 
   useEffect(() => {
-    setGreetingBasedOnTime()
-  },[])
+    setGreetingBasedOnTime();
+  }, []);
 
-  const handleSortSelection = (period) => {
+  const handleSortSelection = period => {
     setSelectedPeriod(period);
     setShowSortOptions(false);
 
     if (period === 'Today') {
       const today = new Date().toISOString().split('T')[0];
-      sendDataToBackend({ date: today });
+      sendDataToBackend({date: today});
     } else if (period === 'This Week') {
       const startOfWeek = new Date();
       startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
@@ -75,21 +99,24 @@ const DashboardScreen = () => {
         endDate: endOfWeek.toISOString().split('T')[0],
       });
     } else if (period === 'Specific Date') {
-      setShowCalendar(true); 
-    }
-  }; 
-
-  const sendDataToBackend = async (payload) => {
-    console.log("date",payload)
-    try {
-      const response = await axios.post(`${process.env.BackendAPI6}/api/administrator/service/date/details`, payload);
-      console.log(response.data);
-    } catch (error) {
-      console.error('Error sending data:', error); 
+      setShowCalendar(true);
     }
   };
 
-  const selectDate = (day) => {
+  const sendDataToBackend = async payload => {
+    console.log('date', payload);
+    try {
+      const response = await axios.post(
+        `${process.env.BackendAPI6}/api/administrator/service/date/details`,
+        payload,
+      );
+      console.log(response.data);
+    } catch (error) {
+      console.error('Error sending data:', error);
+    }
+  };
+
+  const selectDate = day => {
     const selected = new Date(day.dateString);
 
     if (!startDate || (startDate && endDate)) {
@@ -108,7 +135,7 @@ const DashboardScreen = () => {
       }
     }
   };
-  
+
   const setGreetingBasedOnTime = () => {
     const currentHour = new Date().getHours();
     let greetingMessage = 'Good Day';
@@ -146,7 +173,10 @@ const DashboardScreen = () => {
       return range;
     } else if (startDate) {
       return {
-        [startDate.toISOString().split('T')[0]]: { selected: true, selectedColor: '#4CAF50' },
+        [startDate.toISOString().split('T')[0]]: {
+          selected: true,
+          selectedColor: '#4CAF50',
+        },
       };
     }
     return {};
@@ -156,7 +186,7 @@ const DashboardScreen = () => {
     <SafeAreaView style={styles.container}>
       <ScrollView>
         <View style={styles.header}>
-        <View style={styles.greeting}>
+          <View style={styles.greeting}>
             <Text style={styles.greetingText}>
               {greeting} <Text style={styles.greetingIcon}>{greetingIcon}</Text>
             </Text>
@@ -164,12 +194,11 @@ const DashboardScreen = () => {
           </View>
         </View>
         <View style={styles.dashboardContainer}>
-          {dashboardItems.map((item) => (
-            <TouchableOpacity 
-            key={item.id} 
-            style={styles.iconButton} 
-            onPress={() => handleAdministratorScreen(item.screen)}
-          >
+          {dashboardItems.map(item => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.iconButton}
+              onPress={() => handleAdministratorScreen(item.screen)}>
               <FontAwesome5 name={item.icon} size={25} color={item.color} />
               <Text style={styles.buttonText}>{item.label}</Text>
             </TouchableOpacity>
@@ -182,7 +211,9 @@ const DashboardScreen = () => {
 
         <View style={styles.statsContainer}>
           <View style={styles.sortContainer}>
-            <TouchableOpacity onPress={() => setShowSortOptions(true)} style={styles.sortButton}>
+            <TouchableOpacity
+              onPress={() => setShowSortOptions(true)}
+              style={styles.sortButton}>
               <Text style={styles.sortText}>Sort by</Text>
               <MaterialIcons name="sort" size={20} color="#4a4a4a" />
             </TouchableOpacity>
@@ -190,8 +221,8 @@ const DashboardScreen = () => {
           <FlatList
             data={statsItems}
             numColumns={2}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
+            keyExtractor={item => item.id.toString()}
+            renderItem={({item}) => (
               <View style={styles.statItem}>
                 <Text style={styles.statLabel}>{item.label}</Text>
                 <Text style={styles.statValue}>{item.value}</Text>
@@ -207,14 +238,17 @@ const DashboardScreen = () => {
           <View style={styles.modalContainer}>
             <TouchableWithoutFeedback>
               <View style={styles.optionsContainer}>
-                {['Today', 'This Week', 'Specific Date'].map((period) => (
+                {['Today', 'This Week', 'Specific Date'].map(period => (
                   <TouchableOpacity
                     key={period}
                     style={styles.radioOption}
-                    onPress={() => handleSortSelection(period)}
-                  >
+                    onPress={() => handleSortSelection(period)}>
                     <Icon
-                      name={selectedPeriod === period ? 'radio-button-on' : 'radio-button-off'}
+                      name={
+                        selectedPeriod === period
+                          ? 'radio-button-on'
+                          : 'radio-button-off'
+                      }
                       size={20}
                       color={selectedPeriod === period ? '#FF5722' : '#4a4a4a'}
                     />

@@ -1,52 +1,79 @@
-import React, { useEffect, useState, memo } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, Dimensions, ScrollView, TouchableOpacity } from 'react-native';
+import React, {useEffect, useState, memo} from 'react';
+import {
+  View,
+  Text,
+  Image,
+  FlatList,
+  StyleSheet,
+  Dimensions,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
-import uuid from 'react-native-uuid'; 
+import uuid from 'react-native-uuid';
 
-const ReviewItem = memo(({ item }) => (
+const ReviewItem = memo(({item}) =>
   item.comment ? (
     <View style={styles.reviewContainer}>
       <View style={styles.userContainer}>
-        <Image source={{ uri: "https://i.postimg.cc/mZnDzdqJ/IMG-20240929-WA0024.jpg" }} style={styles.userImage} />
+        <Image
+          source={{
+            uri: 'https://i.postimg.cc/mZnDzdqJ/IMG-20240929-WA0024.jpg',
+          }}
+          style={styles.userImage}
+        />
         <View>
           <Text style={styles.userName}>{item.username}</Text>
           <Text style={styles.reviewTime}>{formatDate(item.created_at)}</Text>
         </View>
       </View>
       <View style={styles.ratingContainerSmall}>
-        {Array.from({ length: 5 }, (_, i) => (
+        {Array.from({length: 5}, (_, i) => (
           <FontAwesome
             key={i + 1}
             name={i < item.rating ? 'star' : 'star-o'}
             size={16}
             color="#FF5700"
-            style={{ marginRight: 3 }}
+            style={{marginRight: 3}}
           />
         ))}
       </View>
       <Text style={styles.reviewText}>{item.comment}</Text>
     </View>
-  ) : null
-));
+  ) : null,
+);
 
-const formatDate = (created_at) => {
+const formatDate = created_at => {
   const date = new Date(created_at);
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
-  return `${monthNames[date.getMonth()]} ${String(date.getDate()).padStart(2, '0')}, ${date.getFullYear()}`;
+  return `${monthNames[date.getMonth()]} ${String(date.getDate()).padStart(
+    2,
+    '0',
+  )}, ${date.getFullYear()}`;
 };
 
 // Rating Distribution Bars
-const RatingDistribution = ({ label, value }) => (
+const RatingDistribution = ({label, value}) => (
   <View style={styles.ratingDistributionRow}>
     <Text style={styles.ratingLabel}>{label}</Text>
     <View style={styles.ratingBarContainer}>
-      <View style={[styles.ratingValue, { width: `${value}%` }]} />
+      <View style={[styles.ratingValue, {width: `${value}%`}]} />
     </View>
     <Text style={styles.ratingPercentage}>{value}%</Text>
   </View>
@@ -55,33 +82,41 @@ const RatingDistribution = ({ label, value }) => (
 const RatingsScreen = () => {
   const [reviews, setReviews] = useState([]);
   const [workerReview, setWorkerReview] = useState({});
-  const [ratingDistribution, setRatingDistribution] = useState({ 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 });
+  const [ratingDistribution, setRatingDistribution] = useState({
+    5: 0,
+    4: 0,
+    3: 0,
+    2: 0,
+    1: 0,
+  });
 
   useEffect(() => {
     const fetchReviews = async () => {
       try {
         const token = await EncryptedStorage.getItem('pcs_token');
-        if (!token) throw new Error("Token not found");
+        if (!token) throw new Error('Token not found');
 
-        const response = await axios.get(`${process.env.BackendAPI6}/api/worker/ratings`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
+        const response = await axios.get(
+          `${process.env.BackendAPI6}/api/worker/ratings`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           },
-        });
+        );
 
         if (JSON.stringify(response.data) !== JSON.stringify(reviews)) {
           setReviews(response.data);
           setWorkerReview(response.data[0]);
           calculateRatingDistribution(response.data);
         }
-
       } catch (error) {
         console.error('Error fetching reviews data:', error);
       }
     };
 
-    const calculateRatingDistribution = (reviews) => {
-      const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    const calculateRatingDistribution = reviews => {
+      const distribution = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
       reviews.forEach(review => {
         if (review.rating >= 1 && review.rating <= 5) {
           distribution[review.rating] += 1;
@@ -90,38 +125,51 @@ const RatingsScreen = () => {
 
       const totalReviews = reviews.length;
       Object.keys(distribution).forEach(key => {
-        distribution[key] = totalReviews ? Math.round((distribution[key] / totalReviews) * 100) : 0;
+        distribution[key] = totalReviews
+          ? Math.round((distribution[key] / totalReviews) * 100)
+          : 0;
       });
 
       setRatingDistribution(distribution);
     };
 
     fetchReviews();
-  }, [reviews]); 
+  }, [reviews]);
 
   return (
     <View style={styles.mainContainer}>
       <View style={styles.headerContainer}>
-        <Icon name="arrow-back" size={24} color="#000" style={{ marginRight: 10 }} />
+        <Icon
+          name="arrow-back"
+          size={24}
+          color="#000"
+          style={{marginRight: 10}}
+        />
         <Text style={styles.headerTitle}>Rating Screen</Text>
       </View>
       <ScrollView style={styles.container}>
         <View style={styles.ratingHeadContainer}>
           <View style={styles.ratingDistributionContainer}>
-            {Object.keys(ratingDistribution).sort((a, b) => b - a).map((key) => (
-              <RatingDistribution key={key} label={key} value={ratingDistribution[key]} />
-            ))}
+            {Object.keys(ratingDistribution)
+              .sort((a, b) => b - a)
+              .map(key => (
+                <RatingDistribution
+                  key={key}
+                  label={key}
+                  value={ratingDistribution[key]}
+                />
+              ))}
           </View>
           <View style={styles.ratingSummaryContainer}>
             <Text style={styles.overallRating}>{workerReview.rating}</Text>
             <View style={styles.ratingContainer}>
-              {Array.from({ length: 5 }, (_, i) => (
+              {Array.from({length: 5}, (_, i) => (
                 <FontAwesome
                   key={i + 1}
                   name={i < workerReview.rating ? 'star' : 'star-o'}
                   size={14}
                   color="#FF5722"
-                  style={{ marginRight: 3 }}
+                  style={{marginRight: 3}}
                 />
               ))}
             </View>
@@ -131,8 +179,8 @@ const RatingsScreen = () => {
 
         <FlatList
           data={reviews.filter(review => review.comment !== null)}
-          renderItem={({ item }) => <ReviewItem item={item} />}
-          keyExtractor={(item) => uuid.v4()}
+          renderItem={({item}) => <ReviewItem item={item} />}
+          keyExtractor={item => uuid.v4()}
           showsVerticalScrollIndicator={false}
         />
       </ScrollView>
@@ -159,7 +207,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
