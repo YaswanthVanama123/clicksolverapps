@@ -16,7 +16,9 @@ const Navigation = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const [routeData, setRouteData] = useState(null);
-  const [locationDetails, setLocationDetails] = useState({ startPoint: [80.519353, 16.987142], endPoint: [80.6093701, 17.1098751] });
+  // const [locationDetails, setLocationDetails] = useState({ startPoint: [80.519353, 16.987142], endPoint: [80.6093701, 17.1098751] });
+  const [locationDetails, setLocationDetails] = useState(null);
+
   const [decodedId, setDecodedId] = useState(null);
   const [addressDetails, setAddressDetails] = useState({});
   const [encodedData, setEncodedData] = useState(null);
@@ -24,6 +26,7 @@ const Navigation = () => {
   const [serviceArray, setServiceArray] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [confirmationModalVisible, setConfirmationModalVisible] = useState(false);
+  const [cameraBounds, setCameraBounds] = useState(null);
 
   useEffect(() => {
     const { encodedId } = route.params;
@@ -253,46 +256,142 @@ const Navigation = () => {
   };
 
 
+  if (locationDetails) {
+    var markers = {
+      type: 'FeatureCollection',
+      features: [
+        // Start Marker
+        {
+          type: 'Feature',
+          properties: {
+            icon: 'start-point-icon',
+            iconSize: 0.2, // Adjust as needed
+          },
+          geometry: {
+            type: 'Point',
+            coordinates: locationDetails.startPoint,
+          },
+        },
+        // End Marker
+        {
+          type: 'Feature',
+          properties: {
+            icon: 'end-point-icon',
+            iconSize: 0.13, // Adjust as needed
+          },
+          geometry: {
+            type: 'Point',
+            coordinates: locationDetails.endPoint,
+          },
+        },
+      ],
+    };
+  }
+  
+  useEffect(() => {
+    if (locationDetails && routeData && routeData.geometry && routeData.geometry.coordinates) {
+      const allCoordinates = [
+        locationDetails.startPoint,
+        locationDetails.endPoint,
+        ...routeData.geometry.coordinates,
+      ];
+
+      const bounds = computeBoundingBox(allCoordinates);
+      setCameraBounds(bounds);
+    }
+  }, [locationDetails, routeData]);
+
+  const computeBoundingBox = (coordinates) => {
+    let minX, minY, maxX, maxY;
+
+    for (let coord of coordinates) {
+      const [x, y] = coord;
+      if (minX === undefined || x < minX) {
+        minX = x;
+      }
+      if (maxX === undefined || x > maxX) {
+        maxX = x;
+      }
+      if (minY === undefined || y < minY) {
+        minY = y;
+      }
+      if (maxY === undefined || y > maxY) {
+        maxY = y;
+      }
+    }
+
+    return {
+      ne: [maxX, maxY], // North East coordinate
+      sw: [minX, minY], // South West coordinate
+    };
+  };
+
   return (
     <View style={styles.container}>
-    <Mapbox.MapView style={styles.map}>
-      <Mapbox.Camera
-        zoomLevel={14}
-        centerCoordinate={locationDetails.startPoint}
-      />
-
-      {/* Start Location Marker */}
-      <Mapbox.PointAnnotation
-        id="start-point"
-        coordinate={locationDetails.startPoint}
-      >
-        <Image
-          source={{uri:'https://i.postimg.cc/Pxwby5tW/Screenshot-2024-11-13-165554-removebg-preview.png'}} // Replace with your start location image
-          style={styles.markerImage}
-        />
-      </Mapbox.PointAnnotation>
-
-      {/* End Location Marker */}
-      <Mapbox.PointAnnotation 
-        id="end-point"
-        coordinate={locationDetails.endPoint}
-      >
-        <Image
-          source={{uri:'https://i.postimg.cc/ZRdQkj5d/Screenshot-2024-11-13-164652-removebg-preview.png'}} // Replace with your start location image
-          style={styles.markerImage}
-        />
-      </Mapbox.PointAnnotation>
-
-      {/* Route Line */}
-      {routeData && (
-        <Mapbox.ShapeSource id="routeSource" shape={routeData}>
-          <Mapbox.LineLayer
-            id="routeLine"
-            style={styles.routeLine}
+{locationDetails ? (
+  <Mapbox.MapView style={styles.map}>
+          <Mapbox.Camera
+            bounds={
+              cameraBounds
+                ? {
+                    ne: cameraBounds.ne,
+                    sw: cameraBounds.sw,
+                    paddingLeft: 50,
+                    paddingRight: 50,
+                    paddingTop: 50,
+                    paddingBottom: 50,
+                  }
+                : null
+            }
           />
-        </Mapbox.ShapeSource>
+
+          <Mapbox.Images
+            images={{
+              'start-point-icon': {
+                uri: 'https://i.postimg.cc/Pxwby5tW/Screenshot-2024-11-13-165554-removebg-preview.png',
+              },
+              'end-point-icon': {
+                uri: 'https://i.postimg.cc/ZRdQkj5d/Screenshot-2024-11-13-164652-removebg-preview.png',
+              },
+            }}
+          />
+
+          {/* Add Markers */}
+          {markers && (
+            <Mapbox.ShapeSource id="markerSource" shape={markers}>
+              <Mapbox.SymbolLayer
+                id="markerLayer"
+                style={{
+                  iconImage: ['get', 'icon'],
+                  iconSize: ['get', 'iconSize'],
+                  iconAllowOverlap: true,
+                  iconAnchor: 'bottom',
+                  iconOffset: [0, -10],
+                }}
+              />
+            </Mapbox.ShapeSource>
+          )}
+
+          {/* Add Route Line */}
+          {routeData && (
+            <Mapbox.ShapeSource
+              id="routeSource"
+              shape={routeData}
+            >
+              <Mapbox.LineLayer
+                id="routeLine"
+                style={styles.routeLine}
+              />
+            </Mapbox.ShapeSource>
+          )}
+        </Mapbox.MapView>
+
+      ) : (
+        <View style={styles.loadingContainer}>
+          <Text>Loading Map...</Text>
+        </View>
       )}
-    </Mapbox.MapView>
+
       {/* <TouchableOpacity style={styles.cancelButton} onPress={handleCancelBooking}>
         <Text style={styles.cancelText}>Cancel</Text>
       </TouchableOpacity> */}
@@ -445,7 +544,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   markerImage: {
-    width: 25, // Adjust size as needed
+    width: 26, // Adjust size as needed
     height: 50, // Adjust size as needed
     resizeMode: 'contain',
   },
@@ -502,6 +601,10 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   map: {
+    flex: 1,
+    minHeight: 0.45 * screenHeight,
+  },
+  loadingContainer:{
     flex: 1,
     minHeight: 0.45 * screenHeight,
   },

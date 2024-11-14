@@ -36,6 +36,7 @@ const endMarker = require('./assets/end-marker.png');
 const WorkerNavigationScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
+  const [cameraBounds, setCameraBounds] = useState(null);
   const [routeData, setRouteData] = useState(null);
   const [locationDetails, setLocationDetails] = useState({
     startPoint: [80.519353, 16.987142],
@@ -291,27 +292,135 @@ const WorkerNavigationScreen = () => {
     );
   };
 
+  let markers = null;
+  if (locationDetails) {
+    markers = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          properties: {
+            icon: 'start-point-icon',
+            iconSize: 0.2, // Adjust size as needed
+          },
+          geometry: {
+            type: 'Point',
+            coordinates: locationDetails.startPoint,
+          },
+        },
+        {
+          type: 'Feature',
+          properties: {
+            icon: 'end-point-icon',
+            iconSize: 0.13, // Adjust size as needed
+          },
+          geometry: {
+            type: 'Point',
+            coordinates: locationDetails.endPoint,
+          },
+        },
+      ],
+    };
+  }
+
+
+  // Compute bounding box
+  useEffect(() => {
+    if (locationDetails && routeData && routeData.coordinates) {
+      const allCoordinates = [
+        locationDetails.startPoint,
+        locationDetails.endPoint,
+        ...routeData.coordinates,
+      ];
+
+      const bounds = computeBoundingBox(allCoordinates);
+      setCameraBounds(bounds);
+    }
+  }, [locationDetails, routeData]);
+
+  const computeBoundingBox = (coordinates) => {
+    let minX, minY, maxX, maxY;
+
+    for (let coord of coordinates) {
+      const [x, y] = coord;
+      if (minX === undefined || x < minX) {
+        minX = x;
+      }
+      if (maxX === undefined || x > maxX) {
+        maxX = x;
+      }
+      if (minY === undefined || y < minY) {
+        minY = y;
+      }
+      if (maxY === undefined || y > maxY) {
+        maxY = y;
+      }
+    }
+
+    return {
+      ne: [maxX, maxY], // North East coordinate
+      sw: [minX, minY], // South West coordinate
+    };
+  };
+
+
+
+
   return (
     <View style={styles.container}>
 <Mapbox.MapView style={styles.map}>
-      <Mapbox.Camera zoomLevel={14} centerCoordinate={locationDetails.startPoint} />
+        <Mapbox.Camera
+          bounds={
+            cameraBounds
+              ? {
+                  ne: cameraBounds.ne,
+                  sw: cameraBounds.sw,
+                  paddingLeft: 50,
+                  paddingRight: 50,
+                  paddingTop: 50,
+                  paddingBottom: 50,
+                }
+              : null
+          }
+        />
 
-      {/* Marker for Start Point */}
-      <Mapbox.PointAnnotation id="start-point" coordinate={locationDetails.startPoint}>
-        <Image source={require('../../assets/start-marker.png')} style={styles.markerImage} />
-      </Mapbox.PointAnnotation>
+        {/* Add Images to Map */}
+        <Mapbox.Images
+          images={{
+            'start-point-icon': require('../../assets/start-marker.png'),
+            'end-point-icon': require('../../assets/end-marker.png'),
+          }}
+        />
 
-      {/* Marker for End Point */}
-      <Mapbox.PointAnnotation id="end-point" coordinate={locationDetails.endPoint}>
-        <Image source={require('../../assets/end-marker.png')} style={styles.markerImage} />
-      </Mapbox.PointAnnotation>
+        {/* Render Markers */}
+        {markers && (
+          <Mapbox.ShapeSource id="markerSource" shape={markers}>
+            <Mapbox.SymbolLayer
+              id="markerLayer"
+              style={{
+                iconImage: ['get', 'icon'],
+                iconSize: ['get', 'iconSize'], // Use iconSize from properties
+                iconAllowOverlap: true,
+                iconAnchor: 'bottom',
+                iconOffset: [0, -10], // Adjust if needed
+              }}
+            />
+          </Mapbox.ShapeSource>
+        )}
 
-      {routeData && (
-        <Mapbox.ShapeSource id="routeSource" shape={routeData}>
-          <Mapbox.LineLayer id="routeLine" style={styles.routeLine} />
-        </Mapbox.ShapeSource>
-      )}
-    </Mapbox.MapView>
+        {/* Render Route Line */}
+        {routeData && (
+          <Mapbox.ShapeSource
+            id="routeSource"
+            shape={{
+              type: 'Feature',
+              geometry: routeData,
+            }}
+          >
+            <Mapbox.LineLayer id="routeLine" style={styles.routeLine} />
+          </Mapbox.ShapeSource>
+        )}
+      </Mapbox.MapView>
       <TouchableOpacity style={styles.cancelButton} onPress={handleCancelModal}>
         <Text style={styles.cancelText}>Cancel</Text>
       </TouchableOpacity>

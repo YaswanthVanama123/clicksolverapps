@@ -287,13 +287,6 @@ function ServiceApp() {
           ))}
         </ScrollView>
       )}
-
-
-
-
-
-
-
     </View>
   );
 }
@@ -339,7 +332,7 @@ const styles = StyleSheet.create({
   },
   userInitialText: {
     fontSize: 18,
-    color: '#333',
+    color: '#333', 
     fontWeight: 'bold',
   },
   scrollViewContent: {

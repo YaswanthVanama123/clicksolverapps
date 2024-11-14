@@ -7962,6 +7962,43 @@ const getWorkerEarnings = async (req, res) => {
 };
 
 
+const userWorkerInProgressDetails = async (req, res) => {
+  const { decodedId } = req.body;
+  console.log(decodedId)
+  try {
+      const query = `
+          SELECT 
+              a.service_booked, 
+              a.time, 
+              a.created_at, 
+              u.area, 
+              w.name, 
+              ws.profile
+          FROM 
+              accepted a
+          JOIN 
+              usernotifications u ON a.user_notification_id = u.user_notification_id
+          JOIN 
+              workersverified w ON a.worker_id = w.worker_id
+          JOIN 
+              workerskills ws ON a.worker_id = ws.worker_id
+          WHERE 
+              a.notification_id = $1
+      `;
+
+      const result = await client.query(query, [decodedId]);
+
+      if (result.rows.length === 0) {
+          return res.status(404).json({ message: 'No details found for the given notification_id' });
+      }
+
+      res.status(200).json(result.rows);
+  } catch (error) {
+      console.error('Error fetching user worker in-progress details:', error);
+      res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 
 // const getWorkerEarnings = async (req, res) => {
 //   // Destructure the possible date parameters from the request body
@@ -8075,6 +8112,9 @@ const getWorkerEarnings = async (req, res) => {
 //     res.status(500).json({ error: 'Internal server error' });
 //   }
 // };
+
+
+// Define the function to fetch in-progress worker details for a user
 
 
 const getWorkDetails = async (req, res) => {
@@ -8251,5 +8291,6 @@ module.exports = {
   userCompleteSignUp,
   getAllTrackingServices,
   pendingBalanceWorkers,
-  getDashboardDetails
+  getDashboardDetails,
+  userWorkerInProgressDetails
 };

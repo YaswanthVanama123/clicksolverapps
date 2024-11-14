@@ -30,11 +30,11 @@ import EditProfile from './Components/EditProfile';
 import LocationSearch from './Components/LocationSearch';
 import LoginScreen from './Components/LoginScreen';
 import SignUpScreen from './Components/SignUpScreen';
-import Olamaps from './screens/Olamaps'
 import ServiceTrackingItemScreen from './Components/ServiceTrackingItemScreen';
 import ServiceTrackingListScreen from './Components/ServiceTrackingListScreen';
 import ServiceBookingItem from './Components/ServiceBookingItem';
 import UserNotifications from './screens/UserNotifications';
+import ServiceInProgress from './Components/ServiceInProgress';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -72,7 +72,7 @@ function TabNavigator() {
     >
       <Tab.Screen name="Home" component={ServiceApp} options={{ headerShown: false }} />
       <Tab.Screen name="Bookings" component={RecentServices} options={{ headerShown: false }} />
-      {/* <Tab.Screen name="Rewards" component={ServiceTrackingItemScreen} options={{ headerShown: false }} /> */}
+      <Tab.Screen name="ServiceInProgress" component={ServiceInProgress} options={{ headerShown: false }} />
       <Tab.Screen name="Native" component={ServiceTrackingListScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Account" component={ProfileScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
@@ -356,6 +356,7 @@ function App() {
         <Stack.Screen name="serviceBookingItem" component={ServiceBookingItem} options={{ headerShown: false }} />
         <Stack.Screen name="Notifications" component={UserNotifications} options={{ headerShown: false }} />
         <Stack.Screen name="Help" component={Help} options={{ headerShown: false }} />
+        <Stack.Screen name="ServiceInProgress" component={ServiceInProgress} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer> 
   );

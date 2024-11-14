@@ -43,6 +43,8 @@ import AdministratorDashboard from './Components/AdministratorDashboard';
 import AdministratorAllTrackings from './Components/AdministratorAllTrackings';
 import ApprovalPendingItems from './Components/ApprovalPendingItems';
 import PendingBalanceWorkers from './Components/PendingBalanceWorkers';
+import ServiceInProgress from './Components/ServiceInProgress';
+import ServiceInProgressScreen from './Components/ServiceInProgress';
 // Additional imports...
 
 const Stack = createNativeStackNavigator();
@@ -98,7 +100,7 @@ function TabNavigator() {
         <Tab.Screen name="Bookings" component={RecentServices} options={{ headerShown: false }} />
         <Tab.Screen name="Tracking" component={ServiceTrackingListScreen} options={{ headerShown: false }} />
         {/* <Tab.Screen name="Native" component={CashbackScreen1} options={{ headerShown: false }} />    */}
-        <Tab.Screen name="Account" component={AdministratorDashboard} options={{ headerShown: false }} />
+        <Tab.Screen name="Account" component={ServiceInProgressScreen} options={{ headerShown: false }} />
       </Tab.Navigator>
     </SafeAreaView> 
   );
@@ -231,6 +233,7 @@ function App(): React.JSX.Element {
         <Stack.Screen name='ApprovalPendingItems' component={ApprovalPendingItems} options={{title: 'ApprovalPendingItems', headerShown: false}} />
         <Stack.Screen name='PendingCashbackWorkers' component={PendingCashbackWorkers} options={{title: 'PendingCashbackWorkers', headerShown: false}} />
         <Stack.Screen name='PendingBalanceWorkers' component={PendingBalanceWorkers} options={{title: 'PendingBalanceWorkers', headerShown: false}} />
+        <Stack.Screen name='ServiceInProgress' component={ServiceInProgress} options={{title: 'ServiceInProgress', headerShown: false}} />
         {/* Additional screens here */}
       </Stack.Navigator> 
     </NavigationContainer>

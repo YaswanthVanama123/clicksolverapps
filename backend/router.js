@@ -119,7 +119,8 @@ const {
   workerNavigationCancel,
   getAllTrackingServices,
   pendingBalanceWorkers,
-  getDashboardDetails
+  getDashboardDetails,
+  userWorkerInProgressDetails
 } = require("./controller.js");
 
 const router = express.Router();
@@ -505,6 +506,8 @@ router.get("/user/login/status",authenticateToken,loginStatus)
 router.get("/worker/tracking/services",authenticateWorkerToken,getWorkerTrackingServices);
 
 router.get("/all/tracking/services",getAllTrackingServices);
+
+router.post("/user/work/progress/details",userWorkerInProgressDetails)
 
 router.post("/administrator/service/date/details",getDashboardDetails)
 
