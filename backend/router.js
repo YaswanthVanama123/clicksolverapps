@@ -121,6 +121,8 @@ const {
   pendingBalanceWorkers,
   getDashboardDetails,
   userWorkerInProgressDetails,
+  WorkerWorkInProgressDetails,
+  workerWorkingStatusUpdated,
 } = require("./controller.js");
 
 const router = express.Router();
@@ -546,6 +548,10 @@ router.get(
 router.get("/all/tracking/services", getAllTrackingServices);
 
 router.post("/user/work/progress/details", userWorkerInProgressDetails);
+
+router.post("/worker/working/status/updated", workerWorkingStatusUpdated);
+
+router.post("/worker/work/progress/details", WorkerWorkInProgressDetails);
 
 router.post("/administrator/service/date/details", getDashboardDetails);
 

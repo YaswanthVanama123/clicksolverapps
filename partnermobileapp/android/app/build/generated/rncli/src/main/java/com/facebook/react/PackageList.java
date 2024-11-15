@@ -27,6 +27,8 @@ import io.invertase.firebase.messaging.ReactNativeFirebaseMessagingPackage;
 import com.reactnativecommunity.picker.RNCPickerPackage;
 // @rnmapbox/maps
 import com.rnmapbox.rnmbx.RNMBXPackage;
+// lottie-react-native
+import com.airbnb.android.react.lottie.LottiePackage;
 // react-native-background-fetch
 import com.transistorsoft.rnbackgroundfetch.RNBackgroundFetchPackage;
 // react-native-background-geolocation
@@ -106,6 +108,7 @@ public class PackageList {
       new ReactNativeFirebaseMessagingPackage(),
       new RNCPickerPackage(),
       new RNMBXPackage(),
+      new LottiePackage(),
       new RNBackgroundFetchPackage(),
       new RNBackgroundGeolocation(),
       new RNEncryptedStoragePackage(),

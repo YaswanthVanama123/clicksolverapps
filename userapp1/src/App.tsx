@@ -86,11 +86,6 @@ function TabNavigator() {
         options={{headerShown: false}}
       />
       <Tab.Screen
-        name="ServiceInProgress"
-        component={ServiceInProgress}
-        options={{headerShown: false}}
-      />
-      <Tab.Screen
         name="Native"
         component={ServiceTrackingListScreen}
         options={{headerShown: false}}
@@ -410,7 +405,7 @@ function App() {
         />
         <Stack.Screen
           name="worktimescreen"
-          component={TimingScreen}
+          component={ServiceInProgress}
           options={{headerShown: false}}
         />
         <Stack.Screen

@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.partnermobileapp-mergeDebugResources-59:/values-ko/values-ko.xml",
+            "outputFile": "com.partnermobileapp-mergeDebugResources-60:/values-ko/values-ko.xml",
             "map": [
                 {
                     "source": "C:\\Users\\vanam\\.gradle\\caches\\transforms-4\\b05ba381b7055e446eb8a013ac56ac61\\transformed\\jetified-credentials-1.2.0-rc01\\res\\values-ko\\values-ko.xml",

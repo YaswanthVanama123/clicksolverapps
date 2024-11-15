@@ -9,6 +9,8 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import SwipeButton from 'rn-swipe-button';
 import Feather from 'react-native-vector-icons/Feather';
 import Entypo from 'react-native-vector-icons/Entypo';
+import LottieView from 'lottie-react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const TaskConfirmation = () => {
   const route = useRoute();
@@ -143,88 +145,63 @@ const TaskConfirmation = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <MaterialIcons name="arrow-back" size={24} color="#000" />
-        <Text style={styles.headerTitle}>Service Tracking</Text>
-        <TouchableOpacity onPress={() => setIsFilterVisible(!isFilterVisible)}>
-          <MaterialIcons name="filter-list" size={24} color="#000" />
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity style={styles.backArrow}>
+        <Icon name="arrow-back" size={24} color="#000" />
+      </TouchableOpacity>
 
-      <View style={styles.cardContainer}>
-        <View style={styles.iconContainer}>
-          <FontAwesome5 name="hammer" size={20} color="#FFFFFF" />
-        </View>
-        <View>
-          <Text style={styles.completionText}>Work Completion request</Text>
-          <Text style={styles.timeText}>Oct 25 2024 9:00PM</Text>
-        </View>
-      </View>
+      {/* Checkmark Image */}
+      <LottieView
+        source={require('../assets/success.json')}
+        autoPlay
+        loop
+        style={styles.loadingAnimation}
+      />
 
-      <View style={styles.successContainer}>
-        <View style={styles.successIcon}>
-          <FontAwesome6
-            name="check"
-            size={25}
-            color="#FFFFFF"
-            style={styles.checkIcon}
-          />
-        </View>
-        <Text style={styles.completeText}>Completed</Text>
-      </View>
-
-      <View style={styles.detailsContainer}>
-        <View style={styles.detailsCard}>
-          <View>
-            <Feather name="user" size={20} color="#4a4a4a" />
-          </View>
-          <View>
-            <Text style={styles.completionText}>Yaswanth</Text>
-          </View>
-        </View>
-        <View>
-          <Text style={styles.location}>{details.area}</Text>
-        </View>
-      </View>
+      {/* Title and Subtitle */}
+      <Text style={styles.title}>Work Completion request !</Text>
+      <Text style={styles.subtitle}>
+        Please confirm the completion of the service. Click confirm
+      </Text>
 
       <View style={styles.paymentDetails}>
         <Text style={styles.detailsText}>Payment Details</Text>
-      </View>
-      <View style={styles.sectionContainer}>
-        <View style={styles.PaymentItemContainer}>
-          {serviceArray.map((service, index) => (
-            <View key={index} style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>{service.serviceName}</Text>
-              <Text style={styles.paymentValue}>₹{service.cost}.00</Text>
+
+        <View style={styles.sectionContainer}>
+          <View style={styles.PaymentItemContainer}>
+            {serviceArray.map((service, index) => (
+              <View key={index} style={styles.paymentRow}>
+                <Text style={styles.paymentLabel}>{service.serviceName}</Text>
+                <Text style={styles.paymentValue}>₹{service.cost}.00</Text>
+              </View>
+            ))}
+            <View style={styles.paymentRow}>
+              <Text style={styles.paymentLabel}>SGST (5%)</Text>
+              <Text style={styles.paymentValue}>
+                ₹{paymentDetails.cgstAmount}.00
+              </Text>
             </View>
-          ))}
-          <View style={styles.paymentRow}>
-            <Text style={styles.paymentLabel}>SGST (5%)</Text>
-            <Text style={styles.paymentValue}>
-              ₹{paymentDetails.cgstAmount}.00
-            </Text>
-          </View>
-          <View style={styles.paymentRow}>
-            <Text style={styles.paymentLabel}>CGST (5%)</Text>
-            <Text style={styles.paymentValue}>
-              ₹{paymentDetails.gstAmount}.00
-            </Text>
-          </View>
-          <View style={styles.paymentRow}>
-            <Text style={styles.paymentLabel}>Cashback (5%)</Text>
-            <Text style={styles.paymentValue}>
-              ₹{paymentDetails.discountAmount}.00
-            </Text>
-          </View>
-          <View style={styles.paymentRow}>
-            <Text style={styles.paymentLabel}>Pay Via Scan</Text>
-            <Text style={styles.paymentValue}>
-              Grand Total ₹{paymentDetails.fetchedFinalTotalAmount}.00
-            </Text>
+            <View style={styles.paymentRow}>
+              <Text style={styles.paymentLabel}>CGST (5%)</Text>
+              <Text style={styles.paymentValue}>
+                ₹{paymentDetails.gstAmount}.00
+              </Text>
+            </View>
+            <View style={styles.paymentRow}>
+              <Text style={styles.paymentLabel}>Cashback (5%)</Text>
+              <Text style={styles.paymentValue}>
+                ₹{paymentDetails.discountAmount}.00
+              </Text>
+            </View>
+            <View style={[styles.horizantalLine, {marginTop: 10}]} />
+            <View style={styles.paymentGrandRow}>
+              <Text style={styles.paymentTotalValue}>
+                Grand Total ₹{paymentDetails.fetchedFinalTotalAmount}.00
+              </Text>
+            </View>
+            <View style={[styles.horizantalLine]} />
           </View>
         </View>
       </View>
-
       <View style={styles.swipeButton}>
         <SwipeButton
           title="Completed"
@@ -284,7 +261,31 @@ const TaskConfirmation = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    backgroundColor: '#fff',
+  },
+  backArrow: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    zIndex: 1,
+  },
+  loadingAnimation: {
+    width: '100%',
+    height: 200,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#333',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
   },
   headerContainer: {
     flexDirection: 'row',
@@ -351,12 +352,16 @@ const styles = StyleSheet.create({
     color: '#212121',
     fontSize: 15,
     fontWeight: 'bold',
+    paddingBottom: 10,
   },
   paymentDetails: {
     padding: 10,
-    paddingHorizontal: 30,
-    backgroundColor: '#f5f5f5',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    backgroundColor: '#ffffff',
+    elevation: 1,
     marginBottom: 10,
+    borderRadius: 10,
   },
   paymentLabel: {
     fontSize: 14,
@@ -367,9 +372,20 @@ const styles = StyleSheet.create({
     color: '#212121',
     fontWeight: 'bold',
   },
+  paymentTotalValue: {
+    fontSize: 16,
+    color: '#212121',
+    fontWeight: 'bold',
+    paddingVertical: 10,
+  },
   paymentRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  paymentGrandRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
     marginBottom: 4,
   },
   PaymentItemContainer: {
@@ -379,8 +395,7 @@ const styles = StyleSheet.create({
   },
   sectionContainer: {
     marginBottom: 16,
-    paddingLeft: 16,
-    paddingRight: 16,
+
     width: '95%',
   },
   sectionTitle: {
@@ -426,6 +441,10 @@ const styles = StyleSheet.create({
   subHeaderText: {
     fontSize: 14,
     color: '#666',
+  },
+  horizantalLine: {
+    height: 1,
+    backgroundColor: '#f5f5f5',
   },
   iconContainer: {
     height: 50,

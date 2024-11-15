@@ -19,15 +19,15 @@ import {
   useFocusEffect,
 } from '@react-navigation/native';
 import axios from 'axios';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const ServiceInProgressScreen = () => {
   const [details, setDetails] = useState({});
-  const [serviceArray, setServiceArray] = useState([]);
+  const [services, setServices] = useState([]);
   const [decodedId, setDecodedId] = useState(null);
 
   const route = useRoute();
-  // const { encodedId } = route.params;
-  const encodedId = 'MTQ0OA==';
+  const {encodedId} = route.params;
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -36,53 +36,67 @@ const ServiceInProgressScreen = () => {
     }
   }, [encodedId]);
 
-  const handleCheck = useCallback(async () => {
-    try {
-      // First API call to check the status
-      const response = await axios.post(
-        `${process.env.BACKENDAIPE}/api/task/confirm/status`,
-        {
-          notification_id: decodedId,
-        },
-      );
-
-      if (response.status === 20) {
-        const cs_token = await EncryptedStorage.getItem('cs_token');
-
-        // Proceed if `cs_token` exists
-        if (cs_token) {
-          await axios.post(
-            `${process.env.BACKENDAIPE}/api/user/action`,
-            {
-              encodedId: encodedId,
-              screen: 'Paymentscreen',
-            },
-            {
-              headers: {
-                Authorization: `Bearer ${cs_token}`,
-              },
-            },
-          );
-
-          // Reset navigation to Paymentscreen
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [{name: 'Paymentscreen', params: {encodedId: encodedId}}],
-            }),
-          );
-        } else {
-          console.error('Token is missing');
-        }
-      }
-    } catch (error) {
-      console.error('Error checking status:', error);
-    }
-  }, [decodedId, encodedId, navigation]);
-
   useEffect(() => {
-    handleCheck();
-  }, [decodedId, encodedId]);
+    const fetchBookings = async () => {
+      try {
+        const response = await axios.post(
+          `${process.env.BACKENDAIPE}/api/user/work/progress/details`,
+          {
+            decodedId,
+          },
+        );
+        const data = response.data[0];
+        setDetails(data);
+
+        // Map `service_booked` and `service_status` to `services`
+        const mappedServices = data.service_booked.map(serviceBookedItem => {
+          const serviceStatusItem = data.service_status.find(
+            statusItem =>
+              statusItem.serviceName === serviceBookedItem.serviceName,
+          );
+
+          return {
+            id: serviceBookedItem.main_service_id,
+            name: serviceBookedItem.serviceName,
+            quantity: serviceBookedItem.quantity,
+            image:
+              serviceBookedItem.url ||
+              'https://i.postimg.cc/6Tsbn3S6/Image-8.png',
+            status: {
+              accept: serviceStatusItem.accept || null,
+              arrived: serviceStatusItem.arrived || null,
+              workCompleted: serviceStatusItem.workCompleted || null,
+            },
+          };
+        });
+
+        setServices(mappedServices);
+      } catch (error) {
+        console.error('Error fetching bookings data:', error);
+      }
+    };
+
+    if (decodedId) {
+      fetchBookings();
+    }
+  }, [decodedId]);
+
+  // Function to generate timeline data
+  const generateTimelineData = status => {
+    const statusKeys = ['accept', 'arrived', 'workCompleted'];
+    const statusDisplayNames = {
+      accept: 'In Progress',
+      arrived: 'Work Started',
+      workCompleted: 'Work Completed',
+    };
+    return statusKeys.map(statusKey => ({
+      key: statusKey,
+      title: statusDisplayNames[statusKey],
+      time: status[statusKey] || null,
+      iconColor: status[statusKey] ? '#ff4500' : '#a1a1a1',
+      lineColor: status[statusKey] ? '#ff4500' : '#a1a1a1',
+    }));
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -124,54 +138,21 @@ const ServiceInProgressScreen = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        const response = await axios.post(
-          `${process.env.BACKENDAIPE}/api/user/work/progress/details`,
-          {
-            decodedId,
-          },
-        );
-        const data = response.data[0];
-        setDetails(data);
-
-        setServiceArray(data.service_booked);
-        // console.log(data.service_booked)
-      } catch (error) {
-        console.error('Error fetching bookings data:', error);
-      }
+  const formatDate = dateString => {
+    const date = new Date(dateString);
+    const options = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true,
     };
-    if (decodedId) {
-      console.log(decodedId);
-      fetchBookings();
-    }
-  }, [decodedId]);
-
-  const formatDate = created_at => {
-    const date = new Date(created_at);
-    const monthNames = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    return `${monthNames[date.getMonth()]} ${String(date.getDate()).padStart(
-      2,
-      '0',
-    )}, ${date.getFullYear()}`;
+    return date.toLocaleString('en-US', options);
   };
 
   return (
-    <View style={styles.mainCOntainer}>
+    <View style={styles.mainContainer}>
       <View style={styles.headerContainer}>
         <FontAwesome6
           name="arrow-left-long"
@@ -186,7 +167,9 @@ const ServiceInProgressScreen = () => {
           <View style={styles.technicianContainer}>
             <Image
               source={{
-                uri: 'https://i.postimg.cc/mZnDzdqJ/IMG-20240929-WA0024.jpg',
+                uri:
+                  details.profile ||
+                  'https://i.postimg.cc/mZnDzdqJ/IMG-20240929-WA0024.jpg',
               }}
               style={styles.technicianImage}
             />
@@ -200,8 +183,8 @@ const ServiceInProgressScreen = () => {
           </Text>
           <Text style={styles.statusText}>
             Status: Working on your{' '}
-            {serviceArray.map(service => service.serviceName).join(', ')} unit
-            to ensure optimal performance.
+            {services.map(service => service.name).join(', ')} to ensure optimal
+            performance.
           </Text>
         </View>
         <View style={styles.houseImageContainer}>
@@ -211,7 +194,6 @@ const ServiceInProgressScreen = () => {
             loop
             style={styles.loadingAnimation}
           />
-          {/* <Image source={{ uri: 'https://via.placeholder.com/200' }} style={styles.houseImage} /> */}
         </View>
 
         <TouchableOpacity style={styles.button} onPress={handleCompleteClick}>
@@ -245,22 +227,20 @@ const ServiceInProgressScreen = () => {
           </View>
           <View>
             <View style={{marginTop: 20}}>
-              {serviceArray.map((service, index) => {
-                console.log(service); // Log to verify each service item
+              {services.map((service, index) => {
+                const timelineData = generateTimelineData(service.status);
                 return (
                   <View style={styles.ServiceCardsContainer} key={index}>
                     <View style={styles.technicianContainer}>
                       <Image
                         source={{
-                          uri:
-                            service.url ||
-                            'https://i.postimg.cc/6Tsbn3S6/Image-8.png',
+                          uri: service.image,
                         }}
                         style={styles.technicianImage}
                       />
                       <View style={styles.technicianDetails}>
                         <Text style={styles.technicianName}>
-                          {service.serviceName}
+                          {service.name}
                         </Text>
                         <Text style={styles.technicianTitle}>
                           Quantity: {service.quantity}
@@ -269,28 +249,63 @@ const ServiceInProgressScreen = () => {
                     </View>
                     <Text style={styles.statusText}>
                       Service Status:{' '}
-                      <Text style={styles.highLightText}>In Progress</Text>
+                      <Text style={styles.highLightText}>
+                        {timelineData.find(item => item.time)?.title ||
+                          'Pending'}
+                      </Text>
                     </Text>
                     <Text style={styles.statusText}>
                       Estimated Completion:{' '}
                       <Text style={styles.highLightText}>2 hours</Text>
                     </Text>
+
+                    {/* Timeline Section */}
+                    <View style={styles.sectionContainer}>
+                      <View style={styles.serviceTimeLineContainer}>
+                        <Text style={styles.sectionTitle}>
+                          Service Timeline
+                        </Text>
+                      </View>
+                      <View style={styles.innerContainerLine}>
+                        {timelineData.map((item, idx) => (
+                          <View key={item.key} style={styles.timelineItem}>
+                            <View style={styles.iconAndLineContainer}>
+                              <MaterialCommunityIcons
+                                name="circle"
+                                size={14}
+                                color={item.iconColor}
+                              />
+                              {idx !== timelineData.length - 1 && (
+                                <View
+                                  style={[
+                                    styles.lineSegment,
+                                    {
+                                      backgroundColor:
+                                        timelineData[idx + 1].iconColor,
+                                    },
+                                  ]}
+                                />
+                              )}
+                            </View>
+                            <View style={styles.timelineContent}>
+                              <View style={styles.timelineTextContainer}>
+                                <Text style={styles.timelineText}>
+                                  {item.title}
+                                </Text>
+                                <Text style={styles.timelineTime}>
+                                  {item.time
+                                    ? formatDate(item.time)
+                                    : 'Pending'}
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
                   </View>
                 );
               })}
-              {/* {[...Array(3)].map((_, index) => (
-              <View style={styles.ServiceCardsContainer} key={index}>
-                <View style={styles.technicianContainer}>
-                  <Image source={{ uri: 'https://i.postimg.cc/6Tsbn3S6/Image-8.png' }} style={styles.technicianImage} />
-                  <View style={styles.technicianDetails}>
-                    <Text style={styles.technicianName}>Ac Repair</Text>
-                    <Text style={styles.technicianTitle}>Quantity : 1</Text>
-                  </View>
-                </View>
-                <Text style={styles.statusText}>Service Status: <Text style={styles.highLightText}>In Progress</Text> </Text>
-                <Text style={styles.statusText}>Estimated Completion: <Text style={styles.highLightText}>2 hours</Text> </Text>
-              </View>
-            ))} */}
             </View>
           </View>
         </View>
@@ -300,7 +315,7 @@ const ServiceInProgressScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  mainCOntainer: {
+  mainContainer: {
     flex: 1,
   },
   container: {
@@ -314,8 +329,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 1,
     shadowRadius: 4,
-    backgroundColor: '#ffffff',
-    zIndex: 1, // Ensure header is above other components
+    zIndex: 1,
   },
   leftIcon: {
     position: 'absolute',
@@ -343,6 +357,10 @@ const styles = StyleSheet.create({
   ServiceCardsContainer: {
     flexDirection: 'column',
     marginVertical: 10,
+    backgroundColor: '#f9f9f9',
+    padding: 15,
+    borderRadius: 10,
+    elevation: 2,
   },
   technicianContainer: {
     flexDirection: 'row',
@@ -377,10 +395,6 @@ const styles = StyleSheet.create({
   houseImageContainer: {
     alignItems: 'center',
     marginVertical: 20,
-  },
-  houseImage: {
-    width: 200,
-    height: 200,
   },
   button: {
     backgroundColor: '#ff4500',
@@ -431,34 +445,56 @@ const styles = StyleSheet.create({
   highLightText: {
     fontWeight: 'bold',
   },
-  serviceHistoryContainer: {
-    // flexDirection: 'row',
-    // backgroundColor: '#fff',
-    // padding: 15,
-    // marginVertical: 10,
-    // borderRadius: 10,
-    // elevation: 3,
-    marginBottom: 1,
+  sectionContainer: {
+    marginBottom: 16,
+    paddingLeft: 16,
+    paddingRight: 16,
+    width: '95%',
+    marginTop: 10,
   },
-  serviceImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  serviceTimeLineContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  serviceDetails: {
-    marginLeft: 15,
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#212121',
+  },
+  innerContainerLine: {
+    marginTop: 5,
+  },
+  timelineItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  iconAndLineContainer: {
+    alignItems: 'center',
+    width: 20,
+  },
+  lineSegment: {
+    width: 2,
+    height: 35,
+    marginTop: 2,
+  },
+  timelineContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginLeft: 10,
+  },
+  timelineTextContainer: {
     flex: 1,
   },
-  serviceTitle: {
-    fontSize: 16,
+  timelineText: {
+    fontSize: 14,
+    color: '#212121',
     fontWeight: 'bold',
   },
-  serviceSubtitle: {
+  timelineTime: {
+    fontSize: 10,
     color: '#4a4a4a',
-  },
-  serviceStatus: {
-    color: '#ff4500',
-    marginTop: 5,
   },
 });
 

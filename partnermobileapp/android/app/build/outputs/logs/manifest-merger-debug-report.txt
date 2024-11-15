@@ -13,6 +13,7 @@ MERGED from [:react-native-firebase_messaging] G:\Sept20\clickSolver\partnermobi
 MERGED from [:react-native-firebase_app] G:\Sept20\clickSolver\partnermobileapp\node_modules\@react-native-firebase\app\android\build\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-30:12
 MERGED from [:react-native-picker_picker] G:\Sept20\clickSolver\partnermobileapp\node_modules\@react-native-picker\picker\android\build\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-7:12
 MERGED from [:rnmapbox_maps] G:\Sept20\clickSolver\partnermobileapp\node_modules\@rnmapbox\maps\android\build\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-11:12
+MERGED from [:lottie-react-native] G:\Sept20\clickSolver\partnermobileapp\node_modules\lottie-react-native\android\build\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-7:12
 MERGED from [:react-native-background-fetch] G:\Sept20\clickSolver\partnermobileapp\node_modules\react-native-background-fetch\android\build\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-10:12
 MERGED from [:react-native-background-geolocation] G:\Sept20\clickSolver\partnermobileapp\node_modules\react-native-background-geolocation\android\build\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-9:12
 MERGED from [:react-native-encrypted-storage] G:\Sept20\clickSolver\partnermobileapp\node_modules\react-native-encrypted-storage\android\build\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-8:12
@@ -29,6 +30,7 @@ MERGED from [:react-native-vector-icons] G:\Sept20\clickSolver\partnermobileapp\
 MERGED from [com.facebook.react:react-android:0.74.5] C:\Users\vanam\.gradle\caches\transforms-4\88ddea6f5764386352a7046a47913e90\transformed\jetified-react-android-0.74.5-debug\AndroidManifest.xml:2:1-24:12
 MERGED from [com.google.firebase:firebase-auth:23.0.0] C:\Users\vanam\.gradle\caches\transforms-4\c72df50eba65451d1a034c22ba0527ea\transformed\jetified-firebase-auth-23.0.0\AndroidManifest.xml:17:1-75:12
 MERGED from [androidx.appcompat:appcompat-resources:1.6.1] C:\Users\vanam\.gradle\caches\transforms-4\f43401a0f018b3c8146168afe52d4e70\transformed\jetified-appcompat-resources-1.6.1\AndroidManifest.xml:17:1-22:12
+MERGED from [com.airbnb.android:lottie:6.5.2] C:\Users\vanam\.gradle\caches\transforms-4\e97e625959fb6b604b14b15830048b0b\transformed\jetified-lottie-6.5.2\AndroidManifest.xml:2:1-9:12
 MERGED from [io.github.nishkarsh:android-permissions:2.1.6] C:\Users\vanam\.gradle\caches\transforms-4\0a6c13fe2207a932a565d8454ea79306\transformed\jetified-android-permissions-2.1.6\AndroidManifest.xml:2:1-19:12
 MERGED from [com.google.android.material:material:1.6.1] C:\Users\vanam\.gradle\caches\transforms-4\833467e4d05b55d1211e5a4aed089c3a\transformed\material-1.6.1\AndroidManifest.xml:17:1-26:12
 MERGED from [com.mapbox.maps:android:10.18.0] C:\Users\vanam\.gradle\caches\transforms-4\cd9336bd6cd74c981aac6400cd5dd9fb\transformed\jetified-android-10.18.0\AndroidManifest.xml:2:1-9:12
@@ -326,6 +328,8 @@ MERGED from [com.facebook.react:react-android:0.74.5] C:\Users\vanam\.gradle\cac
 MERGED from [com.facebook.react:react-android:0.74.5] C:\Users\vanam\.gradle\caches\transforms-4\88ddea6f5764386352a7046a47913e90\transformed\jetified-react-android-0.74.5-debug\AndroidManifest.xml:18:5-22:19
 MERGED from [com.google.firebase:firebase-auth:23.0.0] C:\Users\vanam\.gradle\caches\transforms-4\c72df50eba65451d1a034c22ba0527ea\transformed\jetified-firebase-auth-23.0.0\AndroidManifest.xml:28:5-73:19
 MERGED from [com.google.firebase:firebase-auth:23.0.0] C:\Users\vanam\.gradle\caches\transforms-4\c72df50eba65451d1a034c22ba0527ea\transformed\jetified-firebase-auth-23.0.0\AndroidManifest.xml:28:5-73:19
+MERGED from [com.airbnb.android:lottie:6.5.2] C:\Users\vanam\.gradle\caches\transforms-4\e97e625959fb6b604b14b15830048b0b\transformed\jetified-lottie-6.5.2\AndroidManifest.xml:7:5-20
+MERGED from [com.airbnb.android:lottie:6.5.2] C:\Users\vanam\.gradle\caches\transforms-4\e97e625959fb6b604b14b15830048b0b\transformed\jetified-lottie-6.5.2\AndroidManifest.xml:7:5-20
 MERGED from [io.github.nishkarsh:android-permissions:2.1.6] C:\Users\vanam\.gradle\caches\transforms-4\0a6c13fe2207a932a565d8454ea79306\transformed\jetified-android-permissions-2.1.6\AndroidManifest.xml:11:5-17:19
 MERGED from [io.github.nishkarsh:android-permissions:2.1.6] C:\Users\vanam\.gradle\caches\transforms-4\0a6c13fe2207a932a565d8454ea79306\transformed\jetified-android-permissions-2.1.6\AndroidManifest.xml:11:5-17:19
 MERGED from [com.google.android.material:material:1.6.1] C:\Users\vanam\.gradle\caches\transforms-4\833467e4d05b55d1211e5a4aed089c3a\transformed\material-1.6.1\AndroidManifest.xml:24:5-20
@@ -496,6 +500,8 @@ MERGED from [:react-native-picker_picker] G:\Sept20\clickSolver\partnermobileapp
 MERGED from [:react-native-picker_picker] G:\Sept20\clickSolver\partnermobileapp\node_modules\@react-native-picker\picker\android\build\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
 MERGED from [:rnmapbox_maps] G:\Sept20\clickSolver\partnermobileapp\node_modules\@rnmapbox\maps\android\build\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
 MERGED from [:rnmapbox_maps] G:\Sept20\clickSolver\partnermobileapp\node_modules\@rnmapbox\maps\android\build\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
+MERGED from [:lottie-react-native] G:\Sept20\clickSolver\partnermobileapp\node_modules\lottie-react-native\android\build\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
+MERGED from [:lottie-react-native] G:\Sept20\clickSolver\partnermobileapp\node_modules\lottie-react-native\android\build\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
 MERGED from [:react-native-background-fetch] G:\Sept20\clickSolver\partnermobileapp\node_modules\react-native-background-fetch\android\build\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
 MERGED from [:react-native-background-fetch] G:\Sept20\clickSolver\partnermobileapp\node_modules\react-native-background-fetch\android\build\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
 MERGED from [:react-native-background-geolocation] G:\Sept20\clickSolver\partnermobileapp\node_modules\react-native-background-geolocation\android\build\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
@@ -528,6 +534,8 @@ MERGED from [com.google.firebase:firebase-auth:23.0.0] C:\Users\vanam\.gradle\ca
 MERGED from [com.google.firebase:firebase-auth:23.0.0] C:\Users\vanam\.gradle\caches\transforms-4\c72df50eba65451d1a034c22ba0527ea\transformed\jetified-firebase-auth-23.0.0\AndroidManifest.xml:21:5-23:151
 MERGED from [androidx.appcompat:appcompat-resources:1.6.1] C:\Users\vanam\.gradle\caches\transforms-4\f43401a0f018b3c8146168afe52d4e70\transformed\jetified-appcompat-resources-1.6.1\AndroidManifest.xml:20:5-44
 MERGED from [androidx.appcompat:appcompat-resources:1.6.1] C:\Users\vanam\.gradle\caches\transforms-4\f43401a0f018b3c8146168afe52d4e70\transformed\jetified-appcompat-resources-1.6.1\AndroidManifest.xml:20:5-44
+MERGED from [com.airbnb.android:lottie:6.5.2] C:\Users\vanam\.gradle\caches\transforms-4\e97e625959fb6b604b14b15830048b0b\transformed\jetified-lottie-6.5.2\AndroidManifest.xml:5:5-44
+MERGED from [com.airbnb.android:lottie:6.5.2] C:\Users\vanam\.gradle\caches\transforms-4\e97e625959fb6b604b14b15830048b0b\transformed\jetified-lottie-6.5.2\AndroidManifest.xml:5:5-44
 MERGED from [io.github.nishkarsh:android-permissions:2.1.6] C:\Users\vanam\.gradle\caches\transforms-4\0a6c13fe2207a932a565d8454ea79306\transformed\jetified-android-permissions-2.1.6\AndroidManifest.xml:7:5-9:41
 MERGED from [io.github.nishkarsh:android-permissions:2.1.6] C:\Users\vanam\.gradle\caches\transforms-4\0a6c13fe2207a932a565d8454ea79306\transformed\jetified-android-permissions-2.1.6\AndroidManifest.xml:7:5-9:41
 MERGED from [com.google.android.material:material:1.6.1] C:\Users\vanam\.gradle\caches\transforms-4\833467e4d05b55d1211e5a4aed089c3a\transformed\material-1.6.1\AndroidManifest.xml:20:5-22:41

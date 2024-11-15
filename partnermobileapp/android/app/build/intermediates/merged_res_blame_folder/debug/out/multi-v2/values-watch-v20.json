@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.partnermobileapp-mergeDebugResources-59:/values-watch-v20/values-watch-v20.xml",
+            "outputFile": "com.partnermobileapp-mergeDebugResources-60:/values-watch-v20/values-watch-v20.xml",
             "map": [
                 {
                     "source": "C:\\Users\\vanam\\.gradle\\caches\\transforms-4\\a6982412247e8fd0e0274995f97cee13\\transformed\\jetified-play-services-auth-21.2.0\\res\\values-watch-v20\\values.xml",

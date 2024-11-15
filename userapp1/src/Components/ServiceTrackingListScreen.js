@@ -117,9 +117,8 @@ const ServiceTrackingListScreen = () => {
       </View>
       <View style={styles.itemTextContainer}>
         <Text style={styles.itemTitle}>{item.service_status}</Text>
-        <Text style={styles.itemDate}>
-          Scheduled for: {formatDate(item.created_at)}
-        </Text>
+        <Text style={styles.itemDate}>Scheduled for:</Text>
+        <Text style={styles.itemDate}>{formatDate(item.created_at)}</Text>
       </View>
       <View
         style={[
@@ -197,7 +196,7 @@ const ServiceTrackingListScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f3f3f3',
   },
   headerContainer: {
     flexDirection: 'row',

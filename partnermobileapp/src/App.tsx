@@ -53,6 +53,7 @@ import ApprovalPendingItems from './Components/ApprovalPendingItems';
 import PendingBalanceWorkers from './Components/PendingBalanceWorkers';
 import ServiceInProgress from './Components/ServiceInProgress';
 import ServiceInProgressScreen from './Components/ServiceInProgress';
+import TaskCompletionScreen from './Components/TaskConformationScreen';
 // Additional imports...
 
 const Stack = createNativeStackNavigator();
@@ -127,7 +128,7 @@ function TabNavigator() {
         {/* <Tab.Screen name="Native" component={CashbackScreen1} options={{ headerShown: false }} />    */}
         <Tab.Screen
           name="Account"
-          component={ServiceInProgressScreen}
+          component={ServiceInProgress}
           options={{headerShown: false}}
         />
       </Tab.Navigator>
@@ -268,7 +269,7 @@ function App(): React.JSX.Element {
         />
         <Stack.Screen
           name="TimingScreen"
-          component={WorkerTimer}
+          component={ServiceInProgress}
           options={{title: 'TimingScreen', headerShown: false}}
         />
         <Stack.Screen

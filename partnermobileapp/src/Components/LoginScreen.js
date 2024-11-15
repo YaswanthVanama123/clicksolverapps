@@ -10,10 +10,15 @@ import {
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
+  BackHandler,
 } from 'react-native';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import {useNavigation, CommonActions} from '@react-navigation/native';
+import {
+  useNavigation,
+  CommonActions,
+  useFocusEffect,
+} from '@react-navigation/native';
 
 // Image URLs
 const BG_IMAGE_URL =
@@ -40,69 +45,23 @@ const LoginScreen = () => {
     }
   };
 
-  // Main login function
-  // const login = async () => {
-  //   if (!phoneNumber) return; // Early return if phone number is empty
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
+        );
+        return true;
+      };
 
-  //   try {
-  //     const response = await loginBackend(phoneNumber);
-  //     console.log('Full response:', response);
-
-  //     if (!response) {
-  //       console.error('No response received from backend');
-  //       return;
-  //     }
-
-  //     const { status, data } = response;
-  //     console.log('Response status:', status);
-  //     console.log('Response data:', data);
-
-  //     if (status === 200) {
-  //       const { token, workerId } = data;
-  //       if (token && workerId) {
-  //         await EncryptedStorage.setItem('pcs_token', token);
-  //         await EncryptedStorage.setItem('unique', String(workerId));
-
-  //         navigation.dispatch(
-  //           CommonActions.reset({
-  //             index: 0,
-  //             routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-  //           })
-  //         );
-  //       } else {
-  //         console.error('Missing token or workerId in response data');
-  //       }
-
-  //     } else if (status === 201) {
-  //       const { stepsCompleted, workerId, token } = data;
-  //       console.log('Response for status 201:', data);
-  //       if (workerId && token) {
-  //         await EncryptedStorage.setItem('pcs_token', token);
-  //         await EncryptedStorage.setItem('unique', workerId);
-
-  //         if (stepsCompleted) {
-  //           await EncryptedStorage.setItem('partnerSteps', 'completed');
-  //           navigation.replace("ApprovalScreen");
-  //         } else {
-  //           navigation.replace('PartnerSteps');
-  //         }
-  //       } else {
-  //         console.error('Missing workerId or token in response data for status 201');
-  //       }
-
-  //     } else {
-  //       // Phone number not registered
-  //       const { phone_number } = data;
-  //       if (phone_number) {
-  //         navigation.navigate('SignupDetails', { phone_number });
-  //       } else {
-  //         console.error('Missing phone_number in response data for status 209');
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error('Error during login:', error);
-  //   }
-  // };
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () =>
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [navigation]),
+  );
 
   const login = async () => {
     if (!phoneNumber) return; // Early return if phone number is empty

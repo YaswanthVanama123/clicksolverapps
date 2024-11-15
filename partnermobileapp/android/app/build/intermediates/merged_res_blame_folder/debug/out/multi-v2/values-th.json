@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.partnermobileapp-mergeDebugResources-59:/values-th/values-th.xml",
+            "outputFile": "com.partnermobileapp-mergeDebugResources-60:/values-th/values-th.xml",
             "map": [
                 {
                     "source": "C:\\Users\\vanam\\.gradle\\caches\\transforms-4\\8f04abe1dddc645a296c3e4361924c0c\\transformed\\jetified-play-services-basement-18.3.0\\res\\values-th\\values.xml",

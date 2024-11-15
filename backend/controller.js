@@ -3779,8 +3779,72 @@ const acceptRequest = async (req, res) => {
     await client.query("BEGIN");
 
     // Combined CTE to perform multiple operations
+
+    //   const combinedQuery = `
+    //   WITH check_accept AS (
+    //     SELECT notification_id
+    //     FROM accepted
+    //     WHERE user_notification_id = $1
+    //     FOR UPDATE
+    //   ),
+    //   get_notification AS (
+    //     SELECT
+    //       n.cancel_status,
+    //       n.user_id,
+    //       n.notification_id,
+    //       n.service_booked,
+    //       n.longitude,
+    //       n.latitude
+    //     FROM notifications n
+    //     WHERE n.user_notification_id = $1
+    //     FOR UPDATE
+    //   ),
+    //   insert_accept AS (
+    //     INSERT INTO accepted
+    //       (user_notification_id, worker_id, notification_id, status, user_id, service_booked, pin, longitude, latitude, time)
+    //     SELECT
+    //       $1,
+    //       $2,
+    //       gn.notification_id,
+    //       'accept',
+    //       gn.user_id,
+    //       CASE
+    //         WHEN jsonb_typeof(gn.service_booked::jsonb) IS NOT NULL THEN gn.service_booked::jsonb
+    //         ELSE to_jsonb(gn.service_booked)
+    //       END,
+    //       FLOOR(RANDOM() * 9000) + 1000,
+    //       gn.longitude::numeric,
+    //       gn.latitude::numeric,
+    //       jsonb_build_object(
+    //         'accept', to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS'),
+    //         'arrived', null,
+    //         'workCompleted', null,
+    //         'paymentCompleted', null
+    //       )
+    //     FROM get_notification gn
+    //     RETURNING notification_id
+    //   ),
+    //   delete_notification AS (
+    //     DELETE FROM notifications
+    //     WHERE user_notification_id = $1
+    //     RETURNING 1
+    //   )
+    //   SELECT
+    //     ia.notification_id AS inserted_notification_id,
+    //     ca1.notification_id AS existing_notification_id,
+    //     gn.cancel_status,
+    //     gn.user_id,
+    //     gn.service_booked,
+    //     gn.longitude,
+    //     gn.latitude
+    //   FROM check_accept ca1
+    //   RIGHT JOIN get_notification gn ON TRUE
+    //   LEFT JOIN insert_accept ia ON TRUE
+    //   LEFT JOIN delete_notification dn ON TRUE
+    // `;
+
     const combinedQuery = `
-    WITH check_accept AS (
+      WITH check_accept AS (
       SELECT notification_id 
       FROM accepted 
       WHERE user_notification_id = $1 
@@ -3800,17 +3864,26 @@ const acceptRequest = async (req, res) => {
     ),
     insert_accept AS (
       INSERT INTO accepted 
-        (user_notification_id, worker_id, notification_id, status, user_id, service_booked, pin, longitude, latitude, time)
+        (user_notification_id, worker_id, notification_id, status, user_id, service_booked, service_status, pin, longitude, latitude, time)
       SELECT 
         $1, 
         $2, 
         gn.notification_id, 
         'accept', 
         gn.user_id, 
-        CASE 
-          WHEN jsonb_typeof(gn.service_booked::jsonb) IS NOT NULL THEN gn.service_booked::jsonb
-          ELSE to_jsonb(gn.service_booked)
-        END,
+        gn.service_booked::jsonb,
+        (
+          SELECT jsonb_agg(
+            jsonb_build_object(
+              'accept', 'In progress',
+              'arrived', null,
+              'workCompleted', null,
+              'serviceName', service->>'serviceName',
+              'Quantity' , service->>'quantity'
+            )
+          )
+          FROM jsonb_array_elements(gn.service_booked) AS service
+        ),
         FLOOR(RANDOM() * 9000) + 1000, 
         gn.longitude::numeric, 
         gn.latitude::numeric,
@@ -6662,7 +6735,12 @@ const serviceCompleted = async (req, res) => {
     // Create a background action for the user (Uncomment if needed)
     const screen = "Paymentscreen";
     // console.log(screen, encodedId, user_id, service_booked)
-    // createUserBackgroundAction(user_id, encodedId, screen, service_booked);
+    await createUserBackgroundAction(
+      user_id,
+      encodedId,
+      screen,
+      service_booked
+    );
 
     // Respond with success
     return res.status(200).json({
@@ -8325,6 +8403,7 @@ const userWorkerInProgressDetails = async (req, res) => {
               a.service_booked, 
               a.time, 
               a.created_at, 
+              a.service_status,
               u.area, 
               w.name, 
               ws.profile
@@ -8339,6 +8418,81 @@ const userWorkerInProgressDetails = async (req, res) => {
           WHERE 
               a.notification_id = $1
       `;
+
+    const result = await client.query(query, [decodedId]);
+
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No details found for the given notification_id" });
+    }
+
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error fetching user worker in-progress details:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const workerWorkingStatusUpdated = async (req, res) => {
+  const { serviceName, statusKey, currentTime, decodedId } = req.body;
+
+  try {
+    // Single query to update the service_status JSONB column
+    const query = `
+      UPDATE accepted
+      SET service_status = (
+        SELECT jsonb_agg(
+          CASE
+            WHEN item ->> 'serviceName' = $1 THEN
+              jsonb_set(item, '{${statusKey}}', to_jsonb($2::text))
+            ELSE item
+          END
+        )
+        FROM jsonb_array_elements(service_status) AS item
+      )
+      WHERE notification_id = $3
+      RETURNING *;
+    `;
+
+    const values = [serviceName, currentTime, decodedId];
+
+    const { rows } = await client.query(query, values);
+
+    if (rows.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "Record not found or update failed." });
+    }
+
+    return res.status(200).json({
+      message: "Service status updated successfully.",
+      data: rows[0],
+    });
+  } catch (error) {
+    console.error("Error updating service status:", error);
+    return res.status(500).json({ message: "Internal server error", error });
+  }
+};
+
+const WorkerWorkInProgressDetails = async (req, res) => {
+  const { decodedId } = req.body;
+  console.log(decodedId);
+  try {
+    const query = `
+    SELECT 
+        a.service_booked, 
+        a.time, 
+        a.created_at, 
+        a.service_status,
+        u.area
+    FROM 
+        accepted a
+    JOIN 
+        usernotifications u ON a.user_notification_id = u.user_notification_id
+    WHERE 
+        a.notification_id = $1
+`;
 
     const result = await client.query(query, [decodedId]);
 
@@ -8650,4 +8804,6 @@ module.exports = {
   pendingBalanceWorkers,
   getDashboardDetails,
   userWorkerInProgressDetails,
+  WorkerWorkInProgressDetails,
+  workerWorkingStatusUpdated,
 };
