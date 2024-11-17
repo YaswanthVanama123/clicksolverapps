@@ -54,6 +54,8 @@ import PendingBalanceWorkers from './Components/PendingBalanceWorkers';
 import ServiceInProgress from './Components/ServiceInProgress';
 import ServiceInProgressScreen from './Components/ServiceInProgress';
 import TaskCompletionScreen from './Components/TaskConformationScreen';
+import HomeScreen from './Screens/Home';
+import HomeComponent from './Screens/HomeComponent';
 // Additional imports...
 
 const Stack = createNativeStackNavigator();
@@ -128,7 +130,7 @@ function TabNavigator() {
         {/* <Tab.Screen name="Native" component={CashbackScreen1} options={{ headerShown: false }} />    */}
         <Tab.Screen
           name="Account"
-          component={ServiceInProgress}
+          component={skills}
           options={{headerShown: false}}
         />
       </Tab.Navigator>
@@ -196,7 +198,7 @@ function App(): React.JSX.Element {
           console.log('partnerSteps:', partnerStepsToken);
 
           if (partnerStepsToken === 'completed') {
-            console.log('compl');
+            console.log('compl', verification);
             if (verification === 'true') {
               setInitialRoute('Tabs'); // Navigate to Tabs
               navigationRef.current?.navigate('Tabs'); // Force navigation to Tabs

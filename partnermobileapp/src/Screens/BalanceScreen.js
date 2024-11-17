@@ -118,6 +118,7 @@ const BalanceScreen = () => {
   const [transactions, setTransactions] = useState([]);
   const [activeCard, setActiveCard] = useState('ServiceHistory');
   const [isMessageVisible, setIsMessageVisible] = useState(false);
+  const [balanceHistory, setBalanceHistory] = useState([]);
 
   const backToHome = () => {
     navigation.dispatch(
@@ -169,7 +170,11 @@ const BalanceScreen = () => {
         };
       });
 
-      setBalance(totalBalance.toFixed(2));
+      const balance = response.data[0].balance_amount;
+      const balanceHistory = response.data[0].balance_payment_history;
+
+      setBalance(balance);
+      setBalanceHistory(balanceHistory);
       setTransactions(serviceBalanceHistory.reverse());
     } catch (error) {
       console.error('Error fetching service balance history:', error);

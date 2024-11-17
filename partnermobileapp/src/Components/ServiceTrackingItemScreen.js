@@ -236,7 +236,7 @@ const ServiceTrackingItemScreen = () => {
           <View style={styles.addressContainer}>
             <Image
               source={{
-                uri: 'https://i.postimg.cc/rpb2czKR/1000051859-removebg-preview.png',
+                uri: 'https://i.postimg.cc/qvJw8Kzy/Screenshot-2024-11-13-170828-removebg-preview.png',
               }}
               style={styles.locationPinImage}
             />

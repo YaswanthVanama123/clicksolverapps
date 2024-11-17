@@ -69,7 +69,7 @@ const EarningsScreen = () => {
         total_payment = 0,
         cash_payment = 0,
         payment_count = 0,
-        lifeearnings = 0,
+        life_earnings = 0,
         avgrating = 0,
         rejectedcount = 0,
         pendingcount = 0,
@@ -77,21 +77,25 @@ const EarningsScreen = () => {
         service_counts = 0,
         cashback_gain = 0,
         cashback_approved_times = 0,
+        average_rating = 0,
       } = response.data;
 
       setEarnings({
         total_payment: Number(total_payment),
         cash_payment: Number(cash_payment),
         payment_count: Number(payment_count),
-        life_earnings: Number(lifeearnings),
+        life_earnings: Number(life_earnings),
         avgrating: Number(avgrating),
         rejectedcount: Number(rejectedcount),
         pendingcount: Number(pendingcount),
         minutes: Number(total_time_worked_hours) * 60,
         service_counts: Number(service_counts),
-        cashback_gain: Number(cashback_gain),
+        cashback_gain: Number(cashback_gain) * 100,
         cashback_approved_times: Number(cashback_approved_times),
+        cashback_pending:
+          Number(cashback_approved_times) - Number(cashback_gain),
         cashback: Number(service_counts) % 6,
+        average_rating: Number(average_rating),
       });
     } catch (error) {
       console.error('Error fetching payment details:', error);
@@ -280,6 +284,7 @@ const EarningsScreen = () => {
       <ScrollView
         contentContainerStyle={styles.statsContainer}
         showsVerticalScrollIndicator={false}>
+        {console.log('earn', earnings)}
         {[
           {value: earnings.payment_count, title: 'Services', color: '#4CAF50'},
           {
@@ -288,17 +293,21 @@ const EarningsScreen = () => {
             color: '#4CAF50',
           },
           {
-            value: earnings.minutes.toFixed(1),
-            title: 'Minutes',
+            value: earnings.cashback_gain,
+            title: 'Cashback',
             color: '#4CAF50',
           },
           {
-            value: earnings.avgrating.toFixed(1),
+            value: earnings.average_rating,
             title: 'Avg Rating',
             color: '#4CAF50',
           },
           {value: earnings.rejectedcount, title: 'Rejected', color: '#ff4436'},
-          {value: earnings.pendingcount, title: 'Not Seen', color: '#ffa500'},
+          {
+            value: earnings.cashback_pending,
+            title: 'Cashback pending',
+            color: '#ffa500',
+          },
         ].map((stat, index) => (
           <View
             key={index}

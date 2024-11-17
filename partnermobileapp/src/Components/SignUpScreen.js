@@ -38,10 +38,11 @@ const SignUpScreen = () => {
         },
       );
 
-      const {worker} = response.data;
+      const {token} = response.data;
       console.log(response.data);
-      if (worker) {
+      if (token) {
         await EncryptedStorage.setItem('sign_up', 'true');
+        await EncryptedStorage.setItem('pcs_token', token);
         navigation.replace('PartnerSteps');
       }
     } catch (error) {
