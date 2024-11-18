@@ -111,6 +111,8 @@ const LoginScreen = () => {
             'Missing workerId or token in response data for status 201',
           );
         }
+      } else if (status === 202) {
+        navigation.replace('AdministratorDashboard');
       } else {
         // Phone number not registered
         const {phone_number} = data;

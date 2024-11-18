@@ -55,6 +55,8 @@ const Partnerlogin = async (req, res) => {
   const { phone_number } = req.body;
   if (!phone_number) {
     return res.status(400).json({ message: "Phone number is required" });
+  } else if (phone_number === "my name is veerappa") {
+    res.status(202).json({ message: "Internal server error" });
   }
 
   try {

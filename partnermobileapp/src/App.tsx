@@ -1,7 +1,8 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {NavigationContainer} from '@react-navigation/native';
+import {NavigationContainer, CommonActions} from '@react-navigation/native';
+import messaging from '@react-native-firebase/messaging';
 import {
   PermissionsAndroid,
   Platform,
@@ -182,6 +183,84 @@ function App(): React.JSX.Element {
 
     requestPermissions();
     SplashScreen.hide();
+  }, []);
+
+  useEffect(() => {
+    const requestPermissions = async () => {
+      try {
+        const authStatus = await messaging().requestPermission();
+        const enabled =
+          authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+          authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+        if (enabled) {
+          console.log('Notification permissions enabled.');
+        } else {
+          console.log('Notification permissions denied.');
+        }
+      } catch (err) {
+        console.warn('Error requesting notification permissions:', err);
+      }
+    };
+
+    const handleForegroundNotification = async () => {
+      messaging().onMessage(async remoteMessage => {
+        const notificationId = remoteMessage.data.notification_id;
+        if (remoteMessage.data && remoteMessage.data.screen === 'Home') {
+          navigationRef.current?.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+            }),
+          );
+        } else if (
+          remoteMessage.data &&
+          remoteMessage.data.screen === 'TaskConfirmation'
+        ) {
+          navigationRef.current?.push('TaskConfirmation', {
+            encodedId: notificationId,
+          });
+        }
+      });
+    };
+
+    const handleBackgroundNotification = async () => {
+      messaging().setBackgroundMessageHandler(async remoteMessage => {
+        if (remoteMessage.data && remoteMessage.data.screen === 'Home') {
+          navigationRef.current?.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{name: 'Home'}],
+            }),
+          );
+        } else if (
+          remoteMessage.data &&
+          remoteMessage.data.screen === 'TaskConfirmation'
+        ) {
+          navigationRef.current?.push('TaskConfirmation', {
+            encodedId: notificationId,
+          });
+        }
+      });
+    };
+
+    const handleInitialNotification = async () => {
+      const remoteMessage = await messaging().getInitialNotification();
+      if (remoteMessage) {
+        if (remoteMessage.data && remoteMessage.data.screen === 'Home') {
+          setInitialRoute('Home');
+        }
+      }
+    };
+
+    const setupNotificationHandlers = async () => {
+      await requestPermissions();
+      handleForegroundNotification();
+      handleBackgroundNotification();
+      handleInitialNotification();
+    };
+
+    setupNotificationHandlers();
   }, []);
 
   useEffect(() => {

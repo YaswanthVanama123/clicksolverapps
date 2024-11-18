@@ -54,6 +54,10 @@ const ProfileScreen = () => {
   const handleLogout = async () => {
     try {
       await EncryptedStorage.removeItem('cs_token');
+      await EncryptedStorage.removeItem('fcm_token');
+      await EncryptedStorage.removeItem('notifications');
+      await EncryptedStorage.removeItem('messageBox');
+
       setIsLoggedIn(false);
     } catch (error) {
       console.error('Error logging out:', error);

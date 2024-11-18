@@ -139,15 +139,19 @@ function App() {
   // Get FCM tokens and store them
   async function getTokens() {
     try {
-      const token = await messaging().getToken();
-      await EncryptedStorage.setItem('fcm_token', token);
-      const cs_token = await EncryptedStorage.getItem('cs_token');
-      if (cs_token) {
-        await axios.post(
-          `${process.env.BACKENDAIPG}/api/user/store-fcm-token`,
-          {fcmToken: token},
-          {headers: {Authorization: `Bearer ${cs_token}`}},
-        );
+      const fcm = await EncryptedStorage.getItem('fcm_token');
+      if (fcm) {
+      } else {
+        const token = await messaging().getToken();
+        await EncryptedStorage.setItem('fcm_token', token);
+        const cs_token = await EncryptedStorage.getItem('cs_token');
+        if (cs_token) {
+          await axios.post(
+            `${process.env.BACKENDAIPG}/api/user/store-fcm-token`,
+            {fcmToken: token},
+            {headers: {Authorization: `Bearer ${cs_token}`}},
+          );
+        }
       }
     } catch (error) {
       console.error('Error storing FCM token in the backend:', error);
