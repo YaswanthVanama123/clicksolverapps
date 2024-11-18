@@ -4287,12 +4287,19 @@ const userNavigationCancel = async (req, res) => {
             multicastMessage
           );
 
-          // Log the responses for each token
+          const successCount = response.responses.filter(
+            (res) => res.success
+          ).length;
+          const failureCount = response.responses.filter(
+            (res) => !res.success
+          ).length;
+
+          console.log(
+            `Notifications sent: ${successCount}, Notifications failed: ${failureCount}`
+          );
+
           response.responses.forEach((res, index) => {
-            if (res.success) {
-              // Optionally log successful sends
-              // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
-            } else {
+            if (!res.success) {
               console.error(
                 `Error sending message to token ${fcmTokens[index]}:`,
                 res.error
@@ -4337,77 +4344,86 @@ const userNavigationCancel = async (req, res) => {
 
 // const userNavigationCancel = async (req, res) => {
 //   const { notification_id } = req.body;
-//   const encodedUserNotificationId = Buffer.from(notification_id.toString()).toString("base64");
+//   const encodedUserNotificationId = Buffer.from(
+//     notification_id.toString()
+//   ).toString("base64");
 
 //   try {
 //     // Begin a transaction
-//     await client.query('BEGIN');
+//     await client.query("BEGIN");
 
-//     // Combined UPDATE, INSERT, DELETE using CTEs
-// // Combined UPDATE, INSERT, DELETE using CTEs
-// const combinedQuery = await client.query(`
-//   WITH updated AS (
-//    UPDATE accepted
-//    SET user_navigation_cancel_status = 'usercanceled'
-//    WHERE notification_id = $1
-//    RETURNING
-//      accepted_id,
-//      notification_id,
-//      user_id,
-//      user_notification_id,
-//      longitude,
-//      latitude,
-//      created_at,
-//      worker_id,
-//      complete_status,
-//      time
-//  ),
-//  inserted AS (
-//    INSERT INTO completenotifications (
-//      accepted_id,
-//      notification_id,
-//      user_id,
-//      user_notification_id,
-//      longitude,
-//      latitude,
-//      created_at,
-//      worker_id,
-//      complete_status,
-//      service_booked,
-//      time
-//    )
-//    SELECT
-//      accepted_id,
-//      notification_id,
-//      user_id,
-//      user_notification_id,
-//      longitude,
-//      latitude,
-//      created_at,
-//      worker_id,
-//      'cancel',
-//      to_jsonb('service_booked'::text),
-//      time
-//    FROM updated
-//    RETURNING worker_id, notification_id
-//  ),
-//       deleted_accepted_data AS (
-//         DELETE FROM accepted
+//     // First query: UPDATE and INSERT operations
+//     const combinedQuery = await client.query(
+//       `
+//       WITH updated AS (
+//         UPDATE accepted
+//         SET user_navigation_cancel_status = 'usercanceled'
 //         WHERE notification_id = $1
-//         RETURNING *
+//         RETURNING
+//           accepted_id,
+//           notification_id,
+//           user_id,
+//           user_notification_id,
+//           longitude,
+//           latitude,
+//           created_at,
+//           worker_id,
+//           complete_status,
+//           time
 //       ),
-//  SELECT w.worker_id, f.fcm_token
-//  FROM inserted i
-//  JOIN workersverified w ON w.worker_id = i.worker_id
-//  JOIN fcm f ON f.worker_id = w.worker_id
-//  `, [notification_id]);
+//       inserted AS (
+//         INSERT INTO completenotifications (
+//           accepted_id,
+//           notification_id,
+//           user_id,
+//           user_notification_id,
+//           longitude,
+//           latitude,
+//           created_at,
+//           worker_id,
+//           complete_status,
+//           service_booked,
+//           time
+//         )
+//         SELECT
+//           accepted_id,
+//           notification_id,
+//           user_id,
+//           user_notification_id,
+//           longitude,
+//           latitude,
+//           created_at,
+//           worker_id,
+//           'cancel',
+//           to_jsonb('service_booked'::text),
+//           time
+//         FROM updated
+//         RETURNING worker_id, notification_id
+//       )
+//       SELECT i.worker_id, f.fcm_token
+//       FROM inserted i
+//       JOIN workersverified w ON w.worker_id = i.worker_id
+//       JOIN fcm f ON f.worker_id = w.worker_id;
+//     `,
+//       [notification_id]
+//     );
+
+//     // Second query: DELETE operation
+//     const deleteResult = await client.query(
+//       `
+//       DELETE FROM accepted
+//       WHERE notification_id = $1
+//       RETURNING *;
+//     `,
+//       [notification_id]
+//     );
 
 //     // Commit the transaction
-//     await client.query('COMMIT');
+//     await client.query("COMMIT");
 
 //     if (combinedQuery.rowCount > 0) {
 //       const workerId = combinedQuery.rows[0].worker_id;
-//       const fcmTokens = combinedQuery.rows.map(row => row.fcm_token);
+//       const fcmTokens = combinedQuery.rows.map((row) => row.fcm_token);
 
 //       if (fcmTokens.length > 0) {
 //         // Create the multicast message object for FCM tokens
@@ -4419,13 +4435,15 @@ const userNavigationCancel = async (req, res) => {
 //           },
 //           data: {
 //             notification_id: encodedUserNotificationId,
-//             screen: 'Home',
+//             screen: "Home",
 //           },
 //         };
 
 //         try {
 //           // Send the message to multiple tokens using sendEachForMulticast
-//           const response = await getMessaging().sendEachForMulticast(multicastMessage);
+//           const response = await getMessaging().sendEachForMulticast(
+//             multicastMessage
+//           );
 
 //           // Log the responses for each token
 //           response.responses.forEach((res, index) => {
@@ -4433,35 +4451,44 @@ const userNavigationCancel = async (req, res) => {
 //               // Optionally log successful sends
 //               // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
 //             } else {
-//               console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+//               console.error(
+//                 `Error sending message to token ${fcmTokens[index]}:`,
+//                 res.error
+//               );
 //             }
 //           });
-
-//           // Optionally log success and failure counts
-//           // console.log('Success Count:', response.successCount);
-//           // console.log('Failure Count:', response.failureCount);
 //         } catch (error) {
-//           console.error('Error sending notifications:', error);
-//           // Optionally handle notification sending errors differently
+//           console.error("Error sending notifications:", error);
 //         }
 
 //         const screen = "";
-//         const encodedId = Buffer.from(notification_id.toString()).toString("base64");
+//         const encodedId = Buffer.from(notification_id.toString()).toString(
+//           "base64"
+//         );
 //         await updateWorkerAction(workerId, encodedId, screen);
 
 //         return res.status(200).json({ message: "Cancellation successful" });
 //       } else {
-//         console.error('No FCM tokens to send the message to.');
-//         return res.status(200).json({ message: "Cancellation successful, but no FCM tokens found." });
+//         const screen = "";
+//         const encodedId = Buffer.from(notification_id.toString()).toString(
+//           "base64"
+//         );
+//         await updateWorkerAction(workerId, encodedId, screen);
+//         console.error("No FCM tokens to send the message to.");
+//         return res.status(200).json({
+//           message: "Cancellation successful, but no FCM tokens found.",
+//         });
 //       }
 //     } else {
-//       // No rows updated implies either invalid notification_id or already canceled
-//       return res.status(205).json({ message: "Cancellation not performed. Either invalid ID or already canceled." });
+//       return res.status(205).json({
+//         message:
+//           "Cancellation not performed. Either invalid ID or already canceled.",
+//       });
 //     }
 //   } catch (error) {
 //     // Rollback the transaction in case of error
-//     await client.query('ROLLBACK');
-//     console.error('Error processing request:', error);
+//     await client.query("ROLLBACK");
+//     console.error("Error processing request:", error);
 //     return res.status(500).json({ error: "Internal server error" });
 //   }
 // };
@@ -7731,15 +7758,15 @@ const processPayment = async (req, res) => {
     const combinedQuery = `
     WITH update_servicecall AS (
       UPDATE servicecall
-      SET 
-        payment = $1, 
+      SET
+        payment = $1,
         payment_type = $2
       WHERE notification_id = $3
       RETURNING notification_id
     ),
     update_accepted AS (
       UPDATE accepted a
-      SET 
+      SET
         time = jsonb_set(
           COALESCE(a.time, '{}'::jsonb),
           '{paymentCompleted}',
@@ -7761,7 +7788,7 @@ const processPayment = async (req, res) => {
         worker_id,
         time
       )
-      SELECT 
+      SELECT
         a.accepted_id,
         a.notification_id,
         a.user_id,
@@ -7788,7 +7815,7 @@ const processPayment = async (req, res) => {
     ),
     update_workerlife AS (
       UPDATE workerlife wl
-      SET 
+      SET
         service_counts = wl.service_counts + 1,
         money_earned = wl.money_earned + $6,
         balance_amount = CASE
@@ -7801,15 +7828,15 @@ const processPayment = async (req, res) => {
       RETURNING wl.worker_id, wl.balance_amount, wl.cashback_approved_times, wl.service_counts
     ),
     fetch_fcm AS (
-      SELECT 
-        u.fcm_token 
+      SELECT
+        u.fcm_token
       FROM userfcm u
       JOIN update_accepted ua ON u.user_id = ua.user_id
     )
-    SELECT 
-      ua.user_id, 
+    SELECT
+      ua.user_id,
       ua.service_booked,
-      ua.worker_id, 
+      ua.worker_id,
       ARRAY_AGG(fcm.fcm_token) AS fcm_tokens,
       COUNT(da.*) AS deleted_accepted,
       COUNT(ds.*) AS deleted_servicetracking

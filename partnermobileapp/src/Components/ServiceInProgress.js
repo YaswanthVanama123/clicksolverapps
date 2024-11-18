@@ -393,7 +393,7 @@ const ServiceInProgressScreen = () => {
         );
 
         console.log('Response:', response);
-        if (response.status === 200) {
+        if (response.status === 201) {
           navigation.dispatch(
             CommonActions.reset({
               index: 0,
