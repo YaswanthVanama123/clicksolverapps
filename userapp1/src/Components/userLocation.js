@@ -244,7 +244,7 @@ const UserLocation = () => {
         return;
       }
       const response = await axios.post(
-        `${process.env.BACKENDAIPE}/api/user/location`,
+        `${process.env.BACKENDAIPG}/api/user/location`,
         {longitude: String(longitude), latitude: String(latitude)},
         {
           headers: {
@@ -254,10 +254,10 @@ const UserLocation = () => {
       );
 
       if (response.status === 200) {
-        console.log('User location sent to BACKENDAIPE successfully');
+        console.log('User location sent to BACKENDAIPG successfully');
       }
     } catch (error) {
-      console.error('Failed to send user location to BACKENDAIPE:', error);
+      console.error('Failed to send user location to BACKENDAIPG:', error);
     }
   }, []);
 
@@ -285,7 +285,7 @@ const UserLocation = () => {
         return;
       }
       const response = await axios.get(
-        `${process.env.BACKENDAIPE}/api/get/user`,
+        `${process.env.BACKENDAIPG}/api/get/user`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

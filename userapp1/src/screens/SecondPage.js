@@ -2,7 +2,7 @@ import React, {useEffect, useRef, useState, useMemo} from 'react';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Feather from 'react-native-vector-icons/Feather';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useRoute} from '@react-navigation/native';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import {
   View,
@@ -12,6 +12,8 @@ import {
   StyleSheet,
   ScrollView,
   Dimensions,
+  Modal,
+  TextInput,
 } from 'react-native';
 import axios from 'axios';
 import uuid from 'react-native-uuid';
@@ -28,11 +30,15 @@ function ServiceApp() {
   const [messageBoxDisplay, setMessageBoxDisplay] = useState(false);
   const [trackScreen, setTrackScreen] = useState([]);
   const [name, setName] = useState('');
-
+  const [isModalVisible, setModalVisible] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
   const screenWidth = Dimensions.get('window').width;
   const scrollViewRef = useRef(null);
   const itemWidth = screenWidth * 0.95;
   const navigation = useNavigation();
+  const route = useRoute(); // Access route parameters
+  const [decodedId, setDecodedId] = useState(null); // Store decoded ID
   const messageBoxWidth =
     trackScreen.length > 1 ? screenWidth * 0.85 : screenWidth * 0.9;
 
@@ -75,6 +81,53 @@ function ServiceApp() {
     [],
   );
 
+  // Close modal
+  const closeModal = () => {
+    setRating(0); // Reset rating
+    setComment(''); // Reset comment
+    setModalVisible(false);
+  };
+
+  useEffect(() => {
+    const {encodedId} = route.params || {}; // Get encodedId from params
+    if (encodedId) {
+      try {
+        const decoded = atob(encodedId); // Decode the encodedId
+        setDecodedId(decoded); // Update state with the decoded ID
+        setModalVisible(true); // Show rating screen
+      } catch (error) {
+        console.error('Failed to decode encodedId:', error);
+      }
+    }
+  }, [route.params]);
+
+  // Handle rating and comment submission
+  const submitFeedback = async () => {
+    try {
+      const response = await axios.post(
+        `${process.env.BACKENDAIPG}/api/user/feedback`, // Replace with your backend URL
+        {
+          rating: rating,
+          comment: comment,
+          notification_id: decodedId,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${await EncryptedStorage.getItem(
+              'cs_token',
+            )}`,
+          },
+        },
+      );
+
+      console.log('Feedback submitted successfully:', response.data);
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+    } finally {
+      closeModal();
+    }
+  };
+
   useEffect(() => {
     fetchServices();
     fetchTrackDetails();
@@ -86,7 +139,7 @@ function ServiceApp() {
       const cs_token = await EncryptedStorage.getItem('cs_token');
       if (cs_token) {
         const response = await axios.get(
-          `${process.env.BACKENDAIPE}/api/user/track/details`,
+          `${process.env.BACKENDAIPG}/api/user/track/details`,
           {
             headers: {Authorization: `Bearer ${cs_token}`},
           },
@@ -128,7 +181,7 @@ function ServiceApp() {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${process.env.BACKENDAIPE}/api/servicecategories`,
+        `${process.env.BACKENDAIPG}/api/servicecategories`,
       );
       const servicesWithIds = response.data.map(service => ({
         ...service,
@@ -342,6 +395,66 @@ function ServiceApp() {
           ))}
         </ScrollView>
       )}
+
+      {/* Rating Modal */}
+      <Modal visible={isModalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {/* Close Button */}
+            <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+              <Icon name="close" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+
+            {/* Title and Subtitle */}
+            <Text style={styles.modalTitle}>
+              How was the quality of your Service?
+            </Text>
+            <Text style={styles.modalSubtitle}>
+              Your answer is anonymous. This helps us improve our service.
+            </Text>
+
+            {/* Star Rating */}
+            <View style={styles.starsContainer}>
+              {[1, 2, 3, 4, 5].map(star => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => setRating(star)}
+                  style={styles.starButton}>
+                  <MaterialCommunityIcons
+                    name={star <= rating ? 'star' : 'star-outline'}
+                    size={30}
+                    color={star <= rating ? '#FFD700' : '#A9A9A9'}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Comment Box */}
+            <TextInput
+              style={styles.commentBox}
+              placeholder="Write your comment here..."
+              placeholderTextColor="#A9A9A9"
+              multiline
+              value={comment}
+              onChangeText={setComment}
+            />
+
+            {/* Buttons */}
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                onPress={closeModal}
+                style={styles.notNowButton}>
+                <Text style={styles.notNowText}>Not now</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={submitFeedback}
+                style={styles.submitButton}>
+                <Text style={styles.submitText}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -584,6 +697,83 @@ const styles = StyleSheet.create({
   waitingText: {
     fontSize: 12,
     color: '#1D2951',
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#212E36',
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+    padding: 20,
+    alignItems: 'center',
+  },
+  closeButton: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#FF4500',
+    borderRadius: 15,
+    padding: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#CCCCCC',
+    marginVertical: 10,
+    textAlign: 'center',
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginVertical: 20,
+  },
+  starButton: {
+    marginHorizontal: 5,
+  },
+  commentBox: {
+    width: '100%',
+    height: 80,
+    borderWidth: 1,
+    borderColor: '#A9A9A9',
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    padding: 10,
+    color: '#000000',
+    fontSize: 14,
+    marginBottom: 20,
+    textAlignVertical: 'top',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 20,
+  },
+  notNowButton: {
+    padding: 10,
+    backgroundColor: '#A9A9A9',
+    borderRadius: 5,
+  },
+  notNowText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  submitButton: {
+    padding: 10,
+    backgroundColor: '#FF4500',
+    borderRadius: 5,
+  },
+  submitText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
 });
 

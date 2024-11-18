@@ -144,7 +144,7 @@ function App() {
       const cs_token = await EncryptedStorage.getItem('cs_token');
       if (cs_token) {
         await axios.post(
-          `${process.env.BACKENDAIPE}/api/user/store-fcm-token`,
+          `${process.env.BACKENDAIPG}/api/user/store-fcm-token`,
           {fcmToken: token},
           {headers: {Authorization: `Bearer ${cs_token}`}},
         );
@@ -160,7 +160,7 @@ function App() {
       const pcs_token = await EncryptedStorage.getItem('cs_token');
       const fcmToken = await EncryptedStorage.getItem('fcm_token');
       await axios.post(
-        `${process.env.BACKENDAIPE}/api/user/store-notification`,
+        `${process.env.BACKENDAIPG}/api/user/store-notification`,
         {notification, fcmToken},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
@@ -228,7 +228,21 @@ function App() {
         navigationRef.current.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+            routes: [
+              {
+                name: 'Tabs',
+                state: {
+                  routes: [
+                    {
+                      name: 'Home',
+                      params: {
+                        encodedId: encodedNotificationId, // Pass your encodedId here
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
           }),
         ),
     };

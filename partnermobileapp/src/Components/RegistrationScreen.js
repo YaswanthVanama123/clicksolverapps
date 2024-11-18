@@ -146,7 +146,7 @@ const RegistrationScreen = () => {
       }
 
       const response = await axios.post(
-        `${process.env.BackendAPI6}/api/registration/submit`,
+        `${process.env.BackendAPI9}/api/registration/submit`,
         formData,
         {
           headers: {
@@ -173,7 +173,7 @@ const RegistrationScreen = () => {
       }
 
       const response = await axios.get(
-        `${process.env.BackendAPI6}/api/service/categories`,
+        `${process.env.BackendAPI9}/api/service/categories`,
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
@@ -226,7 +226,7 @@ const RegistrationScreen = () => {
     if (field === 'skillCategory') {
       try {
         const response = await axios.post(
-          `${process.env.BackendAPI6}/api/subservice/checkboxes`,
+          `${process.env.BackendAPI9}/api/subservice/checkboxes`,
           {
             selectedService: value,
           },

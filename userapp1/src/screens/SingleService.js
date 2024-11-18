@@ -30,7 +30,7 @@ const SingleService = () => {
   const fetchDetails = useCallback(async () => {
     try {
       const response = await axios.post(
-        `${process.env.BACKENDAIPE}/api/single/service`,
+        `${process.env.BACKENDAIPG}/api/single/service`,
         {
           serviceName,
         },

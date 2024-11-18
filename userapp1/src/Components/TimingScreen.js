@@ -40,7 +40,7 @@ const TimingScreen = () => {
   const handleCheck = useCallback(async () => {
     try {
       const response = await axios.post(
-        `${process.env.BACKENDAIPE}/api/task/confirm/status`,
+        `${process.env.BACKENDAIPG}/api/task/confirm/status`,
         {
           notification_id: decodedId,
         },
@@ -50,7 +50,7 @@ const TimingScreen = () => {
         const cs_token = await EncryptedStorage.getItem('cs_token');
 
         await axios.post(
-          `${process.env.BACKENDAIPE}/api/user/action`,
+          `${process.env.BACKENDAIPG}/api/user/action`,
           {
             encodedId: encodedId,
             screen: 'Paymentscreen',
@@ -106,7 +106,7 @@ const TimingScreen = () => {
   const handleCancelMessageBox = async () => {
     try {
       const response = await axios.post(
-        `${process.env.BACKENDAIPE}/api/work/completion/cancel`,
+        `${process.env.BACKENDAIPG}/api/work/completion/cancel`,
         {
           notification_id: decodedId,
         },
@@ -203,7 +203,7 @@ const TimingScreen = () => {
           }
 
           const response = await axios.post(
-            `${process.env.BACKENDAIPE}/api/work/time/started`,
+            `${process.env.BACKENDAIPG}/api/work/time/started`,
             {
               notification_id: decodedId,
             },
@@ -247,7 +247,7 @@ const TimingScreen = () => {
     if (decodedId) {
       try {
         const response = await axios.post(
-          `${process.env.BACKENDAIPE}/api/work/time/completed/request`,
+          `${process.env.BACKENDAIPG}/api/work/time/completed/request`,
           {
             notification_id: decodedId,
           },

@@ -37,7 +37,7 @@ const SignUpScreen = () => {
   const handleSignUp = async () => {
     try {
       const response = await axios.post(
-        `${process.env.BACKENDAIPE}/api/user/signup`,
+        `${process.env.BACKENDAIPG}/api/user/signup`,
         {
           fullName,
           email,

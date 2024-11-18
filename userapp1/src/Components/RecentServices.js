@@ -72,7 +72,7 @@ const RecentServices = () => {
         if (!token) throw new Error('Token not found');
 
         const response = await axios.get(
-          `${process.env.BACKENDAIPE}/api/user/bookings`,
+          `${process.env.BACKENDAIPG}/api/user/bookings`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

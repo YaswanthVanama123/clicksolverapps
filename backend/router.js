@@ -308,7 +308,7 @@ router.post("/worker/earnings", authenticateWorkerToken, getWorkerEarnings);
 
 router.post("/payment/details", async (req, res) => {
   const { notification_id } = req.body;
-
+  console.log(notification_id);
   const { start_time, end_time } = await paymentDetails(notification_id);
   console.log(start_time);
   const { time_worked } = getTimeDifferenceInIST(start_time, end_time);
@@ -358,7 +358,7 @@ router.post("/worker/details/rating", async (req, res) => {
   await workerDetails(req, res, notification_id);
 });
 
-router.post("/user/feedback", submitFeedback);
+router.post("/user/feedback", authenticateToken, submitFeedback);
 
 router.post("/work/time/started", CheckStartTime);
 

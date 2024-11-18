@@ -135,7 +135,7 @@ const BalanceScreen = () => {
       if (!pcs_token) throw new Error('pcs_token not found');
 
       const response = await axios.post(
-        `${process.env.BackendAPI6}/api/balance/ammount`,
+        `${process.env.BackendAPI9}/api/balance/ammount`,
         {},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );

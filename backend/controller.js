@@ -558,6 +558,7 @@ const serviceTrackingUpdateStatus = async (req, res) => {
 };
 
 const getWorkerDetails = async (notificationId) => {
+  console.log(notificationId);
   try {
     const query = `
     SELECT 
@@ -7576,78 +7577,140 @@ const getPaymentDetails = async (notification_id) => {
   }
 };
 
-// Function to process payment ***
 // const processPayment = async (req, res) => {
 //   const { totalAmount, paymentMethod, decodedId } = req.body;
 
+//   // Input Validation
+//   if (!totalAmount || !paymentMethod || !decodedId) {
+//     return res.status(400).json({
+//       error:
+//         "Missing required fields: totalAmount, paymentMethod, and decodedId.",
+//     });
+//   }
+
 //   try {
-//       // Update the servicecall table with payment details
-//       const query = `
-//           UPDATE servicecall
-//           SET payment = $1, payment_type = $2
-//           WHERE notification_id = $3
-//       `;
+//     const end_time = new Date();
 
-//       await client.query(query, [totalAmount, paymentMethod, decodedId]);
+//     // Single query to update servicecall, accepted, and workerlife tables
+//     const combinedQuery = `
+//     WITH update_servicecall AS (
+//       UPDATE servicecall
+//       SET
+//         payment = $1,
+//         payment_type = $2
+//       WHERE notification_id = $3
+//       RETURNING notification_id
+//     ),
+//     update_accepted AS (
+//       UPDATE accepted a
+//       SET
+//         time = jsonb_set(
+//           COALESCE(a.time, '{}'::jsonb),
+//           '{paymentCompleted}',
+//           to_jsonb(to_char($4::timestamp, 'YYYY-MM-DD HH24:MI:SS'))
+//         )
+//       FROM update_servicecall us
+//       WHERE a.notification_id = us.notification_id
+//       RETURNING a.user_id, a.service_booked, a.worker_id
+//     ),
+//     -- Update balance_amount, money_earned, and cashback_approved_times in workerlife
+//     update_workerlife AS (
+//       UPDATE workerlife wl
+//       SET
+//         service_counts = wl.service_counts + 1,                -- Increment service_counts by 1
+//         money_earned = wl.money_earned + $6,                   -- Increment money_earned by totalAmount
+//         balance_amount = CASE                                  -- Update balance_amount based on paymentMethod
+//           WHEN $5 = 'cash' THEN wl.balance_amount - ($6 * 0.12)
+//           ELSE wl.balance_amount + ($6 * 0.88)
+//         END,
+//         cashback_approved_times = COALESCE((wl.service_counts + 1) / 6, 0) -- Calculate cashback_approved_times based on updated service_counts
+//       FROM update_accepted ua
+//       WHERE wl.worker_id = ua.worker_id
+//       RETURNING wl.worker_id, wl.balance_amount, wl.cashback_approved_times, wl.service_counts
+//     ),
+//     fetch_fcm AS (
+//       SELECT
+//         u.fcm_token
+//       FROM userfcm u
+//       JOIN update_accepted ua ON u.user_id = ua.user_id
+//     )
+//     SELECT
+//       ua.user_id,
+//       ua.service_booked,
+//       ua.worker_id,
+//       ARRAY_AGG(fcm.fcm_token) AS fcm_tokens
+//     FROM update_accepted ua
+//     LEFT JOIN fetch_fcm fcm ON TRUE
+//     GROUP BY ua.user_id, ua.service_booked, ua.worker_id;
+//   `;
 
-//       const userIdDetails =  await client.query(
-//         "SELECT user_id, worker_id FROM completenotifications WHERE notification_id = $1",
-//         [decodedId]
-//       );
+//     const values = [
+//       totalAmount,
+//       paymentMethod,
+//       decodedId,
+//       end_time,
+//       paymentMethod,
+//       totalAmount,
+//     ];
+//     const combinedResult = await client.query(combinedQuery, values);
 
-//       const userId = userIdDetails.rows[0].user_id
-//       const workerId = userIdDetails.rows[0].worker_id
-//       const serviceResult = await updateWorkerLifeDetails(workerId, totalAmount);
+//     if (combinedResult.rows.length === 0) {
+//       return res.status(404).json({ error: "Notification not found." });
+//     }
 
-//       const fcmTokenResult = await client.query(
-//         "SELECT fcm_token FROM userfcm WHERE user_id = $1",
-//         [userId]
-//       );
+//     const row = combinedResult.rows[0];
+//     const { user_id, service_booked, worker_id, fcm_tokens } = row;
 
-//       const fcmTokens = fcmTokenResult.rows.map(row => row.fcm_token);
-//       // console.log(fcmTokens);
+//     // Proceed to send notifications if FCM tokens are available
+//     if (fcm_tokens.length > 0) {
+//       const multicastMessage = {
+//         tokens: fcm_tokens,
+//         notification: {
+//           title: "Click Solver",
+//           body: `Your payment of ₹${totalAmount} has been successfully processed via ${paymentMethod}.`,
+//         },
+//         data: {
+//           notification_id: decodedId.toString(),
+//           screen: "Home",
+//         },
+//       };
 
-//       if (fcmTokens.length > 0) {
-//         // Create a multicast message object for all tokens
-//         const multicastMessage = {
-//           tokens: fcmTokens, // An array of tokens to send the same message to
-//           notification: {
-//             title: "Click Solver",
-//             body: `Your payment has been successfully processed.`,
-//           },
-//           data: {
-//             notification_id: decodedId.toString(),
-//             screen:'Home'
-//           },
-//         };
-
-//         try {
-//           // Use sendEachForMulticast to send the same message to multiple tokens
-//           const response = await getMessaging().sendEachForMulticast(multicastMessage);
-
-//           // Log the responses for each token
-//           response.responses.forEach((res, index) => {
-//             if (res.success) {
-//               // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
-//             } else {
-//               console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
-//             }
-//           });
-
-//           // console.log('Success Count:', response.successCount);
-//           // console.log('Failure Count:', response.failureCount);
-
-//         } catch (error) {
-//           console.error('Error sending notifications:', error);
-//         }
-//       } else {
-//         console.error('No FCM tokens to send the message to.');
+//       try {
+//         const response = await getMessaging().sendEachForMulticast(
+//           multicastMessage
+//         );
+//         response.responses.forEach((resItem, index) => {
+//           if (!resItem.success) {
+//             console.error(
+//               `Error sending message to token ${fcm_tokens[index]}:`,
+//               resItem.error
+//             );
+//           }
+//         });
+//       } catch (error) {
+//         console.error("Error sending notifications:", error);
+//         return res.status(500).json({ error: "Error sending notifications." });
 //       }
+//     }
 
-//       res.status(200).json({ message: 'Payment processed successfully' });
+//     // Create a background action for the user
+//     const screen = "";
+//     const encodedNotificationId = Buffer.from(decodedId.toString()).toString(
+//       "base64"
+//     );
+//     await createUserBackgroundAction(
+//       user_id,
+//       encodedNotificationId,
+//       screen,
+//       service_booked
+//     );
+
+//     return res.status(200).json({ message: "Payment processed successfully" });
 //   } catch (error) {
-//       console.error('Error processing payment:', error);
-//       res.status(500).json({ error: 'An error occurred while processing the payment' });
+//     console.error("Error processing payment:", error);
+//     return res
+//       .status(500)
+//       .json({ error: "An error occurred while processing the payment" });
 //   }
 // };
 
@@ -7665,7 +7728,6 @@ const processPayment = async (req, res) => {
   try {
     const end_time = new Date();
 
-    // Single query to update servicecall, accepted, and workerlife tables
     const combinedQuery = `
     WITH update_servicecall AS (
       UPDATE servicecall
@@ -7685,19 +7747,55 @@ const processPayment = async (req, res) => {
         )
       FROM update_servicecall us
       WHERE a.notification_id = us.notification_id
-      RETURNING a.user_id, a.service_booked, a.worker_id
+      RETURNING a.user_id, a.service_booked, a.worker_id, a.notification_id, a.user_notification_id, a.longitude, a.latitude
     ),
-    -- Update balance_amount, money_earned, and cashback_approved_times in workerlife
+    insert_completenotifications AS (
+      INSERT INTO completenotifications (
+        accepted_id,
+        notification_id,
+        user_id,
+        user_notification_id,
+        service_booked,
+        longitude,
+        latitude,
+        worker_id,
+        time
+      )
+      SELECT 
+        a.accepted_id,
+        a.notification_id,
+        a.user_id,
+        a.user_notification_id,
+        a.service_booked,
+        a.longitude,
+        a.latitude,
+        a.worker_id,
+        a.time
+      FROM accepted a
+      WHERE a.notification_id = $3
+      ON CONFLICT (accepted_id) DO NOTHING
+      RETURNING *
+    ),
+    delete_accepted AS (
+      DELETE FROM accepted
+      WHERE notification_id = $3
+      RETURNING *
+    ),
+    delete_servicetracking AS (
+      DELETE FROM servicetracking
+      WHERE notification_id = $3
+      RETURNING *
+    ),
     update_workerlife AS (
       UPDATE workerlife wl
       SET 
-        service_counts = wl.service_counts + 1,                -- Increment service_counts by 1
-        money_earned = wl.money_earned + $6,                   -- Increment money_earned by totalAmount
-        balance_amount = CASE                                  -- Update balance_amount based on paymentMethod
+        service_counts = wl.service_counts + 1,
+        money_earned = wl.money_earned + $6,
+        balance_amount = CASE
           WHEN $5 = 'cash' THEN wl.balance_amount - ($6 * 0.12)
           ELSE wl.balance_amount + ($6 * 0.88)
         END,
-        cashback_approved_times = COALESCE((wl.service_counts + 1) / 6, 0) -- Calculate cashback_approved_times based on updated service_counts
+        cashback_approved_times = COALESCE((wl.service_counts + 1) / 6, 0)
       FROM update_accepted ua
       WHERE wl.worker_id = ua.worker_id
       RETURNING wl.worker_id, wl.balance_amount, wl.cashback_approved_times, wl.service_counts
@@ -7712,11 +7810,16 @@ const processPayment = async (req, res) => {
       ua.user_id, 
       ua.service_booked,
       ua.worker_id, 
-      ARRAY_AGG(fcm.fcm_token) AS fcm_tokens
+      ARRAY_AGG(fcm.fcm_token) AS fcm_tokens,
+      COUNT(da.*) AS deleted_accepted,
+      COUNT(ds.*) AS deleted_servicetracking
     FROM update_accepted ua
     LEFT JOIN fetch_fcm fcm ON TRUE
+    LEFT JOIN delete_accepted da ON TRUE
+    LEFT JOIN delete_servicetracking ds ON TRUE
     GROUP BY ua.user_id, ua.service_booked, ua.worker_id;
-  `;
+
+    `;
 
     const values = [
       totalAmount,
@@ -7727,6 +7830,13 @@ const processPayment = async (req, res) => {
       totalAmount,
     ];
     const combinedResult = await client.query(combinedQuery, values);
+
+    const deleteQuery = `
+      DELETE FROM accepted
+      WHERE notification_id = $1
+    `;
+
+    const deleteQueryResult = await client.query(deleteQuery, [decodedId]);
 
     if (combinedResult.rows.length === 0) {
       return res.status(404).json({ error: "Notification not found." });
@@ -7912,110 +8022,154 @@ const processPayment = async (req, res) => {
 // };
 
 const submitFeedback = async (req, res) => {
-  const { notification_id, rating, comments } = req.body;
-
   try {
-    // Step 1: Fetch worker_id, user_id, user_notification_id, user name, worker name, and FCM tokens in a single query
-    const query = `
-      SELECT 
-        n.worker_id, 
-        n.user_id, 
-        n.user_notification_id, 
-        u.name AS user_name, 
-        w.name AS worker_name,
-        uf.fcm_token 
-      FROM 
-        accepted n
-      JOIN 
-        "user" u ON n.user_id = u.user_id
-      JOIN 
-        workersverified w ON n.worker_id = w.worker_id
-      LEFT JOIN 
-        userfcm uf ON n.user_id = uf.user_id
-      WHERE 
-        n.notification_id = $1
-    `;
+    const { notification_id, rating, comment } = req.body;
+    const user_id = req.user.id;
 
-    const notificationResult = await client.query(query, [notification_id]);
-
-    if (notificationResult.rows.length === 0) {
-      return res.status(404).json({ error: "Notification ID not found" });
+    if (!notification_id || !rating || !comment || !user_id) {
+      return res.status(400).json({ message: "All fields are required." });
     }
 
-    const { worker_id, user_id, user_notification_id, user_name, worker_name } =
-      notificationResult.rows[0];
-
-    // Step 2: Insert feedback into the feedback table
-    const insertFeedbackQuery = `
-      INSERT INTO feedback (notification_id, worker_id, user_id, user_notification_id, name, worker_name, rating, comment, created_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
+    // Insert feedback with worker_id and user's name fetched from related tables
+    const query = `
+      INSERT INTO feedback (notification_id, rating, comment, user_id, worker_id, name)
+      VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        (SELECT worker_id FROM completenotifications WHERE notification_id = $1),
+        (SELECT name FROM "user" WHERE user_id = $4)
+      )
       RETURNING *;
     `;
 
-    const insertFeedbackResult = await client.query(insertFeedbackQuery, [
-      notification_id,
-      worker_id,
-      user_id,
-      user_notification_id,
-      user_name,
-      worker_name,
-      rating,
-      comments,
-    ]);
+    const values = [notification_id, rating, comment, user_id];
+    const result = await client.query(query, values);
 
-    // Collect FCM tokens
-    const fcmTokens = notificationResult.rows
-      .map((row) => row.fcm_token)
-      .filter((token) => token); // Filter out any undefined tokens
-
-    if (fcmTokens.length > 0) {
-      // Prepare multicast message
-      const multicastMessage = {
-        tokens: fcmTokens,
-        notification: {
-          title: "Click Solver",
-          body: "Thanks for giving feedback to us, have a nice day.",
-        },
-        data: {
-          user_notification_id: notification_id.toString(),
-        },
-      };
-
-      try {
-        const response = await getMessaging().sendEachForMulticast(
-          multicastMessage
-        );
-
-        response.responses.forEach((res, index) => {
-          if (res.success) {
-            // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
-          } else {
-            console.error(
-              `Error sending message to token ${fcmTokens[index]}:`,
-              res.error
-            );
-          }
-        });
-
-        // console.log('Success Count:', response.successCount);
-        // console.log('Failure Count:', response.failureCount);
-      } catch (error) {
-        console.error("Error sending notifications:", error);
-      }
-    } else {
-      console.error("No FCM tokens to send the message to.");
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "Worker ID or User Name not found." });
     }
 
-    // Step 4: Send response after feedback submission and notification sending
     res.status(201).json({
-      message: "Feedback submitted successfully",
-      feedback: insertFeedbackResult.rows[0],
+      message: "Feedback submitted successfully.",
+      feedback: result.rows[0],
     });
   } catch (error) {
     console.error("Error submitting feedback:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res
+      .status(500)
+      .json({ message: "Internal server error.", error: error.message });
   }
 };
+
+// const submitFeedback = async (req, res) => {
+//   const { notification_id, rating, comments } = req.body;
+
+//   try {
+//     // Step 1: Fetch worker_id, user_id, user_notification_id, user name, worker name, and FCM tokens in a single query
+//     const query = `
+//       SELECT
+//         n.worker_id,
+//         n.user_id,
+//         n.user_notification_id,
+//         u.name AS user_name,
+//         w.name AS worker_name,
+//         uf.fcm_token
+//       FROM
+//         accepted n
+//       JOIN
+//         "user" u ON n.user_id = u.user_id
+//       JOIN
+//         workersverified w ON n.worker_id = w.worker_id
+//       LEFT JOIN
+//         userfcm uf ON n.user_id = uf.user_id
+//       WHERE
+//         n.notification_id = $1
+//     `;
+
+//     const notificationResult = await client.query(query, [notification_id]);
+
+//     if (notificationResult.rows.length === 0) {
+//       return res.status(404).json({ error: "Notification ID not found" });
+//     }
+
+//     const { worker_id, user_id, user_notification_id, user_name, worker_name } =
+//       notificationResult.rows[0];
+
+//     // Step 2: Insert feedback into the feedback table
+//     const insertFeedbackQuery = `
+//       INSERT INTO feedback (notification_id, worker_id, user_id, user_notification_id, name, worker_name, rating, comment, created_at)
+//       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
+//       RETURNING *;
+//     `;
+
+//     const insertFeedbackResult = await client.query(insertFeedbackQuery, [
+//       notification_id,
+//       worker_id,
+//       user_id,
+//       user_notification_id,
+//       user_name,
+//       worker_name,
+//       rating,
+//       comments,
+//     ]);
+
+//     // Collect FCM tokens
+//     const fcmTokens = notificationResult.rows
+//       .map((row) => row.fcm_token)
+//       .filter((token) => token); // Filter out any undefined tokens
+
+//     if (fcmTokens.length > 0) {
+//       // Prepare multicast message
+//       const multicastMessage = {
+//         tokens: fcmTokens,
+//         notification: {
+//           title: "Click Solver",
+//           body: "Thanks for giving feedback to us, have a nice day.",
+//         },
+//         data: {
+//           user_notification_id: notification_id.toString(),
+//         },
+//       };
+
+//       try {
+//         const response = await getMessaging().sendEachForMulticast(
+//           multicastMessage
+//         );
+
+//         response.responses.forEach((res, index) => {
+//           if (res.success) {
+//             // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
+//           } else {
+//             console.error(
+//               `Error sending message to token ${fcmTokens[index]}:`,
+//               res.error
+//             );
+//           }
+//         });
+
+//         // console.log('Success Count:', response.successCount);
+//         // console.log('Failure Count:', response.failureCount);
+//       } catch (error) {
+//         console.error("Error sending notifications:", error);
+//       }
+//     } else {
+//       console.error("No FCM tokens to send the message to.");
+//     }
+
+//     // Step 4: Send response after feedback submission and notification sending
+//     res.status(201).json({
+//       message: "Feedback submitted successfully",
+//       feedback: insertFeedbackResult.rows[0],
+//     });
+//   } catch (error) {
+//     console.error("Error submitting feedback:", error);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// };
 
 const sendSMSVerification = async (req, res) => {
   const { phoneNumber } = req.body;
@@ -8097,83 +8251,120 @@ const getServiceCompletedDetails = async (req, res) => {
 
   try {
     // Combine all steps into a single query with a transaction
+
+    // const query = `
+    //   WITH retrieved_data AS (
+    //       SELECT
+    //           n.accepted_id,
+    //           n.notification_id,
+    //           n.user_notification_id,
+    //           n.service_booked,
+    //           n.longitude,
+    //           n.latitude,
+    //           n.worker_id,
+    //           un.user_id,
+    //           sc.payment,
+    //           sc.payment_type,
+    //           un.city,
+    //           un.pincode,
+    //           un.area,
+    //           u.name,
+    //           n.time -- Added time column
+    //       FROM
+    //           accepted n
+    //       JOIN
+    //           servicecall sc ON n.notification_id = sc.notification_id
+    //       JOIN
+    //           usernotifications un ON n.user_notification_id = un.user_notification_id
+    //       JOIN
+    //           "user" u ON un.user_id = u.user_id
+    //       WHERE
+    //           n.notification_id = $1
+    //   ),
+    //   inserted_data AS (
+    //       INSERT INTO completenotifications (
+    //           accepted_id,
+    //           notification_id,
+    //           user_id,
+    //           user_notification_id,
+    //           service_booked,
+    //           longitude,
+    //           latitude,
+    //           worker_id,
+    //           time
+    //       )
+    //       SELECT
+    //           accepted_id,
+    //           notification_id,
+    //           user_id,
+    //           user_notification_id,
+    //           service_booked,
+    //           longitude,
+    //           latitude,
+    //           worker_id,
+    //           time
+    //       FROM retrieved_data
+    //       ON CONFLICT (accepted_id) DO NOTHING
+    //       RETURNING *
+    //   ),
+    //   deleted_accepted_data AS (
+    //       DELETE FROM accepted
+    //       WHERE notification_id = $1
+    //       RETURNING *
+    //   ),
+    //   deleted_service_tracking_data AS (
+    //       DELETE FROM servicetracking
+    //       WHERE notification_id = $1
+    //       RETURNING *
+    //   )
+    //   SELECT
+    //       r.payment,
+    //       r.payment_type,
+    //       r.service_booked,
+    //       r.longitude,
+    //       r.latitude,
+    //       r.area,
+    //       r.city,
+    //       r.pincode,
+    //       r.name
+    //   FROM retrieved_data r;
+    // `;
+
     const query = `
-      WITH retrieved_data AS (
+      WITH data AS (
           SELECT 
-              n.accepted_id,
-              n.notification_id, 
-              n.user_notification_id,
-              n.service_booked, 
-              n.longitude, 
-              n.latitude, 
-              n.worker_id,
-              un.user_id,
               sc.payment, 
               sc.payment_type, 
+              cn.service_booked, 
+              cn.longitude, 
+              cn.latitude, 
+              un.area, 
               un.city, 
               un.pincode, 
-              un.area, 
-              u.name,
-              n.time -- Added time column
+              u.name
           FROM 
-              accepted n
+              completenotifications cn
           JOIN 
-              servicecall sc ON n.notification_id = sc.notification_id
+              servicecall sc ON cn.notification_id = sc.notification_id
           JOIN 
-              usernotifications un ON n.user_notification_id = un.user_notification_id
+              usernotifications un ON cn.user_notification_id = un.user_notification_id
           JOIN 
               "user" u ON un.user_id = u.user_id
           WHERE 
-              n.notification_id = $1
-      ),
-      inserted_data AS (
-          INSERT INTO completenotifications (
-              accepted_id,
-              notification_id,
-              user_id,
-              user_notification_id,
-              service_booked,
-              longitude,
-              latitude,
-              worker_id,
-              time
-          )
-          SELECT 
-              accepted_id,
-              notification_id,
-              user_id,
-              user_notification_id,
-              service_booked,
-              longitude,
-              latitude,
-              worker_id,
-              time
-          FROM retrieved_data
-          ON CONFLICT (accepted_id) DO NOTHING
-          RETURNING *
-      ),
-      deleted_accepted_data AS (
-          DELETE FROM accepted
-          WHERE notification_id = $1
-          RETURNING *
-      ),
-      deleted_service_tracking_data AS (
-          DELETE FROM servicetracking
-          WHERE notification_id = $1
-          RETURNING *
+              cn.notification_id = $1
       )
       SELECT 
-          r.payment, 
-          r.payment_type, 
-          r.service_booked, 
-          r.longitude, 
-          r.latitude, 
-          r.area, 
-          r.city, 
-          r.pincode, 
-          r.name
-      FROM retrieved_data r;
-    `;
+          data.payment, 
+          data.payment_type, 
+          data.service_booked, 
+          data.longitude, 
+          data.latitude, 
+          data.area, 
+          data.city, 
+          data.pincode, 
+          data.name
+      FROM data;
+  `;
 
     const result = await client.query(query, [notification_id]);
 
@@ -8510,52 +8701,48 @@ const getWorkerEarnings = async (req, res) => {
 
   try {
     const query = `
-    SELECT 
-      SUM(s.payment) AS total_payment, 
-      SUM(CASE WHEN s.payment_type = 'cash' THEN s.payment ELSE 0 END) AS cash_payment, 
-      COUNT(*) AS payment_count,
-      (SELECT SUM(payment) 
-        FROM servicecall 
-        WHERE worker_id = $1
-          AND payment IS NOT NULL
-      ) AS life_earnings, 
-      (SELECT AVG(rating) 
-        FROM feedback 
-        WHERE worker_id = $1
-      ) AS avg_rating, 
-      (SELECT COUNT(*) 
-        FROM notifications 
-        WHERE worker_id = $1
-          AND status = 'reject'
-          AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
-      ) AS rejected_count,
-      (SELECT COUNT(*) 
-        FROM notifications 
-        WHERE worker_id = $1
-          AND status = 'pending'
-          AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
-      ) AS pending_count,
-      (EXTRACT(EPOCH FROM SUM(
-          CASE 
-              WHEN s.time_worked ~ '^\d{2}:\d{2}:\d{2}$' 
-                   AND CAST(split_part(s.time_worked, ':', 2) AS INTEGER) < 60
-                   AND CAST(split_part(s.time_worked, ':', 3) AS INTEGER) < 60
-              THEN CAST(s.time_worked AS INTERVAL)
-              ELSE INTERVAL '0'
-          END
-      )) / 3600) AS total_time_worked_hours,
-      wl.service_counts,
-      wl.money_earned,
-      wl.average_rating,
-      wl.cashback_gain,
-      wl.cashback_approved_times
-    FROM servicecall s
-    LEFT JOIN workerlife wl ON s.worker_id = wl.worker_id
-    WHERE s.worker_id = $1
-      AND s.payment IS NOT NULL
-      AND DATE(s.end_time) BETWEEN DATE($2) AND DATE($3)
-    GROUP BY wl.service_counts, wl.money_earned, wl.average_rating, wl.cashback_gain, wl.cashback_approved_times;
-  `;
+      SELECT
+        SUM(payment) AS total_payment,
+        SUM(CASE WHEN payment_type = 'cash' THEN payment ELSE 0 END) AS cash_payment,
+        COUNT(*) AS payment_count,
+        (SELECT SUM(payment)
+          FROM servicecall
+          WHERE worker_id = $1
+            AND payment IS NOT NULL
+        ) AS life_earnings,
+        (SELECT AVG(rating)
+          FROM feedback
+          WHERE worker_id = $1
+        ) AS avg_rating,
+        (SELECT COUNT(*)
+          FROM notifications
+          WHERE worker_id = $1
+            AND status = 'reject'
+            AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
+        ) AS rejected_count,
+        (SELECT COUNT(*)
+          FROM notifications
+          WHERE worker_id = $1
+            AND status = 'pending'
+            AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
+        ) AS pending_count,
+        (EXTRACT(EPOCH FROM SUM(
+            CASE
+                WHEN time_worked ~ '^\d{2}:\d{2}:\d{2}$'
+                     AND CAST(split_part(time_worked, ':', 2) AS INTEGER) < 60
+                     AND CAST(split_part(time_worked, ':', 3) AS INTEGER) < 60
+                THEN CAST(time_worked AS INTERVAL)
+                ELSE INTERVAL '0'
+            END
+        )) / 3600) AS total_time_worked_hours,
+        (SELECT service_counts FROM workerlife WHERE worker_id = $1) AS service_counts,
+        (SELECT cashback_approved_times FROM workerlife WHERE worker_id = $1) AS cashback_approved_times,
+        (SELECT cashback_gain FROM workerlife WHERE worker_id = $1) AS cashback_gain
+      FROM servicecall s
+      WHERE worker_id = $1
+        AND payment IS NOT NULL
+        AND DATE(end_time) BETWEEN DATE($2) AND DATE($3);
+    `;
 
     const result = await client.query(query, [
       workerId,
@@ -8577,10 +8764,8 @@ const getWorkerEarnings = async (req, res) => {
       pending_count,
       total_time_worked_hours,
       service_counts,
-      money_earned,
-      average_rating,
-      cashback_gain,
       cashback_approved_times,
+      cashback_gain,
     } = result.rows[0];
 
     res.json({
@@ -8593,136 +8778,14 @@ const getWorkerEarnings = async (req, res) => {
       pending_count: Number(pending_count) || 0,
       total_time_worked_hours: Number(total_time_worked_hours) || 0,
       service_counts: Number(service_counts) || 0,
-      money_earned: Number(money_earned) || 0,
-      average_rating: Number(average_rating) || 0,
-      cashback_gain: Number(cashback_gain) || 0,
       cashback_approved_times: Number(cashback_approved_times) || 0,
+      cashback_gain: Number(cashback_gain) || 0,
     });
   } catch (error) {
     console.error("Error fetching worker earnings:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
-
-// const getWorkerEarnings = async (req, res) => {
-//   const { date, startDate, endDate } = req.body;
-//   const workerId = req.worker.id;
-
-//   let selectStartDate;
-//   let selectEndDate;
-
-//   if (startDate && endDate) {
-//     selectStartDate = convertToDateString(startDate);
-//     selectEndDate = convertToDateString(endDate);
-
-//     if (!selectStartDate || !selectEndDate) {
-//       return res
-//         .status(400)
-//         .json({ error: "Invalid startDate or endDate format" });
-//     }
-//     if (new Date(selectStartDate) > new Date(selectEndDate)) {
-//       return res
-//         .status(400)
-//         .json({ error: "startDate cannot be after endDate" });
-//     }
-//   } else if (date) {
-//     selectStartDate = convertToDateString(date);
-//     selectEndDate = selectStartDate;
-
-//     if (!selectStartDate) {
-//       return res.status(400).json({ error: "Invalid date format" });
-//     }
-//   } else {
-//     return res.status(400).json({ error: "No date provided" });
-//   }
-
-//   try {
-//     const query = `
-//       SELECT
-//         SUM(payment) AS total_payment,
-//         SUM(CASE WHEN payment_type = 'cash' THEN payment ELSE 0 END) AS cash_payment,
-//         COUNT(*) AS payment_count,
-//         (SELECT SUM(payment)
-//           FROM servicecall
-//           WHERE worker_id = $1
-//             AND payment IS NOT NULL
-//         ) AS life_earnings,
-//         (SELECT AVG(rating)
-//           FROM feedback
-//           WHERE worker_id = $1
-//         ) AS avg_rating,
-//         (SELECT COUNT(*)
-//           FROM notifications
-//           WHERE worker_id = $1
-//             AND status = 'reject'
-//             AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
-//         ) AS rejected_count,
-//         (SELECT COUNT(*)
-//           FROM notifications
-//           WHERE worker_id = $1
-//             AND status = 'pending'
-//             AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
-//         ) AS pending_count,
-//         (EXTRACT(EPOCH FROM SUM(
-//             CASE
-//                 WHEN time_worked ~ '^\d{2}:\d{2}:\d{2}$'
-//                      AND CAST(split_part(time_worked, ':', 2) AS INTEGER) < 60
-//                      AND CAST(split_part(time_worked, ':', 3) AS INTEGER) < 60
-//                 THEN CAST(time_worked AS INTERVAL)
-//                 ELSE INTERVAL '0'
-//             END
-//         )) / 3600) AS total_time_worked_hours,
-//         (SELECT service_counts FROM workerlife WHERE worker_id = $1) AS service_counts,
-//         (SELECT cashback_approved_times FROM workerlife WHERE worker_id = $1) AS cashback_approved_times,
-//         (SELECT cashback_gain FROM workerlife WHERE worker_id = $1) AS cashback_gain
-//       FROM servicecall s
-//       WHERE worker_id = $1
-//         AND payment IS NOT NULL
-//         AND DATE(end_time) BETWEEN DATE($2) AND DATE($3);
-//     `;
-
-//     const result = await client.query(query, [
-//       workerId,
-//       selectStartDate,
-//       selectEndDate,
-//     ]);
-
-//     if (result.rows.length === 0) {
-//       return res.status(404).json({ error: "No earnings data found" });
-//     }
-
-//     const {
-//       total_payment,
-//       cash_payment,
-//       payment_count,
-//       life_earnings,
-//       avg_rating,
-//       rejected_count,
-//       pending_count,
-//       total_time_worked_hours,
-//       service_counts,
-//       cashback_approved_times,
-//       cashback_gain,
-//     } = result.rows[0];
-
-//     res.json({
-//       total_payment: Number(total_payment) || 0,
-//       cash_payment: Number(cash_payment) || 0,
-//       payment_count: Number(payment_count) || 0,
-//       life_earnings: Number(life_earnings) || 0,
-//       avg_rating: Number(avg_rating) || 0,
-//       rejected_count: Number(rejected_count) || 0,
-//       pending_count: Number(pending_count) || 0,
-//       total_time_worked_hours: Number(total_time_worked_hours) || 0,
-//       service_counts: Number(service_counts) || 0,
-//       cashback_approved_times: Number(cashback_approved_times) || 0,
-//       cashback_gain: Number(cashback_gain) || 0,
-//     });
-//   } catch (error) {
-//     console.error("Error fetching worker earnings:", error);
-//     res.status(500).json({ error: "Internal server error" });
-//   }
-// };
 
 const userWorkerInProgressDetails = async (req, res) => {
   const { decodedId } = req.body;
