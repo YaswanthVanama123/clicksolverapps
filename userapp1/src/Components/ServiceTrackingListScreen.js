@@ -117,8 +117,8 @@ const ServiceTrackingListScreen = () => {
       </View>
       <View style={styles.itemTextContainer}>
         <Text style={styles.itemTitle}>{item.service_status}</Text>
-        <Text style={styles.itemDate}>Scheduled for:</Text>
         <Text style={styles.itemDate}>{formatDate(item.created_at)}</Text>
+        <Text style={styles.itemDate}>{item.tracking_key}</Text>
       </View>
       <View
         style={[

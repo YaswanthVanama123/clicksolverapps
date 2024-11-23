@@ -56,7 +56,7 @@ function TabNavigator() {
           } else if (route.name === 'Rewards') {
             iconName = 'wallet';
             return <Entypo name={iconName} size={size} color={color} />;
-          } else if (route.name === 'Native') {
+          } else if (route.name === 'Tracking') {
             iconName = 'shopping-bag';
             return <Feather name={iconName} size={size} color={color} />;
           } else if (route.name === 'Account') {
@@ -86,7 +86,7 @@ function TabNavigator() {
         options={{headerShown: false}}
       />
       <Tab.Screen
-        name="Native"
+        name="Tracking"
         component={ServiceTrackingListScreen}
         options={{headerShown: false}}
       />
@@ -140,8 +140,8 @@ function App() {
   async function getTokens() {
     try {
       const fcm = await EncryptedStorage.getItem('fcm_token');
-      if (fcm) {
-      } else {
+      const cs_token = await EncryptedStorage.getItem('cs_token');
+      if (!fcm && cs_token) {
         const token = await messaging().getToken();
         await EncryptedStorage.setItem('fcm_token', token);
         const cs_token = await EncryptedStorage.getItem('cs_token');
@@ -228,27 +228,48 @@ function App() {
             encodedId: encodedNotificationId,
           }),
         ),
-      Home: () =>
-        navigationRef.current.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [
-              {
-                name: 'Tabs',
-                state: {
-                  routes: [
-                    {
-                      name: 'Home',
-                      params: {
-                        encodedId: encodedNotificationId, // Pass your encodedId here
+      Home: () => {
+        if (encodedNotificationId) {
+          navigationRef.current.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                {
+                  name: 'Tabs',
+                  state: {
+                    routes: [
+                      {
+                        name: 'Home',
+                        params: {
+                          encodedId: encodedNotificationId, // Pass encodedId when present
+                        },
                       },
-                    },
-                  ],
+                    ],
+                  },
                 },
-              },
-            ],
-          }),
-        ),
+              ],
+            }),
+          );
+        } else {
+          navigationRef.current.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                {
+                  name: 'Tabs',
+                  state: {
+                    routes: [
+                      {
+                        name: 'Home', // Redirect without params
+                      },
+                    ],
+                  },
+                },
+              ],
+            }),
+          );
+        }
+      },
     };
 
     if (navigationActions[screen]) {

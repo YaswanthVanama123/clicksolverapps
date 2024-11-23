@@ -751,22 +751,8 @@ const HelloWorld = () => {
     messaging().setBackgroundMessageHandler(async remoteMessage => {
       console.log('setBackgroundMessageHandler Fcm', remoteMessage);
       const notificationId = remoteMessage.data.notification_id;
-      const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
       if (remoteMessage.data && remoteMessage.data.screen === 'Home') {
-        await axios.post(
-          `${process.env.BackendAPI}/api/worker/action`,
-          {
-            encodedId: '',
-            screen: '',
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${pcs_token}`,
-            },
-          },
-        );
-
         navigation.dispatch(
           CommonActions.reset({
             index: 0,

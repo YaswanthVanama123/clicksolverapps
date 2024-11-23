@@ -1613,6 +1613,7 @@ const getUserTrackingServices = async (req, res) => {
         st.service_status,
         st.created_at,
         st.tracking_id,
+        st.tracking_key,
         ws.service
       FROM servicetracking st
       JOIN workerskills ws ON st.worker_id = ws.worker_id
@@ -4278,7 +4279,6 @@ const userNavigationCancel = async (req, res) => {
             body: `Sorry for this, User cancelled the Service.`,
           },
           data: {
-            notification_id: encodedUserNotificationId,
             screen: "Home",
           },
         };
@@ -4589,7 +4589,6 @@ const workerNavigationCancel = async (req, res) => {
             body: `Sorry for this, User cancelled the Service.`,
           },
           data: {
-            notification_id: encodedUserNotificationId,
             screen: "Home",
           },
         };
@@ -7757,97 +7756,189 @@ const processPayment = async (req, res) => {
   try {
     const end_time = new Date();
 
+    // const combinedQuery = `
+    // WITH update_servicecall AS (
+    //   UPDATE servicecall
+    //   SET
+    //     payment = $1,
+    //     payment_type = $2
+    //   WHERE notification_id = $3
+    //   RETURNING notification_id
+    // ),
+    // update_accepted AS (
+    //   UPDATE accepted a
+    //   SET
+    //     time = jsonb_set(
+    //       COALESCE(a.time, '{}'::jsonb),
+    //       '{paymentCompleted}',
+    //       to_jsonb(to_char($4::timestamp, 'YYYY-MM-DD HH24:MI:SS'))
+    //     )
+    //   FROM update_servicecall us
+    //   WHERE a.notification_id = us.notification_id
+    //   RETURNING a.user_id, a.service_booked, a.worker_id, a.notification_id, a.user_notification_id, a.longitude, a.latitude
+    // ),
+    // insert_completenotifications AS (
+    //   INSERT INTO completenotifications (
+    //     accepted_id,
+    //     notification_id,
+    //     user_id,
+    //     user_notification_id,
+    //     service_booked,
+    //     longitude,
+    //     latitude,
+    //     worker_id,
+    //     time
+    //   )
+    //   SELECT
+    //     a.accepted_id,
+    //     a.notification_id,
+    //     a.user_id,
+    //     a.user_notification_id,
+    //     a.service_booked,
+    //     a.longitude,
+    //     a.latitude,
+    //     a.worker_id,
+    //     a.time
+    //   FROM accepted a
+    //   WHERE a.notification_id = $3
+    //   ON CONFLICT (accepted_id) DO NOTHING
+    //   RETURNING *
+    // ),
+    // delete_accepted AS (
+    //   DELETE FROM accepted
+    //   WHERE notification_id = $3
+    //   RETURNING *
+    // ),
+    // delete_servicetracking AS (
+    //   DELETE FROM servicetracking
+    //   WHERE notification_id = $3
+    //   RETURNING *
+    // ),
+    // update_workerlife AS (
+    //   UPDATE workerlife wl
+    //   SET
+    //     service_counts = wl.service_counts + 1,
+    //     money_earned = wl.money_earned + $6,
+    //     balance_amount = CASE
+    //       WHEN $5 = 'cash' THEN wl.balance_amount - ($6 * 0.12)
+    //       ELSE wl.balance_amount + ($6 * 0.88)
+    //     END,
+    //     cashback_approved_times = COALESCE((wl.service_counts + 1) / 6, 0)
+    //   FROM update_accepted ua
+    //   WHERE wl.worker_id = ua.worker_id
+    //   RETURNING wl.worker_id, wl.balance_amount, wl.cashback_approved_times, wl.service_counts
+    // ),
+    // fetch_fcm AS (
+    //   SELECT
+    //     u.fcm_token
+    //   FROM userfcm u
+    //   JOIN update_accepted ua ON u.user_id = ua.user_id
+    // )
+    // SELECT
+    //   ua.user_id,
+    //   ua.service_booked,
+    //   ua.worker_id,
+    //   ARRAY_AGG(fcm.fcm_token) AS fcm_tokens,
+    //   COUNT(da.*) AS deleted_accepted,
+    //   COUNT(ds.*) AS deleted_servicetracking
+    // FROM update_accepted ua
+    // LEFT JOIN fetch_fcm fcm ON TRUE
+    // LEFT JOIN delete_accepted da ON TRUE
+    // LEFT JOIN delete_servicetracking ds ON TRUE
+    // GROUP BY ua.user_id, ua.service_booked, ua.worker_id;
+
+    // `;
+
     const combinedQuery = `
-    WITH update_servicecall AS (
-      UPDATE servicecall
-      SET
-        payment = $1,
-        payment_type = $2
-      WHERE notification_id = $3
-      RETURNING notification_id
-    ),
-    update_accepted AS (
-      UPDATE accepted a
-      SET
-        time = jsonb_set(
-          COALESCE(a.time, '{}'::jsonb),
-          '{paymentCompleted}',
-          to_jsonb(to_char($4::timestamp, 'YYYY-MM-DD HH24:MI:SS'))
+      WITH update_servicecall AS (
+        UPDATE servicecall
+        SET
+          payment = $1,
+          payment_type = $2
+        WHERE notification_id = $3
+        RETURNING notification_id
+      ),
+      update_accepted AS (
+        UPDATE accepted a
+        SET
+          time = jsonb_set(
+            COALESCE(a.time, '{}'::jsonb),
+            '{paymentCompleted}',
+            to_jsonb(to_char($4::timestamp, 'YYYY-MM-DD HH24:MI:SS'))
+          )
+        FROM update_servicecall us
+        WHERE a.notification_id = us.notification_id
+        RETURNING a.*
+      ),
+      insert_completenotifications AS (
+        INSERT INTO completenotifications (
+          accepted_id,
+          notification_id,
+          user_id,
+          user_notification_id,
+          service_booked,
+          longitude,
+          latitude,
+          worker_id,
+          time
         )
-      FROM update_servicecall us
-      WHERE a.notification_id = us.notification_id
-      RETURNING a.user_id, a.service_booked, a.worker_id, a.notification_id, a.user_notification_id, a.longitude, a.latitude
-    ),
-    insert_completenotifications AS (
-      INSERT INTO completenotifications (
-        accepted_id,
-        notification_id,
-        user_id,
-        user_notification_id,
-        service_booked,
-        longitude,
-        latitude,
-        worker_id,
-        time
+        SELECT
+          ua.accepted_id,
+          ua.notification_id,
+          ua.user_id,
+          ua.user_notification_id,
+          ua.service_booked,
+          ua.longitude,
+          ua.latitude,
+          ua.worker_id,
+          ua.time
+        FROM update_accepted ua
+        WHERE ua.notification_id = $3
+        ON CONFLICT (accepted_id) DO NOTHING
+        RETURNING *
+      ),
+      delete_accepted AS (
+        DELETE FROM accepted
+        WHERE notification_id = $3
+        RETURNING *
+      ),
+      delete_servicetracking AS (
+        DELETE FROM servicetracking
+        WHERE notification_id = $3
+        RETURNING *
+      ),
+      update_workerlife AS (
+        UPDATE workerlife wl
+        SET
+          service_counts = wl.service_counts + 1,
+          money_earned = wl.money_earned + $6,
+          balance_amount = CASE
+            WHEN $5 = 'cash' THEN wl.balance_amount - ($6 * 0.12)
+            ELSE wl.balance_amount + ($6 * 0.88)
+          END,
+          cashback_approved_times = COALESCE((wl.service_counts + 1) / 6, 0)
+        FROM update_accepted ua
+        WHERE wl.worker_id = ua.worker_id
+        RETURNING wl.worker_id, wl.balance_amount, wl.cashback_approved_times, wl.service_counts
+      ),
+      fetch_fcm AS (
+        SELECT
+          u.fcm_token
+        FROM userfcm u
+        JOIN update_accepted ua ON u.user_id = ua.user_id
       )
       SELECT
-        a.accepted_id,
-        a.notification_id,
-        a.user_id,
-        a.user_notification_id,
-        a.service_booked,
-        a.longitude,
-        a.latitude,
-        a.worker_id,
-        a.time
-      FROM accepted a
-      WHERE a.notification_id = $3
-      ON CONFLICT (accepted_id) DO NOTHING
-      RETURNING *
-    ),
-    delete_accepted AS (
-      DELETE FROM accepted
-      WHERE notification_id = $3
-      RETURNING *
-    ),
-    delete_servicetracking AS (
-      DELETE FROM servicetracking
-      WHERE notification_id = $3
-      RETURNING *
-    ),
-    update_workerlife AS (
-      UPDATE workerlife wl
-      SET
-        service_counts = wl.service_counts + 1,
-        money_earned = wl.money_earned + $6,
-        balance_amount = CASE
-          WHEN $5 = 'cash' THEN wl.balance_amount - ($6 * 0.12)
-          ELSE wl.balance_amount + ($6 * 0.88)
-        END,
-        cashback_approved_times = COALESCE((wl.service_counts + 1) / 6, 0)
+        ua.user_id,
+        ua.service_booked,
+        ua.worker_id,
+        ARRAY_AGG(fcm.fcm_token) AS fcm_tokens,
+        COUNT(da.*) AS deleted_accepted,
+        COUNT(ds.*) AS deleted_servicetracking
       FROM update_accepted ua
-      WHERE wl.worker_id = ua.worker_id
-      RETURNING wl.worker_id, wl.balance_amount, wl.cashback_approved_times, wl.service_counts
-    ),
-    fetch_fcm AS (
-      SELECT
-        u.fcm_token
-      FROM userfcm u
-      JOIN update_accepted ua ON u.user_id = ua.user_id
-    )
-    SELECT
-      ua.user_id,
-      ua.service_booked,
-      ua.worker_id,
-      ARRAY_AGG(fcm.fcm_token) AS fcm_tokens,
-      COUNT(da.*) AS deleted_accepted,
-      COUNT(ds.*) AS deleted_servicetracking
-    FROM update_accepted ua
-    LEFT JOIN fetch_fcm fcm ON TRUE
-    LEFT JOIN delete_accepted da ON TRUE
-    LEFT JOIN delete_servicetracking ds ON TRUE
-    GROUP BY ua.user_id, ua.service_booked, ua.worker_id;
-
+      LEFT JOIN fetch_fcm fcm ON TRUE
+      LEFT JOIN delete_accepted da ON TRUE
+      LEFT JOIN delete_servicetracking ds ON TRUE
+      GROUP BY ua.user_id, ua.service_booked, ua.worker_id;
     `;
 
     const values = [
