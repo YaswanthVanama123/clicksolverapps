@@ -491,11 +491,13 @@ router.get("/servicecategories", async (req, res) => {
   }
 });
 
-router.get(
-  "/service/categories",
-  authenticateWorkerToken,
-  getServicesPhoneNumber
-);
+// router.get(
+//   "/service/categories",
+//   authenticateWorkerToken,
+//   getServicesPhoneNumber
+// );
+
+router.get("/service/categories", getServicesPhoneNumber);
 
 router.post("/validate-token", authenticateToken, (req, res) => {
   res.json({ isValid: true });

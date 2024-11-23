@@ -61,30 +61,57 @@ const Partnerlogin = async (req, res) => {
 
   try {
     // Query to check the existence of phone_number in both tables and get signup step details
+    // const query = `
+    //   WITH workersverified_check AS (
+    //     SELECT worker_id
+    //     FROM workersverified
+    //     WHERE phone_number = $1
+    //     LIMIT 1
+    //   ),
+    //   workers_check AS (
+    //     SELECT worker_id
+    //     FROM workers
+    //     WHERE phone_number = $1
+    //     LIMIT 1
+    //   )
+    //   SELECT
+    //     CASE
+    //       WHEN EXISTS (SELECT 1 FROM workersverified_check) THEN 200
+    //       WHEN EXISTS (SELECT 1 FROM workers_check) THEN 201
+    //       ELSE 400
+    //     END AS status_code,
+    //     (SELECT worker_id FROM workersverified_check) AS verified_worker_id,
+    //     (SELECT worker_id FROM workers_check) AS worker_id,
+    //     EXISTS (SELECT 1 FROM workers_check) AS step1,
+    //     EXISTS (SELECT 1 FROM workerskills WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step2,
+    //     EXISTS (SELECT 1 FROM bankaccounts WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step3
+    // `;
+
     const query = `
-      WITH workersverified_check AS (
-        SELECT worker_id
-        FROM workersverified
-        WHERE phone_number = $1
-        LIMIT 1
-      ),
-      workers_check AS (
-        SELECT worker_id
-        FROM workers
-        WHERE phone_number = $1
-        LIMIT 1
-      )
-      SELECT 
-        CASE 
-          WHEN EXISTS (SELECT 1 FROM workersverified_check) THEN 200
-          WHEN EXISTS (SELECT 1 FROM workers_check) THEN 201
-          ELSE 400
-        END AS status_code,
-        (SELECT worker_id FROM workersverified_check) AS verified_worker_id,
-        (SELECT worker_id FROM workers_check) AS worker_id,
-        EXISTS (SELECT 1 FROM workers_check) AS step1,
-        EXISTS (SELECT 1 FROM workerskills WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step2,
-        EXISTS (SELECT 1 FROM bankaccounts WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step3
+    WITH workersverified_check AS (
+    SELECT worker_id
+    FROM workersverified
+    WHERE phone_number = $1
+    LIMIT 1
+),
+workers_check AS (
+    SELECT worker_id
+    FROM workers
+    WHERE phone_number = $1
+    LIMIT 1
+)
+SELECT 
+    CASE 
+        WHEN EXISTS (SELECT 1 FROM workersverified_check) THEN 200
+        WHEN EXISTS (SELECT 1 FROM workers_check) THEN 201
+        ELSE 400
+    END AS status_code,
+    COALESCE((SELECT worker_id FROM workersverified_check), 
+             (SELECT worker_id FROM workers_check)) AS worker_id,
+    EXISTS (SELECT 1 FROM workers_check) AS step1,
+    EXISTS (SELECT 1 FROM workerskills WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step2,
+    EXISTS (SELECT 1 FROM bankaccounts WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step3;
+
     `;
 
     const result = await client.query(query, [phone_number]);
@@ -297,7 +324,7 @@ const getServicesPhoneNumber = async (req, res) => {
         FROM "servicecategories" sc;
     `;
     const result = await client.query(query, [worker_id]);
-    console.log(worker_id, result.rows);
+
     // Return the rows that match the query
     res.json(result.rows);
   } catch (err) {
@@ -306,9 +333,87 @@ const getServicesPhoneNumber = async (req, res) => {
   }
 };
 
+// const getServiceTrackingWorkerItemDetails = async (req, res) => {
+//   try {
+//     const { tracking_id } = req.body;
+//     console.log(tracking_id);
+//     const query = `
+//       SELECT
+//         st.service_booked,
+//         st.service_status,
+//         st.created_at,
+//         st.longitude,
+//         st.latitude,
+//         u.name,
+//         u.phone_number,
+//         un.area
+//       FROM servicetracking st
+//       JOIN "user" u ON st.user_id = u.user_id
+//       JOIN usernotifications un ON st.user_notification_id = un.user_notification_id
+//       WHERE st.tracking_id = $1;
+//     `;
+
+//     const values = [tracking_id];
+
+//     const result = await client.query(query, values);
+
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({
+//         message: "No service tracking details found for the given accepted ID",
+//       });
+//     }
+
+//     const { service_booked } = result.rows[0];
+
+//     if (!service_booked || !Array.isArray(service_booked)) {
+//       return res
+//         .status(400)
+//         .json({ message: "Invalid service_booked data format" });
+//     }
+
+//     const gstRate = 0.05;
+//     const discountRate = 0.05;
+
+//     const fetchedTotalAmount = service_booked.reduce(
+//       (total, service) => total + (service.cost || 0),
+//       0
+//     );
+
+//     const gstAmount = fetchedTotalAmount * gstRate;
+//     const cgstAmount = fetchedTotalAmount * gstRate;
+//     const discountAmount = fetchedTotalAmount * discountRate;
+//     const fetchedFinalTotalAmount =
+//       fetchedTotalAmount + gstAmount + cgstAmount - discountAmount;
+
+//     const paymentDetails = {
+//       gstAmount,
+//       cgstAmount,
+//       discountAmount,
+//       fetchedFinalTotalAmount,
+//     };
+
+//     res.status(200).json({ data: result.rows[0], paymentDetails });
+//   } catch (error) {
+//     console.error(
+//       "Error fetching service tracking worker item details: ",
+//       error
+//     );
+//     res.status(500).json({
+//       message: "Failed to fetch service tracking worker item details",
+//       error: error.message,
+//     });
+//   }
+// };
+
 const getServiceTrackingWorkerItemDetails = async (req, res) => {
   try {
     const { tracking_id } = req.body;
+    console.log(tracking_id);
+
+    if (!tracking_id) {
+      return res.status(400).json({ message: "Tracking ID is required" });
+    }
+
     const query = `
       SELECT
         st.service_booked,
@@ -324,20 +429,17 @@ const getServiceTrackingWorkerItemDetails = async (req, res) => {
       JOIN usernotifications un ON st.user_notification_id = un.user_notification_id
       WHERE st.tracking_id = $1;
     `;
-
-    const values = [tracking_id];
-
-    const result = await client.query(query, values);
+    const result = await client.query(query, [tracking_id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
-        message: "No service tracking details found for the given accepted ID",
+        message: "No service tracking details found for the given tracking ID",
       });
     }
 
     const { service_booked } = result.rows[0];
 
-    if (!service_booked || !Array.isArray(service_booked)) {
+    if (!Array.isArray(service_booked)) {
       return res
         .status(400)
         .json({ message: "Invalid service_booked data format" });
@@ -347,7 +449,7 @@ const getServiceTrackingWorkerItemDetails = async (req, res) => {
     const discountRate = 0.05;
 
     const fetchedTotalAmount = service_booked.reduce(
-      (total, service) => total + (service.cost || 0),
+      (total, service) => total + (parseFloat(service.cost) || 0),
       0
     );
 
@@ -364,13 +466,13 @@ const getServiceTrackingWorkerItemDetails = async (req, res) => {
       fetchedFinalTotalAmount,
     };
 
-    res.status(200).json({ data: result.rows[0], paymentDetails });
+    return res.status(200).json({ data: result.rows[0], paymentDetails });
   } catch (error) {
     console.error(
-      "Error fetching service tracking worker item details: ",
+      `Error fetching details for tracking_id ${req.body.tracking_id}:`,
       error
     );
-    res.status(500).json({
+    return res.status(500).json({
       message: "Failed to fetch service tracking worker item details",
       error: error.message,
     });
