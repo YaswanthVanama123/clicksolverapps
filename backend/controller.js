@@ -925,6 +925,7 @@ const checkOnboardingStatus = async (req, res) => {
 const balanceAmmountToPay = async (req, res) => {
   const worker_id = req.worker.id; // Assuming worker_id is passed in the request parameters
   // console.log(worker_id)
+
   try {
     // Query to select payment, payment_type, notification_id, and end_time where worker_id matches and payment is not null
     // const result = await client.query(
@@ -950,7 +951,6 @@ const balanceAmmountToPay = async (req, res) => {
         servicecall.payment_type, 
         servicecall.notification_id, 
         servicecall.end_time, 
-        completenotifications.*, 
         "user".name,
         workerlife.balance_amount,
         workerlife.balance_payment_history
