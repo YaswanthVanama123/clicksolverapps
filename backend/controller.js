@@ -662,7 +662,6 @@ const serviceTrackingUpdateStatus = async (req, res) => {
 };
 
 const getWorkerDetails = async (notificationId) => {
-  console.log(notificationId);
   try {
     const query = `
     SELECT 
@@ -714,7 +713,6 @@ const getWorkerDetails = async (notificationId) => {
     }, 0);
 
     const fetchedFinalTotalAmount = calculatePayment(fetchedTotalAmount);
-    console.log(profile);
     return {
       service_booked,
       name,

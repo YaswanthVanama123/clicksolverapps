@@ -279,11 +279,11 @@ router.post("/timer/value", getTimerValue);
 
 router.post("/worker/payment/scanner/details", async (req, res) => {
   const { notification_id } = req.body;
-  console.log(notification_id);
-  const { start_time, end_time } = await paymentDetails(notification_id);
-  console.log(start_time);
-  const { time_worked } = getTimeDifferenceInIST(start_time, end_time);
-  const totalAmount = calculatePayment(time_worked);
+  // console.log(notification_id);
+  // const { start_time, end_time } = await paymentDetails(notification_id);
+  // console.log(start_time);
+  // const { time_worked } = getTimeDifferenceInIST(start_time, end_time);
+  // const totalAmount = calculatePayment(time_worked);
   const { name, service } = await getPaymentDetails(notification_id);
   const {
     service_booked,
