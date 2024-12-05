@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from 'react-native';
+import LottieView from 'lottie-react-native';
 import Entypo from 'react-native-vector-icons/Entypo';
 import {useNavigation, CommonActions} from '@react-navigation/native';
 import axios from 'axios';
@@ -119,6 +120,7 @@ const BalanceScreen = () => {
   const [activeCard, setActiveCard] = useState('ServiceHistory');
   const [isMessageVisible, setIsMessageVisible] = useState(false);
   const [balanceHistory, setBalanceHistory] = useState([]);
+  const [loading, setLoading] = useState(true); // New loading state
 
   const backToHome = () => {
     navigation.dispatch(
@@ -130,6 +132,7 @@ const BalanceScreen = () => {
   };
 
   const fetchServiceBalanceHistory = useCallback(async () => {
+    setLoading(true); // Start loading
     try {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       if (!pcs_token) throw new Error('pcs_token not found');
@@ -178,6 +181,8 @@ const BalanceScreen = () => {
       setTransactions(serviceBalanceHistory.reverse());
     } catch (error) {
       console.error('Error fetching service balance history:', error);
+    } finally {
+      setLoading(false); // Stop loading
     }
   }, []);
 
@@ -254,20 +259,29 @@ const BalanceScreen = () => {
         </View>
       </View>
       <View style={styles.scrollContainer}>
-        <FlatList
-          data={
-            activeCard === 'ServiceHistory' ? transactions : dummyTransactions
-          }
-          renderItem={({item}) =>
-            activeCard === 'ServiceHistory' ? (
-              <TransactionItem item={item} />
-            ) : (
-              <PaymentHistoryCard item={item} />
-            )
-          }
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.flatlistContainer}
-        />
+        {loading ? ( // Show loading indicator
+          <LottieView
+            source={require('../assets/success.json')}
+            autoPlay
+            loop
+            style={styles.loadingAnimation}
+          />
+        ) : (
+          <FlatList
+            data={
+              activeCard === 'ServiceHistory' ? transactions : dummyTransactions
+            }
+            renderItem={({item}) =>
+              activeCard === 'ServiceHistory' ? (
+                <TransactionItem item={item} />
+              ) : (
+                <PaymentHistoryCard item={item} />
+              )
+            }
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.flatlistContainer}
+          />
+        )}
       </View>
       {isBalanceNegative && (
         <TouchableOpacity
@@ -365,6 +379,10 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
     marginTop: 10,
+  },
+  loadingAnimation: {
+    width: '100%',
+    height: 200,
   },
   flatlistContainer: {
     paddingBottom: 20,

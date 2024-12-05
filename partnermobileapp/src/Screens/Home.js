@@ -326,8 +326,21 @@ const HomeScreen = () => {
     getTokens();
 
     // Other initialization code...
+  }, []);
 
-    // Messaging and notification handlers
+  useEffect(() => {
+    PushNotification.createChannel(
+      {
+        channelId: 'default-channel-id',
+        channelName: 'Default Channel',
+        channelDescription: 'A default channel',
+        soundName: 'default',
+        importance: 4,
+        vibrate: true,
+      },
+      created => console.log(`createChannel returned ''`),
+    );
+
     const storeNotificationInBackend = async notification => {
       try {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
@@ -343,6 +356,8 @@ const HomeScreen = () => {
     };
 
     const storeNotificationLocally = async notification => {
+      console.log('called atleast');
+      // Check if notification has notification.data.notification_id
       if (notification.data.screen === 'Acceptance') {
         try {
           const existingNotifications = await EncryptedStorage.getItem(
@@ -354,6 +369,15 @@ const HomeScreen = () => {
 
           // Add the new notification to the array
           notifications.push(notification);
+
+          // Get the receivedAt time from the notification
+          const receivedAt = notification.receivedAt; // e.g., "06/10/2024, 11:26:16"
+
+          // Manually parse receivedAt (from DD/MM/YYYY, HH:mm:ss to MM/DD/YYYY HH:mm:ss)
+          const [datePart, timePart] = receivedAt.split(', ');
+          const [day, month, year] = datePart.split('/');
+          const parsedReceivedAt = `${year}-${month}-${day}T${timePart}`;
+          const notificationDate = new Date(parsedReceivedAt);
 
           const currentDate = new Date();
 
@@ -375,7 +399,7 @@ const HomeScreen = () => {
 
           // Update the notifications array and store locally
           setNotificationsArray(notifications);
-
+          console.log('setNotificationsArray');
           // Store updated notifications in local storage
           await EncryptedStorage.setItem(
             'Requestnotifications',
@@ -392,22 +416,8 @@ const HomeScreen = () => {
       }
     };
 
-    PushNotification.configure({
-      onNotification: function (notification) {
-        const userNotificationId = notification.data.user_notification_id;
-        const route = notification.data.route;
-        if (notification.action === 'Dismiss') {
-          PushNotification.cancelLocalNotifications({id: notification.id});
-        } else if (notification.userInteraction) {
-          if (userNotificationId && route) {
-            navigation.push(route, {encodedId: userNotificationId});
-          }
-        }
-      },
-      actions: ['Dismiss'],
-    });
-
     const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
+      console.log('Foreground Fcm', remoteMessage);
       const notificationId = remoteMessage.data.notification_id;
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
@@ -444,7 +454,7 @@ const HomeScreen = () => {
         data: remoteMessage.data,
         service: remoteMessage.data.service,
         location: remoteMessage.data.location,
-        userNotificationId: remoteMessage.data.user_notification_id,
+        userNotificationId: remoteMessage.data.user_notification_id, // Include the user_notification_id
         receivedAt: new Intl.DateTimeFormat('en-IN', {
           timeZone: 'Asia/Kolkata',
           year: 'numeric',
@@ -470,6 +480,59 @@ const HomeScreen = () => {
         userInfo: remoteMessage.data,
         actions: ['Dismiss'],
       });
+    });
+
+    PushNotification.configure({
+      onNotification: function (Dismissnotification) {
+        const userNotificationId = notification.data.user_notification_id;
+        const route = notification.data.route;
+        if (notification.action === 'Dismiss') {
+          PushNotification.cancelLocalNotifications({id: notification.id});
+        } else if (notification.userInteraction) {
+          if (userNotificationId && route) {
+            navigation.push(route, {encodedId: userNotificationId});
+          }
+        }
+      },
+      actions: ['Dismiss'],
+    });
+
+    messaging().setBackgroundMessageHandler(async remoteMessage => {
+      console.log('setBackgroundMessageHandler Fcm', remoteMessage);
+      const notificationId = remoteMessage.data.notification_id;
+
+      if (remoteMessage.data && remoteMessage.data.screen === 'Home') {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
+        );
+      } else if (
+        remoteMessage.data &&
+        remoteMessage.data.screen === 'TaskConfirmation'
+      ) {
+        navigation.push('TaskConfirmation', {encodedId: notificationId});
+      }
+      const notification = {
+        title: remoteMessage.notification.title,
+        body: remoteMessage.notification.body,
+        data: remoteMessage.data,
+        service: remoteMessage.data.service,
+        location: remoteMessage.data.location,
+        userNotificationId: remoteMessage.data.user_notification_id, // Include the user_notification_id
+        receivedAt: new Intl.DateTimeFormat('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        }).format(new Date()),
+      };
+      storeNotificationLocally(notification);
     });
 
     const unsubscribeOnNotificationOpenedApp =
@@ -545,7 +608,7 @@ const HomeScreen = () => {
             data: remoteMessage.data,
             service: remoteMessage.data.service,
             location: remoteMessage.data.location,
-            userNotificationId: remoteMessage.data.user_notification_id,
+            userNotificationId: remoteMessage.data.user_notification_id, // Include the user_notification_id
             receivedAt: new Intl.DateTimeFormat('en-IN', {
               timeZone: 'Asia/Kolkata',
               year: 'numeric',

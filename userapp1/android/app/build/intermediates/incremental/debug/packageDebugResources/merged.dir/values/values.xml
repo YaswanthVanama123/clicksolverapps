@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <integer name="react_native_dev_server_port">8081</integer>
+    <integer name="react_native_dev_server_port">8082</integer>
     <string name="app_name">Click Solver</string>
     <string name="default_notification_channel_id">default_channel</string>
     <string name="gcm_defaultSenderId" translatable="false">790153325076</string>

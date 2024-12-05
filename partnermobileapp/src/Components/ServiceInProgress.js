@@ -899,8 +899,10 @@ const styles = StyleSheet.create({
   },
   serviceDetailsContainer: {
     backgroundColor: '#fff',
+    flex: 1,
     padding: 20,
     marginTop: 20,
+    marginBottom: 20,
     marginHorizontal: 20,
     borderRadius: 10,
     elevation: 3,

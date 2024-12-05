@@ -80,6 +80,16 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
             notifyOnDwell: false,
             loiteringDelay: 30000,
           },
+          {
+            identifier: 'Vatluru',
+            radius: 10000, // in meters
+            latitude: 16.6983514,
+            longitude: 81.0503031,
+            notifyOnEntry: true,
+            notifyOnExit: true,
+            notifyOnDwell: false,
+            loiteringDelay: 30000,
+          },
           // Add more geofences if needed
         ];
 
