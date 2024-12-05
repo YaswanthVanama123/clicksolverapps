@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from 'react-native';
-import LocationComponent from './LocationComponent';
+import LocationComponent from './LocationTracker';
 import NotificationComponent from './NotificationComponent';
 import {useNavigation, CommonActions} from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';

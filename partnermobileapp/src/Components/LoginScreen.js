@@ -68,7 +68,6 @@ const LoginScreen = () => {
 
     try {
       const response = await loginBackend(phoneNumber);
-      console.log('Full response:', response);
 
       if (!response) {
         console.error('No response received from backend');
@@ -76,8 +75,6 @@ const LoginScreen = () => {
       }
 
       const {status, data} = response;
-      console.log('Response status:', status);
-      console.log('Response data:', data);
 
       if (status === 200) {
         const {token, workerId} = data;

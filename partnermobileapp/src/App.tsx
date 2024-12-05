@@ -115,7 +115,7 @@ function TabNavigator() {
         })}>
         <Tab.Screen
           name="Home"
-          component={HelloWorld}
+          component={HomeScreen}
           options={{headerShown: false}}
         />
         <Tab.Screen

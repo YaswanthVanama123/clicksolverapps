@@ -497,7 +497,11 @@ router.get("/servicecategories", async (req, res) => {
 //   getServicesPhoneNumber
 // );
 
-router.get("/service/categories", getServicesPhoneNumber);
+router.get(
+  "/service/categories",
+  authenticateWorkerToken,
+  getServicesPhoneNumber
+);
 
 router.post("/validate-token", authenticateToken, (req, res) => {
   res.json({ isValid: true });
