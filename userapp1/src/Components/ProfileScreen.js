@@ -29,7 +29,7 @@ const ProfileScreen = () => {
       setIsLoggedIn(true);
 
       const response = await axios.post(
-        `${process.env.BACKENDAIPG}/api/user/profile`,
+        `${process.env.BACKENDAIPH}/api/user/profile`,
         {},
         {
           headers: {Authorization: `Bearer ${jwtToken}`},

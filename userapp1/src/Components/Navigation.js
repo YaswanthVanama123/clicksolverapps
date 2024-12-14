@@ -80,14 +80,14 @@ const Navigation = () => {
     setModalVisible(false);
     try {
       const response = await axios.post(
-        `${process.env.BACKENDAIPG}/api/user/work/cancel`,
+        `${process.env.BACKENDAIPH}/api/user/work/cancel`,
         {notification_id: decodedId},
       );
 
       if (response.status === 200) {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
-          `${process.env.BACKENDAIPG}/api/user/action`,
+          `${process.env.BACKENDAIPH}/api/user/action`,
           {
             encodedId: encodedData,
             screen: '',
@@ -118,14 +118,14 @@ const Navigation = () => {
     const checkVerificationStatus = async () => {
       try {
         const response = await axios.get(
-          `${process.env.BACKENDAIPG}/api/worker/verification/status`,
+          `${process.env.BACKENDAIPH}/api/worker/verification/status`,
           {params: {notification_id: decodedId}},
         );
 
         if (response.data === 'true') {
           const cs_token = await EncryptedStorage.getItem('cs_token');
           await axios.post(
-            `${process.env.BACKENDAIPG}/api/user/action`,
+            `${process.env.BACKENDAIPH}/api/user/action`,
             {
               encodedId: encodedData,
               screen: 'worktimescreen',
@@ -157,7 +157,7 @@ const Navigation = () => {
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       try {
         const response = await axios.post(
-          `${process.env.BACKENDAIPG}/api/worker/navigation/details`,
+          `${process.env.BACKENDAIPH}/api/worker/navigation/details`,
           {notificationId: decodedId},
           {headers: {Authorization: `Bearer ${jwtToken}`}},
         );
@@ -201,7 +201,7 @@ const Navigation = () => {
     const fetchLocationDetails = async () => {
       try {
         const response = await axios.get(
-          `${process.env.BACKENDAIPG}/api/user/location/navigation`,
+          `${process.env.BACKENDAIPH}/api/user/location/navigation`,
           {params: {notification_id: decodedId}},
         );
 

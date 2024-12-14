@@ -40,7 +40,7 @@ const ServiceInProgressScreen = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.post(
-          `${process.env.BACKENDAIPG}/api/user/work/progress/details`,
+          `${process.env.BACKENDAIPH}/api/user/work/progress/details`,
           {
             decodedId,
           },
@@ -120,7 +120,7 @@ const ServiceInProgressScreen = () => {
     if (decodedId) {
       try {
         const response = await axios.post(
-          `${process.env.BACKENDAIPG}/api/work/time/completed/request`,
+          `${process.env.BACKENDAIPH}/api/work/time/completed/request`,
           {
             notification_id: decodedId,
           },
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
     padding: 15,
     borderRadius: 10,
-    elevation: 2,
+    elevation: 1,
   },
   technicianContainer: {
     flexDirection: 'row',
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginHorizontal: 20,
     borderRadius: 10,
-    elevation: 3,
+    elevation: 1,
     marginBottom: 10,
   },
   serviceDetailsHeaderContainer: {

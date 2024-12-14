@@ -105,7 +105,7 @@ function ServiceApp() {
   const submitFeedback = async () => {
     try {
       const response = await axios.post(
-        `${process.env.BACKENDAIPG}/api/user/feedback`, // Replace with your backend URL
+        `${process.env.BACKENDAIPH}/api/user/feedback`, // Replace with your backend URL
         {
           rating: rating,
           comment: comment,
@@ -139,7 +139,7 @@ function ServiceApp() {
       const cs_token = await EncryptedStorage.getItem('cs_token');
       if (cs_token) {
         const response = await axios.get(
-          `${process.env.BACKENDAIPG}/api/user/track/details`,
+          `${process.env.BACKENDAIPH}/api/user/track/details`,
           {
             headers: {Authorization: `Bearer ${cs_token}`},
           },
@@ -181,7 +181,7 @@ function ServiceApp() {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${process.env.BACKENDAIPG}/api/servicecategories`,
+        `${process.env.BACKENDAIPH}/api/servicecategories`,
       );
       const servicesWithIds = response.data.map(service => ({
         ...service,

@@ -137,11 +137,6 @@ SELECT
         secure: process.env.NODE_ENV === "production",
         sameSite: "Strict",
       });
-      console.log("Backend Response for status 201:", {
-        token,
-        workerId,
-        stepsCompleted,
-      });
 
       return res.status(201).json({
         message: "Phone number found in workers, please complete sign up",
@@ -170,7 +165,7 @@ const accountDetailsUpdate = async (req, res) => {
     const query = `
       UPDATE "user"
       SET name = $1,
-          email = $2,
+          email = $2, 
           phone_number = $3
       WHERE user_id = $4
     `;
@@ -5325,255 +5320,473 @@ async function getWorkerLocations(workerIds) {
 
 // this is the main getworkersNearby
 
+// const getWorkersNearby = async (req, res) => {
+//   const user_id = req.user.id;
+//   const {
+//     area,
+//     pincode,
+//     city,
+//     alternateName,
+//     alternatePhoneNumber,
+//     serviceBooked,
+//   } = req.body;
+//   const created_at = getCurrentTimestamp();
+//   const serviceArray = JSON.stringify(serviceBooked);
+
+//   try {
+//     // Get user details and location in one query using a JOIN
+//     const userQuery = `
+//       SELECT u.*, ul.longitude, ul.latitude
+//       FROM "user" u
+//       JOIN userlocation ul ON u.user_id = ul.user_id
+//       WHERE u.user_id = $1
+//     `;
+//     const userResult = await client.query(userQuery, [user_id]);
+
+//     if (userResult.rows.length === 0) {
+//       return res
+//         .status(404)
+//         .json({ error: "User not found or location not found" });
+//     }
+//     const user = userResult.rows[0];
+
+//     // Insert user location into userNotifications table
+//     const insertUserNotificationQuery = `
+//       INSERT INTO userNotifications (user_id, longitude, latitude, created_at, area, pincode, city, alternate_name, alternate_phone_number, service_booked)
+//       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+//       RETURNING user_notification_id
+//     `;
+//     const userNotificationResult = await client.query(
+//       insertUserNotificationQuery,
+//       [
+//         user_id,
+//         user.longitude,
+//         user.latitude,
+//         created_at,
+//         area,
+//         pincode,
+//         city,
+//         alternateName,
+//         alternatePhoneNumber,
+//         serviceArray,
+//       ]
+//     );
+//     const userNotificationId =
+//       userNotificationResult.rows[0].user_notification_id;
+
+//     // Insert into userrecentnotifications with conflict handling
+//     // const insertUserRecentNotificationQuery = `
+//     //   INSERT INTO userrecentnotifications (user_notification_id, user_id, longitude, latitude, created_at)
+//     //   VALUES ($1, $2, $3, $4, $5)
+//     //   ON CONFLICT (user_id) DO UPDATE SET
+//     //     user_notification_id = EXCLUDED.user_notification_id,
+//     //     longitude = EXCLUDED.longitude,
+//     //     latitude = EXCLUDED.latitude,
+//     //     created_at = EXCLUDED.created_at
+//     //   RETURNING recent_notification_id
+//     // `;
+//     // const userRecentNotificationResult = await client.query(
+//     //   insertUserRecentNotificationQuery,
+//     //   [userNotificationId, user_id, user.longitude, user.latitude, created_at]
+//     // );
+//     // const recentNotificationId =
+//     //   userRecentNotificationResult.rows[0].recent_notification_id;
+
+//     // console.log("serviceArray:", serviceBooked, "Type:", typeof serviceBooked);
+
+//     // Extract service names from the serviceBooked array
+//     const serviceNames = serviceBooked.map((service) => service.serviceName);
+//     const totalCost = serviceBooked.reduce((accumulator, service) => {
+//       return accumulator + service.cost;
+//     }, 0); // Start with 0
+
+//     // Create the query to find worker_ids with all serviceNames
+//     const workerServiceQuery = `
+//       SELECT worker_id
+//       FROM workerskills
+//       WHERE
+//         $1::text[] <@ subservices
+//       GROUP BY worker_id
+//     `;
+//     // Execute the query, passing in the serviceNames array
+//     const workerServiceResult = await client.query(workerServiceQuery, [
+//       serviceNames,
+//     ]);
+
+//     // Extract the worker_ids from the result
+//     const workerIds = workerServiceResult.rows.map((row) => row.worker_id);
+
+//     if (workerIds.length === 0) {
+//       return res
+//         .status(200)
+//         .json("No workersverified found within 2 km radius");
+//     }
+
+//     const workerDb = await getAllLocations(workerIds);
+//     // console.log("db",workerDb)
+
+//     // Filter workersverified within 2 km radius
+//     const nearbyWorkers = [];
+//     workerDb.forEach((workerLocation) => {
+//       const distance = haversineDistance(
+//         user.latitude,
+//         user.longitude,
+//         workerLocation.location._latitude,
+//         workerLocation.location._longitude
+//       );
+//       if (distance <= 2) {
+//         nearbyWorkers.push(workerLocation.worker_id);
+//       }
+//     });
+
+//     if (nearbyWorkers.length === 0) {
+//       return res
+//         .status(200)
+//         .json("No workersverified found within 2 km radius");
+//     }
+
+//     // Insert worker details into notifications table
+//     const pin = generatePin();
+//     const insertNotificationsQuery = `
+//       INSERT INTO notifications ( user_notification_id, user_id, worker_id, longitude, latitude, created_at, pin, service_booked)
+//       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+//     `;
+//     for (const worker of nearbyWorkers) {
+//       await client.query(insertNotificationsQuery, [
+//         userNotificationId,
+//         user_id,
+//         worker.worker_id,
+//         user.longitude,
+//         user.latitude,
+//         created_at,
+//         pin,
+//         serviceArray,
+//       ]);
+//     }
+
+//     const encodedUserNotificationId = Buffer.from(
+//       userNotificationId.toString()
+//     ).toString("base64");
+
+//     // Get FCM tokens and send notifications
+//     const fcmTokensQuery = `
+//     SELECT fcm_token FROM fcm WHERE worker_id = ANY($1::int[])
+//     `;
+//     const fcmTokensResult = await client.query(fcmTokensQuery, [nearbyWorkers]);
+//     const fcmTokens = fcmTokensResult.rows.map((row) => row.fcm_token);
+
+//     if (fcmTokens.length > 0) {
+//       // 1. Normal Notification Message (with `notification` payload)
+//       const normalNotificationMessage = {
+//         tokens: fcmTokens,
+//         notification: {
+//           title: serviceArray,
+//           body: `${area}, ${city}, ${pincode}`,
+//         },
+//         data: {
+//           user_notification_id: encodedUserNotificationId.toString(),
+//           service: serviceArray,
+//           location: `${area}, ${city}, ${pincode}`,
+//           coordinates: `${user.latitude},${user.longitude}`,
+//           click_action: "FLUTTER_NOTIFICATION_CLICK",
+//           cost: totalCost.toString(),
+//           targetUrl: `/acceptance/${encodedUserNotificationId}`,
+//           screen: "Acceptance",
+//           date: formattedDate(),
+//           time: formattedTime(),
+//           type: "normal", // Adding a custom type to distinguish notifications if needed
+//         },
+//         android: {
+//           priority: "high",
+//         },
+//       };
+
+//       // 2. Silent Notification Message (data-only, no `notification` payload)
+//       // const silentNotificationMessage = {
+//       //   tokens: fcmTokens,
+//       //   data: {
+//       //     user_notification_id: encodedUserNotificationId.toString(),
+//       //     service: serviceArray,
+//       //     location: `${area}, ${city}, ${pincode}`,
+//       //     click_action: "FLUTTER_NOTIFICATION_CLICK",
+//       //     coordinates: `${user.latitude},${user.longitude}`,
+//       //     cost: totalCost.toString(),
+//       //     targetUrl: `/acceptance/${encodedUserNotificationId}`,
+//       //     screen: "Acceptance",
+//       //     date: formattedDate(),
+//       //     time: formattedTime(),
+//       //     type: "silent",
+//       //   },
+//       //   android: {
+//       //     priority: "high",
+//       //     contentAvailable: true,
+//       //   },
+//       // };
+
+//       try {
+//         // Send Normal Notification (visible)
+//         const normalResponse = await getMessaging().sendEachForMulticast(
+//           normalNotificationMessage
+//         );
+//         normalResponse.responses.forEach((res, index) => {
+//           if (res.success) {
+//             // console.log(`Normal message sent successfully to token ${fcmTokens[index]}`);
+//           } else {
+//             console.error(
+//               `Error sending normal message to token ${fcmTokens[index]}:`,
+//               res.error
+//             );
+//           }
+//         });
+
+//         // Send Silent Notification (background processing)
+//         // const silentResponse = await getMessaging().sendEachForMulticast(
+//         //   silentNotificationMessage
+//         // );
+//         // silentResponse.responses.forEach((res, index) => {
+//         //   if (res.success) {
+//         //     // console.log(`Silent message sent successfully to token ${fcmTokens[index]}`);
+//         //   } else {
+//         //     console.error(
+//         //       `Error sending silent message to token ${fcmTokens[index]}:`,
+//         //       res.error
+//         //     );
+//         //   }
+//         // });
+
+//         // console.log('Normal Notification Success Count:', normalResponse.successCount);
+//         // console.log('Normal Notification Failure Count:', normalResponse.failureCount);
+//         // console.log('Silent Notification Success Count:', silentResponse.successCount);
+//         // console.log('Silent Notification Failure Count:', silentResponse.failureCount);
+//       } catch (error) {
+//         console.error("Error sending notifications:", error);
+//       }
+//     } else {
+//       console.error("No FCM tokens to send the message to.");
+//     }
+
+//     return res.status(200).json(encodedUserNotificationId);
+//   } catch (error) {
+//     console.error("Error fetching workersverified:", error);
+//     return res.status(500).json({ error: "Server error" });
+//   }
+// };
+
+// above is the main
 const getWorkersNearby = async (req, res) => {
-  const user_id = req.user.id;
-  const {
-    area,
-    pincode,
-    city,
-    alternateName,
-    alternatePhoneNumber,
-    serviceBooked,
-  } = req.body;
-  const created_at = getCurrentTimestamp();
-  const serviceArray = JSON.stringify(serviceBooked);
-
   try {
-    // Get user details and location in one query using a JOIN
-    const userQuery = `
-      SELECT u.*, ul.longitude, ul.latitude
-      FROM "user" u
-      JOIN userlocation ul ON u.user_id = ul.user_id
-      WHERE u.user_id = $1
-    `;
-    const userResult = await client.query(userQuery, [user_id]);
+    const user_id = req.user.id;
+    const {
+      area,
+      pincode,
+      city,
+      alternateName,
+      alternatePhoneNumber,
+      serviceBooked,
+    } = req.body;
+    const created_at = getCurrentTimestamp();
+    const serviceArray = JSON.stringify(serviceBooked);
+    const serviceNames = serviceBooked.map((s) => s.serviceName);
+    const totalCost = serviceBooked.reduce((acc, s) => acc + s.cost, 0);
 
-    if (userResult.rows.length === 0) {
+    /**
+     *  ┌───────────────────────────────────────────────────────┐
+     *  │  1) Single Query #1: Combine user fetch + insert +     │
+     *  │     matching subservices retrieval via CTEs           │
+     *  └───────────────────────────────────────────────────────┘
+     */
+    const query1 = `
+      WITH user_loc AS (
+        SELECT u.user_id, ul.longitude, ul.latitude
+        FROM "user" u
+        JOIN userlocation ul ON u.user_id = ul.user_id
+        WHERE u.user_id = $1
+      ),
+      inserted_user_notifications AS (
+        INSERT INTO userNotifications (
+          user_id, longitude, latitude, created_at,
+          area, pincode, city, alternate_name,
+          alternate_phone_number, service_booked
+        )
+        SELECT
+          user_loc.user_id,
+          user_loc.longitude,
+          user_loc.latitude,
+          $2,  -- created_at
+          $3,  -- area
+          $4,  -- pincode
+          $5,  -- city
+          $6,  -- alternateName
+          $7,  -- alternatePhoneNumber
+          $8   -- serviceArray
+        FROM user_loc
+        RETURNING user_notification_id
+      ),
+      matching_workers AS (
+        SELECT worker_id
+        FROM workerskills
+        WHERE $9::text[] <@ subservices
+        GROUP BY worker_id
+      )
+      SELECT
+        (SELECT user_notification_id FROM inserted_user_notifications) AS user_notification_id,
+        array_agg(mw.worker_id) AS worker_ids,
+        (SELECT latitude FROM user_loc) AS user_lat,
+        (SELECT longitude FROM user_loc) AS user_lon
+      FROM matching_workers mw;
+    `;
+
+    const query1Params = [
+      user_id, // $1
+      created_at, // $2
+      area, // $3
+      pincode, // $4
+      city, // $5
+      alternateName, // $6
+      alternatePhoneNumber, // $7
+      serviceArray, // $8
+      serviceNames, // $9 :: text[]
+    ];
+
+    const result1 = await client.query(query1, query1Params);
+    if (result1.rows.length === 0) {
       return res
         .status(404)
-        .json({ error: "User not found or location not found" });
+        .json("No user found or no worker matches subservices");
     }
-    const user = userResult.rows[0];
 
-    // Insert user location into userNotifications table
-    const insertUserNotificationQuery = `
-      INSERT INTO userNotifications (user_id, longitude, latitude, created_at, area, pincode, city, alternate_name, alternate_phone_number, service_booked)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      RETURNING user_notification_id
-    `;
-    const userNotificationResult = await client.query(
-      insertUserNotificationQuery,
-      [
-        user_id,
-        user.longitude,
-        user.latitude,
-        created_at,
-        area,
-        pincode,
-        city,
-        alternateName,
-        alternatePhoneNumber,
-        serviceArray,
-      ]
-    );
-    const userNotificationId =
-      userNotificationResult.rows[0].user_notification_id;
+    const { user_notification_id, worker_ids, user_lat, user_lon } =
+      result1.rows[0];
 
-    // Insert into userrecentnotifications with conflict handling
-    const insertUserRecentNotificationQuery = `
-      INSERT INTO userrecentnotifications (user_notification_id, user_id, longitude, latitude, created_at)
-      VALUES ($1, $2, $3, $4, $5)
-      ON CONFLICT (user_id) DO UPDATE SET
-        user_notification_id = EXCLUDED.user_notification_id,
-        longitude = EXCLUDED.longitude,
-        latitude = EXCLUDED.latitude,
-        created_at = EXCLUDED.created_at
-      RETURNING recent_notification_id
-    `;
-    const userRecentNotificationResult = await client.query(
-      insertUserRecentNotificationQuery,
-      [userNotificationId, user_id, user.longitude, user.latitude, created_at]
-    );
-    const recentNotificationId =
-      userRecentNotificationResult.rows[0].recent_notification_id;
+    if (!user_notification_id) {
+      return res.status(404).json("Failed to insert user notification");
+    }
+    if (!worker_ids || worker_ids.length === 0) {
+      return res.status(200).json("No workers match the requested subservices");
+    }
 
-    // console.log("serviceArray:", serviceBooked, "Type:", typeof serviceBooked);
-
-    // Extract service names from the serviceBooked array
-    const serviceNames = serviceBooked.map((service) => service.serviceName);
-    const totalCost = serviceBooked.reduce((accumulator, service) => {
-      return accumulator + service.cost;
-    }, 0); // Start with 0
-
-    // Create the query to find worker_ids with all serviceNames
-    const workerServiceQuery = `
-      SELECT worker_id
-      FROM workerskills
-      WHERE 
-        $1::text[] <@ subservices
-      GROUP BY worker_id
-    `;
-    // Execute the query, passing in the serviceNames array
-    const workerServiceResult = await client.query(workerServiceQuery, [
-      serviceNames,
-    ]);
-
-    // Extract the worker_ids from the result
-    const workerIds = workerServiceResult.rows.map((row) => row.worker_id);
-
-    if (workerIds.length === 0) {
+    /**
+     *  ┌───────────────────────────────────────────────────────┐
+     *  │  2) Firestore Call: Get worker locations + filter     │
+     *  │     nearby by Haversine (2km radius)                  │
+     *  └───────────────────────────────────────────────────────┘
+     */
+    const workerDb = await getAllLocations(worker_ids); // single Firestore call
+    if (!workerDb || workerDb.length === 0) {
       return res
         .status(200)
-        .json("No workersverified found within 2 km radius");
+        .json("No Firestore location data for these workers");
     }
 
-    const workerDb = await getAllLocations(workerIds);
-    // console.log("db",workerDb)
-
-    // Filter workersverified within 2 km radius
+    const MAX_DISTANCE = 2; // km
     const nearbyWorkers = [];
-    workerDb.forEach((workerLocation) => {
-      const distance = haversineDistance(
-        user.latitude,
-        user.longitude,
-        workerLocation.location._latitude,
-        workerLocation.location._longitude
+    for (const doc of workerDb) {
+      const dist = haversineDistance(
+        user_lat,
+        user_lon,
+        doc.location._latitude,
+        doc.location._longitude
       );
-      if (distance <= 2) {
-        nearbyWorkers.push(workerLocation.worker_id);
+      if (dist <= MAX_DISTANCE) {
+        nearbyWorkers.push(doc.worker_id);
       }
-    });
+    }
 
     if (nearbyWorkers.length === 0) {
-      return res
-        .status(200)
-        .json("No workersverified found within 2 km radius");
+      return res.status(200).json("No workers found within 2 km radius");
     }
 
-    // Insert worker details into notifications table
+    /**
+     *  ┌───────────────────────────────────────────────────────┐
+     *  │  3) Single Query #2: Insert notifications for         │
+     *  │     nearbyWorkers & Retrieve FCM tokens in one go     │
+     *  └───────────────────────────────────────────────────────┘
+     */
     const pin = generatePin();
-    const insertNotificationsQuery = `
-      INSERT INTO notifications (recent_notification_id, user_notification_id, user_id, worker_id, longitude, latitude, created_at, pin, service_booked)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    const query2 = `
+      WITH insert_notifications AS (
+        INSERT INTO notifications (
+          user_notification_id, user_id, worker_id,
+          longitude, latitude, created_at, pin, service_booked
+        )
+        SELECT
+          $1,  -- user_notification_id
+          $2,  -- user_id
+          w.worker_id,
+          $3,  -- user_lon
+          $4,  -- user_lat
+          $5,  -- created_at
+          $6,  -- pin
+          $7   -- serviceArray
+        FROM UNNEST($8::int[]) AS w(worker_id)
+        RETURNING worker_id
+      ),
+      fcm_tokens AS (
+        SELECT fcm_token
+        FROM fcm
+        WHERE worker_id IN (SELECT worker_id FROM insert_notifications)
+      )
+      SELECT array_agg(fcm_token) AS tokens FROM fcm_tokens;
     `;
-    for (const worker of nearbyWorkers) {
-      await client.query(insertNotificationsQuery, [
-        recentNotificationId,
-        userNotificationId,
-        user_id,
-        worker.worker_id,
-        user.longitude,
-        user.latitude,
-        created_at,
-        pin,
-        serviceArray,
-      ]);
-    }
 
+    const query2Params = [
+      user_notification_id, // $1
+      user_id, // $2
+      user_lon, // $3
+      user_lat, // $4
+      created_at, // $5
+      pin, // $6
+      serviceArray, // $7
+      nearbyWorkers, // $8 :: int[]
+    ];
+
+    const result2 = await client.query(query2, query2Params);
+    const tokens = result2.rows[0].tokens || [];
+
+    // 4) Send FCM notifications
     const encodedUserNotificationId = Buffer.from(
-      userNotificationId.toString()
+      user_notification_id.toString()
     ).toString("base64");
 
-    // Get FCM tokens and send notifications
-    const fcmTokensQuery = `
-    SELECT fcm_token FROM fcm WHERE worker_id = ANY($1::int[])
-    `;
-    const fcmTokensResult = await client.query(fcmTokensQuery, [nearbyWorkers]);
-    const fcmTokens = fcmTokensResult.rows.map((row) => row.fcm_token);
-
-    if (fcmTokens.length > 0) {
-      // 1. Normal Notification Message (with `notification` payload)
+    if (tokens.length > 0) {
       const normalNotificationMessage = {
-        tokens: fcmTokens,
+        tokens,
         notification: {
           title: serviceArray,
           body: `${area}, ${city}, ${pincode}`,
         },
         data: {
-          user_notification_id: encodedUserNotificationId.toString(),
+          user_notification_id: encodedUserNotificationId,
           service: serviceArray,
           location: `${area}, ${city}, ${pincode}`,
-          coordinates: `${user.latitude},${user.longitude}`,
           click_action: "FLUTTER_NOTIFICATION_CLICK",
           cost: totalCost.toString(),
           targetUrl: `/acceptance/${encodedUserNotificationId}`,
           screen: "Acceptance",
           date: formattedDate(),
           time: formattedTime(),
-          type: "normal", // Adding a custom type to distinguish notifications if needed
+          type: "normal",
         },
-        android: {
-          priority: "high",
-        },
-      };
-
-      // 2. Silent Notification Message (data-only, no `notification` payload)
-      const silentNotificationMessage = {
-        tokens: fcmTokens,
-        data: {
-          user_notification_id: encodedUserNotificationId.toString(),
-          service: serviceArray,
-          location: `${area}, ${city}, ${pincode}`,
-          click_action: "FLUTTER_NOTIFICATION_CLICK",
-          coordinates: `${user.latitude},${user.longitude}`,
-          cost: totalCost.toString(),
-          targetUrl: `/acceptance/${encodedUserNotificationId}`,
-          screen: "Acceptance",
-          date: formattedDate(),
-          time: formattedTime(),
-          type: "silent",
-        },
-        android: {
-          priority: "high",
-          contentAvailable: true,
-        },
+        android: { priority: "high" },
       };
 
       try {
-        // Send Normal Notification (visible)
-        const normalResponse = await getMessaging().sendEachForMulticast(
+        const fcmResponse = await getMessaging().sendEachForMulticast(
           normalNotificationMessage
         );
-        normalResponse.responses.forEach((res, index) => {
-          if (res.success) {
-            // console.log(`Normal message sent successfully to token ${fcmTokens[index]}`);
-          } else {
-            console.error(
-              `Error sending normal message to token ${fcmTokens[index]}:`,
-              res.error
-            );
+        fcmResponse.responses.forEach((resp, idx) => {
+          if (!resp.success) {
+            console.error(`Error sending to token ${tokens[idx]}`, resp.error);
           }
         });
-
-        // Send Silent Notification (background processing)
-        const silentResponse = await getMessaging().sendEachForMulticast(
-          silentNotificationMessage
-        );
-        silentResponse.responses.forEach((res, index) => {
-          if (res.success) {
-            // console.log(`Silent message sent successfully to token ${fcmTokens[index]}`);
-          } else {
-            console.error(
-              `Error sending silent message to token ${fcmTokens[index]}:`,
-              res.error
-            );
-          }
-        });
-
-        // console.log('Normal Notification Success Count:', normalResponse.successCount);
-        // console.log('Normal Notification Failure Count:', normalResponse.failureCount);
-        // console.log('Silent Notification Success Count:', silentResponse.successCount);
-        // console.log('Silent Notification Failure Count:', silentResponse.failureCount);
-      } catch (error) {
-        console.error("Error sending notifications:", error);
+      } catch (err) {
+        console.error("Error sending FCM notifications:", err);
       }
-    } else {
-      console.error("No FCM tokens to send the message to.");
     }
 
     return res.status(200).json(encodedUserNotificationId);
   } catch (error) {
-    console.error("Error fetching workersverified:", error);
+    console.error("Error in getWorkersNearby:", error);
     return res.status(500).json({ error: "Server error" });
   }
 };
@@ -7565,6 +7778,33 @@ const checkInactiveUsers = async () => {
 
 cron.schedule("0 9 * * *", () => {
   checkInactiveUsers();
+});
+
+// Function to run the DELETE query
+const deleteOldUserNotifications = async () => {
+  const query = `
+    DELETE FROM usernotifications
+    WHERE user_notification_id NOT IN (
+        SELECT user_notification_id FROM accepted
+        UNION
+        SELECT user_notification_id FROM completenotifications
+        UNION
+        SELECT user_notification_id FROM notifications
+    );
+  `;
+
+  try {
+    await client.query(query);
+    console.log("Old user notifications deleted successfully.");
+  } catch (err) {
+    console.error("Error deleting old user notifications:", err.message);
+  }
+};
+
+// Schedule the task to run at 2 AM every day
+cron.schedule("0 2 * * *", () => {
+  console.log("Running scheduled task: Deleting old user notifications...");
+  deleteOldUserNotifications();
 });
 
 // ***

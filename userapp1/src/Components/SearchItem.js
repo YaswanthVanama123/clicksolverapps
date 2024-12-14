@@ -98,7 +98,7 @@ const SearchItem = () => {
       setLoading(true);
       try {
         const response = await axios.get(
-          `${process.env.BACKENDAIPG}/api/services?search=${query}`,
+          `${process.env.BACKENDAIPH}/api/services?search=${query}`,
         );
         setSuggestions(response.data);
       } catch (error) {

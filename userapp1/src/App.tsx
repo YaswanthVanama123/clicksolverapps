@@ -147,7 +147,7 @@ function App() {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         if (cs_token) {
           await axios.post(
-            `${process.env.BACKENDAIPG}/api/user/store-fcm-token`,
+            `${process.env.BACKENDAIPH}/api/user/store-fcm-token`,
             {fcmToken: token},
             {headers: {Authorization: `Bearer ${cs_token}`}},
           );
@@ -164,7 +164,7 @@ function App() {
       const pcs_token = await EncryptedStorage.getItem('cs_token');
       const fcmToken = await EncryptedStorage.getItem('fcm_token');
       await axios.post(
-        `${process.env.BACKENDAIPG}/api/user/store-notification`,
+        `${process.env.BACKENDAIPH}/api/user/store-notification`,
         {notification, fcmToken},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
