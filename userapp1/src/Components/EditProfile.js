@@ -46,7 +46,7 @@ const EditProfile = () => {
         phone,
       ); // Debug log
       const response = await axios.post(
-        `${process.env.BACKENDAIPH}/api/user/details/update`,
+        `${process.env.BACKENDAIPJ}/api/user/details/update`,
         {name: fullName, email, phone},
         {
           headers: {Authorization: `Bearer ${jwtToken}`},
@@ -93,6 +93,7 @@ const EditProfile = () => {
             style={styles.input}
             value={fullName}
             onChangeText={setFullName}
+            testID="fullName-input"
           />
         </View>
 

@@ -47,7 +47,7 @@ const ServiceTrackingItemScreen = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.post(
-          `${process.env.BACKENDAIPH}/api/service/tracking/user/item/details`,
+          `${process.env.BACKENDAIPJ}/api/service/tracking/user/item/details`,
           {tracking_id},
         );
         const {data, paymentDetails} = response.data;

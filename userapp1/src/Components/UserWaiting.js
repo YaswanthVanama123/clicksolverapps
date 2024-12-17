@@ -103,7 +103,7 @@ const WaitingUser = () => {
       }
 
       const response = await axios.post(
-        `${process.env.BACKENDAIPH}/api/workers-nearby`,
+        `${process.env.BACKENDAIPJ}/api/workers-nearby`,
         {
           area,
           city,
@@ -122,7 +122,7 @@ const WaitingUser = () => {
         console.log(encode);
         if (encode && encode !== 'No workers found within 2 km radius') {
           await axios.post(
-            `${process.env.BACKENDAIPH}/api/user/action`,
+            `${process.env.BACKENDAIPJ}/api/user/action`,
             {
               encodedId: encode,
               screen: 'userwaiting',
@@ -164,13 +164,13 @@ const WaitingUser = () => {
   const handleManualCancel = async () => {
     try {
       if (decodedId) {
-        await axios.post(`${process.env.BACKENDAIPH}/api/user/cancellation`, {
+        await axios.post(`${process.env.BACKENDAIPJ}/api/user/cancellation`, {
           user_notification_id: decodedId,
         });
 
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
-          `${process.env.BACKENDAIPH}/api/user/action/cancel`,
+          `${process.env.BACKENDAIPJ}/api/user/action/cancel`,
           {encodedId: encodedData, screen: 'userwaiting'},
           {headers: {Authorization: `Bearer ${cs_token}`}},
         );
@@ -214,7 +214,7 @@ const WaitingUser = () => {
 
     if (decodedId) {
       try {
-        await axios.post(`${process.env.BACKENDAIPH}/api/user/cancellation`, {
+        await axios.post(`${process.env.BACKENDAIPJ}/api/user/cancellation`, {
           user_notification_id: decodedId,
         });
       } catch (error) {
@@ -224,7 +224,7 @@ const WaitingUser = () => {
 
     const cs_token = await EncryptedStorage.getItem('cs_token');
     await axios.post(
-      `${process.env.BACKENDAIPH}/api/user/action/cancel`,
+      `${process.env.BACKENDAIPJ}/api/user/action/cancel`,
       {encodedId: encodedData, screen: 'userwaiting'},
       {headers: {Authorization: `Bearer ${cs_token}`}},
     );
@@ -247,7 +247,7 @@ const WaitingUser = () => {
     const checkStatus = async () => {
       try {
         const response = await axios.get(
-          `${process.env.BACKENDAIPH}/api/checking/status`,
+          `${process.env.BACKENDAIPJ}/api/checking/status`,
           {
             params: {user_notification_id: decodedId},
           },
@@ -272,13 +272,13 @@ const WaitingUser = () => {
           const cs_token = await EncryptedStorage.getItem('cs_token');
 
           await axios.post(
-            `${process.env.BACKENDAIPH}/api/user/action/cancel`,
+            `${process.env.BACKENDAIPJ}/api/user/action/cancel`,
             {encodedId: encodedData, screen: 'userwaiting'},
             {headers: {Authorization: `Bearer ${cs_token}`}},
           );
 
           await axios.post(
-            `${process.env.BACKENDAIPH}/api/user/action`,
+            `${process.env.BACKENDAIPJ}/api/user/action`,
             {
               encodedId: encodedNotificationId,
               screen: 'UserNavigation',
