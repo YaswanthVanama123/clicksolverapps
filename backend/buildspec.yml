@@ -9,7 +9,7 @@ phases:
   build:
     commands:
       - echo Building the Docker image using docker-compose...
-      - cd backend # Change to the backend directory where docker-compose.yml exists
+      - cd backend
       - docker-compose build backend
       - echo Tagging the Docker image...
       - docker tag my-backend:latest 307946681823.dkr.ecr.ap-south-1.amazonaws.com/my-backend:latest
