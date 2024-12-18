@@ -25,8 +25,10 @@ FROM node:21-alpine AS build
 # Set the working directory
 WORKDIR /app
 
-# Install dependencies
+# Copy package.json and package-lock.json
 COPY package.json package-lock.json ./
+
+# Install production dependencies
 RUN npm install --only=production && npm cache clean --force
 
 # Copy the application source code
@@ -41,9 +43,14 @@ FROM node:21-alpine
 # Set the working directory
 WORKDIR /app
 
-# Copy the dependencies and minified code from the build stage
-COPY --from=build /app/package.json /app/package.json
+# Copy the production dependencies from the build stage
+COPY --from=build /app/node_modules /app/node_modules
+
+# Copy the minified application code
 COPY --from=build /app/apis.min.js /app/apis.js
+
+# Copy package.json for reference
+COPY --from=build /app/package.json /app/package.json
 
 # Expose the application port
 EXPOSE 5000
