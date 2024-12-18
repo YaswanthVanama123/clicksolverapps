@@ -1,31 +1,28 @@
-const express = require('express');
-const path = require('path');
-const cors = require('cors');
-const router = require('./router');
-const cookieParser = require('cookie-parser');
-const bodyParser = require('body-parser');
-const jwt = require('jsonwebtoken');
-const rateLimit = require('express-rate-limit');
-const crypto = require('crypto');
+const express = require("express");
+const path = require("path");
+const cors = require("cors");
+const router = require("./router");
+const cookieParser = require("cookie-parser");
+const bodyParser = require("body-parser");
+const jwt = require("jsonwebtoken");
+
+const crypto = require("crypto");
 const app = express();
 const port = 5000;
-const axios = require('axios')
-const uniqid = require('uniqid')
-const sha256 = require("sha256");
-const { request } = require('http');
-
-
-
+// const axios = require('axios')
+// const uniqid = require('uniqid')
+// const sha256 = require("sha256");
+const { request } = require("http");
 
 // Enable CORS for all routes
 app.use(cors());
-app.get('/api/test', (req, res) => {
-    res.json({ message: 'Hello from the backend!' });
-  });
+app.get("/api/test", (req, res) => {
+  res.json({ message: "Hello from the backend!" });
+});
 app.use(express.json());
 app.use(cookieParser());
 app.use(bodyParser.json());
-app.use('/api', router);
+app.use("/api", router);
 
 // const generatePhonePeQR = async () => {
 //     // Test setup details
@@ -87,5 +84,5 @@ app.use('/api', router);
 // generatePhonePeQR();
 
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+  console.log(`Server is running on port ${port}`);
 });
