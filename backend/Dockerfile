@@ -32,14 +32,18 @@ RUN npm install --only=production && npm cache clean --force
 # Copy the application source code
 COPY . .
 
+# Minify the code to remove comments (example using terser for JavaScript)
+RUN npx terser -c -m -o apis.min.js -- apis.js
+
 # Stage 2: Production Stage
 FROM node:21-alpine
 
 # Set the working directory
 WORKDIR /app
 
-# Copy the dependencies and compiled code from the build stage
-COPY --from=build /app /app
+# Copy the dependencies and minified code from the build stage
+COPY --from=build /app/package.json /app/package.json
+COPY --from=build /app/apis.min.js /app/apis.js
 
 # Expose the application port
 EXPOSE 5000
