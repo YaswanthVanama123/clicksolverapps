@@ -1,4 +1,51 @@
+#node_modules
+#npm-debug.log
+#  .DS_Store
+# .git
+
+
+# Node modules and logs
 node_modules
 npm-debug.log
+
+# OS generated files
 .DS_Store
+Thumbs.db
+
+# Git repository files
 .git
+.gitignore
+
+# Environment variables and secrets
+.env
+.env.local
+.env.production
+.env.test
+
+# Logs
+logs
+*.log
+log.*
+
+# Build artifacts
+dist
+build
+coverage
+
+# IDE and editor settings
+.vscode
+.idea
+*.iml
+
+# Docker-related files
+Dockerfile
+docker-compose.yml
+
+# Cache and temp files
+*.tgz
+yarn.lock
+package-lock.json
+
+# Other unnecessary files
+tmp
+temp
