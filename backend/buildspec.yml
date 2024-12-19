@@ -46,7 +46,7 @@ phases:
       - echo Returning to root directory...
       - cd ..
       - echo Generating imagedefinitions.json at root...
-      - printf '[{"name":"my-backend","imageUri":"307946681823.dkr.ecr.ap-south-1.amazonaws.com/my-backend:latest"}]' > imagedefinitions.json
+      - printf '[{"name":"clicksolver-backend","imageUri":"307946681823.dkr.ecr.ap-south-1.amazonaws.com/my-backend:latest"}]' > imagedefinitions.json
       - echo Build complete.
 
 artifacts:
