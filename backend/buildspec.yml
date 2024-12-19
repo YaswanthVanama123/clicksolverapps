@@ -45,8 +45,10 @@ phases:
       - docker push 307946681823.dkr.ecr.ap-south-1.amazonaws.com/my-backend:latest
       - echo Generating imagedefinitions.json...
       - printf '[{"name":"my-backend","image":"307946681823.dkr.ecr.ap-south-1.amazonaws.com/my-backend:latest"}]' > imagedefinitions.json
+      - echo Checking imagedefinitions.json...
+      - cat imagedefinitions.json
       - echo Build complete.
 
 artifacts:
   files:
-    - backend/imagedefinitions.json
+    - imagedefinitions.json
