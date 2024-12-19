@@ -30,7 +30,6 @@ phases:
     commands:
       - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 307946681823.dkr.ecr.ap-south-1.amazonaws.com
-
   build:
     commands:
       - echo Building the Docker image using docker-compose...
@@ -38,15 +37,16 @@ phases:
       - docker-compose build backend
       - echo Tagging the Docker image...
       - docker tag my-backend:latest 307946681823.dkr.ecr.ap-south-1.amazonaws.com/my-backend:latest
-
   post_build:
     commands:
       - echo Pushing the Docker image to Amazon ECR...
       - docker push 307946681823.dkr.ecr.ap-south-1.amazonaws.com/my-backend:latest
-      - echo Generating imagedefinitions.json...
+      - echo Returning to root directory...
+      - cd ..
+      - echo Generating imagedefinitions.json at root...
       - printf '[{"name":"my-backend","image":"307946681823.dkr.ecr.ap-south-1.amazonaws.com/my-backend:latest"}]' > imagedefinitions.json
       - echo Build complete.
 
 artifacts:
   files:
-    - backend/imagedefinitions.json
+    - imagedefinitions.json
