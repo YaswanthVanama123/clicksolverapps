@@ -80,14 +80,14 @@ const Navigation = () => {
     setModalVisible(false);
     try {
       const response = await axios.post(
-        `${process.env.BACKENDAIPL}/api/user/work/cancel`,
+        `${process.env.BACKENDAIPP}/api/user/work/cancel`,
         {notification_id: decodedId},
       );
 
       if (response.status === 200) {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
-          `${process.env.BACKENDAIPL}/api/user/action`,
+          `${process.env.BACKENDAIPP}/api/user/action`,
           {
             encodedId: encodedData,
             screen: '',
@@ -118,14 +118,14 @@ const Navigation = () => {
     const checkVerificationStatus = async () => {
       try {
         const response = await axios.get(
-          `${process.env.BACKENDAIPL}/api/worker/verification/status`,
+          `${process.env.BACKENDAIPP}/api/worker/verification/status`,
           {params: {notification_id: decodedId}},
         );
 
         if (response.data === 'true') {
           const cs_token = await EncryptedStorage.getItem('cs_token');
           await axios.post(
-            `${process.env.BACKENDAIPL}/api/user/action`,
+            `${process.env.BACKENDAIPP}/api/user/action`,
             {
               encodedId: encodedData,
               screen: 'worktimescreen',
@@ -157,7 +157,7 @@ const Navigation = () => {
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       try {
         const response = await axios.post(
-          `${process.env.BACKENDAIPL}/api/worker/navigation/details`,
+          `${process.env.BACKENDAIPP}/api/worker/navigation/details`,
           {notificationId: decodedId},
           {headers: {Authorization: `Bearer ${jwtToken}`}},
         );
@@ -199,12 +199,13 @@ const Navigation = () => {
 
   useEffect(() => {
     const fetchLocationDetails = async () => {
+      console.log(process.env.BACKENDAIPP, decodedId);
       try {
         const response = await axios.get(
-          `${process.env.BACKENDAIPL}/api/user/location/navigation`,
+          `${process.env.BACKENDAIPP}/api/user/location/navigation`,
           {params: {notification_id: decodedId}},
         );
-
+        console.log(response);
         const {startPoint, endPoint} = response.data;
         const reversedStart = startPoint.map(parseFloat).reverse();
         const reversedEnd = endPoint.map(parseFloat).reverse();
@@ -633,6 +634,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
+    width: '90%',
   },
   firstContainer: {
     flexDirection: 'row',
@@ -663,7 +665,7 @@ const styles = StyleSheet.create({
   serviceDetails: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '100%',
+    width: '95%',
     alignItems: 'center',
   },
   minimumChargesContainer: {
@@ -677,11 +679,11 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
-    minHeight: 0.45 * screenHeight,
+    minHeight: 0.4 * screenHeight,
   },
   loadingContainer: {
     flex: 1,
-    minHeight: 0.45 * screenHeight,
+    minHeight: 0.4 * screenHeight,
   },
   routeLine: {
     lineColor: '#212121',

@@ -62,7 +62,7 @@ const Payment = ({route}) => {
   const fetchPaymentDetails = useCallback(async decodedId => {
     try {
       const response = await axios.post(
-        `${process.env.BACKENDAIPL}/api/payment/details`,
+        `${process.env.BACKENDAIPP}/api/payment/details`,
         {
           notification_id: decodedId,
         },
@@ -182,7 +182,7 @@ const Payment = ({route}) => {
     try {
       const cs_token = await EncryptedStorage.getItem('cs_token');
       await axios.post(
-        `${process.env.BACKENDAIPL}/api/user/payed`,
+        `${process.env.BACKENDAIPP}/api/user/payed`,
         {
           totalAmount: grandTotal,
           paymentMethod,

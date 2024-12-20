@@ -82,7 +82,7 @@ const ServiceTrackingItemScreen = () => {
   const applyStatusChange = async newStatus => {
     try {
       await axios.post(
-        `${process.env.BackendAPI10}/api/service/tracking/update/status`,
+        `${process.env.BackendAPI14}/api/service/tracking/update/status`,
         {
           tracking_id,
           newStatus,
@@ -128,7 +128,7 @@ const ServiceTrackingItemScreen = () => {
         const {
           data: {data, paymentDetails},
         } = await axios.post(
-          `${process.env.BackendAPI10}/api/service/tracking/worker/item/details`,
+          `${process.env.BackendAPI14}/api/service/tracking/worker/item/details`,
           {tracking_id},
         );
         setDetails(data);

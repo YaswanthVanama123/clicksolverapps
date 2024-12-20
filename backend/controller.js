@@ -3388,7 +3388,6 @@ const fetchLocationDetails = async (notificationId) => {
         a.longitude AS end_longitude, 
         a.latitude AS end_latitude
       FROM accepted a
-      JOIN workerlocation wl ON a.worker_id = wl.worker_id
       WHERE a.notification_id = $1;
     `;
 

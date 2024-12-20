@@ -35,13 +35,13 @@ const ApprovalStatusScreen = () => {
     const fetchApprovalDetails = async () => {
       try {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
-
+        console.log(process.env.BackendAPI14);
         if (!pcs_token) {
           throw new Error('PCS token is missing.');
         }
 
         const response = await axios.post(
-          `${process.env.BackendAPI10}/api/check/approval/verification/status`,
+          `${process.env.BackendAPI14}/api/check/approval/verification/status`,
           {},
           {
             headers: {
@@ -112,7 +112,7 @@ const ApprovalStatusScreen = () => {
 
   const handleLogout = async () => {
     try {
-      await EncryptedStorage.removeItem('pcs_token');
+      // await EncryptedStorage.removeItem('pcs_token');
       // Remove other stored items as needed
       await EncryptedStorage.removeItem('partnerSteps');
       await EncryptedStorage.removeItem('start_time');

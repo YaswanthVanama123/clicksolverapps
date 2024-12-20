@@ -105,7 +105,7 @@ const IndividualWorkerPending = () => {
 
   const handleApproved = async () => {
     const response = await axios.post(
-      `${process.env.BackendAPI10}/api/worker/approved`,
+      `${process.env.BackendAPI14}/api/worker/approved`,
       {
         workerId,
       },
@@ -117,7 +117,7 @@ const IndividualWorkerPending = () => {
 
   const submitAllIssues = async () => {
     try {
-      await axios.post(`${process.env.BackendAPI10}/api/update/worker/issues`, {
+      await axios.post(`${process.env.BackendAPI14}/api/update/worker/issues`, {
         workerId,
         issues,
       });
@@ -131,7 +131,7 @@ const IndividualWorkerPending = () => {
   const applyStatusChange = async newStatus => {
     try {
       await axios.post(
-        `${process.env.BackendAPI10}/api/aprove/tracking/update/status`,
+        `${process.env.BackendAPI14}/api/aprove/tracking/update/status`,
         {
           workerId,
           newStatus,
@@ -164,7 +164,7 @@ const IndividualWorkerPending = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.post(
-          `${process.env.BackendAPI10}/api/individual/worker/pending/verification`,
+          `${process.env.BackendAPI14}/api/individual/worker/pending/verification`,
           {workerId},
         );
         const {data} = response.data;

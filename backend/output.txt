@@ -1,0 +1,702 @@
+{
+    "service": {
+        "serviceArn": "arn:aws:ecs:ap-south-1:307946681823:service/clicksolver-cluster-test/clicksolver-backend-service",
+        "serviceName": "clicksolver-backend-service",
+        "clusterArn": "arn:aws:ecs:ap-south-1:307946681823:cluster/clicksolver-cluster-test",
+        "loadBalancers": [],
+        "serviceRegistries": [],
+        "status": "ACTIVE",
+        "desiredCount": 1,
+        "runningCount": 1,
+        "pendingCount": 0,
+        "capacityProviderStrategy": [
+            {
+                "capacityProvider": "FARGATE",
+                "weight": 1,
+                "base": 0
+            }
+        ],
+        "platformVersion": "1.4.0",
+        "platformFamily": "Linux",
+        "taskDefinition": "arn:aws:ecs:ap-south-1:307946681823:task-definition/clicksolver-backend-task:6",
+        "deploymentConfiguration": {
+            "deploymentCircuitBreaker": {
+                "enable": true,
+                "rollback": true
+            },
+            "maximumPercent": 200,
+            "minimumHealthyPercent": 100,
+            "alarms": {
+                "alarmNames": [],
+                "rollback": false,
+                "enable": false
+            }
+        },
+        "deployments": [
+            {
+                "id": "ecs-svc/3430837627124364281",
+                "status": "PRIMARY",
+                "taskDefinition": "arn:aws:ecs:ap-south-1:307946681823:task-definition/clicksolver-backend-task:6",
+                "desiredCount": 0,
+                "pendingCount": 0,
+                "runningCount": 0,
+                "failedTasks": 0,
+                "createdAt": "2024-12-20T10:40:25.575000+05:30",
+                "updatedAt": "2024-12-20T10:40:25.575000+05:30",
+                "capacityProviderStrategy": [
+                    {
+                        "capacityProvider": "FARGATE",
+                        "weight": 1,
+                        "base": 0
+                    }
+                ],
+                "platformVersion": "1.4.0",
+                "platformFamily": "Linux",
+                "networkConfiguration": {
+                    "awsvpcConfiguration": {
+                        "subnets": [
+                            "subnet-0f20df1a8d7a9d975",
+                            "subnet-0f2c1b7022d8fe23f",
+                            "subnet-001683d8e731a6562"
+                        ],
+                        "securityGroups": [
+                            "sg-0c348a289f497ec90"
+                        ],
+                        "assignPublicIp": "ENABLED"
+                    }
+                },
+                "rolloutState": "IN_PROGRESS",
+                "rolloutStateReason": "ECS deployment ecs-svc/3430837627124364281 in progress."
+            },
+            {
+                "id": "ecs-svc/1555136480004057519",
+                "status": "ACTIVE",
+                "taskDefinition": "arn:aws:ecs:ap-south-1:307946681823:task-definition/clicksolver-backend-task:6",
+                "desiredCount": 1,
+                "pendingCount": 0,
+                "runningCount": 0,
+                "failedTasks": 0,
+                "createdAt": "2024-12-20T10:30:25.207000+05:30",
+                "updatedAt": "2024-12-20T10:30:41.252000+05:30",
+                "capacityProviderStrategy": [
+                    {
+                        "capacityProvider": "FARGATE",
+                        "weight": 1,
+                        "base": 0
+                    }
+                ],
+                "platformVersion": "1.4.0",
+                "platformFamily": "Linux",
+                "networkConfiguration": {
+                    "awsvpcConfiguration": {
+                        "subnets": [
+                            "subnet-0f20df1a8d7a9d975",
+                            "subnet-0f2c1b7022d8fe23f",
+                            "subnet-001683d8e731a6562"
+                        ],
+                        "securityGroups": [
+                            "sg-0c348a289f497ec90"
+                        ],
+                        "assignPublicIp": "ENABLED"
+                    }
+                },
+                "rolloutState": "IN_PROGRESS",
+                "rolloutStateReason": "ECS deployment ecs-svc/1555136480004057519 in progress."
+            },
+            {
+                "id": "ecs-svc/1087364703054099967",
+                "status": "ACTIVE",
+                "taskDefinition": "arn:aws:ecs:ap-south-1:307946681823:task-definition/clicksolver-backend-task:6",
+                "desiredCount": 0,
+                "pendingCount": 0,
+                "runningCount": 0,
+                "failedTasks": 0,
+                "createdAt": "2024-12-19T14:47:16.278000+05:30",
+                "updatedAt": "2024-12-20T10:30:41.312000+05:30",
+                "capacityProviderStrategy": [
+                    {
+                        "capacityProvider": "FARGATE",
+                        "weight": 1,
+                        "base": 0
+                    }
+                ],
+                "platformVersion": "1.4.0",
+                "platformFamily": "Linux",
+                "networkConfiguration": {
+                    "awsvpcConfiguration": {
+                        "subnets": [
+                            "subnet-0f20df1a8d7a9d975",
+                            "subnet-0f2c1b7022d8fe23f",
+                            "subnet-001683d8e731a6562"
+                        ],
+                        "securityGroups": [
+                            "sg-0c348a289f497ec90"
+                        ],
+                        "assignPublicIp": "ENABLED"
+                    }
+                },
+                "rolloutState": "IN_PROGRESS",
+                "rolloutStateReason": "ECS deployment ecs-svc/1087364703054099967 in progress."
+            },
+            {
+                "id": "ecs-svc/7478931332763653975",
+                "status": "ACTIVE",
+                "taskDefinition": "arn:aws:ecs:ap-south-1:307946681823:task-definition/clicksolver-backend-task:1",
+                "desiredCount": 1,
+                "pendingCount": 0,
+                "runningCount": 1,
+                "failedTasks": 0,
+                "createdAt": "2024-12-18T23:30:43.796000+05:30",
+                "updatedAt": "2024-12-20T10:30:41.315000+05:30",
+                "capacityProviderStrategy": [
+                    {
+                        "capacityProvider": "FARGATE",
+                        "weight": 1,
+                        "base": 0
+                    }
+                ],
+                "platformVersion": "1.4.0",
+                "platformFamily": "Linux",
+                "networkConfiguration": {
+                    "awsvpcConfiguration": {
+                        "subnets": [
+                            "subnet-0f20df1a8d7a9d975",
+                            "subnet-0f2c1b7022d8fe23f",
+                            "subnet-001683d8e731a6562"
+                        ],
+                        "securityGroups": [
+                            "sg-0c348a289f497ec90"
+                        ],
+                        "assignPublicIp": "ENABLED"
+                    }
+                },
+                "rolloutState": "COMPLETED",
+                "rolloutStateReason": "ECS deployment ecs-svc/7478931332763653975 completed."
+            }
+        ],
+        "roleArn": "arn:aws:iam::307946681823:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS",
+        "events": [
+            {
+                "id": "75a127ee-996d-4e98-b536-9f7d7b0641ce",
+                "createdAt": "2024-12-20T10:30:41.721000+05:30",
+                "message": "(service clicksolver-backend-service) failed to launch a task with (error ECS was unable to assume the role 'arn:aws:iam::307946681823:role/ecsTaskExecutionRole' that was provided for this task. Please verify that the role being passed has the proper trust relationship and permissions and that your IAM user has permissions to pass this role.)."
+            },
+            {
+                "id": "23495173-4f04-4103-8f26-3e931a7af25f",
+                "createdAt": "2024-12-20T09:56:42.515000+05:30",
+                "message": "(service clicksolver-backend-service) failed to launch a task with (error ECS was unable to assume the role 'arn:aws:iam::307946681823:role/ecsTaskExecutionRole' that was provided for this task. Please verify that the role being passed has the proper trust relationship and permissions and that your IAM user has permissions to pass this role.)."
+            },
+            {
+                "id": "1e8f871d-5186-484d-b8b1-ea2f1824bdf0",
+                "createdAt": "2024-12-20T03:51:27.194000+05:30",
+                "message": "(service clicksolver-backend-service) failed to launch a task with (error ECS was unable to assume the role 'arn:aws:iam::307946681823:role/ecsTaskExecutionRole' that was provided for this task. Please verify that the role being passed has the proper trust relationship and permissions and that your IAM user has permissions to pass this role.)."
+            },
+            {
+                "id": "82455d62-841f-4d0a-8a03-1a3a1ac13a32",
+                "createdAt": "2024-12-19T21:48:20.201000+05:30",
+                "message": "(service clicksolver-backend-service) failed to launch a task with (error ECS was unable to assume the role 'arn:aws:iam::307946681823:role/ecsTaskExecutionRole' that was provided for this task. Please verify that the role being passed has the proper trust relationship and permissions and that your IAM user has permissions to pass this role.)."
+            },
+            {
+                "id": "6813190c-12e4-468e-868e-8a7cbd576a78",
+                "createdAt": "2024-12-19T20:59:03.714000+05:30",
+                "message": "(service clicksolver-backend-service) failed to launch a task with (error ECS was unable to assume the role 'arn:aws:iam::307946681823:role/ecsTaskExecutionRole' that was provided for this task. Please verify that the role being passed has the proper trust relationship and permissions and that your IAM user has permissions to pass this role.)."
+            },
+            {
+                "id": "b1e237b1-aa67-4f0f-b916-5be3bcda69af",
+                "createdAt": "2024-12-19T19:24:44.826000+05:30",
+                "message": "(service clicksolver-backend-service) failed to launch a task with (error ECS was unable to assume the role 'arn:aws:iam::307946681823:role/ecsTaskExecutionRole' that was provided for this task. Please verify that the role being passed has the proper trust relationship and permissions and that your IAM user has permissions to pass this role.)."
+            },
+            {
+                "id": "835197f6-466f-4df2-a7df-ddc58b4952c5",
+                "createdAt": "2024-12-19T14:53:24.534000+05:30",
+                "message": "(service clicksolver-backend-service) failed to launch a task with (error ECS was unable to assume the role 'arn:aws:iam::307946681823:role/ecsTaskExecutionRole' that was provided for this task. Please verify that the role being passed has the proper trust relationship and permissions and that your IAM user has permissions to pass this role.)."
+            },
+            {
+                "id": "1eaa1b69-5427-4c74-8284-a1929496b962",
+                "createdAt": "2024-12-19T14:47:37.138000+05:30",
+                "message": "(service clicksolver-backend-service) failed to launch a task with (error ECS was unable to assume the role 'arn:aws:iam::307946681823:role/ecsTaskExecutionRole' that was provided for this task. Please verify that the role being passed has the proper trust relationship and permissions and that your IAM user has permissions to pass this role.)."
+            },
+            {
+                "id": "43dda397-5049-4770-9a51-ca829a9901cf",
+                "createdAt": "2024-12-19T14:23:21.867000+05:30",
+                "message": "(service clicksolver-backend-service) failed to launch a task with (error ECS was unable to assume the role 'arn:aws:iam::307946681823:role/ecsTaskExecutionRole' that was provided for this task. Please verify that the role being passed has the proper trust relationship and permissions and that your IAM user has permissions to pass this role.)."
+            },
+            {
+                "id": "ae960ebd-e665-4d9f-8fc5-658b3ea30f72",
+                "createdAt": "2024-12-19T14:17:33.657000+05:30",
+                "message": "(service clicksolver-backend-service) failed to launch a task with (error ECS was unable to assume the role 'arn:aws:iam::307946681823:role/ecsTaskExecutionRole' that was provided for this task. Please verify that the role being passed has the proper trust relationship and permissions and that your IAM user has permissions to pass this role.)."
+            },
+            {
+                "id": "9239a85e-6f33-4ac8-bef6-530fd84d52f9",
+                "createdAt": "2024-12-19T13:12:11.738000+05:30",
+                "message": "(service clicksolver-backend-service) failed to launch a task with (error ECS was unable to assume the role 'arn:aws:iam::307946681823:role/ecsTaskExecutionRole' that was provided for this task. Please verify that the role being passed has the proper trust relationship and permissions and that your IAM user has permissions to pass this role.)."
+            },
+            {
+                "id": "5215a66a-11ec-4c36-8041-02a431de3238",
+                "createdAt": "2024-12-19T12:42:18.267000+05:30",
+                "message": "(service clicksolver-backend-service) failed to launch a task with (error ECS was unable to assume the role 'arn:aws:iam::307946681823:role/ecsTaskExecutionRole' that was provided for this task. Please verify that the role being passed has the proper trust relationship and permissions and that your IAM user has permissions to pass this role.)."
+            },
+            {
+                "id": "f010ed61-5e0e-4c05-9422-dfe844a674aa",
+                "createdAt": "2024-12-19T08:48:25.645000+05:30",
+                "message": "(service clicksolver-backend-service) has reached a steady state."
+            },
+            {
+                "id": "677e9745-f802-4578-bda6-bd39abf7932a",
+                "createdAt": "2024-12-19T02:48:00.373000+05:30",
+                "message": "(service clicksolver-backend-service) has reached a steady state."
+            },
+            {
+                "id": "ea42b848-1048-412a-a1c6-08a134b07858",
+                "createdAt": "2024-12-18T23:34:41.259000+05:30",
+                "message": "(service clicksolver-backend-service) has reached a steady state."
+            },
+            {
+                "id": "81c749d4-e626-4416-a11d-2cb2befac301",
+                "createdAt": "2024-12-18T23:34:41.258000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/7478931332763653975) deployment completed."
+            },
+            {
+                "id": "44436b80-f110-4a4b-86a8-5fec7875ce12",
+                "createdAt": "2024-12-18T23:32:07.138000+05:30",
+                "message": "(service clicksolver-backend-service) has stopped 1 running tasks: (task 4b99faaac39c4fb58415487ba3babcf4)."
+            },
+            {
+                "id": "3588f51b-d54e-49ef-b620-871730f2c96d",
+                "createdAt": "2024-12-18T23:30:54.557000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 5a0fcdc2e3c64f6eae2976f01d055689)."
+            },
+            {
+                "id": "5388d6d5-ec08-430c-80f3-42174b340894",
+                "createdAt": "2024-12-18T23:26:40.557000+05:30",
+                "message": "(service clicksolver-backend-service) has reached a steady state."
+            },
+            {
+                "id": "cbe47a73-913b-42e8-8c9c-4618d22488d7",
+                "createdAt": "2024-12-18T23:26:40.556000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/0742302141645664204) deployment completed."
+            },
+            {
+                "id": "3defeafb-7a33-40ce-b7d8-c90e2dee41a1",
+                "createdAt": "2024-12-18T23:24:47.233000+05:30",
+                "message": "(service clicksolver-backend-service) stopped 1 pending tasks."
+            },
+            {
+                "id": "758e9cbe-1e0e-4ede-b275-557535c8525a",
+                "createdAt": "2024-12-18T23:24:45.331000+05:30",
+                "message": "(service clicksolver-backend-service) rolling back to deployment ecs-svc/0742302141645664204."
+            },
+            {
+                "id": "8713134f-3cb3-4f70-8b59-cc5bec7eda54",
+                "createdAt": "2024-12-18T23:24:45.330000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/3302162858758054553) deployment failed: tasks failed to start."
+            },
+            {
+                "id": "1edb4069-6820-404c-b7ca-543306e02fab",
+                "createdAt": "2024-12-18T23:24:31.119000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task a2d1e6d90ee9480c86a1250c0a6f4b22)."
+            },
+            {
+                "id": "951f00c6-8fa6-4dcc-9bc4-7314ffeeb2dc",
+                "createdAt": "2024-12-18T23:23:40.983000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 6c8be14435e74cb49b0d33f75a081400)."
+            },
+            {
+                "id": "9d661fdb-a1a7-48e3-b3dc-d0bcf47967de",
+                "createdAt": "2024-12-18T23:22:39.419000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 78f0f6a0edd1447297468db4acfe96f7)."
+            },
+            {
+                "id": "97f6dccf-2432-4a7a-8f99-b48fcadb3972",
+                "createdAt": "2024-12-18T23:21:38.791000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 01850d7694464a6398b49265c5f4158d)."
+            },
+            {
+                "id": "5e8fb290-a944-4aad-b962-d64280792403",
+                "createdAt": "2024-12-18T23:11:58.300000+05:30",
+                "message": "(service clicksolver-backend-service) has reached a steady state."
+            },
+            {
+                "id": "f6aba2d2-1b63-4fcd-a762-49b5ef0ef75e",
+                "createdAt": "2024-12-18T23:11:58.299000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/0742302141645664204) deployment completed."
+            },
+            {
+                "id": "598636f7-5a79-4f3e-8189-a9b395d73beb",
+                "createdAt": "2024-12-18T23:10:34.492000+05:30",
+                "message": "(service clicksolver-backend-service) stopped 1 pending tasks."
+            },
+            {
+                "id": "871478ba-213e-45b5-933c-5d6c4a29dec5",
+                "createdAt": "2024-12-18T23:10:32.593000+05:30",
+                "message": "(service clicksolver-backend-service) rolling back to deployment ecs-svc/0742302141645664204."
+            },
+            {
+                "id": "a23b7d9d-76e6-4b9d-be38-4745dd9b597c",
+                "createdAt": "2024-12-18T23:10:32.592000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/0452368561125278916) deployment failed: tasks failed to start."
+            },
+            {
+                "id": "e4646f3f-1bc0-4e90-a462-ca64246603e3",
+                "createdAt": "2024-12-18T23:10:24.247000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 38368c409be44ad99053eab8603a4674)."
+            },
+            {
+                "id": "4f4ed525-b965-49a0-877f-b31a6404ec65",
+                "createdAt": "2024-12-18T23:09:19.929000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 9e2a2b1984c044bd9ff131c9eb3d429a)."
+            },
+            {
+                "id": "89b237e9-8bc6-468c-bd35-aa4b88924612",
+                "createdAt": "2024-12-18T23:08:18.390000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 87b44e79c1c643e88a523cb0d199c66c)."
+            },
+            {
+                "id": "fa155450-e857-48a8-9fd6-35e70696c96c",
+                "createdAt": "2024-12-18T23:07:07.345000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task ac73dd614fec4da881baac9885861725)."
+            },
+            {
+                "id": "a975a9d3-3754-4089-9652-d60962aac386",
+                "createdAt": "2024-12-18T19:57:08.184000+05:30",
+                "message": "(service clicksolver-backend-service) has reached a steady state."
+            },
+            {
+                "id": "d11c7812-de5a-423d-a91d-d6c1ddb3b1af",
+                "createdAt": "2024-12-18T17:21:06.675000+05:30",
+                "message": "(service clicksolver-backend-service) has reached a steady state."
+            },
+            {
+                "id": "176fec57-f974-4e69-b0a5-42fdbb18abb3",
+                "createdAt": "2024-12-18T17:21:06.674000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/0742302141645664204) deployment completed."
+            },
+            {
+                "id": "10e03b10-823e-41c7-8e7e-b457b50c1712",
+                "createdAt": "2024-12-18T17:19:24.492000+05:30",
+                "message": "(service clicksolver-backend-service) stopped 1 pending tasks."
+            },
+            {
+                "id": "4c482179-c761-430b-9d0f-16db8763c8ca",
+                "createdAt": "2024-12-18T17:19:15.441000+05:30",
+                "message": "(service clicksolver-backend-service) rolling back to deployment ecs-svc/0742302141645664204."
+            },
+            {
+                "id": "8b6fe3f3-cf2d-4186-a9bd-e6d6ce70dd78",
+                "createdAt": "2024-12-18T17:19:15.440000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/0365973087020316143) deployment failed: tasks failed to start."
+            },
+            {
+                "id": "4d9930da-d792-4d56-8a64-108634f61b79",
+                "createdAt": "2024-12-18T17:19:13.966000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 3725b08757fa4382a2642b7473b85359)."
+            },
+            {
+                "id": "2152000d-d31f-4e1a-bbe3-fc55be44beb7",
+                "createdAt": "2024-12-18T17:18:12.532000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 43f14d07d9a74778b87976035f4f0769)."
+            },
+            {
+                "id": "7d4d848a-ff60-45af-bcad-3e9b847a08ae",
+                "createdAt": "2024-12-18T17:17:09.738000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 44b825a145e547b19678dff8d636c20b)."
+            },
+            {
+                "id": "815025a4-9916-4b86-b97e-30824e88db5e",
+                "createdAt": "2024-12-18T17:16:07.104000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 99495a44af374aa1b556b0b3b49f99c9)."
+            },
+            {
+                "id": "3e8d5600-ee74-4895-a0cb-4945aad46a89",
+                "createdAt": "2024-12-18T17:03:52.607000+05:30",
+                "message": "(service clicksolver-backend-service) has reached a steady state."
+            },
+            {
+                "id": "0469b180-4ff1-4719-ac3f-25bb10191e5f",
+                "createdAt": "2024-12-18T17:03:52.606000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/0742302141645664204) deployment completed."
+            },
+            {
+                "id": "e3d44327-a2f9-4de1-862a-33b262dffafe",
+                "createdAt": "2024-12-18T17:02:37.128000+05:30",
+                "message": "(service clicksolver-backend-service) stopped 1 pending tasks."
+            },
+            {
+                "id": "08927663-91ff-4920-ad3d-f7ca73a0655f",
+                "createdAt": "2024-12-18T17:02:32.746000+05:30",
+                "message": "(service clicksolver-backend-service) rolling back to deployment ecs-svc/0742302141645664204."
+            },
+            {
+                "id": "ffdd4659-d2fb-4a33-a8a7-20e0476ac621",
+                "createdAt": "2024-12-18T17:02:32.745000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/2309604902979226278) deployment failed: tasks failed to start."
+            },
+            {
+                "id": "fd7cb5f5-e3c4-410e-bdf4-bc23e0cb70d6",
+                "createdAt": "2024-12-18T17:02:26.999000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task f7e2667e62ce4784a906a6f61b1e55d0)."
+            },
+            {
+                "id": "61cb28a0-fe69-4728-a39c-176e12417507",
+                "createdAt": "2024-12-18T17:01:22.961000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task dd034efa0c85459bbc113e6ebb8c985c)."
+            },
+            {
+                "id": "33b4b5ee-3269-4404-9202-0d1286860c44",
+                "createdAt": "2024-12-18T17:00:23.314000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 478634be6847452ea9a521b38ba14d88)."
+            },
+            {
+                "id": "7785b60e-4404-4eb9-bc11-8dc165afb1f2",
+                "createdAt": "2024-12-18T16:59:21.443000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 8fb19dd7161a4ab1a2ea3c6f608ccf12)."
+            },
+            {
+                "id": "1be2311a-7cb2-4fb8-91c1-c57b01698cdb",
+                "createdAt": "2024-12-18T16:56:22.476000+05:30",
+                "message": "(service clicksolver-backend-service) has reached a steady state."
+            },
+            {
+                "id": "f356c6c4-a11e-4752-8249-ee73f79f0cab",
+                "createdAt": "2024-12-18T16:56:22.475000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/0742302141645664204) deployment completed."
+            },
+            {
+                "id": "5efba557-e8ac-4776-97a6-99a2cb9f9e0f",
+                "createdAt": "2024-12-18T16:54:54.606000+05:30",
+                "message": "(service clicksolver-backend-service) stopped 1 pending tasks."
+            },
+            {
+                "id": "69b6a6e8-b736-4bcb-958f-17288850c9c2",
+                "createdAt": "2024-12-18T16:54:53.415000+05:30",
+                "message": "(service clicksolver-backend-service) rolling back to deployment ecs-svc/0742302141645664204."
+            },
+            {
+                "id": "609e8ec9-f77f-4206-82c6-66bdd75b1323",
+                "createdAt": "2024-12-18T16:54:53.414000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/4649278619033312859) deployment failed: tasks failed to start."
+            },
+            {
+                "id": "3bb75ae5-f725-42fa-b49b-5a661141a28b",
+                "createdAt": "2024-12-18T16:54:44.634000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task fe6f805fdd564bc18b899c1ec8448091)."
+            },
+            {
+                "id": "d99a70b4-8bd7-4ed8-aaf6-0ca0a9b78648",
+                "createdAt": "2024-12-18T16:53:53.137000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 200d535214684e67bebe6b289c8ddd56)."
+            },
+            {
+                "id": "a71ce2e3-bcc3-4112-a78b-6909e0812efc",
+                "createdAt": "2024-12-18T16:52:41.893000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task b5c9ef2b534a4784a9e7953113a7d019)."
+            },
+            {
+                "id": "c47e6f70-33a1-479e-834e-fff95d2f921c",
+                "createdAt": "2024-12-18T16:51:40.430000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 4f5af06428764d02a5ea59fa95f76e2d)."
+            },
+            {
+                "id": "3943bae3-2e3a-4079-8bfc-5c644965f3f7",
+                "createdAt": "2024-12-18T16:45:11.612000+05:30",
+                "message": "(service clicksolver-backend-service) has reached a steady state."
+            },
+            {
+                "id": "4cbfd013-ec1f-44e9-8a9d-19ffe9c8ef63",
+                "createdAt": "2024-12-18T16:45:11.611000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/0742302141645664204) deployment completed."
+            },
+            {
+                "id": "747204aa-b49c-46cf-ad52-4c9921a8e477",
+                "createdAt": "2024-12-18T16:43:39.034000+05:30",
+                "message": "(service clicksolver-backend-service) rolling back to deployment ecs-svc/0742302141645664204."
+            },
+            {
+                "id": "f5b709e0-c6e1-4e7c-afa7-3d9be478fdde",
+                "createdAt": "2024-12-18T16:43:39.033000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/2876160414450226260) deployment failed: tasks failed to start."
+            },
+            {
+                "id": "eeadac0d-52df-4536-a986-276e0407a59a",
+                "createdAt": "2024-12-18T16:43:03.507000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 8480ffe4adca40cfa697a5a73feb2d3a)."
+            },
+            {
+                "id": "6c6acfd7-3ba2-47c3-94ed-27e5a6673abc",
+                "createdAt": "2024-12-18T16:41:52.423000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task fc5805a640a24f4187e912f542ca86be)."
+            },
+            {
+                "id": "659aee87-fd4f-490d-bb2b-5fe7598cb8d1",
+                "createdAt": "2024-12-18T16:40:51.745000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 93d46bddf72f4f0e93f4bbcdd481c4aa)."
+            },
+            {
+                "id": "52fa855f-af61-4582-8dc0-59d5298b9aef",
+                "createdAt": "2024-12-18T16:39:47.723000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 6a7f2ff6f6e04194bb41ecffcdd2cd60)."
+            },
+            {
+                "id": "fa8b9f73-0459-4a3e-bbd5-3e7ddd1266ab",
+                "createdAt": "2024-12-18T16:34:42.920000+05:30",
+                "message": "(service clicksolver-backend-service) has reached a steady state."
+            },
+            {
+                "id": "167eb403-4254-4040-bb64-95820f6eff1c",
+                "createdAt": "2024-12-18T16:34:42.919000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/0742302141645664204) deployment completed."
+            },
+            {
+                "id": "bc6e4b7f-e13c-4138-a02f-6afa8b0fbefe",
+                "createdAt": "2024-12-18T16:33:15.656000+05:30",
+                "message": "(service clicksolver-backend-service) stopped 1 pending tasks."
+            },
+            {
+                "id": "b664e6be-5168-40e2-b36e-192e2affdc0a",
+                "createdAt": "2024-12-18T16:33:15.123000+05:30",
+                "message": "(service clicksolver-backend-service) rolling back to deployment ecs-svc/0742302141645664204."
+            },
+            {
+                "id": "15fda39f-a0e2-4991-82b7-7eec444999b3",
+                "createdAt": "2024-12-18T16:33:15.122000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/0708104647607639179) deployment failed: tasks failed to start."
+            },
+            {
+                "id": "bcdd161c-8946-499f-973b-4af7a56b92fd",
+                "createdAt": "2024-12-18T16:32:55.917000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 7c3d0b0401094f4ab8dec4ee99ea4b32)."
+            },
+            {
+                "id": "66d945e1-0555-4b03-ab18-fda0b036192c",
+                "createdAt": "2024-12-18T16:31:54.655000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 084ace77b9534956b67c589a36455111)."
+            },
+            {
+                "id": "0f7520b7-3942-4f44-8026-f57411fbefcc",
+                "createdAt": "2024-12-18T16:30:50.689000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 6c199382d52a49d4b135a56d7a28d47e)."
+            },
+            {
+                "id": "45e98b15-e730-4cfd-a34e-5caf9a1e8d93",
+                "createdAt": "2024-12-18T16:29:50.272000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 5e6c4af806e5480ca7cf8490a8c6c4fe)."
+            },
+            {
+                "id": "10f04612-a3b9-4458-9800-00082a204019",
+                "createdAt": "2024-12-18T16:10:42.483000+05:30",
+                "message": "(service clicksolver-backend-service) has reached a steady state."
+            },
+            {
+                "id": "a6dbbdfe-52e6-43eb-b145-d59901c07983",
+                "createdAt": "2024-12-18T16:10:42.482000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/0742302141645664204) deployment completed."
+            },
+            {
+                "id": "a3c633eb-11fb-420f-a4e7-a00aec09cb22",
+                "createdAt": "2024-12-18T16:08:51.565000+05:30",
+                "message": "(service clicksolver-backend-service) stopped 1 pending tasks."
+            },
+            {
+                "id": "877c949c-9022-428a-b307-86e24bf2a18b",
+                "createdAt": "2024-12-18T16:08:46.518000+05:30",
+                "message": "(service clicksolver-backend-service) rolling back to deployment ecs-svc/0742302141645664204."
+            },
+            {
+                "id": "277e5747-fb86-4a39-a65f-5e193e76b643",
+                "createdAt": "2024-12-18T16:08:46.517000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/4133506280840993452) deployment failed: tasks failed to start."
+            },
+            {
+                "id": "d8b900fc-325a-4528-a259-a79f45548111",
+                "createdAt": "2024-12-18T16:08:36.281000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 2e358b9034424898865ea3ef8198c021)."
+            },
+            {
+                "id": "c38f842f-841d-45f6-ae6f-7c6f2abb5c7a",
+                "createdAt": "2024-12-18T16:07:25.030000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 97f172cdb3fe4e42a27cd04dc985aff7)."
+            },
+            {
+                "id": "a52dc0e8-a99d-434a-8e0c-9fa6f9177d84",
+                "createdAt": "2024-12-18T16:06:25.631000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 726f604c189d4c8493264128a9f8481a)."
+            },
+            {
+                "id": "80961041-d717-43ee-86b8-a8ed39b33812",
+                "createdAt": "2024-12-18T16:05:33.289000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 0b564b29caf744fa9dbc114976d491d5)."
+            },
+            {
+                "id": "0f1333c7-5e07-4b1b-9b2f-6ee1105debf2",
+                "createdAt": "2024-12-18T14:48:26.528000+05:30",
+                "message": "(service clicksolver-backend-service) has reached a steady state."
+            },
+            {
+                "id": "78b7d6a1-9a0a-4e44-aae5-fee3a7f151d9",
+                "createdAt": "2024-12-18T14:48:26.527000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/0742302141645664204) deployment completed."
+            },
+            {
+                "id": "5deddda0-982e-4c90-9fab-5f542978bead",
+                "createdAt": "2024-12-18T14:45:33.702000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 4b99faaac39c4fb58415487ba3babcf4)."
+            },
+            {
+                "id": "82f72390-8cd2-4f07-b3b1-bab8a083d03e",
+                "createdAt": "2024-12-16T22:52:26.025000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/6871163294560910975) deployment failed: tasks failed to start."
+            },
+            {
+                "id": "8237741e-d340-43f0-ba2f-b0fa295fa63d",
+                "createdAt": "2024-12-16T22:51:33.548000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 27336eff6625450c9065837a70b98f80)."
+            },
+            {
+                "id": "00112ce1-63bb-4192-8e4d-3c4da2ab1096",
+                "createdAt": "2024-12-16T22:44:11.798000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task 101f627b8a4a45f48393b7f30b689c34)."
+            },
+            {
+                "id": "d034b6c9-ab57-4933-b446-c54313e0013f",
+                "createdAt": "2024-12-16T22:41:14.526000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task fdfaa5215f44475f86ed81a6e1890b10)."
+            },
+            {
+                "id": "ea6d17d9-ba72-4f68-a260-4109456d2d80",
+                "createdAt": "2024-12-16T22:38:17.743000+05:30",
+                "message": "(service clicksolver-backend-service) has started 1 tasks: (task bd3743342e9745c183b82f45bd3efc38)."
+            },
+            {
+                "id": "9ac170c9-77d7-4eb7-9b75-ead78acabd6e",
+                "createdAt": "2024-12-16T18:42:32.215000+05:30",
+                "message": "(service clicksolver-backend-service) (deployment ecs-svc/8794088673803104249) deployment failed: tasks failed to start."
+            }
+        ],
+        "createdAt": "2024-12-16T13:08:51.867000+05:30",
+        "placementConstraints": [],
+        "placementStrategy": [],
+        "networkConfiguration": {
+            "awsvpcConfiguration": {
+                "subnets": [
+                    "subnet-0f20df1a8d7a9d975",
+                    "subnet-0f2c1b7022d8fe23f",
+                    "subnet-001683d8e731a6562"
+                ],
+                "securityGroups": [
+                    "sg-0c348a289f497ec90"
+                ],
+                "assignPublicIp": "ENABLED"
+            }
+        },
+        "healthCheckGracePeriodSeconds": 0,
+        "schedulingStrategy": "REPLICA",
+        "deploymentController": {
+            "type": "ECS"
+        },
+        "createdBy": "arn:aws:iam::307946681823:user/clicksolver_deploment",
+        "enableECSManagedTags": true,
+        "propagateTags": "NONE",
+        "enableExecuteCommand": false,
+        "availabilityZoneRebalancing": "ENABLED"
+    }
+}

@@ -70,7 +70,7 @@ describe('ServiceApp Component', () => {
 
     await waitFor(() => {
       expect(axios.post).toHaveBeenCalledWith(
-        `${process.env.BACKENDAIPL}/api/user/feedback`,
+        `${process.env.BACKENDAIPP}/api/user/feedback`,
         {rating: 0, comment: '', notification_id: '12345'},
         {headers: {Authorization: 'Bearer mock-jwt-token'}},
       );

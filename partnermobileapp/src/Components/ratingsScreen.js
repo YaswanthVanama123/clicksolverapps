@@ -97,7 +97,7 @@ const RatingsScreen = () => {
         if (!token) throw new Error('Token not found');
 
         const response = await axios.get(
-          `${process.env.BackendAPI10}/api/worker/ratings`,
+          `${process.env.BackendAPI14}/api/worker/ratings`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

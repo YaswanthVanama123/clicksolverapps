@@ -63,7 +63,7 @@ const PaintingServices = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        `${process.env.BACKENDAIPL}/api/individual/service`,
+        `${process.env.BACKENDAIPP}/api/individual/service`,
         {
           serviceObject: serviceObject,
         },
@@ -123,7 +123,7 @@ const PaintingServices = () => {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         if (cs_token) {
           const response = await axios.get(
-            `${process.env.BACKENDAIPL}/api/user/track/details`,
+            `${process.env.BACKENDAIPP}/api/user/track/details`,
             {
               headers: {Authorization: `Bearer ${cs_token}`},
             },

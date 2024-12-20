@@ -11,6 +11,7 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
   const updateFirestoreLocation = async (latitude, longitude) => {
     try {
       const Item = await EncryptedStorage.getItem('unique');
+      console.log('unique', Item);
       if (Item) {
         const locationsCollection = firestore().collection('locations');
         const locationData = {

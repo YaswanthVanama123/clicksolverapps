@@ -69,7 +69,7 @@ const NotificationComponent = ({workerLocation}) => {
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const response = await axios.post(
-        `${process.env.BackendAPI10}/api/accept/request`,
+        `${process.env.BackendAPI14}/api/accept/request`,
         {user_notification_id: decodedId},
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
@@ -82,7 +82,7 @@ const NotificationComponent = ({workerLocation}) => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `${process.env.BackendAPI10}/api/worker/action`,
+          `${process.env.BackendAPI14}/api/worker/action`,
           {
             encodedId: encodedNotificationId,
             screen: 'WorkerNavigation',
@@ -109,7 +109,7 @@ const NotificationComponent = ({workerLocation}) => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `${process.env.BackendAPI10}/api/worker/action`,
+          `${process.env.BackendAPI14}/api/worker/action`,
           {
             encodedId: '',
             screen: '',

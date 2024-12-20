@@ -54,7 +54,7 @@ const EarningsScreen = () => {
 
       const payload = endDate ? {startDate: date, endDate: endDate} : {date};
       const response = await axios.post(
-        `${process.env.BackendAPI10}/api/worker/earnings`,
+        `${process.env.BackendAPI14}/api/worker/earnings`,
         payload,
         {
           headers: {

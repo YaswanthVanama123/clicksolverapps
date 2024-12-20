@@ -63,7 +63,7 @@ const TaskConfirmation = () => {
       const fetchPaymentDetails = async () => {
         try {
           const response = await axios.post(
-            `${process.env.BackendAPI10}/api/worker/details`,
+            `${process.env.BackendAPI14}/api/worker/details`,
             {
               notification_id: decodedId,
             },
@@ -92,7 +92,7 @@ const TaskConfirmation = () => {
     const encoded = btoa(decodedId);
     try {
       const response = await axios.post(
-        `${process.env.BackendAPI10}/api/worker/confirm/completed`,
+        `${process.env.BackendAPI14}/api/worker/confirm/completed`,
         {
           notification_id: decodedId,
           encodedId: encoded,
@@ -103,7 +103,7 @@ const TaskConfirmation = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `${process.env.BackendAPI10}/api/worker/action`,
+          `${process.env.BackendAPI14}/api/worker/action`,
           {
             encodedId: encoded,
             screen: 'PaymentScreen',
@@ -366,6 +366,7 @@ const styles = StyleSheet.create({
   paymentLabel: {
     fontSize: 14,
     color: '#212121',
+    width: '90%',
   },
   paymentValue: {
     fontSize: 14,
