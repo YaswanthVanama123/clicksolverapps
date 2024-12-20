@@ -53,7 +53,7 @@ import AdministratorAllTrackings from './Components/AdministratorAllTrackings';
 import ApprovalPendingItems from './Components/ApprovalPendingItems';
 import PendingBalanceWorkers from './Components/PendingBalanceWorkers';
 import ServiceInProgress from './Components/ServiceInProgress';
-import ServiceInProgressScreen from './Components/ServiceInProgress';
+import ServiceRegistration from './Components/ServiceRegistration';
 import TaskCompletionScreen from './Components/TaskConformationScreen';
 import HomeScreen from './Screens/Home';
 import HomeComponent from './Screens/HomeComponent';
@@ -342,6 +342,11 @@ function App(): React.JSX.Element {
           name="Acceptance"
           component={WorkerAcceptance}
           options={{title: 'Acceptance'}}
+        />
+        <Stack.Screen
+          name="ServiceRegistration"
+          component={ServiceRegistration}
+          options={{title: 'ServiceRegistration', headerShown: false}}
         />
         <Stack.Screen
           name="WorkerNavigation"

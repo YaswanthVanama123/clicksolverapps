@@ -30,7 +30,7 @@ const AdministratorAllTrackings = () => {
         if (!token) throw new Error('Token not found');
 
         const response = await axios.get(
-          `${process.env.BackendAPI9}/api/all/tracking/services`,
+          `${process.env.BackendAPI10}/api/all/tracking/services`,
           {},
         );
         setServiceData(response.data);

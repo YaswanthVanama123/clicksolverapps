@@ -74,7 +74,7 @@ const ServiceInProgressScreen = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.post(
-          `${process.env.BackendAPI9}/api/worker/work/progress/details`,
+          `${process.env.BackendAPI10}/api/worker/work/progress/details`,
           {
             decodedId,
           },
@@ -162,7 +162,7 @@ const ServiceInProgressScreen = () => {
 
     try {
       // Send update to the server
-      await axios.post(`${process.env.BackendAPI9}/api/worker/update/status`, {
+      await axios.post(`${process.env.BackendAPI10}/api/worker/update/status`, {
         decodedId,
         statusKey: 'workCompleted',
         newStatusValue: statusDisplayNames['workCompleted'],
@@ -233,7 +233,7 @@ const ServiceInProgressScreen = () => {
 
     try {
       const response = await axios.post(
-        `${process.env.BackendAPI9}/api/worker/working/status/updated`,
+        `${process.env.BackendAPI10}/api/worker/working/status/updated`,
         {
           serviceName,
           statusKey,
@@ -385,7 +385,7 @@ const ServiceInProgressScreen = () => {
       try {
         // Send the details and notification_id in the request body
         const response = await axios.post(
-          `${process.env.BackendAPI9}/api/add/tracking`,
+          `${process.env.BackendAPI10}/api/add/tracking`,
           {
             notification_id: decodedId,
             details: details, // Add details here

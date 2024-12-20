@@ -313,6 +313,30 @@ const getServicesPhoneNumber = async (req, res) => {
     const query = `
         SELECT sc.*, (
             SELECT array_agg(w.phone_number)
+            FROM workers w
+            WHERE w.worker_id = $1  -- Use parameterized query for security
+        ) AS phone_numbers
+        FROM "servicecategories" sc;
+    `;
+    const result = await client.query(query, [worker_id]);
+
+    // Return the rows that match the query
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching services:", err);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+const getServicesRegisterPhoneNumber = async (req, res) => {
+  // Extract serviceTitle from the body of the POST request
+  const worker_id = req.worker.id;
+
+  try {
+    // Query to select rows from "services" table where "service_title" matches the provided value
+    const query = `
+        SELECT sc.*, (
+            SELECT array_agg(w.phone_number)
             FROM workersverified w
             WHERE w.worker_id = $1  -- Use parameterized query for security
         ) AS phone_numbers
@@ -9659,4 +9683,5 @@ module.exports = {
   userWorkerInProgressDetails,
   WorkerWorkInProgressDetails,
   workerWorkingStatusUpdated,
+  getServicesRegisterPhoneNumber,
 };

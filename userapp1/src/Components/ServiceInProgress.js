@@ -40,7 +40,7 @@ const ServiceInProgressScreen = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.post(
-          `${process.env.BACKENDAIPJ}/api/user/work/progress/details`,
+          `${process.env.BACKENDAIPL}/api/user/work/progress/details`,
           {
             decodedId,
           },
@@ -120,7 +120,7 @@ const ServiceInProgressScreen = () => {
     if (decodedId) {
       try {
         const response = await axios.post(
-          `${process.env.BACKENDAIPJ}/api/work/time/completed/request`,
+          `${process.env.BACKENDAIPL}/api/work/time/completed/request`,
           {
             notification_id: decodedId,
           },

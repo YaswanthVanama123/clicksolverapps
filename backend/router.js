@@ -123,6 +123,7 @@ const {
   userWorkerInProgressDetails,
   WorkerWorkInProgressDetails,
   workerWorkingStatusUpdated,
+  getServicesRegisterPhoneNumber,
 } = require("./controller.js");
 
 const router = express.Router();
@@ -501,6 +502,12 @@ router.get(
   "/service/categories",
   authenticateWorkerToken,
   getServicesPhoneNumber
+);
+
+router.get(
+  "/service/categories/registration",
+  authenticateWorkerToken,
+  getServicesRegisterPhoneNumber
 );
 
 router.post("/validate-token", authenticateToken, (req, res) => {

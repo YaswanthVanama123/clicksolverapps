@@ -64,7 +64,7 @@ describe('EditProfile Screen', () => {
 
     await waitFor(() => {
       expect(axios.post).toHaveBeenCalledWith(
-        `${process.env.BACKENDAIPJ}/api/user/details/update`,
+        `${process.env.BACKENDAIPL}/api/user/details/update`,
         {name: 'John Doe', email: 'john@example.com', phone: '1234567890'},
         {headers: {Authorization: 'Bearer mock-jwt-token'}},
       );

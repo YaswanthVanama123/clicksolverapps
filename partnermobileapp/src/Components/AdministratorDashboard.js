@@ -107,7 +107,7 @@ const DashboardScreen = () => {
     console.log('date', payload);
     try {
       const response = await axios.post(
-        `${process.env.BackendAPI9}/api/administrator/service/date/details`,
+        `${process.env.BackendAPI10}/api/administrator/service/date/details`,
         payload,
       );
       console.log(response.data);

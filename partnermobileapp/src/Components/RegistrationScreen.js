@@ -146,7 +146,7 @@ const RegistrationScreen = () => {
       }
 
       const response = await axios.post(
-        `${process.env.BackendAPI9}/api/registration/submit`,
+        `${process.env.BackendAPI10}/api/registration/submit`,
         formData,
         {
           headers: {
@@ -173,7 +173,7 @@ const RegistrationScreen = () => {
       }
 
       const response = await axios.get(
-        `${process.env.BackendAPI9}/api/service/categories`,
+        `${process.env.BackendAPI10}/api/service/categories`,
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
@@ -181,6 +181,7 @@ const RegistrationScreen = () => {
         },
       );
       console.log('pc', pcsToken);
+      console.log(response.data);
       setPhoneNumber(response.data[0].phone_numbers[0]);
       const data = response.data;
       const mappedData = data.map(item => ({
@@ -226,7 +227,7 @@ const RegistrationScreen = () => {
     if (field === 'skillCategory') {
       try {
         const response = await axios.post(
-          `${process.env.BackendAPI9}/api/subservice/checkboxes`,
+          `${process.env.BackendAPI10}/api/subservice/checkboxes`,
           {
             selectedService: value,
           },

@@ -56,7 +56,7 @@ const ServiceBookingItem = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.post(
-          `${process.env.BACKENDAIPJ}/api/service/booking/item/details`,
+          `${process.env.BACKENDAIPL}/api/service/booking/item/details`,
           {tracking_id},
         );
         const {data, paymentDetails} = response.data;

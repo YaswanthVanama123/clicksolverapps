@@ -15,7 +15,7 @@ const Login = () => {
         const pcsToken = await EncryptedStorage.getItem('pcs_token');
         if (pcsToken) {
           const response = await axios.post(
-            `${process.env.BackendAPI9}/api/worker/authenticate`,
+            `${process.env.BackendAPI10}/api/worker/authenticate`,
             {},
             {
               headers: {
@@ -42,7 +42,7 @@ const Login = () => {
   const loginBackend = async phoneNumber => {
     try {
       const response = await axios.post(
-        `${process.env.BackendAPI9}/api/worker/login`,
+        `${process.env.BackendAPI10}/api/worker/login`,
         {phone_number: phoneNumber},
       );
       console.log('gncm0', response.data);

@@ -29,7 +29,7 @@ const LoginScreen = () => {
   const loginBackend = useCallback(async phoneNumber => {
     try {
       const response = await axios.post(
-        `${process.env.BACKENDAIPJ}/api/user/login`,
+        `${process.env.BACKENDAIPL}/api/user/login`,
         {phone_number: phoneNumber},
       );
       return response;

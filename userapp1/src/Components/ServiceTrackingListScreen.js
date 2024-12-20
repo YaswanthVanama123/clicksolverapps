@@ -31,7 +31,7 @@ const ServiceTrackingListScreen = () => {
         if (!token) throw new Error('Token not found');
 
         const response = await axios.get(
-          `${process.env.BACKENDAIPJ}/api/user/tracking/services`,
+          `${process.env.BACKENDAIPL}/api/user/tracking/services`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

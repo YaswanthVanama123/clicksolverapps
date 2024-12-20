@@ -22,7 +22,7 @@ const PartnerSteps = () => {
       if (!pcs_token) throw new Error('pcs_token not found');
 
       const response = await axios.post(
-        `${process.env.BackendAPI9}/api/onboarding/step-status`,
+        `${process.env.BackendAPI10}/api/onboarding/step-status`,
         {},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
@@ -127,7 +127,7 @@ const PartnerSteps = () => {
         {selectedStep === 2 && !step2Status && (
           <TouchableOpacity
             style={styles.proceedButton}
-            onPress={() => navigation.push('SkillRegistration')}>
+            onPress={() => navigation.push('ServiceRegistration')}>
             <Text style={styles.proceedButtonText}>Proceed</Text>
           </TouchableOpacity>
         )}

@@ -35,7 +35,7 @@ const LoginScreen = () => {
   const loginBackend = async phoneNumber => {
     try {
       const response = await axios.post(
-        `${process.env.BackendAPI9}/api/worker/login`,
+        `${process.env.BackendAPI10}/api/worker/login`,
         {phone_number: phoneNumber},
       );
       return response;

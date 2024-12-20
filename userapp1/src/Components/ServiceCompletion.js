@@ -44,7 +44,7 @@ const ServiceCompletion = () => {
       const fetchPaymentDetails = async () => {
         try {
           const response = await axios.post(
-            `${process.env.BACKENDAIPJ}/api/worker/payment/service/completed/details`,
+            `${process.env.BACKENDAIPL}/api/worker/payment/service/completed/details`,
             {
               notification_id: decodedId,
             },

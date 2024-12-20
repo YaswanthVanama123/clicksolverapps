@@ -102,7 +102,7 @@ const HomeScreen = () => {
 
       if (pcs_token) {
         const response = await axios.get(
-          `${process.env.BackendAPI9}/api/worker/track/details`,
+          `${process.env.BackendAPI10}/api/worker/track/details`,
           {
             headers: {Authorization: `Bearer ${pcs_token}`},
           },
@@ -164,7 +164,7 @@ const HomeScreen = () => {
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const response = await axios.post(
-        `${process.env.BackendAPI9}/api/accept/request`,
+        `${process.env.BackendAPI10}/api/accept/request`,
         {user_notification_id: decodedId},
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
@@ -177,7 +177,7 @@ const HomeScreen = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `${process.env.BackendAPI9}/api/worker/action`,
+          `${process.env.BackendAPI10}/api/worker/action`,
           {
             encodedId: encodedNotificationId,
             screen: 'WorkerNavigation',
@@ -204,7 +204,7 @@ const HomeScreen = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `${process.env.BackendAPI9}/api/worker/action`,
+          `${process.env.BackendAPI10}/api/worker/action`,
           {
             encodedId: '',
             screen: '',
@@ -308,7 +308,7 @@ const HomeScreen = () => {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
       await axios.post(
-        `${process.env.BackendAPI9}/api/worker/store-fcm-token`,
+        `${process.env.BackendAPI10}/api/worker/store-fcm-token`,
         {fcmToken: token},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
@@ -346,7 +346,7 @@ const HomeScreen = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         const fcmToken = await EncryptedStorage.getItem('fcm_token');
         await axios.post(
-          `${process.env.BackendAPI9}/api/worker/store-notification`,
+          `${process.env.BackendAPI10}/api/worker/store-notification`,
           {notification, fcmToken},
           {headers: {Authorization: `Bearer ${pcs_token}`}},
         );
