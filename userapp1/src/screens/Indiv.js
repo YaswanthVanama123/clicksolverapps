@@ -24,6 +24,7 @@ import uuid from 'react-native-uuid';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import LottieView from 'lottie-react-native'; // Import LottieView
 import PushNotification from 'react-native-push-notification';
+import Config from 'react-native-config';
 
 const PaintingServices = () => {
   const navigation = useNavigation();
@@ -63,7 +64,7 @@ const PaintingServices = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        `${process.env.BACKENDAIPP}/api/individual/service`,
+        `http://13.127.15.157:5000/api/individual/service`,
         {
           serviceObject: serviceObject,
         },
@@ -123,7 +124,7 @@ const PaintingServices = () => {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         if (cs_token) {
           const response = await axios.get(
-            `${process.env.BACKENDAIPP}/api/user/track/details`,
+            `http://13.127.15.157:5000/api/user/track/details`,
             {
               headers: {Authorization: `Bearer ${cs_token}`},
             },

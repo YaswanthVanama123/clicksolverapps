@@ -22,6 +22,7 @@ import {
   useNavigation,
 } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
+import Config from 'react-native-config';
 
 const SearchItem = () => {
   const initialPlaceholder = 'Search for ';
@@ -98,7 +99,7 @@ const SearchItem = () => {
       setLoading(true);
       try {
         const response = await axios.get(
-          `${process.env.BACKENDAIPP}/api/services?search=${query}`,
+          `http://13.127.15.157:5000/api/services?search=${query}`,
         );
         setSuggestions(response.data);
       } catch (error) {

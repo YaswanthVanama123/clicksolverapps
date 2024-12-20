@@ -13,6 +13,7 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import {useNavigation} from '@react-navigation/native';
 import axios from 'axios';
+import Config from 'react-native-config';
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
@@ -29,7 +30,7 @@ const ProfileScreen = () => {
       setIsLoggedIn(true);
 
       const response = await axios.post(
-        `${process.env.BACKENDAIPP}/api/user/profile`,
+        `http://13.127.15.157:5000/api/user/profile`,
         {},
         {
           headers: {Authorization: `Bearer ${jwtToken}`},

@@ -1,6 +1,6 @@
 {
   "name": "userapp1",
-  "version": "0.0.1",
+  "version": "0.0.6",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
@@ -30,6 +30,7 @@
     "react": "18.2.0",
     "react-native": "0.74.3",
     "react-native-asset": "^2.1.1",
+    "react-native-config": "^1.5.3",
     "react-native-dotenv": "^3.4.11",
     "react-native-encrypted-storage": "^4.0.3",
     "react-native-geolocation-service": "^5.3.1",

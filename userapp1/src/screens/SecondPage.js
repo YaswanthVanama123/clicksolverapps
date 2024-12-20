@@ -21,6 +21,7 @@ import QuickSearch from '../Components/QuickSearch';
 import LottieView from 'lottie-react-native';
 import Foundation from 'react-native-vector-icons/Foundation';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Config from 'react-native-config';
 
 function ServiceApp() {
   const [services, setServices] = useState([]);
@@ -105,7 +106,7 @@ function ServiceApp() {
   const submitFeedback = async () => {
     try {
       const response = await axios.post(
-        `${process.env.BACKENDAIPP}/api/user/feedback`, // Replace with your backend URL
+        `http://13.127.15.157:5000/api/user/feedback`, // Replace with your backend URL
         {
           rating: rating,
           comment: comment,
@@ -139,7 +140,7 @@ function ServiceApp() {
       const cs_token = await EncryptedStorage.getItem('cs_token');
       if (cs_token) {
         const response = await axios.get(
-          `${process.env.BACKENDAIPP}/api/user/track/details`,
+          `http://13.127.15.157:5000/api/user/track/details`,
           {
             headers: {Authorization: `Bearer ${cs_token}`},
           },
@@ -180,9 +181,8 @@ function ServiceApp() {
   const fetchServices = async () => {
     try {
       setLoading(true);
-      console.log(process.env.BACKENDAIPP);
       const response = await axios.get(
-        `${process.env.BACKENDAIPP}/api/servicecategories`,
+        `http://13.127.15.157:5000/api/servicecategories`,
       );
       const servicesWithIds = response.data.map(service => ({
         ...service,

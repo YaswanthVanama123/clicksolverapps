@@ -4,6 +4,7 @@ import EditProfile from '../EditProfile';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import {useNavigation, useRoute} from '@react-navigation/native';
+import Config from 'react-native-config';
 
 // Mock dependencies
 jest.mock('axios');
@@ -64,7 +65,7 @@ describe('EditProfile Screen', () => {
 
     await waitFor(() => {
       expect(axios.post).toHaveBeenCalledWith(
-        `${process.env.BACKENDAIPP}/api/user/details/update`,
+        `http://13.127.15.157:5000/api/user/details/update`,
         {name: 'John Doe', email: 'john@example.com', phone: '1234567890'},
         {headers: {Authorization: 'Bearer mock-jwt-token'}},
       );

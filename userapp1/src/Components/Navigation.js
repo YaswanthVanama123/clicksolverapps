@@ -24,6 +24,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import polyline from '@mapbox/polyline';
 import Entypo from 'react-native-vector-icons/Entypo';
+import Config from 'react-native-config';
 
 Mapbox.setAccessToken(
   'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw',
@@ -80,14 +81,14 @@ const Navigation = () => {
     setModalVisible(false);
     try {
       const response = await axios.post(
-        `${process.env.BACKENDAIPP}/api/user/work/cancel`,
+        `http://13.127.15.157:5000/api/user/work/cancel`,
         {notification_id: decodedId},
       );
 
       if (response.status === 200) {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
-          `${process.env.BACKENDAIPP}/api/user/action`,
+          `http://13.127.15.157:5000/api/user/action`,
           {
             encodedId: encodedData,
             screen: '',
@@ -118,14 +119,14 @@ const Navigation = () => {
     const checkVerificationStatus = async () => {
       try {
         const response = await axios.get(
-          `${process.env.BACKENDAIPP}/api/worker/verification/status`,
+          `http://13.127.15.157:5000/api/worker/verification/status`,
           {params: {notification_id: decodedId}},
         );
 
         if (response.data === 'true') {
           const cs_token = await EncryptedStorage.getItem('cs_token');
           await axios.post(
-            `${process.env.BACKENDAIPP}/api/user/action`,
+            `http://13.127.15.157:5000/api/user/action`,
             {
               encodedId: encodedData,
               screen: 'worktimescreen',
@@ -157,7 +158,7 @@ const Navigation = () => {
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       try {
         const response = await axios.post(
-          `${process.env.BACKENDAIPP}/api/worker/navigation/details`,
+          `http://13.127.15.157:5000/api/worker/navigation/details`,
           {notificationId: decodedId},
           {headers: {Authorization: `Bearer ${jwtToken}`}},
         );
@@ -199,10 +200,10 @@ const Navigation = () => {
 
   useEffect(() => {
     const fetchLocationDetails = async () => {
-      console.log(process.env.BACKENDAIPP, decodedId);
+      console.log(decodedId);
       try {
         const response = await axios.get(
-          `${process.env.BACKENDAIPP}/api/user/location/navigation`,
+          `http://13.127.15.157:5000/api/user/location/navigation`,
           {params: {notification_id: decodedId}},
         );
         console.log(response);

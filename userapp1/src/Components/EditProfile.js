@@ -12,6 +12,7 @@ import {useRoute, useNavigation, CommonActions} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
+import Config from 'react-native-config';
 
 const EditProfile = () => {
   const [fullName, setFullName] = useState('');
@@ -46,7 +47,7 @@ const EditProfile = () => {
         phone,
       ); // Debug log
       const response = await axios.post(
-        `${process.env.BACKENDAIPP}/api/user/details/update`,
+        `http://13.127.15.157:5000/api/user/details/update`,
         {name: fullName, email, phone},
         {
           headers: {Authorization: `Bearer ${jwtToken}`},

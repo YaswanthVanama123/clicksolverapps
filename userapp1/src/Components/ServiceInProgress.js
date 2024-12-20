@@ -20,6 +20,7 @@ import {
 } from '@react-navigation/native';
 import axios from 'axios';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Config from 'react-native-config';
 
 const ServiceInProgressScreen = () => {
   const [details, setDetails] = useState({});
@@ -40,7 +41,7 @@ const ServiceInProgressScreen = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.post(
-          `${process.env.BACKENDAIPP}/api/user/work/progress/details`,
+          `http://13.127.15.157:5000/api/user/work/progress/details`,
           {
             decodedId,
           },
@@ -120,7 +121,7 @@ const ServiceInProgressScreen = () => {
     if (decodedId) {
       try {
         const response = await axios.post(
-          `${process.env.BACKENDAIPP}/api/work/time/completed/request`,
+          `http://13.127.15.157:5000/api/work/time/completed/request`,
           {
             notification_id: decodedId,
           },

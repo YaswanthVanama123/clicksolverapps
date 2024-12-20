@@ -15,6 +15,7 @@ import {
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
 import Svg, {Circle} from 'react-native-svg';
+import Config from 'react-native-config';
 
 const TimingScreen = () => {
   const [hours, setHours] = useState(0);
@@ -40,7 +41,7 @@ const TimingScreen = () => {
   const handleCheck = useCallback(async () => {
     try {
       const response = await axios.post(
-        `${process.env.BACKENDAIPP}/api/task/confirm/status`,
+        `http://13.127.15.157:5000/api/task/confirm/status`,
         {
           notification_id: decodedId,
         },
@@ -50,7 +51,7 @@ const TimingScreen = () => {
         const cs_token = await EncryptedStorage.getItem('cs_token');
 
         await axios.post(
-          `${process.env.BACKENDAIPP}/api/user/action`,
+          `http://13.127.15.157:5000/api/user/action`,
           {
             encodedId: encodedId,
             screen: 'Paymentscreen',
@@ -106,7 +107,7 @@ const TimingScreen = () => {
   const handleCancelMessageBox = async () => {
     try {
       const response = await axios.post(
-        `${process.env.BACKENDAIPP}/api/work/completion/cancel`,
+        `http://13.127.15.157:5000/api/work/completion/cancel`,
         {
           notification_id: decodedId,
         },
@@ -203,7 +204,7 @@ const TimingScreen = () => {
           }
 
           const response = await axios.post(
-            `${process.env.BACKENDAIPP}/api/work/time/started`,
+            `http://13.127.15.157:5000/api/work/time/started`,
             {
               notification_id: decodedId,
             },
@@ -247,7 +248,7 @@ const TimingScreen = () => {
     if (decodedId) {
       try {
         const response = await axios.post(
-          `${process.env.BACKENDAIPP}/api/work/time/completed/request`,
+          `http://13.127.15.157:5000/api/work/time/completed/request`,
           {
             notification_id: decodedId,
           },

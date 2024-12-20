@@ -15,6 +15,7 @@ import {useNavigation, useRoute} from '@react-navigation/native';
 import Entypo from 'react-native-vector-icons/Entypo';
 import Icon from 'react-native-vector-icons/Ionicons';
 import EncryptedStorage from 'react-native-encrypted-storage';
+import Config from 'react-native-config';
 
 const SingleService = () => {
   const navigation = useNavigation();
@@ -30,7 +31,7 @@ const SingleService = () => {
   const fetchDetails = useCallback(async () => {
     try {
       const response = await axios.post(
-        `${process.env.BACKENDAIPP}/api/single/service`,
+        `http://13.127.15.157:5000/api/single/service`,
         {
           serviceName,
         },

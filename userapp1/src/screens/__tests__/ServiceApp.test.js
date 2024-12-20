@@ -4,6 +4,7 @@ import ServiceApp from '../SecondPage';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import {useNavigation, useRoute} from '@react-navigation/native';
+import Config from 'react-native-config';
 
 // Mock dependencies
 jest.mock('axios');
@@ -70,7 +71,7 @@ describe('ServiceApp Component', () => {
 
     await waitFor(() => {
       expect(axios.post).toHaveBeenCalledWith(
-        `${process.env.BACKENDAIPP}/api/user/feedback`,
+        `http://13.127.15.157:5000/api/user/feedback`,
         {rating: 0, comment: '', notification_id: '12345'},
         {headers: {Authorization: 'Bearer mock-jwt-token'}},
       );

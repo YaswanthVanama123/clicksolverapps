@@ -10,6 +10,7 @@ import {PermissionsAndroid} from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
 import Entypo from 'react-native-vector-icons/Entypo';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Config from 'react-native-config';
 
 // Import your components and screens
 import UserLocation from './Components/userLocation';
@@ -147,7 +148,7 @@ function App() {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         if (cs_token) {
           await axios.post(
-            `${process.env.BACKENDAIPP}/api/user/store-fcm-token`,
+            `http://13.127.15.157:5000/api/user/store-fcm-token`,
             {fcmToken: token},
             {headers: {Authorization: `Bearer ${cs_token}`}},
           );
@@ -164,7 +165,7 @@ function App() {
       const pcs_token = await EncryptedStorage.getItem('cs_token');
       const fcmToken = await EncryptedStorage.getItem('fcm_token');
       await axios.post(
-        `${process.env.BACKENDAIPP}/api/user/store-notification`,
+        `http://13.127.15.157:5000/api/user/store-notification`,
         {notification, fcmToken},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
