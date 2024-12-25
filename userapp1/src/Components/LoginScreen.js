@@ -14,7 +14,7 @@ import {
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import {useNavigation, CommonActions} from '@react-navigation/native';
-import Config from 'react-native-config';
+// import Config from 'react-native-config';
 
 // Image URLs
 const BG_IMAGE_URL =
@@ -30,8 +30,10 @@ const LoginScreen = () => {
   const loginBackend = useCallback(async phoneNumber => {
     try {
       const response = await axios.post(
-        `http://13.127.15.157:5000/api/user/login`,
-        {phone_number: phoneNumber},
+        `https://backend.clicksolver.com/api/user/login`,
+        {
+          phone_number: phoneNumber,
+        },
       );
       return response;
     } catch (error) {

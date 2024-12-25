@@ -30,7 +30,7 @@ const UPIIdDetailsScreen = () => {
       }
 
       const response = await axios.post(
-        `${process.env.BackendAPI14}/api/upi/submit`,
+        `${process.env.BackendAPI17}/api/upi/submit`,
         {upi_id: upiId},
         {headers: {Authorization: `Bearer ${pcsToken}`}},
       );

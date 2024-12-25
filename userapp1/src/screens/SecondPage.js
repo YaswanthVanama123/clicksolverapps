@@ -21,7 +21,8 @@ import QuickSearch from '../Components/QuickSearch';
 import LottieView from 'lottie-react-native';
 import Foundation from 'react-native-vector-icons/Foundation';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Config from 'react-native-config';
+// import Config from 'react-native-config';
+import crashlytics from '@react-native-firebase/crashlytics';
 
 function ServiceApp() {
   const [services, setServices] = useState([]);
@@ -90,6 +91,10 @@ function ServiceApp() {
   };
 
   useEffect(() => {
+    crashlytics().log('ServiceApp component mounted');
+  }, []);
+
+  useEffect(() => {
     const {encodedId} = route.params || {}; // Get encodedId from params
     if (encodedId) {
       try {
@@ -106,7 +111,7 @@ function ServiceApp() {
   const submitFeedback = async () => {
     try {
       const response = await axios.post(
-        `http://13.127.15.157:5000/api/user/feedback`, // Replace with your backend URL
+        `https://backend.clicksolver.com/api/user/feedback`, // Replace with your backend URL
         {
           rating: rating,
           comment: comment,
@@ -140,7 +145,7 @@ function ServiceApp() {
       const cs_token = await EncryptedStorage.getItem('cs_token');
       if (cs_token) {
         const response = await axios.get(
-          `http://13.127.15.157:5000/api/user/track/details`,
+          `https://backend.clicksolver.com/api/user/track/details`,
           {
             headers: {Authorization: `Bearer ${cs_token}`},
           },
@@ -178,23 +183,68 @@ function ServiceApp() {
     setGreetingIcon(icon);
   };
 
-  const fetchServices = async () => {
+  // const fetchServices = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const response = await axios.get(
+  //       `https://backend.clicksolver.com/api/servicecategories`,
+  //     );
+  //     const servicesWithIds = response.data.map(service => ({
+  //       ...service,
+  //       id: uuid.v4(),
+  //     }));
+  //     setServices(servicesWithIds);
+  //   } catch (error) {
+  //     console.error('Error fetching services:', error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  async function fetchServices() {
     try {
       setLoading(true);
+      crashlytics().log('Attempting to fetch services from API');
+
       const response = await axios.get(
-        `http://13.127.15.157:5000/api/servicecategories`,
+        'https://backend.clicksolver.com/api/servicecategories',
+        {
+          timeout: 10000, // Set a timeout of 10 seconds
+        },
       );
+
+      crashlytics().log('Services fetched successfully');
+      console.log('Response Data:', response.data);
+
       const servicesWithIds = response.data.map(service => ({
         ...service,
         id: uuid.v4(),
       }));
       setServices(servicesWithIds);
     } catch (error) {
-      console.error('Error fetching services:', error);
+      crashlytics().log('Error occurred while fetching services');
+      crashlytics().log(`Error details: ${JSON.stringify(error, null, 2)}`);
+      crashlytics().recordError(error);
+
+      if (error.response) {
+        crashlytics().log(`Response status: ${error.response.status}`);
+        crashlytics().log(
+          `Response data: ${JSON.stringify(error.response.data)}`,
+        );
+      } else if (error.request) {
+        crashlytics().log(
+          'No response received from the server. Request may have timed out or been blocked.',
+        );
+      } else {
+        crashlytics().log(`Request error: ${error.message}`);
+      }
+
+      // Log the error details to console for further debugging
+      console.error('Detailed Error:', error.toJSON ? error.toJSON() : error);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const handleNotification = () => {
     navigation.push('Notifications');

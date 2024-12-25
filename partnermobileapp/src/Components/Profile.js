@@ -28,7 +28,7 @@ const Profile = () => {
         }
 
         const response = await axios.get(
-          `${process.env.BackendAPI14}/api/worker/profile/details`,
+          `${process.env.BackendAPI17}/api/worker/profile/details`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

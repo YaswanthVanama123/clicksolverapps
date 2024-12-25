@@ -21,7 +21,7 @@ import {
 import axios from 'axios';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import Entypo from 'react-native-vector-icons/Entypo';
-import Config from 'react-native-config';
+// import Config from 'react-native-config';
 
 const Payment = ({route}) => {
   const [paymentMethod, setPaymentMethod] = useState('');
@@ -63,7 +63,7 @@ const Payment = ({route}) => {
   const fetchPaymentDetails = useCallback(async decodedId => {
     try {
       const response = await axios.post(
-        `http://13.127.15.157:5000/api/payment/details`,
+        `https://backend.clicksolver.com/api/payment/details`,
         {
           notification_id: decodedId,
         },
@@ -183,7 +183,7 @@ const Payment = ({route}) => {
     try {
       const cs_token = await EncryptedStorage.getItem('cs_token');
       await axios.post(
-        `http://13.127.15.157:5000/api/user/payed`,
+        `https://backend.clicksolver.com/api/user/payed`,
         {
           totalAmount: grandTotal,
           paymentMethod,

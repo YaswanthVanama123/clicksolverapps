@@ -71,7 +71,7 @@ const HelloWorld = () => {
 
       if (pcs_token) {
         const response = await axios.get(
-          `${process.env.BackendAPI14}/api/worker/track/details`,
+          `${process.env.BackendAPI17}/api/worker/track/details`,
           {
             headers: {Authorization: `Bearer ${pcs_token}`},
           },
@@ -135,7 +135,7 @@ const HelloWorld = () => {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
       await axios.post(
-        `${process.env.BackendAPI14}/api/worker/store-fcm-token`,
+        `${process.env.BackendAPI17}/api/worker/store-fcm-token`,
         {fcmToken: token},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
@@ -303,7 +303,7 @@ const HelloWorld = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         const fcmToken = await EncryptedStorage.getItem('fcm_token');
         await axios.post(
-          `${process.env.BackendAPI14}/api/worker/store-notification`,
+          `${process.env.BackendAPI17}/api/worker/store-notification`,
           {notification, fcmToken},
           {headers: {Authorization: `Bearer ${pcs_token}`}},
         );

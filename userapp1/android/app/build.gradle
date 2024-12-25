@@ -2,6 +2,7 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.firebase.crashlytics'
 
 react {
     // Default configurations (uncomment and customize if needed)
@@ -26,8 +27,8 @@ android {
         applicationId "com.userapp1"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 12
-        versionName "0.0.6"
+        versionCode 55
+        versionName "0.0.45"
     }
     signingConfigs {
         release {
@@ -60,6 +61,8 @@ android {
 dependencies {
     implementation("com.facebook.react:react-android")
     implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
+        implementation 'com.google.firebase:firebase-crashlytics:18.6.1'
+    implementation 'com.google.firebase:firebase-analytics:21.5.1'
     // implementation project(':react-native-splash-screen')
     // implementation project(':react-native-splash-screen')
     implementation("com.google.firebase:firebase-auth")

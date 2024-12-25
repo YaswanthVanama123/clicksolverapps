@@ -1,7 +1,7 @@
 -- Merging decision tree log ---
 manifest
-ADDED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:1:1-43:12
-MERGED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:1:1-43:12
+ADDED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:1:1-44:12
+MERGED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:1:1-44:12
 INJECTED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\debug\AndroidManifest.xml:2:1-11:12
 INJECTED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\debug\AndroidManifest.xml:2:1-11:12
 INJECTED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\debug\AndroidManifest.xml:2:1-11:12
@@ -310,9 +310,9 @@ ADDED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidMa
 	android:name
 		ADDED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:11:49-98
 application
-ADDED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:12:5-42:19
-MERGED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:12:5-42:19
-MERGED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:12:5-42:19
+ADDED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:12:5-43:19
+MERGED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:12:5-43:19
+MERGED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:12:5-43:19
 INJECTED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\debug\AndroidManifest.xml:7:5-10:50
 MERGED from [:react-native-firebase_messaging] G:\Sept20\clickSolver\partnermobileapp\node_modules\@react-native-firebase\messaging\android\build\intermediates\merged_manifest\debug\AndroidManifest.xml:11:5-41:19
 MERGED from [:react-native-firebase_messaging] G:\Sept20\clickSolver\partnermobileapp\node_modules\@react-native-firebase\messaging\android\build\intermediates\merged_manifest\debug\AndroidManifest.xml:11:5-41:19
@@ -472,14 +472,20 @@ category#android.intent.category.LAUNCHER
 ADDED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:30:13-73
 	android:name
 		ADDED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:30:23-70
+meta-data#com.transistorsoft.locationmanager.polygon.license
+ADDED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:39:9-134
+	android:value
+		ADDED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:39:86-131
+	android:name
+		ADDED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:39:20-85
 meta-data#com.google.android.gms.version
-ADDED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:39:9-41:69
+ADDED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:40:9-42:69
 MERGED from [com.google.android.gms:play-services-basement:18.3.0] C:\Users\vanam\.gradle\caches\transforms-4\8f04abe1dddc645a296c3e4361924c0c\transformed\jetified-play-services-basement-18.3.0\AndroidManifest.xml:21:9-23:69
 MERGED from [com.google.android.gms:play-services-basement:18.3.0] C:\Users\vanam\.gradle\caches\transforms-4\8f04abe1dddc645a296c3e4361924c0c\transformed\jetified-play-services-basement-18.3.0\AndroidManifest.xml:21:9-23:69
 	android:value
-		ADDED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:41:13-66
+		ADDED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:42:13-66
 	android:name
-		ADDED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:40:13-58
+		ADDED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\main\AndroidManifest.xml:41:13-58
 uses-sdk
 INJECTED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\debug\AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from G:\Sept20\clickSolver\partnermobileapp\android\app\src\debug\AndroidManifest.xml

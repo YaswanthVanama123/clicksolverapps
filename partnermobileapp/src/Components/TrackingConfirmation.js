@@ -38,7 +38,7 @@ const TrackingConfirmation = ({route}) => {
     const enteredOtp = otp.join('');
     try {
       const response = await axios.post(
-        `${process.env.BackendAPI14}/api/service/tracking/delivery/verification`,
+        `${process.env.BackendAPI17}/api/service/tracking/delivery/verification`,
         {trackingId, enteredOtp},
       );
       const {encodedId} = response.data;

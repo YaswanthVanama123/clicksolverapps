@@ -50,11 +50,12 @@ const EarningsScreen = () => {
   const partnerEarnings = async (date, endDate = null) => {
     try {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
+      console.log(pcs_token);
       if (!pcs_token) throw new Error('pcs_token not found');
 
       const payload = endDate ? {startDate: date, endDate: endDate} : {date};
       const response = await axios.post(
-        `${process.env.BackendAPI14}/api/worker/earnings`,
+        `${process.env.BackendAPI17}/api/worker/earnings`,
         payload,
         {
           headers: {

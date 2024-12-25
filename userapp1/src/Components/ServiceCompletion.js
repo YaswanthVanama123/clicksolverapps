@@ -18,7 +18,7 @@ import {
   CommonActions,
   useFocusEffect,
 } from '@react-navigation/native';
-import Config from 'react-native-config';
+// import Config from 'react-native-config';
 
 // Set Mapbox access token
 Mapbox.setAccessToken(
@@ -45,7 +45,7 @@ const ServiceCompletion = () => {
       const fetchPaymentDetails = async () => {
         try {
           const response = await axios.post(
-            `http://13.127.15.157:5000/api/worker/payment/service/completed/details`,
+            `https://backend.clicksolver.com/api/worker/payment/service/completed/details`,
             {
               notification_id: decodedId,
             },

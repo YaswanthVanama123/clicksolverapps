@@ -12,7 +12,7 @@ import Icon from 'react-native-vector-icons/FontAwesome6';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Feather from 'react-native-vector-icons/Feather';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
-import Config from 'react-native-config';
+// import Config from 'react-native-config';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Entypo from 'react-native-vector-icons/Entypo';
 import {useRoute} from '@react-navigation/native';
@@ -47,7 +47,7 @@ const ServiceTrackingItemScreen = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.post(
-          `http://13.127.15.157:5000/api/service/tracking/user/item/details`,
+          `https://backend.clicksolver.com/api/service/tracking/user/item/details`,
           {tracking_id},
         );
         const {data, paymentDetails} = response.data;

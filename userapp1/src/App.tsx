@@ -14,7 +14,7 @@ import Config from 'react-native-config';
 
 // Import your components and screens
 import UserLocation from './Components/userLocation';
-import UserWaiting from './Components/UserWaiting';
+import WaitingUser from './Components/UserWaiting';
 import Navigation from './Components/Navigation';
 import TimingScreen from './Components/TimingScreen';
 import Payment from './Components/Paymentscreen';
@@ -148,7 +148,7 @@ function App() {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         if (cs_token) {
           await axios.post(
-            `http://13.127.15.157:5000/api/user/store-fcm-token`,
+            `https://backend.clicksolver.com/api/user/store-fcm-token`,
             {fcmToken: token},
             {headers: {Authorization: `Bearer ${cs_token}`}},
           );
@@ -165,7 +165,7 @@ function App() {
       const pcs_token = await EncryptedStorage.getItem('cs_token');
       const fcmToken = await EncryptedStorage.getItem('fcm_token');
       await axios.post(
-        `http://13.127.15.157:5000/api/user/store-notification`,
+        `https://backend.clicksolver.com/api/user/store-notification`,
         {notification, fcmToken},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
@@ -435,7 +435,7 @@ function App() {
         />
         <Stack.Screen
           name="userwaiting"
-          component={UserWaiting}
+          component={WaitingUser}
           options={{headerShown: false}}
         />
         <Stack.Screen

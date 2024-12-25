@@ -1419,7 +1419,7 @@ const insertRelatedService = async (req, res) => {
 
 const insertTracking = async (req, res) => {
   try {
-    const { notification_id, details } = req.body; // Add details to the request body
+    const { notification_id, details } = req.body;
 
     // Generate a 4-digit random number for tracking_pin
     const trackingPin = Math.floor(1000 + Math.random() * 9000);
@@ -1478,8 +1478,9 @@ const insertTracking = async (req, res) => {
         $4,
         $5
       FROM selected
+      ON CONFLICT (accepted_id) DO NOTHING
       RETURNING *,
-        (SELECT fcm_token FROM selected);
+        (SELECT ARRAY_AGG(fcm_token) FROM selected) AS fcm_tokens;
     `;
 
     const values = [
@@ -1493,7 +1494,9 @@ const insertTracking = async (req, res) => {
     const result = await client.query(query, values);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Accepted record not found" });
+      return res
+        .status(400)
+        .json({ message: "Tracking for this notification_id already exists." });
     }
 
     const { user_id, service_booked, worker_id } = result.rows[0];
@@ -1511,7 +1514,8 @@ const insertTracking = async (req, res) => {
     await updateWorkerAction(worker_id, screen, screen);
 
     const fcmTokens = result.rows
-      .map((row) => row.fcm_token)
+      .map((row) => row.fcm_tokens)
+      .flat()
       .filter((token) => token);
 
     if (fcmTokens.length > 0) {
@@ -1557,6 +1561,197 @@ const insertTracking = async (req, res) => {
       .json({ message: "Failed to insert tracking", error: error.message });
   }
 };
+
+// const insertTracking = async (req, res) => {
+//   try {
+//     const { notification_id, details } = req.body; // Add details to the request body
+
+//     // Generate a 4-digit random number for tracking_pin
+//     const trackingPin = Math.floor(1000 + Math.random() * 9000);
+
+//     // Generate a tracking_key: #cs followed by 13 random digits
+//     const trackingKey = `#cs${Math.floor(
+//       1000000000000 + Math.random() * 9000000000000
+//     )}`;
+
+//     // Set service_status as "Commander collected the service item"
+//     const serviceStatus = "Collected Item";
+
+//     // const query = `
+//     //   WITH selected AS (
+//     //     SELECT
+//     //       a.accepted_id,
+//     //       a.notification_id,
+//     //       a.user_notification_id,
+//     //       a.longitude,
+//     //       a.latitude,
+//     //       a.worker_id,
+//     //       a.service_booked,
+//     //       a.user_id,
+//     //       u.fcm_token
+//     //     FROM accepted a
+//     //     JOIN userfcm u ON a.user_id = u.user_id
+//     //     WHERE a.notification_id = $1
+//     //   )
+//     //   INSERT INTO servicetracking (
+//     //     accepted_id,
+//     //     notification_id,
+//     //     user_notification_id,
+//     //     longitude,
+//     //     latitude,
+//     //     worker_id,
+//     //     service_booked,
+//     //     user_id,
+//     //     created_at,
+//     //     tracking_pin,
+//     //     tracking_key,
+//     //     service_status,
+//     //     details
+//     //   )
+//     //   SELECT
+//     //     selected.accepted_id,
+//     //     selected.notification_id,
+//     //     selected.user_notification_id,
+//     //     selected.longitude,
+//     //     selected.latitude,
+//     //     selected.worker_id,
+//     //     selected.service_booked,
+//     //     selected.user_id,
+//     //     NOW(),
+//     //     $2,
+//     //     $3,
+//     //     $4,
+//     //     $5
+//     //   FROM selected
+//     //   RETURNING *,
+//     //     (SELECT fcm_token FROM selected);
+//     // `;
+
+//     const query = `
+//   WITH selected AS (
+//     SELECT
+//       a.accepted_id,
+//       a.notification_id,
+//       a.user_notification_id,
+//       a.longitude,
+//       a.latitude,
+//       a.worker_id,
+//       a.service_booked,
+//       a.user_id,
+//       u.fcm_token
+//     FROM accepted a
+//     JOIN userfcm u ON a.user_id = u.user_id
+//     WHERE a.notification_id = $1
+//   )
+//   INSERT INTO servicetracking (
+//     accepted_id,
+//     notification_id,
+//     user_notification_id,
+//     longitude,
+//     latitude,
+//     worker_id,
+//     service_booked,
+//     user_id,
+//     created_at,
+//     tracking_pin,
+//     tracking_key,
+//     service_status,
+//     details
+//   )
+//   SELECT
+//     selected.accepted_id,
+//     selected.notification_id,
+//     selected.user_notification_id,
+//     selected.longitude,
+//     selected.latitude,
+//     selected.worker_id,
+//     selected.service_booked,
+//     selected.user_id,
+//     NOW(),
+//     $2,
+//     $3,
+//     $4,
+//     $5
+//   FROM selected
+//   RETURNING *,
+//     (SELECT ARRAY_AGG(fcm_token) FROM selected) AS fcm_tokens;
+// `;
+
+//     const values = [
+//       notification_id,
+//       trackingPin,
+//       trackingKey,
+//       serviceStatus,
+//       details,
+//     ];
+
+//     const result = await client.query(query, values);
+
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({ message: "Accepted record not found" });
+//     }
+
+//     const { user_id, service_booked, worker_id } = result.rows[0];
+//     const screen = "";
+//     const encodedId = Buffer.from(notification_id.toString()).toString(
+//       "base64"
+//     );
+
+//     await createUserBackgroundAction(
+//       user_id,
+//       encodedId,
+//       screen,
+//       service_booked
+//     );
+//     await updateWorkerAction(worker_id, screen, screen);
+
+//     const fcmTokens = result.rows
+//       .map((row) => row.fcm_token)
+//       .filter((token) => token);
+
+//     if (fcmTokens.length > 0) {
+//       const multicastMessage = {
+//         tokens: fcmTokens,
+//         notification: {
+//           title: "Click Solver",
+//           body: `Commander collected your Item to repair in his location.`,
+//         },
+//         data: {
+//           notification_id: notification_id.toString(),
+//           screen: "Home",
+//         },
+//       };
+
+//       try {
+//         const response = await getMessaging().sendEachForMulticast(
+//           multicastMessage
+//         );
+//         response.responses.forEach((res, index) => {
+//           if (!res.success) {
+//             console.error(
+//               `Error sending message to token ${fcmTokens[index]}:`,
+//               res.error
+//             );
+//           }
+//         });
+//       } catch (error) {
+//         console.error("Error sending notifications:", error);
+//       }
+//     } else {
+//       console.error("No FCM tokens to send the message to.");
+//     }
+
+//     res.status(201).json({
+//       message: "Tracking inserted successfully",
+//       data: result.rows[0],
+//     });
+//   } catch (error) {
+//     console.error("Error inserting tracking: ", error);
+//     res
+//       .status(500)
+//       .json({ message: "Failed to insert tracking", error: error.message });
+//   }
+// };
 
 const getWorkerTrackingServices = async (req, res) => {
   try {
@@ -2807,7 +3002,8 @@ const createUserAction = async (req, res) => {
     location,
   } = req.body;
 
-  console.log("User action creation initiated");
+  // console.log("User action creation initiated", req.body);
+  // console.log("Location is came or not", location);
 
   try {
     // Define the SQL query to get the existing user action
@@ -2853,6 +3049,8 @@ const createUserAction = async (req, res) => {
           newAction.pincode = pincode;
           newAction.location = location;
         }
+        // console.log("new action anta ", newAction);
+        // console.log("new action anta ra location undha", newAction.location);
 
         updatedTrack.push(newAction);
       }
@@ -2890,6 +3088,7 @@ const createUserAction = async (req, res) => {
           newAction.alternateName = alternateName;
           newAction.alternatePhoneNumber = alternatePhoneNumber;
           newAction.pincode = pincode;
+          newAction.location = location;
         }
 
         newTrack = [newAction];

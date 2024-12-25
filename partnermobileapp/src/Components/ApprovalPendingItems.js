@@ -63,10 +63,10 @@ const ApprovalPendingItems = () => {
 
   useEffect(() => {
     const fetchPendingItems = async () => {
-      console.log(process.env.BackendAPI14);
+      console.log(process.env.BackendAPI17);
       try {
         const response = await axios.get(
-          `${process.env.BackendAPI14}/api/workers/pending/verification`,
+          `${process.env.BackendAPI17}/api/workers/pending/verification`,
         );
         const data = response.data.data; // Assuming the response structure is { data: [...] }
         console.log(JSON.stringify(data, null, 2));

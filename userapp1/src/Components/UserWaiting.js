@@ -25,7 +25,7 @@ import Mapbox from '@rnmapbox/maps';
 Mapbox.setAccessToken(
   'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw',
 );
-import Config from 'react-native-config';
+// import Config from 'react-native-config';
 
 const WaitingUser = () => {
   const route = useRoute();
@@ -48,7 +48,13 @@ const WaitingUser = () => {
   const attemptCountRef = useRef(0);
 
   useEffect(() => {
-    if (encodedData && encodedData !== 'No workers found within 2 km radius') {
+    if (
+      encodedData &&
+      encodedData !== 'No workers found within 2 km radius' &&
+      encodedData !== 'No user found or no worker matches subservices' &&
+      encodedData !== 'No Firestore location data for these workers' &&
+      encodedData !== 'No workers match the requested subservices'
+    ) {
       try {
         const decoded = Buffer.from(encodedData, 'base64').toString('utf-8');
         setDecodedId(decoded);
@@ -104,7 +110,7 @@ const WaitingUser = () => {
       }
 
       const response = await axios.post(
-        `http://13.127.15.157:5000/api/workers-nearby`,
+        `https://backend.clicksolver.com/api/workers-nearby`,
         {
           area,
           city,
@@ -121,9 +127,15 @@ const WaitingUser = () => {
         setEncodedData(encode);
         console.log('res', response.data);
         console.log(encode);
-        if (encode && encode !== 'No workers found within 2 km radius') {
+        if (
+          encode &&
+          encode !== 'No workers found within 2 km radius' &&
+          encode !== 'No user found or no worker matches subservices' &&
+          encode !== 'No Firestore location data for these workers' &&
+          encode !== 'No workers match the requested subservices'
+        ) {
           await axios.post(
-            `http://13.127.15.157:5000/api/user/action`,
+            `https://backend.clicksolver.com/api/user/action`,
             {
               encodedId: encode,
               screen: 'userwaiting',
@@ -149,7 +161,13 @@ const WaitingUser = () => {
 
   useEffect(() => {
     const {encodedId} = route.params;
-    if (encodedId && encodedData !== 'No workers found within 2 km radius') {
+    if (
+      encodedId &&
+      encodedData !== 'No workers found within 2 km radius' &&
+      encodedData !== 'No user found or no worker matches subservices' &&
+      encodedData !== 'No Firestore location data for these workers' &&
+      encodedData !== 'No workers match the requested subservices'
+    ) {
       setEncodedData(encodedId);
       try {
         const decoded = Buffer.from(encodedId, 'base64').toString('utf-8');
@@ -165,13 +183,16 @@ const WaitingUser = () => {
   const handleManualCancel = async () => {
     try {
       if (decodedId) {
-        await axios.post(`http://13.127.15.157:5000/api/user/cancellation`, {
-          user_notification_id: decodedId,
-        });
+        await axios.post(
+          `https://backend.clicksolver.com/api/user/cancellation`,
+          {
+            user_notification_id: decodedId,
+          },
+        );
 
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
-          `http://13.127.15.157:5000/api/user/action/cancel`,
+          `https://backend.clicksolver.com/api/user/action/cancel`,
           {encodedId: encodedData, screen: 'userwaiting'},
           {headers: {Authorization: `Bearer ${cs_token}`}},
         );
@@ -215,9 +236,12 @@ const WaitingUser = () => {
 
     if (decodedId) {
       try {
-        await axios.post(`http://13.127.15.157:5000/api/user/cancellation`, {
-          user_notification_id: decodedId,
-        });
+        await axios.post(
+          `https://backend.clicksolver.com/api/user/cancellation`,
+          {
+            user_notification_id: decodedId,
+          },
+        );
       } catch (error) {
         console.error('Error cancelling previous request:', error);
       }
@@ -225,7 +249,7 @@ const WaitingUser = () => {
 
     const cs_token = await EncryptedStorage.getItem('cs_token');
     await axios.post(
-      `http://13.127.15.157:5000/api/user/action/cancel`,
+      `https://backend.clicksolver.com/api/user/action/cancel`,
       {encodedId: encodedData, screen: 'userwaiting'},
       {headers: {Authorization: `Bearer ${cs_token}`}},
     );
@@ -235,7 +259,13 @@ const WaitingUser = () => {
 
   useEffect(() => {
     let intervalId;
-    if (decodedId || encodedData === 'No workers found within 2 km radius') {
+    if (
+      decodedId ||
+      encodedData === 'No workers found within 2 km radius' ||
+      encodedData !== 'No user found or no worker matches subservices' ||
+      encodedData !== 'No Firestore location data for these workers' ||
+      encodedData !== 'No workers match the requested subservices'
+    ) {
       intervalId = setInterval(handleCancelAndRetry, 120000);
     }
 
@@ -248,7 +278,7 @@ const WaitingUser = () => {
     const checkStatus = async () => {
       try {
         const response = await axios.get(
-          `http://13.127.15.157:5000/api/checking/status`,
+          `https://backend.clicksolver.com/api/checking/status`,
           {
             params: {user_notification_id: decodedId},
           },
@@ -273,13 +303,13 @@ const WaitingUser = () => {
           const cs_token = await EncryptedStorage.getItem('cs_token');
 
           await axios.post(
-            `http://13.127.15.157:5000/api/user/action/cancel`,
+            `https://backend.clicksolver.com/api/user/action/cancel`,
             {encodedId: encodedData, screen: 'userwaiting'},
             {headers: {Authorization: `Bearer ${cs_token}`}},
           );
 
           await axios.post(
-            `http://13.127.15.157:5000/api/user/action`,
+            `https://backend.clicksolver.com/api/user/action`,
             {
               encodedId: encodedNotificationId,
               screen: 'UserNavigation',

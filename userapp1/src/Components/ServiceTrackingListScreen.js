@@ -14,7 +14,7 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
 import uuid from 'react-native-uuid';
 import {useNavigation} from '@react-navigation/native';
-import Config from 'react-native-config';
+// import Config from 'react-native-config';
 
 const ServiceTrackingListScreen = () => {
   const [serviceData, setServiceData] = useState([]);
@@ -32,7 +32,7 @@ const ServiceTrackingListScreen = () => {
         if (!token) throw new Error('Token not found');
 
         const response = await axios.get(
-          `http://13.127.15.157:5000/api/user/tracking/services`,
+          `https://backend.clicksolver.com/api/user/tracking/services`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

@@ -147,7 +147,7 @@ const RegistrationScreen = () => {
         navigation.replace('Login');
       }
       const response = await axios.post(
-        `${process.env.BackendAPI14}/api/registration/submit`,
+        `${process.env.BackendAPI17}/api/registration/submit`,
         formData,
         {
           headers: {
@@ -171,7 +171,7 @@ const RegistrationScreen = () => {
         navigation.replace('Login');
       }
       const response = await axios.get(
-        `${process.env.BackendAPI14}/api/service/categories`,
+        `${process.env.BackendAPI17}/api/service/categories`,
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
@@ -204,7 +204,7 @@ const RegistrationScreen = () => {
       await EncryptedStorage.removeItem('sign_up');
       await EncryptedStorage.removeItem('fcm_token');
       await EncryptedStorage.removeItem('start_work_time');
-      await EncryptedStorage.removeItem('start_work_time');
+      await EncryptedStorage.removeItem('nullCoordinates');
       await EncryptedStorage.removeItem('start_work_time');
       await EncryptedStorage.removeItem('start_work_time');
 
@@ -247,7 +247,7 @@ const RegistrationScreen = () => {
     if (field === 'skillCategory') {
       try {
         const response = await axios.post(
-          `${process.env.BackendAPI14}/api/subservice/checkboxes`,
+          `${process.env.BackendAPI17}/api/subservice/checkboxes`,
           {
             selectedService: value,
           },
@@ -274,7 +274,7 @@ const RegistrationScreen = () => {
         navigation.replace('Login');
       }
       const response = await axios.get(
-        `${process.env.BackendAPI14}/api/profile/detsils`,
+        `${process.env.BackendAPI17}/api/profile/detsils`,
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,

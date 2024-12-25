@@ -16,7 +16,7 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import Entypo from 'react-native-vector-icons/Entypo';
 import axios from 'axios';
 import {useNavigation} from '@react-navigation/native';
-import Config from 'react-native-config';
+// import Config from 'react-native-config';
 
 const ServiceItem = ({item, formatDate}) => {
   const navigation = useNavigation();
@@ -73,7 +73,7 @@ const RecentServices = () => {
         if (!token) throw new Error('Token not found');
 
         const response = await axios.get(
-          `http://13.127.15.157:5000/api/user/bookings`,
+          `https://backend.clicksolver.com/api/user/bookings`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

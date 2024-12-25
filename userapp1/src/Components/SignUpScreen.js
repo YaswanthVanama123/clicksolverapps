@@ -14,7 +14,7 @@ import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import {useRoute, useNavigation, CommonActions} from '@react-navigation/native';
-import Config from 'react-native-config';
+// import Config from 'react-native-config';
 
 const SignUpScreen = () => {
   const [fullName, setFullName] = useState('');
@@ -38,7 +38,7 @@ const SignUpScreen = () => {
   const handleSignUp = async () => {
     try {
       const response = await axios.post(
-        `http://13.127.15.157:5000/api/user/signup`,
+        `https://backend.clicksolver.com/api/user/signup`,
         {
           fullName,
           email,

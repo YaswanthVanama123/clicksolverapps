@@ -47,7 +47,7 @@ const PendingCashbackWorkers = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.get(
-          `${process.env.BackendAPI14}/api/workers/pending/cashback`,
+          `${process.env.BackendAPI17}/api/workers/pending/cashback`,
           {},
         );
         console.log(response.data);

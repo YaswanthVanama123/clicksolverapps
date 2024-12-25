@@ -30,7 +30,7 @@ const SignUpScreen = () => {
   const handleSignUp = async () => {
     try {
       const response = await axios.post(
-        `${process.env.BackendAPI14}/api/worker/signup`,
+        `${process.env.BackendAPI17}/api/worker/signup`,
         {
           fullName,
           email,

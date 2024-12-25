@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "790153325076",
-    "project_id": "clicksolver-64687",
-    "storage_bucket": "clicksolver-64687.appspot.com"
+    "project_number": "217390086215",
+    "project_id": "clicksolver-fa1a6",
+    "storage_bucket": "clicksolver-fa1a6.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:790153325076:android:7802c0f7e8c27d4cd91501",
+        "mobilesdk_app_id": "1:217390086215:android:666b6ea190ed5ea4015962",
         "android_client_info": {
           "package_name": "com.partnermobileapp"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBhSDPIIbhk_GdO-F-oUN7rvgZTbFx8tgg"
+          "current_key": "AIzaSyAUvGM5WP5UxaKQaKuSYN8xVAQx1Wz9vDs"
         }
       ],
       "services": {
@@ -26,7 +26,7 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:790153325076:android:65da263f6a6fe456d91501",
+        "mobilesdk_app_id": "1:217390086215:android:bb4bc4ec8c208e03015962",
         "android_client_info": {
           "package_name": "com.userapp1"
         }
@@ -34,7 +34,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBhSDPIIbhk_GdO-F-oUN7rvgZTbFx8tgg"
+          "current_key": "AIzaSyAUvGM5WP5UxaKQaKuSYN8xVAQx1Wz9vDs"
         }
       ],
       "services": {

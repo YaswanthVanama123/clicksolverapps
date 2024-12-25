@@ -105,10 +105,10 @@ const DashboardScreen = () => {
 
   const sendDataToBackend = async payload => {
     console.log('date', payload);
-    console.log(process.env.BackendAPI14);
+    console.log(process.env.BackendAPI17);
     try {
       const response = await axios.post(
-        `${process.env.BackendAPI14}/api/administrator/service/date/details`,
+        `${process.env.BackendAPI17}/api/administrator/service/date/details`,
         payload,
       );
       console.log(response.data);

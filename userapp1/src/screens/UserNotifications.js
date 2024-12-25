@@ -14,7 +14,7 @@ import moment from 'moment';
 import {useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons'; // Importing icon library
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
-import Config from 'react-native-config';
+// import Config from 'react-native-config';
 
 const UserNotifications = () => {
   const [notificationsArray, setNotificationsArray] = useState([]);
@@ -26,7 +26,7 @@ const UserNotifications = () => {
     const userId = await EncryptedStorage.getItem('cs_token');
     const fcmToken = await EncryptedStorage.getItem('fcm_token');
     const response = await axios.get(
-      `http://13.127.15.157:5000/api/user/notifications`,
+      `https://backend.clicksolver.com/api/user/notifications`,
       {
         headers: {
           Authorization: `Bearer ${userId}`,

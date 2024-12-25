@@ -1787,11 +1787,11 @@
     <string name="fallback_menu_item_share_link">Share link</string>
     <string name="fcm_fallback_notification_channel_label">Miscellaneous</string>
     <string name="file_provider_authority" translatable="false">com.transistorsoft.tslocationmanager.fileprovider</string>
-    <string name="gcm_defaultSenderId" translatable="false">790153325076</string>
-    <string name="google_api_key" translatable="false">AIzaSyBhSDPIIbhk_GdO-F-oUN7rvgZTbFx8tgg</string>
-    <string name="google_app_id" translatable="false">1:790153325076:android:7802c0f7e8c27d4cd91501</string>
-    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyBhSDPIIbhk_GdO-F-oUN7rvgZTbFx8tgg</string>
-    <string name="google_storage_bucket" translatable="false">clicksolver-64687.appspot.com</string>
+    <string name="gcm_defaultSenderId" translatable="false">217390086215</string>
+    <string name="google_api_key" translatable="false">AIzaSyAUvGM5WP5UxaKQaKuSYN8xVAQx1Wz9vDs</string>
+    <string name="google_app_id" translatable="false">1:217390086215:android:666b6ea190ed5ea4015962</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyAUvGM5WP5UxaKQaKuSYN8xVAQx1Wz9vDs</string>
+    <string name="google_storage_bucket" translatable="false">clicksolver-fa1a6.firebasestorage.app</string>
     <string description="heading to a page or section" name="header_description">Heading</string>
     <string name="hide_bottom_view_on_scroll_behavior" translatable="false">com.google.android.material.behavior.HideBottomViewOnScrollBehavior</string>
     <string name="hms_apk_not_installed_hints" priority="translator">Some features in %1$s may not work properly without HMS Core, which is not installed on your device.</string>
@@ -1903,7 +1903,7 @@
     <string name="path_password_eye_mask_visible" translatable="false">M2,4.27 L2,4.27 L4.54,1.73 L4.54,1.73 L4.54,1 L23,1 L23,23 L1,23 L1,4.27 Z</string>
     <string name="path_password_strike_through" translatable="false">M3.27,4.27 L19.74,20.74</string>
     <string description="displays the progress status for tasks that take a long time" name="progressbar_description">Progress Bar</string>
-    <string name="project_id" translatable="false">clicksolver-64687</string>
+    <string name="project_id" translatable="false">clicksolver-fa1a6</string>
     <string description="a group of radio buttons" name="radiogroup_description">Radio Group</string>
     <string description="an interactive element inside a tablist" name="rn_tab_description">Tab</string>
     <string description="controls the scrolling of content within a viewing area" name="scrollbar_description">Scroll Bar</string>

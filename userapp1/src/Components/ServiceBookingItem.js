@@ -12,7 +12,7 @@ import Icon from 'react-native-vector-icons/FontAwesome6';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useNavigation, CommonActions, useRoute} from '@react-navigation/native';
 import axios from 'axios';
-import Config from 'react-native-config';
+// import Config from 'react-native-config';
 
 const ServiceBookingItem = () => {
   const [details, setDetails] = useState({});
@@ -57,7 +57,7 @@ const ServiceBookingItem = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.post(
-          `http://13.127.15.157:5000/api/service/booking/item/details`,
+          `https://backend.clicksolver.com/api/service/booking/item/details`,
           {tracking_id},
         );
         const {data, paymentDetails} = response.data;

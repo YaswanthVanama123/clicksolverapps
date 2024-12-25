@@ -60,6 +60,44 @@
 
 
 
+# # Stage 1: Build Stage
+# FROM node:21-alpine AS build
+
+# # Set the working directory
+# WORKDIR /app
+
+# # Copy only the package files first for efficient caching
+# COPY package*.json ./
+
+# # Install production dependencies
+# RUN npm install --only=production && npm cache clean --force
+
+# # Now copy the entire source code
+# COPY . .
+
+# # Optionally, run any build or minification steps
+# # Example: minify apis.js -> apis.min.js
+# RUN npx terser -c -m -o apis.min.js -- apis.js
+
+# # Rename or move the minified file if that's what your code expects
+# RUN mv apis.min.js apis.js
+
+
+# # Stage 2: Production Stage
+# FROM node:21-alpine
+
+# # Set the working directory
+# WORKDIR /app
+
+# # Copy only necessary files from the build stage (includes all source files)
+# COPY --from=build /app /app
+
+# # Expose the application port
+# EXPOSE 5000
+
+# # Run the server
+# CMD ["node", "apis.js"]
+
 # Stage 1: Build Stage
 FROM node:21-alpine AS build
 
@@ -92,8 +130,13 @@ WORKDIR /app
 # Copy only necessary files from the build stage (includes all source files)
 COPY --from=build /app /app
 
-# Expose the application port
-EXPOSE 5000
+# Copy SSL certificate files into the container
+# Make sure the `certs` directory exists in your project
+COPY certs /app/certs
+
+# Expose the application ports
+EXPOSE 80
+EXPOSE 443
 
 # Run the server
 CMD ["node", "apis.js"]
