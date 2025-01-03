@@ -15,6 +15,7 @@ import {useNavigation, useRoute} from '@react-navigation/native';
 import Entypo from 'react-native-vector-icons/Entypo';
 import Icon from 'react-native-vector-icons/Ionicons';
 import EncryptedStorage from 'react-native-encrypted-storage';
+import LottieView from 'lottie-react-native';
 // import Config from 'react-native-config';
 
 const SingleService = () => {

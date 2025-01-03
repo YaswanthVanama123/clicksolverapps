@@ -16,41 +16,6 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import Feather from 'react-native-vector-icons/Feather';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 
-const dummyTransactions = [
-  {
-    id: '1',
-    type: 'Paid',
-    name: 'Click Solver',
-    amount: '20',
-    date: '30 Oct 2024',
-    status: 'Debited from you',
-  },
-  {
-    id: '2',
-    type: 'Received',
-    name: 'Click Solver',
-    amount: '100',
-    date: '30 Oct 2024',
-    status: 'Credited to you',
-  },
-  {
-    id: '3',
-    type: 'Paid',
-    name: 'Click Solver',
-    amount: '200',
-    date: '30 Oct 2024',
-    status: 'Debited from you',
-  },
-  {
-    id: '4',
-    type: 'Received',
-    name: 'Click Solver',
-    amount: '100',
-    date: '30 Oct 2024',
-    status: 'Credited to you',
-  },
-];
-
 const TransactionItem = ({item}) => (
   <View style={styles.transactionContainer}>
     <View style={styles.paymentContainer}>
@@ -121,6 +86,40 @@ const BalanceScreen = () => {
   const [isMessageVisible, setIsMessageVisible] = useState(false);
   const [balanceHistory, setBalanceHistory] = useState([]);
   const [loading, setLoading] = useState(true); // New loading state
+  const [dummyTransactions, setDummyTransactions] = useState([
+    {
+      id: '1',
+      type: 'Paid',
+      name: 'Click Solver',
+      amount: '20',
+      date: '30 Oct 2024',
+      status: 'Debited from you',
+    },
+    {
+      id: '2',
+      type: 'Received',
+      name: 'Click Solver',
+      amount: '100',
+      date: '30 Oct 2024',
+      status: 'Credited to you',
+    },
+    {
+      id: '3',
+      type: 'Paid',
+      name: 'Click Solver',
+      amount: '200',
+      date: '30 Oct 2024',
+      status: 'Debited from you',
+    },
+    {
+      id: '4',
+      type: 'Received',
+      name: 'Click Solver',
+      amount: '100',
+      date: '30 Oct 2024',
+      status: 'Credited to you',
+    },
+  ]);
 
   const backToHome = () => {
     navigation.dispatch(
@@ -142,7 +141,8 @@ const BalanceScreen = () => {
         {},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
-
+      console.log('ba;lan', response.data[0].balance_payment_history);
+      setDummyTransactions(response.data[0].balance_payment_history);
       let totalBalance = 0;
       const serviceBalanceHistory = response.data.map((transaction, index) => {
         let amount;

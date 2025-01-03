@@ -178,9 +178,10 @@ const RegistrationScreen = () => {
           },
         },
       );
-      setPhoneNumber(response.data[0].phone_numbers[0]);
+      if (response.data[0].phone_numbers) {
+        setPhoneNumber(response.data[0].phone_numbers);
+      }
       const data = response.data;
-      console.log(data[0]);
       const mappedData = data.map(item => ({
         label: item.service_name,
         value: item.service_name,
@@ -248,15 +249,18 @@ const RegistrationScreen = () => {
       try {
         const response = await axios.post(
           `${process.env.BackendAPI17}/api/subservice/checkboxes`,
-          {
-            selectedService: value,
-          },
+          {selectedService: value},
         );
         const data = response.data;
+        console.log('selected service', data);
+
+        // We now include 'category' to keep track of the service_category
         const mappedData = data.map(item => ({
           id: item.service_id,
           label: item.service_tag,
+          category: item.service_category, // <-- new line
         }));
+
         setSubServices(mappedData);
       } catch (error) {
         console.error('Error calling the backend:', error);
@@ -268,11 +272,13 @@ const RegistrationScreen = () => {
   const fetchDetails = async () => {
     try {
       const pcsToken = await EncryptedStorage.getItem('pcs_token');
-      console.log('details', pcsToken);
       if (!pcsToken) {
         console.error('No pcs_token found.');
         navigation.replace('Login');
+        return;
       }
+
+      // 1) GET the profile details:
       const response = await axios.get(
         `${process.env.BackendAPI17}/api/profile/detsils`,
         {
@@ -281,10 +287,16 @@ const RegistrationScreen = () => {
           },
         },
       );
-      const data = response.data;
-      const subservices = data.subservices;
 
-      setFormData({
+      const data = response.data;
+
+      // Example: data.service = "Electrician Services"
+      //          data.subservices = ["AC Repairing", "TV Installation", ...]
+
+      // Store subservices array (strings) in formData.subSkills
+      // so checkboxes can be 'checked' if they appear in this array
+      setFormData(prev => ({
+        ...prev,
         lastName: data.personaldetails.lastName,
         firstName: data.personaldetails.firstName,
         gender: data.personaldetails.gender,
@@ -297,16 +309,37 @@ const RegistrationScreen = () => {
         district: data.address.district,
         state: data.address.state,
         pincode: data.address.pincode,
-        skillCategory: data.service,
+        skillCategory: data.service, // e.g. "Electrician Services"
         profileImageUri: data.profile,
         proofImageUri: data.proof,
-        subSkills: data.subservices || [],
-      });
 
-      const mappedData = subservices.map(item => ({
-        id: uuid.v4(),
-        label: item,
+        // ADDED: subSkills is the array of subservices from profile
+        // This is how we know which ones to check
+        subSkills: data.subservices || [],
       }));
+
+      setPhoneNumber(data.phone_number);
+
+      // 2) POST to /api/subservice/checkboxes with the service
+      const subserviceResponse = await axios.post(
+        `${process.env.BackendAPI17}/api/subservice/checkboxes`,
+        {selectedService: data.service}, // e.g. "Electrician Services"
+        {
+          headers: {
+            Authorization: `Bearer ${pcsToken}`,
+          },
+        },
+      );
+
+      // This returns an array of objects. We map each to { id, label, category }
+      const subserviceData = subserviceResponse.data; // e.g. an array
+      const mappedData = subserviceData.map(item => ({
+        id: item.service_id,
+        label: item.service_tag,
+        category: item.service_category,
+      }));
+
+      // Save them for rendering checkboxes
       setSubServices(mappedData);
     } catch (error) {
       console.error('Error fetching services:', error);
@@ -321,6 +354,16 @@ const RegistrationScreen = () => {
     fetchServices();
     fetchDetails();
   }, []);
+
+  // Group subServices by category
+  const groupedSubServices = subServices.reduce((acc, item) => {
+    // item.category is "commodes fitting and reparing", "Pipe fitting and reparing", etc.
+    if (!acc[item.category]) {
+      acc[item.category] = [];
+    }
+    acc[item.category].push(item);
+    return acc;
+  }, {});
 
   return (
     <View style={styles.container}>
@@ -595,18 +638,35 @@ const RegistrationScreen = () => {
               styles.checkboxGrid,
               formData.subSkills.length > 0 && styles.checked,
             ]}>
-            {subServices.map(item => (
-              <View key={item.id} style={styles.checkboxContainer}>
-                <Checkbox
-                  status={
-                    formData.subSkills.includes(item.label)
-                      ? 'checked'
-                      : 'unchecked'
-                  }
-                  onPress={() => handleCheckboxChange(item.label)}
-                  color="#FF5722"
-                />
-                <Text style={styles.label}>{item.label}</Text>
+            {/* Loop over the category names */}
+            {Object.keys(groupedSubServices).map(categoryName => (
+              <View key={categoryName} style={{marginBottom: 16}}>
+                {/* Category heading */}
+                <Text
+                  style={{
+                    fontWeight: 'bold',
+                    fontSize: 16,
+                    marginVertical: 8,
+                    color: '#000',
+                  }}>
+                  {categoryName}
+                </Text>
+
+                {/* Now loop through all the subServices in this category */}
+                {groupedSubServices[categoryName].map(item => (
+                  <View key={item.id} style={styles.checkboxContainer}>
+                    <Checkbox
+                      status={
+                        formData.subSkills.includes(item.label)
+                          ? 'checked'
+                          : 'unchecked'
+                      }
+                      onPress={() => handleCheckboxChange(item.label)}
+                      color="#FF5722"
+                    />
+                    <Text style={styles.label}>{item.label}</Text>
+                  </View>
+                ))}
               </View>
             ))}
           </View>

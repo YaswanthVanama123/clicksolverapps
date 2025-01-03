@@ -225,6 +225,12 @@ const WaitingUser = () => {
         'No workers found',
         'Unable to find workers after 3 attempts. Please try again later.',
       );
+      const cs_token = await EncryptedStorage.getItem('cs_token');
+      await axios.post(
+        `https://backend.clicksolver.com/api/user/action/cancel`,
+        {encodedId: encodedData, screen: 'userwaiting'},
+        {headers: {Authorization: `Bearer ${cs_token}`}},
+      );
       navigation.dispatch(
         CommonActions.reset({
           index: 0,

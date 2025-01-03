@@ -64,14 +64,14 @@ const EarningsScreen = () => {
         },
       );
 
-      console.log(response.data);
+      console.log('sata:', response.data);
 
       const {
         total_payment = 0,
         cash_payment = 0,
         payment_count = 0,
         life_earnings = 0,
-        avgrating = 0,
+        avg_rating = 0,
         rejectedcount = 0,
         pendingcount = 0,
         total_time_worked_hours = 0,
@@ -86,15 +86,18 @@ const EarningsScreen = () => {
         cash_payment: Number(cash_payment),
         payment_count: Number(payment_count),
         life_earnings: Number(life_earnings),
-        avgrating: Number(avgrating),
+        avgrating: Number(avg_rating),
         rejectedcount: Number(rejectedcount),
         pendingcount: Number(pendingcount),
         minutes: Number(total_time_worked_hours) * 60,
         service_counts: Number(service_counts),
-        cashback_gain: Number(cashback_gain) * 100,
-        cashback_approved_times: Number(cashback_approved_times),
         cashback_pending:
-          Number(cashback_approved_times) - Number(cashback_gain),
+          Number(cashback_approved_times) - (Number(service_counts) % 6), // Updated logic for cashback_pending
+        cashback_gain:
+          (Number(cashback_approved_times) -
+            (Number(cashback_approved_times) - (Number(service_counts) % 6))) *
+          100, // Adjusted cashback_gain
+        cashback_approved_times: Number(cashback_approved_times),
         cashback: Number(service_counts) % 6,
         average_rating: Number(average_rating),
       });
@@ -295,11 +298,11 @@ const EarningsScreen = () => {
           },
           {
             value: earnings.cashback_gain,
-            title: 'Cashback',
+            title: 'Cashback Earned',
             color: '#4CAF50',
           },
           {
-            value: earnings.average_rating,
+            value: earnings.avgrating,
             title: 'Avg Rating',
             color: '#4CAF50',
           },

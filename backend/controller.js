@@ -988,22 +988,24 @@ const getWorkerProfileDetails = async (req, res) => {
   try {
     // Query to get worker profile details from workerskills and worker tables
     const query = `
-      SELECT 
-        ws.worker_id,
-        ws.service,
-        ws.proof,
-        ws.profile,
-        ws.subservices,
-        w.phone_number,
-        ws.personaldetails,
-        ws.address
-      FROM 
-        workerskills ws
-      JOIN 
-        workersverified w ON ws.worker_id = w.worker_id
-      WHERE 
-        ws.worker_id = $1
-    `;
+    SELECT 
+      ws.worker_id,
+      ws.service,
+      ws.proof,
+      ws.profile,
+      ws.subservices,
+      COALESCE(wv.phone_number, w.phone_number) AS phone_number,
+      ws.personaldetails,
+      ws.address
+    FROM 
+      workerskills ws
+    LEFT JOIN 
+      workersverified wv ON ws.worker_id = wv.worker_id
+    LEFT JOIN 
+      workers w ON ws.worker_id = w.worker_id
+    WHERE 
+      ws.worker_id = $1;
+  `;
 
     const result = await client.query(query, [workerId]);
 
@@ -7929,7 +7931,8 @@ const subservices = async (req, res) => {
   try {
     const result = await client.query(
       `SELECT 
-            asv.service_tag
+            asv.service_tag,
+            rs.service_category
         FROM 
             servicecategories sc
         JOIN 
@@ -9382,49 +9385,93 @@ const getWorkerEarnings = async (req, res) => {
   }
 
   try {
+    // const query = `
+    //   SELECT
+    //     SUM(payment) AS total_payment,
+    //     SUM(CASE WHEN payment_type = 'cash' THEN payment ELSE 0 END) AS cash_payment,
+    //     COUNT(*) AS payment_count,
+    //     (SELECT SUM(payment)
+    //       FROM servicecall
+    //       WHERE worker_id = $1
+    //         AND payment IS NOT NULL
+    //     ) AS life_earnings,
+    //     (SELECT AVG(rating)
+    //       FROM feedback
+    //       WHERE worker_id = $1
+    //     ) AS avg_rating,
+    //     (SELECT COUNT(*)
+    //       FROM notifications
+    //       WHERE worker_id = $1
+    //         AND status = 'reject'
+    //         AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
+    //     ) AS rejected_count,
+    //     (SELECT COUNT(*)
+    //       FROM notifications
+    //       WHERE worker_id = $1
+    //         AND status = 'pending'
+    //         AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
+    //     ) AS pending_count,
+    //     (EXTRACT(EPOCH FROM SUM(
+    //         CASE
+    //             WHEN time_worked ~ '^\d{2}:\d{2}:\d{2}$'
+    //                  AND CAST(split_part(time_worked, ':', 2) AS INTEGER) < 60
+    //                  AND CAST(split_part(time_worked, ':', 3) AS INTEGER) < 60
+    //             THEN CAST(time_worked AS INTERVAL)
+    //             ELSE INTERVAL '0'
+    //         END
+    //     )) / 3600) AS total_time_worked_hours,
+    //     (SELECT service_counts FROM workerlife WHERE worker_id = $1) AS service_counts,
+    //     (SELECT cashback_approved_times FROM workerlife WHERE worker_id = $1) AS cashback_approved_times,
+    //     (SELECT cashback_gain FROM workerlife WHERE worker_id = $1) AS cashback_gain
+    //   FROM servicecall s
+    //   WHERE worker_id = $1
+    //     AND payment IS NOT NULL
+    //     AND DATE(end_time) BETWEEN DATE($2) AND DATE($3);
+    // `;
+
     const query = `
-      SELECT
-        SUM(payment) AS total_payment,
-        SUM(CASE WHEN payment_type = 'cash' THEN payment ELSE 0 END) AS cash_payment,
-        COUNT(*) AS payment_count,
-        (SELECT SUM(payment)
-          FROM servicecall
-          WHERE worker_id = $1
-            AND payment IS NOT NULL
-        ) AS life_earnings,
-        (SELECT AVG(rating)
-          FROM feedback
-          WHERE worker_id = $1
-        ) AS avg_rating,
-        (SELECT COUNT(*)
-          FROM notifications
-          WHERE worker_id = $1
-            AND status = 'reject'
-            AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
-        ) AS rejected_count,
-        (SELECT COUNT(*)
-          FROM notifications
-          WHERE worker_id = $1
-            AND status = 'pending'
-            AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
-        ) AS pending_count,
-        (EXTRACT(EPOCH FROM SUM(
-            CASE
-                WHEN time_worked ~ '^\d{2}:\d{2}:\d{2}$'
-                     AND CAST(split_part(time_worked, ':', 2) AS INTEGER) < 60
-                     AND CAST(split_part(time_worked, ':', 3) AS INTEGER) < 60
-                THEN CAST(time_worked AS INTERVAL)
-                ELSE INTERVAL '0'
-            END
-        )) / 3600) AS total_time_worked_hours,
-        (SELECT service_counts FROM workerlife WHERE worker_id = $1) AS service_counts,
-        (SELECT cashback_approved_times FROM workerlife WHERE worker_id = $1) AS cashback_approved_times,
-        (SELECT cashback_gain FROM workerlife WHERE worker_id = $1) AS cashback_gain
-      FROM servicecall s
-      WHERE worker_id = $1
-        AND payment IS NOT NULL
-        AND DATE(end_time) BETWEEN DATE($2) AND DATE($3);
-    `;
+        SELECT
+          SUM(payment) AS total_payment,
+          SUM(CASE WHEN payment_type = 'cash' THEN payment ELSE 0 END) AS cash_payment,
+          COUNT(*) AS payment_count,
+          (SELECT SUM(payment)
+            FROM servicecall
+            WHERE worker_id = $1
+              AND payment IS NOT NULL
+          ) AS life_earnings,
+          (SELECT average_rating
+            FROM workerlife
+            WHERE worker_id = $1
+          ) AS avg_rating,
+          (SELECT COUNT(*)
+            FROM notifications
+            WHERE worker_id = $1
+              AND status = 'reject'
+              AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
+          ) AS rejected_count,
+          (SELECT COUNT(*)
+            FROM notifications
+            WHERE worker_id = $1
+              AND status = 'pending'
+              AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
+          ) AS pending_count,
+          (EXTRACT(EPOCH FROM SUM(
+              CASE
+                  WHEN time_worked ~ '^\d{2}:\d{2}:\d{2}$'
+                      AND CAST(split_part(time_worked, ':', 2) AS INTEGER) < 60
+                      AND CAST(split_part(time_worked, ':', 3) AS INTEGER) < 60
+                  THEN CAST(time_worked AS INTERVAL)
+                  ELSE INTERVAL '0'
+              END
+          )) / 3600) AS total_time_worked_hours,
+          (SELECT service_counts FROM workerlife WHERE worker_id = $1) AS service_counts,
+          (SELECT cashback_approved_times FROM workerlife WHERE worker_id = $1) AS cashback_approved_times,
+          (SELECT cashback_gain FROM workerlife WHERE worker_id = $1) AS cashback_gain
+        FROM servicecall s
+        WHERE worker_id = $1
+          AND payment IS NOT NULL
+          AND DATE(end_time) BETWEEN DATE($2) AND DATE($3);
+        `;
 
     const result = await client.query(query, [
       workerId,
