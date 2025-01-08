@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Dimensions,
   Image,
+  Modal,
 } from 'react-native';
 import axios from 'axios';
 import {
@@ -25,6 +26,8 @@ import Mapbox from '@rnmapbox/maps';
 Mapbox.setAccessToken(
   'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw',
 );
+import Entypo from 'react-native-vector-icons/Entypo';
+import AntDesign from 'react-native-vector-icons/AntDesign';
 // import Config from 'react-native-config';
 
 const WaitingUser = () => {
@@ -46,6 +49,11 @@ const WaitingUser = () => {
   const [encodedData, setEncodedData] = useState(null);
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
   const attemptCountRef = useRef(0);
+  // New States for Modals
+  const [modalVisible, setModalVisible] = useState(false);
+  const [confirmationModalVisible, setConfirmationModalVisible] =
+    useState(false);
+  const [selectedReason, setSelectedReason] = useState('');
 
   useEffect(() => {
     if (
@@ -75,6 +83,7 @@ const WaitingUser = () => {
       serviceBooked,
       location,
     } = route.params;
+    console.log('user waiting params', route.params);
     setCity(city);
     setArea(area);
     setPincode(pincode);
@@ -180,13 +189,58 @@ const WaitingUser = () => {
     }
   }, [route.params]);
 
-  const handleManualCancel = async () => {
+  // const handleManualCancel = async () => {
+  //   try {
+  //     if (decodedId) {
+  //       await axios.post(
+  //         `https://backend.clicksolver.com/api/user/cancellation`,
+  //         {
+  //           user_notification_id: decodedId,
+  //         },
+  //       );
+
+  //       const cs_token = await EncryptedStorage.getItem('cs_token');
+  //       await axios.post(
+  //         `https://backend.clicksolver.com/api/user/action/cancel`,
+  //         {encodedId: encodedData, screen: 'userwaiting'},
+  //         {headers: {Authorization: `Bearer ${cs_token}`}},
+  //       );
+  //     }
+
+  //     navigation.dispatch(
+  //       CommonActions.reset({
+  //         index: 0,
+  //         routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+  //       }),
+  //     );
+  //   } catch (error) {
+  //     console.error('Error calling cancellation API:', error);
+  //     setCancelMessage('Cancel timed out');
+  //     setTimeout(() => setCancelMessage(''), 3000);
+  //     navigation.dispatch(
+  //       CommonActions.reset({
+  //         index: 0,
+  //         routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+  //       }),
+  //     );
+  //   }
+  // };
+
+  // Updated handleManualCancel to open the first modal
+  const handleManualCancel = () => {
+    setModalVisible(true);
+  };
+
+  // New handler to perform cancellation after confirmation
+  const handleCancelBooking = async () => {
+    setConfirmationModalVisible(false);
     try {
       if (decodedId) {
         await axios.post(
           `https://backend.clicksolver.com/api/user/cancellation`,
           {
             user_notification_id: decodedId,
+            cancellation_reason: selectedReason, // Optionally send the reason
           },
         );
 
@@ -217,6 +271,13 @@ const WaitingUser = () => {
     }
   };
 
+  // New handler to open confirmation modal after selecting a reason
+  const handleSelectReason = reason => {
+    setSelectedReason(reason);
+    setModalVisible(false);
+    setConfirmationModalVisible(true);
+  };
+
   const handleCancelAndRetry = async () => {
     attemptCountRef.current += 1;
 
@@ -225,12 +286,19 @@ const WaitingUser = () => {
         'No workers found',
         'Unable to find workers after 3 attempts. Please try again later.',
       );
+      await axios.post(
+        `https://backend.clicksolver.com/api/user/cancellation`,
+        {
+          user_notification_id: decodedId,
+        },
+      );
       const cs_token = await EncryptedStorage.getItem('cs_token');
       await axios.post(
         `https://backend.clicksolver.com/api/user/action/cancel`,
         {encodedId: encodedData, screen: 'userwaiting'},
         {headers: {Authorization: `Bearer ${cs_token}`}},
       );
+
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
@@ -352,13 +420,33 @@ const WaitingUser = () => {
     }
   }, [decodedId, navigation]);
 
+  // useFocusEffect(
+  //   React.useCallback(() => {
+  //     const onBackPress = () => {
+  //       // Alert.alert('Cancel', 'Are you sure you want to cancel?', [
+  //       //   {text: 'No', style: 'cancel'},
+  //       //   {text: 'Yes', onPress: handleManualCancel},
+  //       // ]);
+  //       navigation.dispatch(
+  //         CommonActions.reset({
+  //           index: 0,
+  //           routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+  //         }),
+  //       );
+  //       return true;
+  //     };
+
+  //     BackHandler.addEventListener('hardwareBackPress', onBackPress);
+  //     return () =>
+  //       BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+  //   }, [navigation]),
+  // );
+
   useFocusEffect(
     React.useCallback(() => {
       const onBackPress = () => {
-        Alert.alert('Cancel', 'Are you sure you want to cancel?', [
-          {text: 'No', style: 'cancel'},
-          {text: 'Yes', onPress: handleManualCancel},
-        ]);
+        // Open the cancellation modal instead of directly navigating home
+        setModalVisible(true);
         return true;
       };
 
@@ -487,6 +575,99 @@ const WaitingUser = () => {
           )}
         </View>
       </View>
+      {/* Modal for Cancellation Reasons */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            onPress={() => setModalVisible(false)}
+            style={styles.backButtonContainer}>
+            <AntDesign name="arrowleft" size={20} color="black" />
+          </TouchableOpacity>
+
+          <View style={styles.modalContainer}>
+            {/* Title and Subtitle */}
+            <Text style={styles.modalTitle}>
+              What is the reason for your cancellation?
+            </Text>
+            <Text style={styles.modalSubtitle}>
+              Could you let us know why you're canceling?
+            </Text>
+
+            {/* Cancellation Reasons */}
+            <TouchableOpacity
+              style={styles.reasonButton}
+              onPress={() => handleSelectReason('Found a better price')}>
+              <Text style={styles.reasonText}>Found a better price</Text>
+              <AntDesign name="right" size={16} color="#4a4a4a" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.reasonButton}
+              onPress={() => handleSelectReason('Wrong work location')}>
+              <Text style={styles.reasonText}>Wrong work location</Text>
+              <AntDesign name="right" size={16} color="#4a4a4a" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.reasonButton}
+              onPress={() => handleSelectReason('Wrong service booked')}>
+              <Text style={styles.reasonText}>Wrong service booked</Text>
+              <AntDesign name="right" size={16} color="#4a4a4a" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.reasonButton}
+              onPress={() =>
+                handleSelectReason('More time to assign a commander')
+              }>
+              <Text style={styles.reasonText}>
+                More time to assign a commander
+              </Text>
+              <AntDesign name="right" size={16} color="#4a4a4a" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.reasonButton}
+              onPress={() => handleSelectReason('Others')}>
+              <Text style={styles.reasonText}>Others</Text>
+              <AntDesign name="right" size={16} color="#4a4a4a" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Confirmation Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={confirmationModalVisible}
+        onRequestClose={() => setConfirmationModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.crossContainer}>
+            <TouchableOpacity
+              onPress={() => setConfirmationModalVisible(false)}
+              style={styles.backButtonContainer}>
+              <Entypo name="cross" size={20} color="black" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.confirmationModalContainer}>
+            <Text style={styles.confirmationTitle}>
+              Are you sure you want to cancel this Service?
+            </Text>
+            <Text style={styles.confirmationSubtitle}>
+              Please avoid canceling – we’re working to connect you with the
+              best expert to solve your problem.
+            </Text>
+
+            <TouchableOpacity
+              style={styles.confirmButton}
+              onPress={handleCancelBooking}>
+              <Text style={styles.confirmButtonText}>Cancel my service</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -697,6 +878,109 @@ const styles = StyleSheet.create({
     color: 'red',
     marginTop: 10,
     fontSize: 14,
+  },
+  // Modal Styles (same as in Navigation component)
+  backButtonContainer: {
+    width: 40,
+    height: 40,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center', // Distance from the left side of the screen
+    backgroundColor: 'white', // Background color for the circular container
+    borderRadius: 50, // Rounds the container to make it circular
+    // Padding to make the icon container larger
+    elevation: 5, // Elevation for shadow effect (Android)
+    shadowColor: '#000', // Shadow color (iOS)
+    shadowOffset: {width: 0, height: 2}, // Shadow offset (iOS)
+    shadowOpacity: 0.2, // Shadow opacity (iOS)
+    shadowRadius: 4, // Shadow radius (iOS)
+    zIndex: 1,
+    marginHorizontal: 10, // Ensures the icon is above other elements,
+    marginBottom: 5,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 30,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 5,
+    color: '#000',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    paddingBottom: 10,
+  },
+  reasonButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  reasonText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  crossContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    padding: 10,
+  },
+  confirmationModalContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 40,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  confirmationTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    paddingBottom: 10,
+    marginBottom: 5,
+    color: '#000',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  confirmationSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+    paddingBottom: 10,
+    paddingTop: 10,
+  },
+  confirmButton: {
+    backgroundColor: '#FF4500',
+    borderRadius: 40,
+    paddingVertical: 15,
+    paddingHorizontal: 40,
+    alignItems: 'center',
+  },
+  confirmButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

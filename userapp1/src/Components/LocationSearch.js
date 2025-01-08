@@ -7,11 +7,16 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  BackHandler,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import Entypo from 'react-native-vector-icons/Entypo';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
 import {Places} from 'ola-maps'; // Import the Places module from ola-maps
 
 const placesClient = new Places('iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT'); // Initialize the Places client with your API key
@@ -46,6 +51,22 @@ const LocationSearch = () => {
     }
   }, []);
 
+  const onBackPress = () => {
+    navigation.replace('UserLocation', {serviceName});
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        navigation.replace('UserLocation', {serviceName});
+        return true;
+      };
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () =>
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [navigation]),
+  );
+
   useEffect(() => {
     if (query.length > 0) {
       fetchAndSetPlaceDetails(query);
@@ -67,7 +88,7 @@ const LocationSearch = () => {
   const handleSuggestionPress = useCallback(
     item => {
       setQuery(item.title);
-      navigation.push('UserLocation', {serviceName, suggestion: item});
+      navigation.replace('UserLocation', {serviceName, suggestion: item});
       setSuggestions([]);
     },
     [navigation, serviceName],
@@ -96,7 +117,9 @@ const LocationSearch = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.searchContainer}>
-        <FontAwesome6 name="arrow-left-long" size={18} color="gray" />
+        <TouchableOpacity onPress={onBackPress}>
+          <FontAwesome6 name="arrow-left-long" size={18} color="gray" />
+        </TouchableOpacity>
         <TextInput
           ref={inputRef}
           style={styles.searchInput}

@@ -160,7 +160,9 @@ const SingleService = () => {
           <TouchableOpacity style={styles.imageIcons} onPress={handleBackPress}>
             <Icon name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.imageIcons}>
+          <TouchableOpacity
+            style={styles.imageIcons}
+            onPress={() => navigation.push('SearchItem')}>
             <Icon name="search" size={24} color="#000" />
           </TouchableOpacity>
         </View>
@@ -280,7 +282,7 @@ const SingleService = () => {
           </TouchableOpacity>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Booked Services</Text>
-            <ScrollView>
+            <ScrollView contentContainerStyle={{paddingBottom: 20}}>
               <View style={styles.itemContainers}>
                 {bookedServices.map((service, index) => (
                   <View key={index} style={styles.itemContainer}>
@@ -298,7 +300,9 @@ const SingleService = () => {
                       />
                     )}
                     <View style={styles.descriptionContainer}>
-                      <Text style={styles.recomendedCardDetailsHead}>
+                      <Text
+                        style={styles.recomendedCardDetailsHead}
+                        numberOfLines={3}>
                         {service.serviceName}
                       </Text>
                       <Text
@@ -406,7 +410,7 @@ const styles = StyleSheet.create({
   recomendedCardDetailsHead: {
     color: '#212121',
     fontWeight: '500',
-    fontSize: 16,
+    fontSize: 15,
     paddingBottom: 5,
   },
   recomendedCardDetails: {
@@ -489,7 +493,7 @@ const styles = StyleSheet.create({
   serviceTitle: {
     fontSize: 22,
     color: '#212121',
-    fontWeight: '600',
+    fontFamily: 'RobotoSlab-Bold',
     width: '90%',
     lineHeight: 25,
   },
@@ -554,7 +558,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '100%',
-    height: '85%',
+    flex: 1,
     backgroundColor: '#ffffff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,

@@ -739,7 +739,7 @@ const styles = StyleSheet.create({
   },
   serviceTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Bold',
     color: '#333',
   },
   rightIcon: {

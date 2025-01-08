@@ -56,6 +56,9 @@ const UserLocation = () => {
   const [areaError, setAreaError] = useState('');
   const [pincodeError, setPincodeError] = useState('');
   const [phoneError, setPhoneError] = useState('');
+  const [inputText, setInputText] = useState(
+    suggestion ? suggestion.title : '',
+  );
   const [nameError, setNameError] = useState('');
   const [startCoordinates, setStartCoordinates] = useState({
     latitude: 16.69834,
@@ -263,6 +266,9 @@ const UserLocation = () => {
   }, []);
 
   const handleCrosshairsPress = () => {
+    // Clear the TextInput value
+    setInputText('');
+
     Geolocation.getCurrentPosition(
       position => {
         const {latitude, longitude} = position.coords;
@@ -378,8 +384,9 @@ const UserLocation = () => {
           style={styles.searchBox}
           placeholder="Search location ..."
           placeholderTextColor="#1D2951"
-          onFocus={() => navigation.push('LocationSearch', {serviceName})}
-          value={suggestion ? suggestion.title : ''}
+          onFocus={() => navigation.replace('LocationSearch', {serviceName})}
+          value={inputText} // Bind state here
+          onChangeText={text => setInputText(text)} // Update state when text changes
         />
         <View style={styles.iconContainer}>
           <TouchableOpacity onPress={() => setSuggestionName('')}>
@@ -419,7 +426,9 @@ const UserLocation = () => {
               renderItem={({item}) => (
                 <View style={styles.serviceItem}>
                   <View>
-                    <Text style={styles.serviceName}>{item.serviceName}</Text>
+                    <Text style={styles.serviceName} numberOfLines={2}>
+                      {item.serviceName}
+                    </Text>
                   </View>
                   <View style={styles.quantityContainer}>
                     <Text style={styles.quantity}>{item.quantity}</Text>
@@ -548,9 +557,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   serviceName: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#212121',
-    width: 80,
+    width: 90,
     fontWeight: '500',
     flex: 1, // Ensures the service name takes remaining space
     textAlign: 'left', // Aligns the service name to the left

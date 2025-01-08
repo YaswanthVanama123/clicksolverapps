@@ -333,12 +333,30 @@ const Navigation = () => {
     };
   }
 
+  // useEffect(() => {
+  //   if (
+  //     locationDetails &&
+  //     routeData &&
+  //     routeData.geometry &&
+  //     routeData.geometry.coordinates
+  //   ) {
+  //     const allCoordinates = [
+  //       locationDetails.startPoint,
+  //       locationDetails.endPoint,
+  //       ...routeData.geometry.coordinates,
+  //     ];
+
+  //     const bounds = computeBoundingBox(allCoordinates);
+  //     setCameraBounds(bounds);
+  //   }
+  // }, [locationDetails, routeData]);
+
   useEffect(() => {
     if (
       locationDetails &&
       routeData &&
       routeData.geometry &&
-      routeData.geometry.coordinates
+      routeData.geometry.coordinates.length > 0
     ) {
       const allCoordinates = [
         locationDetails.startPoint,

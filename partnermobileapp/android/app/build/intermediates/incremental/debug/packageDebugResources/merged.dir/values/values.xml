@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <integer name="react_native_dev_server_port">8081</integer>
+    <integer name="react_native_dev_server_port">8082</integer>
     <string name="app_name">partnermobileapp</string>
     <string name="gcm_defaultSenderId" translatable="false">217390086215</string>
     <string name="google_api_key" translatable="false">AIzaSyAUvGM5WP5UxaKQaKuSYN8xVAQx1Wz9vDs</string>

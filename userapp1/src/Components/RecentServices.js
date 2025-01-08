@@ -38,7 +38,7 @@ const ServiceItem = ({item, formatDate}) => {
           )}
         </View>
         <View style={styles.itemDetails}>
-          <Text style={styles.title}>
+          <Text style={styles.title} numberOfLines={2}>
             {item.service_booked
               ? item.service_booked[0].serviceName
               : item.service}
@@ -295,9 +295,10 @@ const styles = StyleSheet.create({
   },
   itemDetails: {
     flex: 1,
+    marginLeft: 5,
   },
   title: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#212121',
   },

@@ -9,7 +9,7 @@ import {
   Dimensions,
   Image,
   BackHandler,
-  ScrollView,
+  Alert,
 } from 'react-native';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Entypo from 'react-native-vector-icons/Entypo';
@@ -26,7 +26,6 @@ import LottieView from 'lottie-react-native';
 
 const SearchItem = () => {
   const initialPlaceholder = 'Search for ';
-  const screenHeight = Dimensions.get('window').height;
   const screenWidth = Dimensions.get('window').width;
   const additionalTexts = [
     'electrician',
@@ -126,15 +125,16 @@ const SearchItem = () => {
           existingService =>
             existingService.main_service_id !== service.main_service_id,
         );
-        updatedServices.push(service);
+        updatedServices.unshift(service); // Add to the beginning
       } else {
         updatedServices = [service];
       }
-      updatedServices = updatedServices.slice(-5);
+      updatedServices = updatedServices.slice(0, 5); // Keep only latest 5
       await EncryptedStorage.setItem(
         'recentServices',
         JSON.stringify(updatedServices),
       );
+      setRecentSearches(updatedServices); // Update state immediately
     } catch (error) {
       console.error('Error storing recent service:', error);
     }
@@ -143,66 +143,90 @@ const SearchItem = () => {
   const handleClear = useCallback(() => {
     setSearchQuery('');
     setSuggestions([]);
-    setIsFocused(true);
+    setIsFocused(false);
   }, []);
 
   const handleServiceClick = useCallback(
     item => {
+      // Store the recent service
       storeRecentService(item);
-      navigation.push('ServiceBooking', {serviceName: item.service_category});
+      console.log('clicked', item);
+      // Navigate to the ServiceBooking screen with the required parameters
+      navigation.push('ServiceBooking', {
+        serviceName: item.service_category,
+      });
     },
     [navigation, storeRecentService],
   );
 
-  const renderItem = ({item}) => (
+  const renderSuggestionItem = ({item}) => (
     <TouchableOpacity
       style={styles.suggestionItem}
       onPress={() => handleServiceClick(item)}>
-      <Image source={{uri: item.service_urls}} style={styles.suggestionImage} />
+      <Image
+        source={{uri: item.service_urls || 'https://via.placeholder.com/150'}}
+        style={styles.suggestionImage}
+      />
       <View style={styles.textContainer}>
         <Text style={styles.SuggestionText}>{item.service_tag}</Text>
         <Text style={styles.SuggestionDescription} numberOfLines={2}>
           {item.service_details.about}
         </Text>
+        <Text style={styles.SuggestionText}>{item.service_category}</Text>
       </View>
     </TouchableOpacity>
   );
 
-  const renderRecentSearches = useCallback(() => {
-    if (!Array.isArray(recentSearches)) {
-      return null;
-    }
-    return (
-      recentSearches.length > 0 &&
-      recentSearches.map(item => (
-        <TouchableOpacity
-          key={item.main_service_id}
-          style={styles.recentItem}
-          onPress={() =>
-            navigation.push('ServiceBooking', {
-              serviceName: item.service_category,
-            })
-          }>
-          <View style={styles.recentIcon}>
-            <Entypo name="back-in-time" size={30} color="#d7d7d7" />
-          </View>
-          <Text style={styles.recentText}>{item.service_tag}</Text>
-        </TouchableOpacity>
-      ))
-    );
-  }, [recentSearches, navigation]);
+  const renderRecentSearchItem = ({item}) => (
+    <TouchableOpacity
+      key={item.main_service_id}
+      style={styles.recentItem}
+      onPress={() =>
+        navigation.push('ServiceBooking', {
+          serviceName: item.service_category,
+        })
+      }>
+      <View style={styles.recentIcon}>
+        <Entypo name="back-in-time" size={30} color="#d7d7d7" />
+      </View>
+      <Text style={styles.recentText}>{item.service_tag}</Text>
+    </TouchableOpacity>
+  );
+
+  const renderTrendingSearches = () =>
+    trendingSearches.map((item, index) => (
+      <TouchableOpacity key={index} style={styles.trendingItem}>
+        <Text style={styles.trendingText}>{item}</Text>
+      </TouchableOpacity>
+    ));
+
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     const onBackPress = () => {
+  //       navigation.dispatch(
+  //         CommonActions.reset({
+  //           index: 0,
+  //           routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+  //         }),
+  //       );
+  //       return true;
+  //     };
+  //     BackHandler.addEventListener('hardwareBackPress', onBackPress);
+  //     return () =>
+  //       BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+  //   }, [navigation]),
+  // );
 
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
-          }),
-        );
-        return true;
+        if (navigation.canGoBack()) {
+          navigation.goBack(); // Goes back to the previous screen
+          return true;
+        }
+        return false; // Allows the default back behavior (e.g., exiting the app)
       };
+
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () =>
         BackHandler.removeEventListener('hardwareBackPress', onBackPress);
@@ -210,12 +234,7 @@ const SearchItem = () => {
   );
 
   const handleHome = useCallback(() => {
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
-      }),
-    );
+    navigation.goBack();
   }, [navigation]);
 
   useFocusEffect(
@@ -226,52 +245,69 @@ const SearchItem = () => {
     }, []),
   );
 
-  const renderTrendingSearches = useCallback(
-    () =>
-      trendingSearches.map((item, index) => (
-        <TouchableOpacity key={index} style={styles.trendingItem}>
-          <Text style={styles.trendingText}>{item}</Text>
-        </TouchableOpacity>
-      )),
-    [trendingSearches],
-  );
+  // Combine all data into a single array for FlatList
+  const getListData = () => {
+    if (isFocused && suggestions.length > 0) {
+      return [
+        // Header can include search bar or any other components if needed
+        {type: 'searchBar'},
+        // Suggestions list
+        ...suggestions.map(item => ({type: 'suggestion', data: item})),
+      ];
+    } else {
+      return [
+        {type: 'searchBar'},
+        // Conditionally render no results or recents + trending
+        searchQuery && suggestions.length === 0
+          ? {type: 'noResults'}
+          : {type: 'content'},
+        // Recent searches and trending can be part of 'content'
+        ...(!searchQuery && suggestions.length === 0
+          ? [{type: 'recentSearches'}, {type: 'trendingSearches'}]
+          : []),
+      ];
+    }
+  };
 
-  return (
-    <View style={styles.mainContainer}>
-      <View style={styles.searchBar}>
-        <TouchableOpacity onPress={handleHome}>
-          <AntDesign
-            name="arrowleft"
-            size={20}
-            color="#000"
-            style={styles.icon}
-          />
-        </TouchableOpacity>
-        <View style={styles.searchInputContainer}>
-          <TextInput
-            ref={inputRef}
-            style={styles.searchInput}
-            placeholder={placeholderText}
-            placeholderTextColor="#000"
-            fontStyle="italic"
-            value={searchQuery}
-            onChangeText={handleInputChange}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setTimeout(() => setIsFocused(false), 100)}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={handleClear} style={styles.clearIcon}>
-              <Entypo name="circle-with-cross" size={20} color="#000" />
+  const renderItem = ({item}) => {
+    switch (item.type) {
+      case 'searchBar':
+        return (
+          <View style={styles.searchBar}>
+            <TouchableOpacity onPress={handleHome}>
+              <AntDesign
+                name="arrowleft"
+                size={20}
+                color="#000"
+                style={styles.icon}
+              />
             </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      <ScrollView contentContainerStyle={{paddingBottom: 50, flexGrow: 1}}>
-        <View
-          style={[styles.horizontalLine, {width: screenWidth, height: 4}]}
-        />
-        {searchQuery && suggestions.length === 0 && (
+            <View style={styles.searchInputContainer}>
+              <TextInput
+                ref={inputRef}
+                style={styles.searchInput}
+                placeholder={placeholderText}
+                placeholderTextColor="#000"
+                fontStyle="italic"
+                value={searchQuery}
+                onChangeText={handleInputChange}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setTimeout(() => setIsFocused(false), 100)}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity
+                  onPress={handleClear}
+                  style={styles.clearIcon}>
+                  <Entypo name="circle-with-cross" size={20} color="#000" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        );
+      case 'suggestion':
+        return renderSuggestionItem({item: item.data});
+      case 'noResults':
+        return (
           <View style={styles.noResultsContainer}>
             <MaterialIcons name="search-off" size={45} color="#000" />
             <Text style={styles.noResultsText}>No results found</Text>
@@ -289,22 +325,18 @@ const SearchItem = () => {
               </View>
             </View>
           </View>
-        )}
-
-        {loading && (
-          <LottieView
-            source={require('../assets/searchLoading.json')}
-            autoPlay
-            loop
-            style={styles.loadingAnimation}
-          />
-        )}
-
-        {!searchQuery && suggestions.length === 0 && (
+        );
+      case 'content':
+        return (
           <View style={styles.searchSuggestionsContainer}>
             <View style={styles.recentSearchesContainer}>
               <Text style={styles.sectionTitle}>Recents</Text>
-              {renderRecentSearches()}
+              <FlatList
+                data={recentSearches}
+                renderItem={renderRecentSearchItem}
+                keyExtractor={item => item.main_service_id.toString()}
+                horizontal={false}
+              />
             </View>
             <View
               style={[styles.horizontalLine, {width: screenWidth, height: 8}]}
@@ -316,18 +348,31 @@ const SearchItem = () => {
               </View>
             </View>
           </View>
-        )}
+        );
+      default:
+        return null;
+    }
+  };
 
-        {isFocused && suggestions.length > 0 && (
-          <FlatList
-            data={suggestions}
-            renderItem={renderItem}
-            keyExtractor={item => item.main_service_id.toString()}
-            style={styles.suggestionsList}
-            keyboardShouldPersistTaps="handled"
-          />
-        )}
-      </ScrollView>
+  return (
+    <View style={styles.mainContainer}>
+      <FlatList
+        data={getListData()}
+        renderItem={renderItem}
+        keyExtractor={(item, index) => `${item.type}-${index}`}
+        ListEmptyComponent={null}
+        ListFooterComponent={
+          loading ? (
+            <LottieView
+              source={require('../assets/searchLoading.json')}
+              autoPlay
+              loop
+              style={styles.loadingAnimation}
+            />
+          ) : null
+        }
+        keyboardShouldPersistTaps="handled"
+      />
     </View>
   );
 };
