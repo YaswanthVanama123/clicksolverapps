@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, TextInput, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, {useState, useEffect, useCallback} from 'react';
+import {View, TextInput, StyleSheet} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 
 const QuickSearch = () => {
   const initialPlaceholder = 'Search for ';
@@ -24,11 +24,11 @@ const QuickSearch = () => {
     const word = additionalTexts[currentIndex];
 
     if (currentWordIndex < word.length) {
-      setPlaceholderText((prev) => prev + word[currentWordIndex]);
-      setCurrentWordIndex((prev) => prev + 1);
+      setPlaceholderText(prev => prev + word[currentWordIndex]);
+      setCurrentWordIndex(prev => prev + 1);
     } else {
       setPlaceholderText(initialPlaceholder);
-      setCurrentIndex((prev) => (prev + 1) % additionalTexts.length);
+      setCurrentIndex(prev => (prev + 1) % additionalTexts.length);
       setCurrentWordIndex(0);
     }
   }, [currentIndex, currentWordIndex, additionalTexts, initialPlaceholder]);
@@ -38,7 +38,7 @@ const QuickSearch = () => {
     return () => clearInterval(interval);
   }, [updatePlaceholder]);
 
-  const handleInputChange = useCallback((query) => {
+  const handleInputChange = useCallback(query => {
     setSearchQuery(query);
   }, []);
 
@@ -53,7 +53,8 @@ const QuickSearch = () => {
         style={styles.searchInput}
         placeholder={placeholderText}
         placeholderTextColor="#000"
-        fontStyle='italic'
+        fontStyle="italic"
+        fontFamily="RobotoSlab-Regular"
         value={searchQuery}
         onChangeText={handleInputChange}
         onFocus={handleFocus}

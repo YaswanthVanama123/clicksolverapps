@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
   userInitialText: {
     fontSize: 18,
     color: '#333',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Bold',
   },
   scrollViewContent: {
     flexGrow: 1,
@@ -567,14 +567,14 @@ const styles = StyleSheet.create({
     lineHeight: 18.75,
     fontStyle: 'italic',
     color: '#808080',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-ExtraBold',
   },
   greetingIcon: {
     fontSize: 17,
   },
   userName: {
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'RobotoSlab-Bold',
     color: '#4A4A4A',
     lineHeight: 21.09,
   },
@@ -593,8 +593,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
     color: '#1D2951',
+    fontFamily: 'RobotoSlab-Bold',
   },
   seeAll: {
     fontSize: 14,
@@ -612,18 +612,16 @@ const styles = StyleSheet.create({
   },
   offerTitle: {
     fontSize: 40,
-    fontWeight: 'bold',
-    fontFamily: 'Roboto',
+    fontFamily: 'RobotoSlab-Bold',
   },
   offerSubtitle: {
     fontSize: 14,
-    fontWeight: 'bold',
     lineHeight: 16.41,
-    fontFamily: 'Roboto',
+    fontFamily: 'RobotoSlab-SemiBold',
   },
   offerDescription: {
     fontSize: 12,
-    fontFamily: 'Roboto',
+    fontFamily: 'RobotoSlab-Regular',
     opacity: 0.8,
     lineHeight: 14.06,
     fontWeight: '400',
@@ -671,7 +669,7 @@ const styles = StyleSheet.create({
   },
   absoluteMessageBox: {
     position: 'absolute',
-    bottom: 4,
+    bottom: 2,
     left: 0,
     right: 0,
   },
@@ -690,16 +688,30 @@ const styles = StyleSheet.create({
     elevation: 3,
     width: screenWidth * 0.9, // Set width to 80% of screen width for peek effect
   },
+  // startingContainer: {
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  // },
   startingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1, // Ensures it occupies available space
   },
+
+  // messageBox1: {
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  //   justifyContent: 'space-between',
+  //   width: '100%',
+  // },
+  // Updated Styles
   messageBox1: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    width: '100%',
+    flex: 1, // Added flex property
   },
+
   timeContainer: {
     width: 45,
     height: 45,
@@ -712,7 +724,7 @@ const styles = StyleSheet.create({
   textContainerText: {
     fontSize: 14,
     paddingBottom: 5,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Bold',
     color: '#212121',
     marginLeft: 10,
     width: '95%',
@@ -720,6 +732,7 @@ const styles = StyleSheet.create({
   textContainerTextCommander: {
     fontSize: 12,
     color: '#9e9e9e',
+    fontFamily: 'RobotoSlab-Regular',
     marginLeft: 10,
   },
 

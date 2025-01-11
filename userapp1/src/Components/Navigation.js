@@ -84,7 +84,7 @@ const Navigation = () => {
         `https://backend.clicksolver.com/api/user/work/cancel`,
         {notification_id: decodedId},
       );
-
+      console.log('res', response.status);
       if (response.status === 200) {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(

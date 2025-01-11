@@ -1,4 +1,3 @@
-import axios from 'axios';
 import React, {useEffect, useState, useCallback} from 'react';
 import {
   View,
@@ -10,32 +9,33 @@ import {
   Dimensions,
   Modal,
 } from 'react-native';
+import axios from 'axios';
 import Swiper from 'react-native-swiper';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import Entypo from 'react-native-vector-icons/Entypo';
 import Icon from 'react-native-vector-icons/Ionicons';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import LottieView from 'lottie-react-native';
-// import Config from 'react-native-config';
 
 const SingleService = () => {
   const navigation = useNavigation();
+  const route = useRoute();
+  const {serviceName} = route.params;
+
   const [services, setServices] = useState([]);
   const [quantities, setQuantities] = useState({});
   const [modalVisible, setModalVisible] = useState(false);
   const [bookedServices, setBookedServices] = useState([]);
   const [totalAmount, setTotalAmount] = useState(10);
   const [originalTotal, setOriginalAmount] = useState(0);
-  const route = useRoute();
-  const {serviceName} = route.params;
+  const [loginModalVisible, setLoginModalVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const fetchDetails = useCallback(async () => {
     try {
       const response = await axios.post(
         `https://backend.clicksolver.com/api/single/service`,
-        {
-          serviceName,
-        },
+        {serviceName},
       );
       const {relatedServices} = response.data;
       setServices(relatedServices);
@@ -45,8 +45,11 @@ const SingleService = () => {
           {},
         ),
       );
+      // Done fetching => turn off the loading
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching services:', error);
+      setLoading(false);
     }
   }, [serviceName]);
 
@@ -54,12 +57,10 @@ const SingleService = () => {
     const fetchStoredCart = async () => {
       try {
         const storedCart = await EncryptedStorage.getItem(serviceName);
-        // console.log("stored", storedCart);
         if (storedCart) {
           const parsedCart = JSON.parse(storedCart);
           if (Array.isArray(parsedCart)) {
             setBookedServices(parsedCart);
-
             // Update quantities from booked services
             const parsedQuantities = parsedCart.reduce((acc, service) => {
               acc[service.main_service_id] = service.quantity;
@@ -72,10 +73,11 @@ const SingleService = () => {
         console.error('Error fetching stored cart:', error);
       }
     };
-
+    // First fetch new services, then fetch old cart
     fetchDetails().then(fetchStoredCart);
   }, [fetchDetails, serviceName]);
 
+  // Recalculate total whenever quantities change
   useEffect(() => {
     const total = services.reduce((acc, service) => {
       const quantity = quantities[service.main_service_id] || 0;
@@ -112,12 +114,10 @@ const SingleService = () => {
 
     setBookedServices(booked);
 
-    // Store the updated booked services in EncryptedStorage only if there are items to store
     if (booked.length > 0) {
       const storeCart = async () => {
         try {
           await EncryptedStorage.setItem(serviceName, JSON.stringify(booked));
-          // console.log("Cart stored successfully:", booked);
         } catch (error) {
           console.error('Error storing cart:', error);
         }
@@ -126,13 +126,6 @@ const SingleService = () => {
     }
   }, [quantities, services, serviceName]);
 
-  const handleQuantityChange = (id, delta) => {
-    setQuantities(prev => ({
-      ...prev,
-      [id]: Math.max(0, (prev[id] || 0) + delta),
-    }));
-  };
-
   const calculateDiscount = (cost, quantity) => {
     if (quantity === 1) return cost;
     if (quantity === 2) return cost * quantity * 0.85;
@@ -140,13 +133,34 @@ const SingleService = () => {
     return cost * quantity * 0.7;
   };
 
+  const handleQuantityChange = (id, delta) => {
+    setQuantities(prev => ({
+      ...prev,
+      [id]: Math.max(0, (prev[id] || 0) + delta),
+    }));
+  };
+
   const handleBookNow = () => {
     setModalVisible(true);
   };
 
-  const bookService = () => {
-    setModalVisible(false);
-    navigation.push('UserLocation', {serviceName: bookedServices});
+  const navigateToLogin = () => {
+    setLoginModalVisible(false);
+    navigation.push('Login');
+  };
+
+  const bookService = async () => {
+    try {
+      const cs_token = await EncryptedStorage.getItem('cs_token');
+      if (cs_token) {
+        setModalVisible(false);
+        navigation.push('UserLocation', {serviceName: bookedServices});
+      } else {
+        setLoginModalVisible(true);
+      }
+    } catch (error) {
+      console.error('Error accessing storage:', error);
+    }
   };
 
   const handleBackPress = () => {
@@ -156,6 +170,7 @@ const SingleService = () => {
   return (
     <View style={styles.container}>
       <ScrollView>
+        {/* Top Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.imageIcons} onPress={handleBackPress}>
             <Icon name="arrow-back" size={24} color="#000" />
@@ -167,24 +182,37 @@ const SingleService = () => {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.carouselContainer}>
-          <Swiper
-            style={styles.wrapper}
-            autoplay
-            autoplayTimeout={3}
-            showsPagination={false}>
-            {services.map(service => (
-              <View key={service.main_service_id}>
-                <Image
-                  source={{uri: service.service_urls[0]}}
-                  style={styles.carouselImage}
-                  resizeMode="cover"
-                />
-              </View>
-            ))}
-          </Swiper>
-        </View>
+        {/* Carousel or Carousel Loader */}
+        {loading ? (
+          <View style={styles.carouselLoaderContainer}>
+            <LottieView
+              source={require('../assets/singlecard.json')}
+              autoPlay
+              loop
+              style={styles.carouselLoader}
+            />
+          </View>
+        ) : (
+          <View style={styles.carouselContainer}>
+            <Swiper
+              style={styles.wrapper}
+              autoplay
+              autoplayTimeout={3}
+              showsPagination={false}>
+              {services.map(service => (
+                <View key={service.main_service_id}>
+                  <Image
+                    source={{uri: service.service_urls[0]}}
+                    style={styles.carouselImage}
+                    resizeMode="cover"
+                  />
+                </View>
+              ))}
+            </Swiper>
+          </View>
+        )}
 
+        {/* Title, Price Info */}
         <View style={styles.serviceHeader}>
           <View style={styles.serviceDetails}>
             <Text style={styles.serviceTitle}>{serviceName}</Text>
@@ -198,55 +226,68 @@ const SingleService = () => {
 
         <View style={styles.horizantalLine} />
 
+        {/* Recommended Container or Loader */}
         <View style={styles.recomendedContainer}>
-          {services.map(service => (
-            <TouchableOpacity
-              key={service.main_service_id}
-              style={styles.recomendedCard}>
-              <View style={styles.recomendedCardDetails}>
-                <Text style={styles.recomendedCardDetailsHead}>
-                  {service.service_tag}
-                </Text>
-                <Text
-                  style={styles.recomendedCardDetailsDescription}
-                  numberOfLines={2}>
-                  {service.service_details.about}
-                </Text>
-                <Text style={styles.recomendedCardDetailsRating}>
-                  ₹{service.cost}
-                </Text>
-                <View style={styles.addButton}>
-                  <TouchableOpacity
-                    onPress={() =>
-                      handleQuantityChange(service.main_service_id, -1)
-                    }>
-                    <Entypo name="minus" size={20} color="#4a4a4a" />
-                  </TouchableOpacity>
-                  <Text style={styles.addButtonText}>
-                    {quantities[service.main_service_id] > 0
-                      ? quantities[service.main_service_id]
-                      : 'Add'}
+          {loading ? (
+            <View style={styles.recommendedLoaderContainer}>
+              <LottieView
+                source={require('../assets/cardsLoading.json')}
+                autoPlay
+                loop
+                style={styles.recommendedLoader}
+              />
+            </View>
+          ) : (
+            services.map(service => (
+              <TouchableOpacity
+                key={service.main_service_id}
+                style={styles.recomendedCard}>
+                <View style={styles.recomendedCardDetails}>
+                  <Text style={styles.recomendedCardDetailsHead}>
+                    {service.service_tag}
                   </Text>
-                  <TouchableOpacity
-                    onPress={() =>
-                      handleQuantityChange(service.main_service_id, 1)
-                    }>
-                    <Entypo name="plus" size={20} color="#4a4a4a" />
-                  </TouchableOpacity>
+                  <Text
+                    style={styles.recomendedCardDetailsDescription}
+                    numberOfLines={2}>
+                    {service.service_details.about}
+                  </Text>
+                  <Text style={styles.recomendedCardDetailsRating}>
+                    ₹{service.cost}
+                  </Text>
+                  <View style={styles.addButton}>
+                    <TouchableOpacity
+                      onPress={() =>
+                        handleQuantityChange(service.main_service_id, -1)
+                      }>
+                      <Entypo name="minus" size={20} color="#4a4a4a" />
+                    </TouchableOpacity>
+                    <Text style={styles.addButtonText}>
+                      {quantities[service.main_service_id] > 0
+                        ? quantities[service.main_service_id]
+                        : 'Add'}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() =>
+                        handleQuantityChange(service.main_service_id, 1)
+                      }>
+                      <Entypo name="plus" size={20} color="#4a4a4a" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-              {service.service_details.urls && (
-                <Image
-                  source={{uri: service.service_details.urls}}
-                  style={styles.recomendedImage}
-                  resizeMode="stretch"
-                />
-              )}
-            </TouchableOpacity>
-          ))}
+                {service.service_details.urls && (
+                  <Image
+                    source={{uri: service.service_details.urls}}
+                    style={styles.recomendedImage}
+                    resizeMode="stretch"
+                  />
+                )}
+              </TouchableOpacity>
+            ))
+          )}
         </View>
       </ScrollView>
 
+      {/* Bottom Cart Bar */}
       {totalAmount > 0 && (
         <View style={styles.cartContainer}>
           <View>
@@ -262,11 +303,12 @@ const SingleService = () => {
           <TouchableOpacity
             onPress={handleBookNow}
             style={styles.buttonContainer}>
-            <Text style={styles.buttonText}>Book Now</Text>
+            <Text style={styles.buttonText}>View</Text>
           </TouchableOpacity>
         </View>
       )}
 
+      {/* Modal - Booked Services */}
       <Modal
         transparent
         animationType="slide"
@@ -339,6 +381,34 @@ const SingleService = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Login Prompt Modal */}
+      <Modal
+        transparent
+        animationType="fade"
+        visible={loginModalVisible}
+        onRequestClose={() => setLoginModalVisible(false)}>
+        <View style={styles.loginModalOverlay}>
+          <View style={styles.loginModalContent}>
+            <Text style={styles.loginModalTitle}>Login Required</Text>
+            <Text style={styles.loginModalMessage}>
+              You need to log in to book services. Would you like to log in now?
+            </Text>
+            <View style={styles.loginModalButtons}>
+              <TouchableOpacity
+                style={styles.loginCancelButton}
+                onPress={() => setLoginModalVisible(false)}>
+                <Text style={styles.loginCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.loginProceedButton}
+                onPress={navigateToLogin}>
+                <Text style={styles.loginProceedText}>Login</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -346,38 +416,142 @@ const SingleService = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 0,
     backgroundColor: '#FFFFFF',
   },
-  itemContainer: {
+  header: {
+    // absolutely positioned over the carousel
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 15,
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1,
+  },
+  imageIcons: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // ---------------------
+  //  CAROUSEL & LOADER
+  // ---------------------
+  carouselContainer: {
+    marginTop: 0,
+    // fixed height
+    width: '100%',
+  },
+  carouselLoaderContainer: {
+    // same 250 height so it lines up
+    height: 250,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  carouselLoader: {
+    // remove '100%' so it doesn't get too big
+    height: 250,
+    width: '100%',
+  },
+  wrapper: {
+    height: 250,
+  },
+  carouselImage: {
+    width: Dimensions.get('window').width,
+    height: 240,
+    resizeMode: 'cover',
+  },
+
+  serviceHeader: {
+    backgroundColor: '#fff',
+  },
+  serviceDetails: {
+    padding: 20,
+    paddingTop: 5,
+  },
+  serviceTitle: {
+    fontSize: 22,
+    color: '#212121',
+    fontFamily: 'RobotoSlab-SemiBold',
+    width: '90%',
+    lineHeight: 25,
+  },
+  priceContainer: {
+    marginTop: 5,
+  },
+  Sparetext: {
+    color: '#4a4a4a',
+    opacity: 0.8,
+    fontSize: 14,
+    width: '90%',
+    fontFamily: 'RobotoSlab-Regular',
+  },
+  horizantalLine: {
+    width: '100%',
+    height: 5,
+    backgroundColor: '#f5f5f5',
+  },
+
+  // ---------------------
+  //  RECOMMENDED SERVICES
+  // ---------------------
+  recomendedContainer: {
+    padding: 20,
+    marginBottom: 50,
+    paddingTop: 0,
+  },
+  recommendedLoaderContainer: {
+    height: 200, // or however tall you want the loader space
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 30,
+  },
+  recommendedLoader: {
+    width: 150,
+    height: 150,
+  },
+  recomendedCard: {
+    flexDirection: 'row',
     width: '100%',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 25,
   },
-  scrollContainer: {
-    flex: 1,
-    marginBottom: 80,
+  recomendedCardDetails: {
+    width: '55%',
   },
-  itemContainers: {
-    flexDirection: 'column',
-    width: '100%',
-    gap: 20,
+  recomendedCardDetailsHead: {
+    color: '#212121',
+    fontFamily: 'RobotoSlab-Medium',
+    fontSize: 15,
+    paddingBottom: 5,
   },
-  descriptionContainer: {
-    width: '45%',
+  recomendedCardDetailsDescription: {
+    color: '#4a4a4a',
+    fontSize: 10,
+    lineHeight: 15,
+    fontFamily: 'RobotoSlab-Regular',
   },
-  originalAmount: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: 'black',
+  recomendedCardDetailsRating: {
+    color: '#212121',
+    fontSize: 15,
+    paddingBottom: 10,
+    paddingTop: 5,
   },
-  crossedText: {
-    textDecorationLine: 'line-through',
-    color: 'red',
-    marginRight: 5,
+  recomendedImage: {
+    width: 105,
+    height: 105,
+    borderRadius: 10,
   },
+
+  // add/sub quantity button
   addButton: {
     padding: 5,
     borderWidth: 1,
@@ -396,119 +570,10 @@ const styles = StyleSheet.create({
     color: '#4a4a4a',
     fontSize: 16,
   },
-  recomendedCardDetailsRating: {
-    color: '#212121',
-    fontSize: 15,
-    paddingBottom: 10,
-    paddingTop: 5,
-  },
-  recomendedCardDetailsDescription: {
-    color: '#4a4a4a',
-    fontSize: 12,
-    lineHeight: 15,
-  },
-  recomendedCardDetailsHead: {
-    color: '#212121',
-    fontWeight: '500',
-    fontSize: 15,
-    paddingBottom: 5,
-  },
-  recomendedCardDetails: {
-    width: '55%',
-  },
-  recomendedImage: {
-    width: 105,
-    height: 105,
-    borderRadius: 10,
-  },
-  recomendedModalImage: {
-    width: 125,
-    height: 105,
-    borderRadius: 10,
-  },
-  recomendedCard: {
-    flexDirection: 'row',
-    width: '100%',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 25,
-  },
-  recomendedContainer: {
-    padding: 20,
-    marginBottom: 50,
-    paddingTop: 0,
-  },
-  serviceDetails: {
-    padding: 20,
-    paddingTop: 5,
-  },
-  horizantalLine: {
-    width: '100%',
-    height: 5,
-    backgroundColor: '#f5f5f5',
-  },
-  priceContainer: {
-    marginTop: 5,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 15,
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1,
-  },
-  headerIcons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: 80,
-  },
-  imageIcons: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#ffffff',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  wrapper: {
-    height: 250,
-  },
-  carouselContainer: {
-    marginTop: 0,
-    height: 250,
-  },
-  carouselImage: {
-    width: Dimensions.get('window').width,
-    height: 240,
-    resizeMode: 'cover',
-  },
-  serviceHeader: {
-    backgroundColor: '#fff',
-  },
-  serviceTitle: {
-    fontSize: 22,
-    color: '#212121',
-    fontFamily: 'RobotoSlab-Bold',
-    width: '90%',
-    lineHeight: 25,
-  },
-  crossIcon: {
-    padding: 10,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 50,
-  },
-  crossIconContainer: {
-    marginRight: 10,
-    marginBottom: 10,
-  },
-  ammount: {
-    color: '#212121',
-  },
+
+  // ---------------------
+  //    BOTTOM CART BAR
+  // ---------------------
   cartContainer: {
     position: 'absolute',
     bottom: 0,
@@ -523,7 +588,7 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 3,
-    elevation: 2,
+    elevation: 4,
   },
   buttonContainer: {
     backgroundColor: '#ff4500',
@@ -534,27 +599,41 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#FFFFFF',
-    fontWeight: '500',
+    fontFamily: 'RobotoSlab-Medium',
   },
-  bookButton: {
-    backgroundColor: '#ff4500',
-    width: '50%',
-    padding: 8,
-    alignItems: 'center',
-    borderRadius: 10,
-    elevation: 5,
+  ammount: {
+    fontSize: 15,
+    color: '#212121',
+    fontFamily: 'RobotoSlab-Regular',
   },
-  Sparetext: {
-    color: '#4a4a4a',
-    opacity: 0.8,
-    fontSize: 14,
-    width: '90%',
+  originalAmount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'black',
   },
+  crossedText: {
+    textDecorationLine: 'line-through',
+    color: 'red',
+    marginRight: 5,
+  },
+
+  // ---------------------
+  //       MODALS
+  // ---------------------
   modalContainer: {
     flex: 1,
     justifyContent: 'flex-end',
     alignItems: 'flex-end',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  crossIconContainer: {
+    marginRight: 10,
+    marginBottom: 10,
+  },
+  crossIcon: {
+    padding: 10,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 50,
   },
   modalContent: {
     width: '100%',
@@ -567,21 +646,110 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-SemiBold',
     marginBottom: 20,
     color: '#1D2951',
   },
   modalTotal: {
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'RobotoSlab-Regular',
     paddingBottom: 10,
     paddingTop: 10,
     color: '#4a4a4a',
   },
+  bookButton: {
+    backgroundColor: '#ff4500',
+    width: '50%',
+    padding: 8,
+    alignItems: 'center',
+    borderRadius: 10,
+    elevation: 5,
+  },
   modalButtonText: {
     color: '#ffffff',
-    fontWeight: '500',
+    fontFamily: 'RobotoSlab-Medium',
     fontSize: 15,
+  },
+
+  // Booked Items inside modal
+  itemContainers: {
+    flexDirection: 'column',
+    width: '100%',
+    gap: 20,
+  },
+  itemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 30,
+    width: '100%',
+  },
+  descriptionContainer: {
+    width: '45%',
+  },
+  recomendedModalImage: {
+    width: 125,
+    height: 105,
+    borderRadius: 10,
+  },
+
+  // ---------------------
+  //   LOGIN PROMPT MODAL
+  // ---------------------
+  loginModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loginModalContent: {
+    width: '80%',
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+  },
+  loginModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#212121',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  loginModalMessage: {
+    fontSize: 14,
+    color: '#4a4a4a',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  loginModalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  loginCancelButton: {
+    flex: 1,
+    padding: 10,
+    backgroundColor: '#A9A9A9',
+    borderRadius: 10,
+    marginRight: 10,
+    alignItems: 'center',
+  },
+  loginCancelText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  loginProceedButton: {
+    flex: 1,
+    padding: 10,
+    backgroundColor: '#FF4500',
+    borderRadius: 10,
+    marginLeft: 10,
+    alignItems: 'center',
+  },
+  loginProceedText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
 });
 

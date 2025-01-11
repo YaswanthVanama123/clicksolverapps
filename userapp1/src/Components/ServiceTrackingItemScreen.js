@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Linking,
+  Animated,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome6';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -26,6 +27,10 @@ const ServiceTrackingItemScreen = () => {
   const [serviceArray, setServiceArray] = useState([]);
   const {tracking_id} = useRoute().params;
   const [pin, setPin] = useState('4567');
+  const [paymentExpanded, setPaymentExpanded] = useState(false);
+  const togglePaymentDetails = () => {
+    setPaymentExpanded(!paymentExpanded);
+  };
 
   const getTimelineData = useMemo(() => {
     const statuses = [
@@ -42,6 +47,20 @@ const ServiceTrackingItemScreen = () => {
       lineColor: index <= currentStatusIndex ? '#ff4500' : '#a1a1a1',
     }));
   }, [details.service_status]);
+  const rotateAnimation = useMemo(() => new Animated.Value(0), []);
+
+  useEffect(() => {
+    Animated.timing(rotateAnimation, {
+      toValue: paymentExpanded ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [paymentExpanded, rotateAnimation]);
+
+  const rotateInterpolate = rotateAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
+  });
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -191,42 +210,64 @@ const ServiceTrackingItemScreen = () => {
           </View>
         </View>
 
+        {/* Payment Details */}
         <View style={styles.paymentInnerContainer}>
-          <Text style={styles.sectionPaymentTitle}>Payment Details</Text>
+          <TouchableOpacity
+            style={styles.paymentSummaryContainer}
+            onPress={togglePaymentDetails}
+            accessibilityRole="button"
+            accessibilityLabel="Toggle Payment Details">
+            <Text style={styles.sectionPaymentTitle}>Payment Details</Text>
+            <Animated.View style={{transform: [{rotate: rotateInterpolate}]}}>
+              <Entypo name="chevron-small-right" size={20} color="#ff4500" />
+            </Animated.View>
+          </TouchableOpacity>
         </View>
         <View style={styles.sectionContainer}>
-          <View style={styles.PaymentItemContainer}>
-            {serviceArray.map((service, index) => (
-              <View key={index} style={styles.paymentRow}>
-                <Text style={styles.paymentLabel}>{service.serviceName}</Text>
-                <Text style={styles.paymentValue}>₹{service.cost}.00</Text>
+          {/* Payment Summary with Toggle */}
+
+          {/* Conditionally Render Payment Details */}
+          {paymentExpanded && (
+            <>
+              <View style={styles.PaymentItemContainer}>
+                {serviceArray.map((service, index) => (
+                  <View key={index} style={styles.paymentRow}>
+                    <Text style={styles.paymentLabel}>
+                      {service.serviceName}
+                    </Text>
+                    <Text style={styles.paymentValue}>
+                      ₹{service.cost.toFixed(2)}
+                    </Text>
+                  </View>
+                ))}
+                <View style={styles.paymentRow}>
+                  <Text style={styles.paymentLabel}>SGST (5%)</Text>
+                  <Text style={styles.paymentValue}>
+                    ₹{paymentDetails.cgstAmount.toFixed(2)}
+                  </Text>
+                </View>
+                <View style={styles.paymentRow}>
+                  <Text style={styles.paymentLabel}>CGST (5%)</Text>
+                  <Text style={styles.paymentValue}>
+                    ₹{paymentDetails.gstAmount.toFixed(2)}
+                  </Text>
+                </View>
+                <View style={styles.paymentRow}>
+                  <Text style={styles.paymentLabel}>Cashback (5%)</Text>
+                  <Text style={styles.paymentValue}>
+                    ₹{paymentDetails.discountAmount.toFixed(2)}
+                  </Text>
+                </View>
+                <View style={styles.paymentRow}>
+                  <Text style={styles.paymentLabel}>Pay Via Scan</Text>
+                  <Text style={styles.paymentValue}>
+                    Grand Total ₹
+                    {paymentDetails.fetchedFinalTotalAmount.toFixed(2)}
+                  </Text>
+                </View>
               </View>
-            ))}
-            <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>SGST (5%)</Text>
-              <Text style={styles.paymentValue}>
-                ₹{paymentDetails.cgstAmount}.00
-              </Text>
-            </View>
-            <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>CGST (5%)</Text>
-              <Text style={styles.paymentValue}>
-                ₹{paymentDetails.gstAmount}.00
-              </Text>
-            </View>
-            <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>Cashback (5%)</Text>
-              <Text style={styles.paymentValue}>
-                ₹{paymentDetails.discountAmount}.00
-              </Text>
-            </View>
-            <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>Pay Via Scan</Text>
-              <Text style={styles.paymentValue}>
-                Grand Total ₹{paymentDetails.fetchedFinalTotalAmount}.00
-              </Text>
-            </View>
-          </View>
+            </>
+          )}
         </View>
 
         <TouchableOpacity style={styles.payButton} onPress={openPhonePeScanner}>
@@ -320,6 +361,11 @@ const styles = StyleSheet.create({
   },
   innerContainer: {
     paddingLeft: 16,
+  },
+  paymentSummaryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   paymentInnerContainer: {
     padding: 10,

@@ -217,9 +217,10 @@ function App() {
             encodedId: encodedNotificationId,
           }),
         ),
+
       worktimescreen: () =>
         navigationRef.current.dispatch(
-          CommonActions.navigate('worktimescreen', {
+          CommonActions.navigate('ServiceInProgress', {
             encodedId: encodedNotificationId,
           }),
         ),

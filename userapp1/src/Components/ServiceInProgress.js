@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   BackHandler,
+  Modal,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LottieView from 'lottie-react-native';
@@ -26,6 +27,9 @@ const ServiceInProgressScreen = () => {
   const [details, setDetails] = useState({});
   const [services, setServices] = useState([]);
   const [decodedId, setDecodedId] = useState(null);
+  const [confirmationModalVisible, setConfirmationModalVisible] =
+    useState(false);
+  const [cancellationReason, setCancellationReason] = useState('');
 
   const route = useRoute();
   const {encodedId} = route.params;
@@ -99,6 +103,32 @@ const ServiceInProgressScreen = () => {
     }));
   };
 
+  const handleCompleteClick = () => {
+    setConfirmationModalVisible(true);
+  };
+
+  const handleConfirmComplete = async () => {
+    try {
+      const response = await axios.post(
+        `https://backend.clicksolver.com/api/work/time/completed/request`,
+        {
+          notification_id: decodedId,
+        },
+      );
+
+      if (response.status === 200) {
+        // setShowMessage(true);
+        // await EncryptedStorage.setItem('messageBox', JSON.stringify(true));
+        // setTimeLeft(60);
+        // setIsWaiting(true);
+        setConfirmationModalVisible(false);
+      }
+    } catch (error) {
+      console.error('Error completing work:', error);
+      // Optionally, show an error message to the user
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -117,27 +147,27 @@ const ServiceInProgressScreen = () => {
     }, [navigation]),
   );
 
-  const handleCompleteClick = async () => {
-    if (decodedId) {
-      try {
-        const response = await axios.post(
-          `https://backend.clicksolver.com/api/work/time/completed/request`,
-          {
-            notification_id: decodedId,
-          },
-        );
+  // const handleCompleteClick = async () => {
+  //   if (decodedId) {
+  //     try {
+  //       const response = await axios.post(
+  //         `https://backend.clicksolver.com/api/work/time/completed/request`,
+  //         {
+  //           notification_id: decodedId,
+  //         },
+  //       );
 
-        if (response.status === 200) {
-          setShowMessage(true);
-          await EncryptedStorage.setItem('messageBox', JSON.stringify(true));
-          setTimeLeft(60);
-          setIsWaiting(true);
-        }
-      } catch (error) {
-        console.error('Error completing work:', error);
-      }
-    }
-  };
+  //       if (response.status === 200) {
+  //         setShowMessage(true);
+  //         await EncryptedStorage.setItem('messageBox', JSON.stringify(true));
+  //         setTimeLeft(60);
+  //         setIsWaiting(true);
+  //       }
+  //     } catch (error) {
+  //       console.error('Error completing work:', error);
+  //     }
+  //   }
+  // };
 
   const formatDate = dateString => {
     const date = new Date(dateString);
@@ -311,6 +341,39 @@ const ServiceInProgressScreen = () => {
           </View>
         </View>
       </ScrollView>
+      {/* Confirmation Modal for Service Completion */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={confirmationModalVisible}
+        onRequestClose={() => setConfirmationModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmationModalContainer}>
+            <Text style={styles.confirmationTitle}>
+              Confirm Service Completion
+            </Text>
+            <Text style={styles.confirmationSubtitle}>
+              Are you sure you want to mark the service as completed? Please
+              click the button only if the entire work is finished. Once the
+              service is marked as completed, we will no longer track it, and it
+              will be considered successfully completed.
+            </Text>
+
+            <View style={styles.modalButtonsContainer}>
+              <TouchableOpacity
+                style={styles.modalButtonCancel}
+                onPress={() => setConfirmationModalVisible(false)}>
+                <Text style={styles.modalButtonTextCancel}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalButtonConfirm}
+                onPress={handleConfirmComplete}>
+                <Text style={styles.modalButtonTextConfirm}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -496,6 +559,61 @@ const styles = StyleSheet.create({
   timelineTime: {
     fontSize: 10,
     color: '#4a4a4a',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  confirmationModalContainer: {
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+  },
+  confirmationTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#212121',
+  },
+  confirmationSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  modalButtonCancel: {
+    backgroundColor: '#a1a1a1',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginRight: 10,
+    flex: 1,
+    alignItems: 'center',
+  },
+  modalButtonConfirm: {
+    backgroundColor: '#ff4500',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    flex: 1,
+    alignItems: 'center',
+  },
+  modalButtonTextCancel: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  modalButtonTextConfirm: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
 

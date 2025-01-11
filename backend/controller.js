@@ -1528,7 +1528,6 @@ const insertTracking = async (req, res) => {
           body: `Commander collected your Item to repair in his location.`,
         },
         data: {
-          notification_id: notification_id.toString(),
           screen: "Home",
         },
       };
@@ -4432,28 +4431,87 @@ const acceptRequest = async (req, res) => {
 
 // const userNavigationCancel = async (req, res) => {
 //   const { notification_id } = req.body;
-//   const encodedUserNotificationId = Buffer.from(notification_id.toString()).toString("base64");
 
 //   try {
-//     // Combined UPDATE and SELECT using CTE
-//     const combinedQuery = await client.query(`
+//     // Begin a transaction
+//     await client.query("BEGIN");
+
+//     // First query: UPDATE and INSERT operations with verification_status check
+//     const combinedQuery = await client.query(
+//       `
 //       WITH updated AS (
 //         UPDATE accepted
 //         SET user_navigation_cancel_status = 'usercanceled'
-//         WHERE notification_id = $1
-//           AND user_navigation_cancel_status IS NULL
+//         WHERE notification_id = $1 AND verification_status != 'TRUE'
+//         RETURNING
+//           accepted_id,
+//           notification_id,
+//           user_id,
+//           user_notification_id,
+//           longitude,
+//           latitude,
+//           created_at,
+//           worker_id,
+//           complete_status,
+//           time
+//       ),
+//       inserted AS (
+//         INSERT INTO completenotifications (
+//           accepted_id,
+//           notification_id,
+//           user_id,
+//           user_notification_id,
+//           longitude,
+//           latitude,
+//           created_at,
+//           worker_id,
+//           complete_status,
+//           service_booked,
+//           time
+//         )
+//         SELECT
+//           accepted_id,
+//           notification_id,
+//           user_id,
+//           user_notification_id,
+//           longitude,
+//           latitude,
+//           created_at,
+//           worker_id,
+//           'cancel',
+//           to_jsonb('service_booked'::text),
+//           time
+//         FROM updated
 //         RETURNING worker_id, notification_id
 //       )
-//       SELECT w.worker_id, f.fcm_token
-//       FROM updated u
-//       JOIN workersverified w ON w.worker_id = u.worker_id
+//       SELECT
+//         i.worker_id,
+//         ARRAY_AGG(f.fcm_token) AS fcm_tokens
+//       FROM inserted i
+//       JOIN workersverified w ON w.worker_id = i.worker_id
 //       JOIN fcm f ON f.worker_id = w.worker_id
-//     `, [notification_id]);
+//       GROUP BY i.worker_id;
+//       `,
+//       [notification_id]
+//     );
 
-//     console.log(combinedQuery.rows)
+//     // Second query: DELETE operation (only if cancellation was performed)
+//     if (combinedQuery.rowCount > 0) {
+//       await client.query(
+//         `
+//         DELETE FROM accepted
+//         WHERE notification_id = $1;
+//       `,
+//         [notification_id]
+//       );
+//     }
+
+//     // Commit the transaction
+//     await client.query("COMMIT");
 
 //     if (combinedQuery.rowCount > 0) {
-//       const fcmTokens = combinedQuery.rows.map(row => row.fcm_token);
+//       const workerId = combinedQuery.rows[0].worker_id;
+//       const fcmTokens = combinedQuery.rows[0].fcm_tokens;
 
 //       if (fcmTokens.length > 0) {
 //         // Create the multicast message object for FCM tokens
@@ -4464,44 +4522,68 @@ const acceptRequest = async (req, res) => {
 //             body: `Sorry for this, User cancelled the Service.`,
 //           },
 //           data: {
-//             notification_id: encodedUserNotificationId,
-//             screen: 'Home',
+//             screen: "Home",
 //           },
 //         };
 
 //         try {
 //           // Send the message to multiple tokens using sendEachForMulticast
-//           const response = await getMessaging().sendEachForMulticast(multicastMessage);
+//           const response = await getMessaging().sendEachForMulticast(
+//             multicastMessage
+//           );
 
-//           // Log the responses for each token
+//           const successCount = response.responses.filter(
+//             (res) => res.success
+//           ).length;
+//           const failureCount = response.responses.filter(
+//             (res) => !res.success
+//           ).length;
+
+//           console.log(
+//             `Notifications sent: ${successCount}, Notifications failed: ${failureCount}`
+//           );
+
 //           response.responses.forEach((res, index) => {
-//             if (res.success) {
-//               // Optionally log successful sends
-//               // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
-//             } else {
-//               console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+//             if (!res.success) {
+//               console.error(
+//                 `Error sending message to token ${fcmTokens[index]}:`,
+//                 res.error
+//               );
 //             }
 //           });
-
-//           // Optionally log success and failure counts
-//           // console.log('Success Count:', response.successCount);
-//           // console.log('Failure Count:', response.failureCount);
 //         } catch (error) {
-//           console.error('Error sending notifications:', error);
-//           // Optionally handle notification sending errors differently
+//           console.error("Error sending notifications:", error);
 //         }
+
+//         const screen = "";
+//         const encodedId = Buffer.from(notification_id.toString()).toString(
+//           "base64"
+//         );
+//         await updateWorkerAction(workerId, encodedId, screen);
 
 //         return res.status(200).json({ message: "Cancellation successful" });
 //       } else {
-//         console.error('No FCM tokens to send the message to.');
-//         return res.status(200).json({ message: "Cancellation successful, but no FCM tokens found." });
+//         const screen = "";
+//         const encodedId = Buffer.from(notification_id.toString()).toString(
+//           "base64"
+//         );
+//         await updateWorkerAction(workerId, encodedId, screen);
+//         console.error("No FCM tokens to send the message to.");
+//         return res.status(200).json({
+//           message: "Cancellation successful, but no FCM tokens found.",
+//         });
 //       }
 //     } else {
-//       // No rows updated implies either invalid notification_id or already canceled
-//       return res.status(205).json({ message: "Cancellation not performed. Either invalid ID or already canceled." });
+//       await client.query("ROLLBACK");
+//       return res.status(205).json({
+//         message:
+//           "Cancellation not performed. Either invalid ID, already canceled, or verification_status is TRUE.",
+//       });
 //     }
 //   } catch (error) {
-//     console.error('Error processing request:', error);
+//     // Rollback the transaction in case of error
+//     await client.query("ROLLBACK");
+//     console.error("Error processing request:", error);
 //     return res.status(500).json({ error: "Internal server error" });
 //   }
 // };
@@ -4663,6 +4745,166 @@ const userNavigationCancel = async (req, res) => {
   }
 };
 
+// main
+// const userNavigationCancel = async (req, res) => {
+//   const { notification_id } = req.body;
+
+//   try {
+//     // Begin a transaction
+//     await client.query("BEGIN");
+
+//     // First query: UPDATE and INSERT operations with verification_status check
+//     const combinedQuery = await client.query(
+//       `
+//       WITH updated AS (
+//         UPDATE accepted
+//         SET user_navigation_cancel_status = 'usercanceled'
+//         WHERE notification_id = $1 AND verification_status = FALSE
+//         RETURNING
+//           accepted_id,
+//           notification_id,
+//           user_id,
+//           user_notification_id,
+//           longitude,
+//           latitude,
+//           created_at,
+//           worker_id,
+//           complete_status,
+//           time
+//       ),
+//       inserted AS (
+//         INSERT INTO completenotifications (
+//           accepted_id,
+//           notification_id,
+//           user_id,
+//           user_notification_id,
+//           longitude,
+//           latitude,
+//           created_at,
+//           worker_id,
+//           complete_status,
+//           service_booked,
+//           time
+//         )
+//         SELECT
+//           accepted_id,
+//           notification_id,
+//           user_id,
+//           user_notification_id,
+//           longitude,
+//           latitude,
+//           created_at,
+//           worker_id,
+//           'cancel',
+//           to_jsonb('service_booked'::text),
+//           time
+//         FROM updated
+//         RETURNING worker_id, notification_id
+//       )
+//       SELECT
+//         i.worker_id,
+//         ARRAY_AGG(f.fcm_token) AS fcm_tokens
+//       FROM inserted i
+//       JOIN workersverified w ON w.worker_id = i.worker_id
+//       JOIN fcm f ON f.worker_id = w.worker_id
+//       GROUP BY i.worker_id;
+//     `,
+//       [notification_id]
+//     );
+
+//     // Second query: DELETE operation (only if cancellation was performed)
+//     if (combinedQuery.rowCount > 0) {
+//       await client.query(
+//         `
+//         DELETE FROM accepted
+//         WHERE notification_id = $1;
+//       `,
+//         [notification_id]
+//       );
+//     }
+
+//     // Commit the transaction
+//     await client.query("COMMIT");
+
+//     if (combinedQuery.rowCount > 0) {
+//       const workerId = combinedQuery.rows[0].worker_id;
+//       const fcmTokens = combinedQuery.rows[0].fcm_tokens; // Updated to use ARRAY_AGG
+
+//       if (fcmTokens.length > 0) {
+//         // Create the multicast message object for FCM tokens
+//         const multicastMessage = {
+//           tokens: fcmTokens,
+//           notification: {
+//             title: "Click Solver",
+//             body: `Sorry for this, User cancelled the Service.`,
+//           },
+//           data: {
+//             screen: "Home",
+//           },
+//         };
+
+//         try {
+//           // Send the message to multiple tokens using sendEachForMulticast
+//           const response = await getMessaging().sendEachForMulticast(
+//             multicastMessage
+//           );
+
+//           const successCount = response.responses.filter(
+//             (res) => res.success
+//           ).length;
+//           const failureCount = response.responses.filter(
+//             (res) => !res.success
+//           ).length;
+
+//           console.log(
+//             `Notifications sent: ${successCount}, Notifications failed: ${failureCount}`
+//           );
+
+//           response.responses.forEach((res, index) => {
+//             if (!res.success) {
+//               console.error(
+//                 `Error sending message to token ${fcmTokens[index]}:`,
+//                 res.error
+//               );
+//             }
+//           });
+//         } catch (error) {
+//           console.error("Error sending notifications:", error);
+//         }
+
+//         const screen = "";
+//         const encodedId = Buffer.from(notification_id.toString()).toString(
+//           "base64"
+//         );
+//         await updateWorkerAction(workerId, encodedId, screen);
+
+//         return res.status(200).json({ message: "Cancellation successful" });
+//       } else {
+//         const screen = "";
+//         const encodedId = Buffer.from(notification_id.toString()).toString(
+//           "base64"
+//         );
+//         await updateWorkerAction(workerId, encodedId, screen);
+//         console.error("No FCM tokens to send the message to.");
+//         return res.status(200).json({
+//           message: "Cancellation successful, but no FCM tokens found.",
+//         });
+//       }
+//     } else {
+//       await client.query("ROLLBACK");
+//       return res.status(205).json({
+//         message:
+//           "Cancellation not performed. Either invalid ID, already canceled, or verification_status is TRUE.",
+//       });
+//     }
+//   } catch (error) {
+//     // Rollback the transaction in case of error
+//     await client.query("ROLLBACK");
+//     console.error("Error processing request:", error);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+// };
+
 // const userNavigationCancel = async (req, res) => {
 //   const { notification_id } = req.body;
 //   const encodedUserNotificationId = Buffer.from(
@@ -4755,7 +4997,6 @@ const userNavigationCancel = async (req, res) => {
 //             body: `Sorry for this, User cancelled the Service.`,
 //           },
 //           data: {
-//             notification_id: encodedUserNotificationId,
 //             screen: "Home",
 //           },
 //         };
@@ -4766,12 +5007,19 @@ const userNavigationCancel = async (req, res) => {
 //             multicastMessage
 //           );
 
-//           // Log the responses for each token
+//           const successCount = response.responses.filter(
+//             (res) => res.success
+//           ).length;
+//           const failureCount = response.responses.filter(
+//             (res) => !res.success
+//           ).length;
+
+//           console.log(
+//             `Notifications sent: ${successCount}, Notifications failed: ${failureCount}`
+//           );
+
 //           response.responses.forEach((res, index) => {
-//             if (res.success) {
-//               // Optionally log successful sends
-//               // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
-//             } else {
+//             if (!res.success) {
 //               console.error(
 //                 `Error sending message to token ${fcmTokens[index]}:`,
 //                 res.error
@@ -6605,7 +6853,7 @@ const workerVerifyOtp = async (req, res) => {
   const { notification_id, otp } = req.body;
 
   try {
-    // Single query to update both verification_status and time.arrived with formatted timestamp
+    // SQL Query with proper GROUP BY and ARRAY_AGG
     const query = `
       WITH updated AS (
         UPDATE accepted
@@ -6617,53 +6865,65 @@ const workerVerifyOtp = async (req, res) => {
             to_jsonb(to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS'))
           )
         WHERE notification_id = $1 AND pin = $2
-        RETURNING *
+        RETURNING 
+          accepted_id, 
+          notification_id, 
+          user_id, 
+          user_navigation_cancel_status, 
+          verification_status, 
+          service_booked, 
+          time
       )
-      SELECT
+      SELECT 
         a.notification_id,
-        a.pin,
+        ARRAY_AGG(u.fcm_token) AS fcm_tokens,
+        a.user_id,
         a.user_navigation_cancel_status,
         a.verification_status,
-        a.user_id,
         a.service_booked,
-        u.fcm_token,
         a.time
       FROM updated a
-      LEFT JOIN userfcm u ON a.user_id = u.user_id;
+      LEFT JOIN userfcm u ON a.user_id = u.user_id
+      GROUP BY 
+        a.notification_id, 
+        a.user_id, 
+        a.user_navigation_cancel_status, 
+        a.verification_status, 
+        a.service_booked, 
+        a.time;
     `;
 
     // Execute the query with parameters
     const queryResult = await client.query(query, [notification_id, otp]);
-    console.log(notification_id);
+
     // Check if any records were returned
     if (queryResult.rows.length === 0) {
       return res
         .status(404)
-        .json({ message: "OTP is incorrect or notification not found" });
+        .json({ message: "OTP is incorrect or notification not found." });
     }
 
     const row = queryResult.rows[0];
-    console.log("Updated Row:", row);
+    const fcmTokens = row.fcm_tokens
+      ? row.fcm_tokens.filter((token) => token)
+      : [];
 
-    // Check if the user canceled the navigation
+    // If user has canceled navigation, return a specific message
     if (row.user_navigation_cancel_status === "usercanceled") {
-      return res.status(205).json({ message: "User cancelled the navigation" });
+      return res
+        .status(205)
+        .json({ message: "User cancelled the navigation." });
     }
 
-    // Proceed since both updates succeeded
-    // Start the time and fetch result
+    // Proceed to start the time and send notifications
     const timeResult = await TimeStart(notification_id);
 
-    // Fetch the FCM tokens from the query result
-    const fcmTokens = [row.fcm_token].filter((token) => token);
-
     if (fcmTokens.length > 0) {
-      // Create a multicast message for all tokens
       const multicastMessage = {
         tokens: fcmTokens,
         notification: {
           title: "Click Solver",
-          body: "The Commander has successfully verified the work, the time has started.",
+          body: "The Commander has successfully verified the work. The time has started.",
         },
         data: {
           notification_id: notification_id.toString(),
@@ -6672,7 +6932,6 @@ const workerVerifyOtp = async (req, res) => {
       };
 
       try {
-        // Send notifications to multiple tokens
         const response = await getMessaging().sendEachForMulticast(
           multicastMessage
         );
@@ -6704,9 +6963,10 @@ const workerVerifyOtp = async (req, res) => {
     );
 
     // Respond with success
-    return res
-      .status(200)
-      .json({ status: "Verification successful", timeResult: timeResult });
+    return res.status(200).json({
+      status: "Verification successful",
+      timeResult: timeResult,
+    });
   } catch (error) {
     console.error("Error verifying OTP:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -8711,8 +8971,11 @@ const submitFeedback = async (req, res) => {
     const { notification_id, rating, comment } = req.body;
     const user_id = req.user.id;
 
-    if (!notification_id || !rating || !comment || !user_id) {
-      return res.status(400).json({ message: "All fields are required." });
+    // Validate required fields
+    if (!notification_id || !rating || !user_id) {
+      return res.status(400).json({
+        message: "Notification ID, rating, and user ID are required.",
+      });
     }
 
     // Insert feedback with worker_id and user's name fetched from related tables
@@ -8729,7 +8992,8 @@ const submitFeedback = async (req, res) => {
       RETURNING *;
     `;
 
-    const values = [notification_id, rating, comment, user_id];
+    // Pass `comment` as-is (it can be null)
+    const values = [notification_id, rating, comment || null, user_id];
     const result = await client.query(query, values);
 
     if (result.rows.length === 0) {

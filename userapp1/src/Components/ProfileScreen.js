@@ -7,6 +7,7 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
+  Dimensions,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Entypo from 'react-native-vector-icons/Entypo';
@@ -75,18 +76,23 @@ const ProfileScreen = () => {
 
   if (!isLoggedIn) {
     return (
-      <View style={styles.loginContainer}>
+      <View
+        style={[
+          styles.loginContainer,
+          {alignItems: 'flex-start', justifyContent: 'flex-start'},
+        ]}>
         <View style={styles.head}>
           <Text style={styles.profileTitle}>Profile</Text>
         </View>
-        <View style={styles.loginContainer}>
+        <View>
           <View style={styles.headerContainer}>
             <TouchableOpacity
               style={styles.loginButton}
-              onPress={() => navigation.replace('Login')}>
-              <Text style={styles.loginButtonText}>Login</Text>
+              onPress={() => navigation.push('Login')}>
+              <Text style={styles.loginButtonText}>Login or Sign up</Text>
             </TouchableOpacity>
           </View>
+          <View style={styles.horizontalLine} />
           <View style={styles.optionsContainer}>
             <MenuItem
               icon="help"
@@ -175,6 +181,7 @@ const ProfileScreen = () => {
     </ScrollView>
   );
 };
+const screenWidth = Dimensions.get('window').width;
 
 const styles = StyleSheet.create({
   container: {
@@ -189,7 +196,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#212121',
     fontWeight: 'bold',
-    padding: 20,
+    paddingVertical: 10,
+    paddingLeft: 15,
   },
   detailsContainer: {
     padding: 20,
@@ -315,8 +323,10 @@ const styles = StyleSheet.create({
   },
   loginContainer: {
     flex: 1,
+    flexDirection: 'column',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 10,
+    alignItems: 'flex-start', // Dynamically align based on login state
+    justifyContent: 'flex-start', // Keep items aligned to the top
   },
   loginPrompt: {
     fontSize: 16,
@@ -326,14 +336,19 @@ const styles = StyleSheet.create({
   loginButton: {
     backgroundColor: '#ff4500',
     paddingVertical: 10,
-    paddingHorizontal: 40,
+    paddingHorizontal: 20,
     borderRadius: 10,
-    width: 120,
   },
   loginButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: 'bold',
+  },
+  horizontalLine: {
+    height: 10,
+    width: screenWidth, // Use the screen width
+    backgroundColor: '#E6E6E6',
+    marginVertical: 10,
   },
 });
 

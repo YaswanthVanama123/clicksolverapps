@@ -120,31 +120,34 @@ const PaintingServices = () => {
 
   const proceedToBookCommander = useCallback(
     async serviceId => {
-      try {
-        const cs_token = await EncryptedStorage.getItem('cs_token');
-        if (cs_token) {
-          const response = await axios.get(
-            `https://backend.clicksolver.com/api/user/track/details`,
-            {
-              headers: {Authorization: `Bearer ${cs_token}`},
-            },
-          );
+      // try {
+      //   const cs_token = await EncryptedStorage.getItem('cs_token');
+      //   if (cs_token) {
+      //     const response = await axios.get(
+      //       `https://backend.clicksolver.com/api/user/track/details`,
+      //       {
+      //         headers: {Authorization: `Bearer ${cs_token}`},
+      //       },
+      //     );
 
-          const track = response?.data?.track || [];
-          const isTracking = track.some(
-            item => item.serviceBooked === serviceId,
-          );
-          if (isTracking) {
-            Alert.alert('Already in tracking');
-          } else {
-            navigation.push('ServiceBooking', {
-              serviceName: serviceId,
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching track details:', error);
-      }
+      //     const track = response?.data?.track || [];
+      //     const isTracking = track.some(
+      //       item => item.serviceBooked === serviceId,
+      //     );
+      //     if (isTracking) {
+      //       Alert.alert('Already in tracking');
+      //     } else {
+      //       navigation.push('ServiceBooking', {
+      //         serviceName: serviceId,
+      //       });
+      //     }
+      //   }
+      // } catch (error) {
+      //   console.error('Error fetching track details:', error);
+      // }
+      navigation.push('ServiceBooking', {
+        serviceName: serviceId,
+      });
     },
     [navigation],
   );
@@ -249,7 +252,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     marginLeft: 10,
     color: '#1D2951',
-    fontWeight: '600',
+    fontFamily: 'RobotoSlab-Bold',
     lineHeight: 23.44,
   },
   loadingAnimation: {
@@ -271,18 +274,19 @@ const styles = StyleSheet.create({
   bannerPrice: {
     color: '#ff4500',
     fontSize: 25,
-    fontWeight: '500',
+    fontFamily: 'RobotoSlab-Bold',
     lineHeight: 34,
   },
   bannerDescription: {
     color: '#808080',
     fontSize: 14,
     marginTop: 5,
-    fontWeight: '500',
+    fontFamily: 'NotoSerif-SemiBold',
     lineHeight: 16.41,
   },
   bannerInfo: {
     color: '#808080',
+    fontFamily: 'RobotoSlab-Regular',
     opacity: 0.8,
     fontSize: 12,
     marginTop: 5,

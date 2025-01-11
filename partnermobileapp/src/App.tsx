@@ -57,6 +57,7 @@ import ServiceRegistration from './Components/ServiceRegistration';
 import TaskCompletionScreen from './Components/TaskConformationScreen';
 import HomeScreen from './Screens/Home';
 import HomeComponent from './Screens/HomeComponent';
+import {NavigationContainerRef} from '@react-navigation/native';
 // Additional imports...
 
 const Stack = createNativeStackNavigator();
@@ -140,7 +141,8 @@ function TabNavigator() {
 }
 
 function App(): React.JSX.Element {
-  const navigationRef = useRef(null);
+  // const navigationRef = useRef(null);
+  const navigationRef = useRef<NavigationContainerRef>(null);
   const [initialRoute, setInitialRoute] = useState<string | null>(null);
 
   useEffect(() => {
@@ -203,41 +205,50 @@ function App(): React.JSX.Element {
       }
     };
 
-    const handleForegroundNotification = async () => {
+    const handleForegroundNotification = () => {
       messaging().onMessage(async remoteMessage => {
-        const notificationId = remoteMessage.data.notification_id;
-        if (remoteMessage.data && remoteMessage.data.screen === 'Home') {
-          navigationRef.current?.dispatch(
+        const notificationId = remoteMessage.data?.notification_id;
+        const screen = remoteMessage.data?.screen;
+
+        if (!navigationRef.current) {
+          console.warn('Navigation reference is not set yet.');
+          return;
+        }
+
+        if (screen === 'Home') {
+          navigationRef.current.dispatch(
             CommonActions.reset({
               index: 0,
               routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
             }),
           );
-        } else if (
-          remoteMessage.data &&
-          remoteMessage.data.screen === 'TaskConfirmation'
-        ) {
-          navigationRef.current?.push('TaskConfirmation', {
+        } else if (screen === 'TaskConfirmation') {
+          navigationRef.current.navigate('TaskConfirmation', {
             encodedId: notificationId,
           });
         }
       });
     };
 
-    const handleBackgroundNotification = async () => {
+    const handleBackgroundNotification = () => {
       messaging().setBackgroundMessageHandler(async remoteMessage => {
-        if (remoteMessage.data && remoteMessage.data.screen === 'Home') {
-          navigationRef.current?.dispatch(
+        const notificationId = remoteMessage.data?.notification_id;
+        const screen = remoteMessage.data?.screen;
+
+        if (!navigationRef.current) {
+          console.warn('Navigation reference is not set yet.');
+          return;
+        }
+
+        if (screen === 'Home') {
+          navigationRef.current.dispatch(
             CommonActions.reset({
               index: 0,
               routes: [{name: 'Home'}],
             }),
           );
-        } else if (
-          remoteMessage.data &&
-          remoteMessage.data.screen === 'TaskConfirmation'
-        ) {
-          navigationRef.current?.push('TaskConfirmation', {
+        } else if (screen === 'TaskConfirmation') {
+          navigationRef.current.navigate('TaskConfirmation', {
             encodedId: notificationId,
           });
         }
@@ -246,10 +257,24 @@ function App(): React.JSX.Element {
 
     const handleInitialNotification = async () => {
       const remoteMessage = await messaging().getInitialNotification();
-      if (remoteMessage) {
-        if (remoteMessage.data && remoteMessage.data.screen === 'Home') {
-          setInitialRoute('Home');
-        }
+      const screen = remoteMessage?.data?.screen;
+
+      if (!navigationRef.current) {
+        console.warn('Navigation reference is not set yet.');
+        return;
+      }
+
+      if (screen === 'Home') {
+        navigationRef.current.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
+        );
+      } else if (screen === 'TaskConfirmation') {
+        navigationRef.current.navigate('TaskConfirmation', {
+          encodedId: remoteMessage?.data?.notification_id,
+        });
       }
     };
 

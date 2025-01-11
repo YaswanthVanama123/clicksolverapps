@@ -18,12 +18,58 @@ import axios from 'axios';
 import {useNavigation} from '@react-navigation/native';
 // import Config from 'react-native-config';
 
+// const ServiceItem = ({item, formatDate}) => {
+//   const navigation = useNavigation();
+
+//   return (
+//     <TouchableOpacity
+//       style={styles.itemContainer}
+//       onPress={() => {
+//         navigation.push('serviceBookingItem', {
+//           tracking_id: item.notification_id,
+//         });
+//       }}>
+//       <View style={styles.itemMainContainer}>
+//         <View style={styles.iconContainer}>
+//           {item.payment_type === 'cash' ? (
+//             <Entypo name="wallet" size={20} color="white" />
+//           ) : (
+//             <MaterialCommunityIcons name="bank" size={20} color="white" />
+//           )}
+//         </View>
+//         <View style={styles.itemDetails}>
+//           <Text style={styles.title} numberOfLines={2}>
+//             {item.service_booked
+//               ? item.service_booked[0].serviceName
+//               : item.service}
+//           </Text>
+//           <Text style={styles.schedule}>{formatDate(item.created_at)}</Text>
+//         </View>
+//         <View>
+//           <Text style={styles.price}>₹{item.payment}</Text>
+//           <Text style={styles.paymentDetails}>
+//             {item.payment_type === 'cash'
+//               ? 'Paid to you'
+//               : 'Paid to click solver'}
+//           </Text>
+//         </View>
+//       </View>
+//     </TouchableOpacity>
+//   );
+// };
+
 const ServiceItem = ({item, formatDate}) => {
   const navigation = useNavigation();
+  console.log(item);
+  // Determine if the service is cancelled
+  const isCancelled = item.payment === null;
 
   return (
     <TouchableOpacity
-      style={styles.itemContainer}
+      style={[
+        styles.itemContainer,
+        isCancelled && styles.cancelledItemContainer, // Apply distinct style for cancelled services
+      ]}
       onPress={() => {
         navigation.push('serviceBookingItem', {
           tracking_id: item.notification_id,
@@ -38,22 +84,46 @@ const ServiceItem = ({item, formatDate}) => {
           )}
         </View>
         <View style={styles.itemDetails}>
-          <Text style={styles.title} numberOfLines={2}>
+          <Text
+            style={[
+              styles.title,
+              isCancelled && styles.cancelledTitle, // Apply distinct text style for cancelled services
+            ]}
+            numberOfLines={2}>
             {item.service_booked
               ? item.service_booked[0].serviceName
               : item.service}
           </Text>
-          <Text style={styles.schedule}>{formatDate(item.created_at)}</Text>
+          <Text
+            style={[
+              styles.schedule,
+              isCancelled && styles.cancelledSchedule, // Apply distinct style for the schedule
+            ]}>
+            {formatDate(item.created_at)}
+          </Text>
         </View>
         <View>
-          <Text style={styles.price}>₹{item.payment}</Text>
-          <Text style={styles.paymentDetails}>
+          <Text
+            style={[
+              styles.price,
+              isCancelled && styles.cancelledPrice, // Apply distinct text style for price
+            ]}>
+            ₹{item.payment}
+          </Text>
+          <Text
+            style={[
+              styles.paymentDetails,
+              isCancelled && styles.cancelledPaymentDetails, // Apply distinct style for payment details
+            ]}>
             {item.payment_type === 'cash'
               ? 'Paid to you'
               : 'Paid to click solver'}
           </Text>
         </View>
       </View>
+      {isCancelled && (
+        <Text style={styles.cancelledMessage}>Service Cancelled</Text>
+      )}
     </TouchableOpacity>
   );
 };

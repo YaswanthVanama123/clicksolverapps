@@ -9,12 +9,10 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import uuid from 'react-native-uuid';
 import moment from 'moment';
 import {useNavigation} from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialIcons'; // Importing icon library
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
-// import Config from 'react-native-config';
 
 const UserNotifications = () => {
   const [notificationsArray, setNotificationsArray] = useState([]);
@@ -23,53 +21,65 @@ const UserNotifications = () => {
   const screenWidth = Dimensions.get('window').width;
 
   const fetchNotifications = async () => {
-    const userId = await EncryptedStorage.getItem('cs_token');
-    const fcmToken = await EncryptedStorage.getItem('fcm_token');
-    const response = await axios.get(
-      `https://backend.clicksolver.com/api/user/notifications`,
-      {
-        headers: {
-          Authorization: `Bearer ${userId}`,
-        },
-        params: {
-          fcmToken: fcmToken,
-        },
-      },
-    );
+    try {
+      const storedNotifications = await EncryptedStorage.getItem(
+        'notifications',
+      );
+      const parsedNotifications = storedNotifications
+        ? JSON.parse(storedNotifications)
+        : [];
 
-    const notifications = response.data;
-    setNotificationsArray(notifications);
-    console.log('User notifications:', notifications);
+      // Reverse the parsedNotifications array
+      const reversedNotifications = parsedNotifications.reverse();
+
+      setNotificationsArray(reversedNotifications);
+      console.log('User notifications:', reversedNotifications);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      setNotificationsArray([]);
+    }
   };
 
   useEffect(() => {
     fetchNotifications();
   }, []);
 
-  const renderItem = ({item}) => (
-    <View style={styles.notificationCardContainer}>
-      <View style={styles.notificationContainer}>
-        <View style={styles.iconContainer}>
-          <Text>
-            <Icon name="notifications" size={24} color="#ff4500" />{' '}
-            {/* Notification bell icon */}
-          </Text>
-        </View>
-        <View style={styles.notificationContent}>
-          <Text style={styles.notificationTitle}>{item.title}</Text>
-          <View style={styles.timeContainer}>
-            <Text style={styles.notificationDate}>Today</Text>
-            <Text style={styles.notificationTime}>
-              {moment(item.receivedat).format('hh:mm A')}
+  const renderItem = ({item}) => {
+    // Specify the format of receivedAt
+    const receivedAtFormat = 'DD/MM/YYYY, HH:mm:ss';
+
+    // Parse date using the specified format
+    const isToday = moment(item.receivedAt, receivedAtFormat).isSame(
+      moment(),
+      'day',
+    );
+    const displayDate = isToday
+      ? 'Today'
+      : moment(item.receivedAt, receivedAtFormat).format('DD/MM/YYYY');
+    const displayTime = moment(item.receivedAt, receivedAtFormat).format(
+      'hh:mm A',
+    );
+
+    return (
+      <View style={styles.notificationCardContainer}>
+        <View style={styles.notificationContainer}>
+          <View style={styles.iconContainer}>
+            <Icon name="notifications" size={24} color="#ff4500" />
+          </View>
+          <View style={styles.notificationContent}>
+            <Text style={styles.notificationTitle}>
+              {item.title || 'No Title'}
             </Text>
+            <View style={styles.timeContainer}>
+              <Text style={styles.notificationDate}>{displayDate}</Text>
+              <Text style={styles.notificationTime}>{displayTime}</Text>
+            </View>
           </View>
         </View>
+        <Text style={styles.notificationBody}>{item.body || 'No Body'}</Text>
       </View>
-      <Text style={styles.notificationBody}>
-        Commander accepted your request he will be there with in 5 mins
-      </Text>
-    </View>
-  );
+    );
+  };
 
   return (
     <View
@@ -87,11 +97,17 @@ const UserNotifications = () => {
         <Text style={styles.header}>Notifications</Text>
       </View>
       <View style={styles.notificationCards}>
-        <FlatList
-          data={notificationsArray}
-          renderItem={renderItem}
-          keyExtractor={item => uuid.v4()}
-        />
+        {notificationsArray.length > 0 ? (
+          <FlatList
+            data={notificationsArray}
+            renderItem={renderItem}
+            keyExtractor={(item, index) => `${item.receivedAt}-${index}`}
+          />
+        ) : (
+          <Text style={styles.noNotificationsText}>
+            No notifications available.
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -114,7 +130,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     backgroundColor: '#ffffff',
-    zIndex: 1, // Ensure header is above other components
+    zIndex: 1,
   },
   notificationCards: {
     flex: 1,
@@ -128,7 +144,7 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 20,
     color: '#212121',
-    fontWeight: '500',
+    fontFamily: 'NotoSerif-ExtraBold',
     textAlign: 'center',
   },
   notificationContainer: {
@@ -139,7 +155,6 @@ const styles = StyleSheet.create({
   },
   notificationCardContainer: {
     flexDirection: 'column',
-    gap: 0,
     paddingHorizontal: 10,
     marginBottom: 30,
   },
@@ -147,7 +162,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#ffe4d4', // Light orange background for the icon container
+    backgroundColor: '#ffe4d4',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 15,
@@ -157,7 +172,7 @@ const styles = StyleSheet.create({
   },
   notificationTitle: {
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'RobotoSlab-Regular',
     color: '#212121',
   },
   timeContainer: {
@@ -167,18 +182,27 @@ const styles = StyleSheet.create({
   notificationDate: {
     fontSize: 13,
     color: '#4a4a4a',
+    fontFamily: 'RobotoSlab-Light',
     marginRight: 8,
   },
   notificationTime: {
     fontSize: 13,
     color: '#4a4a4a',
+    fontFamily: 'RobotoSlab-Light',
     paddingVertical: 2,
     borderRadius: 4,
   },
   notificationBody: {
     fontSize: 14,
     color: '#4a4a4a',
+    fontFamily: 'RobotoSlab-Medium',
     marginTop: 5,
+  },
+  noNotificationsText: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#9e9e9e',
+    marginTop: 20,
   },
 });
 

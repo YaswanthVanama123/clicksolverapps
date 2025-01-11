@@ -10,10 +10,15 @@ import {
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
+  BackHandler,
 } from 'react-native';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import {useNavigation, CommonActions} from '@react-navigation/native';
+import {
+  useNavigation,
+  CommonActions,
+  useFocusEffect,
+} from '@react-navigation/native';
 // import Config from 'react-native-config';
 
 // Image URLs
@@ -25,6 +30,18 @@ const FLAG_ICON_URL = 'https://i.postimg.cc/C1hkm5sR/india-flag-icon-29.png';
 const LoginScreen = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const navigation = useNavigation();
+
+  useFocusEffect(
+    useCallback(() => {
+      // Attach the back handler
+      BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+
+      // Cleanup the event listener on unfocus
+      return () => {
+        BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
+      };
+    }, [handleBackPress]),
+  );
 
   // Function to call the backend API for login
   const loginBackend = useCallback(async phoneNumber => {
@@ -41,6 +58,11 @@ const LoginScreen = () => {
       throw error;
     }
   }, []);
+
+  const handleBackPress = useCallback(() => {
+    navigation.goBack(); // Navigate back to the previous screen
+    return true; // Prevent default behavior (exit the app)
+  }, [navigation]);
 
   // Main login function
   const login = useCallback(async () => {
