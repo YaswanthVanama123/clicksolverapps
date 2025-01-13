@@ -2,14 +2,13 @@ import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {
   View,
   TextInput,
-  FlatList,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   Dimensions,
   Image,
   BackHandler,
-  Alert,
 } from 'react-native';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Entypo from 'react-native-vector-icons/Entypo';
@@ -22,7 +21,6 @@ import {
   useNavigation,
 } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
-// import Config from 'react-native-config';
 
 const SearchItem = () => {
   const initialPlaceholder = 'Search for ';
@@ -42,10 +40,10 @@ const SearchItem = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [isFocused, setIsFocused] = useState(false);
+  const [recentSearches, setRecentSearches] = useState([]);
   const inputRef = useRef(null);
 
   const navigation = useNavigation();
-  const [recentSearches, setRecentSearches] = useState([]);
 
   const trendingSearches = [
     'Professional cleaning',
@@ -60,6 +58,9 @@ const SearchItem = () => {
     'Microwave repair',
   ];
 
+  /**
+   * Placeholder animation logic
+   */
   const updatePlaceholder = useCallback(() => {
     const word = additionalTexts[currentIndex];
     if (currentWordIndex < word.length) {
@@ -77,6 +78,9 @@ const SearchItem = () => {
     return () => clearInterval(interval);
   }, [updatePlaceholder]);
 
+  /**
+   * Fetch recent services from EncryptedStorage
+   */
   useEffect(() => {
     const recentServicesList = async () => {
       try {
@@ -91,8 +95,12 @@ const SearchItem = () => {
     recentServicesList();
   }, []);
 
+  /**
+   * Handle user typing in the search box
+   */
   const handleInputChange = async query => {
     setSearchQuery(query);
+
     if (query.length > 0) {
       setIsFocused(true);
       setLoading(true);
@@ -113,44 +121,58 @@ const SearchItem = () => {
     }
   };
 
+  /**
+   * Store a clicked service to recent services
+   */
   const storeRecentService = useCallback(async service => {
     try {
       const existingServicesJson = await EncryptedStorage.getItem(
         'recentServices',
       );
-      let updatedServices;
+      let updatedServices = [];
       if (existingServicesJson) {
         const existingServices = JSON.parse(existingServicesJson);
+
+        // Filter out any existing entry for the same service
         updatedServices = existingServices.filter(
           existingService =>
             existingService.main_service_id !== service.main_service_id,
         );
-        updatedServices.unshift(service); // Add to the beginning
+        // Add new service at the beginning
+        updatedServices.unshift(service);
       } else {
         updatedServices = [service];
       }
-      updatedServices = updatedServices.slice(0, 5); // Keep only latest 5
+
+      // Keep only the latest 5
+      updatedServices = updatedServices.slice(0, 5);
+
       await EncryptedStorage.setItem(
         'recentServices',
         JSON.stringify(updatedServices),
       );
-      setRecentSearches(updatedServices); // Update state immediately
+      setRecentSearches(updatedServices);
     } catch (error) {
       console.error('Error storing recent service:', error);
     }
   }, []);
 
+  /**
+   * Clear the search box
+   */
   const handleClear = useCallback(() => {
     setSearchQuery('');
     setSuggestions([]);
     setIsFocused(false);
   }, []);
 
+  /**
+   * Handle clicking on a suggestion (service)
+   */
   const handleServiceClick = useCallback(
     item => {
       // Store the recent service
       storeRecentService(item);
-      console.log('clicked', item);
       // Navigate to the ServiceBooking screen with the required parameters
       navigation.push('ServiceBooking', {
         serviceName: item.service_category,
@@ -159,10 +181,19 @@ const SearchItem = () => {
     [navigation, storeRecentService],
   );
 
-  const renderSuggestionItem = ({item}) => (
+  /**
+   * Render a single suggestion item
+   */
+  const renderSuggestionItem = (item, index) => (
     <TouchableOpacity
+      key={index}
       style={styles.suggestionItem}
       onPress={() => handleServiceClick(item)}>
+      {console.log('items are there', item)}
+      {/* <Image
+        source={{uri: item.service_urls || 'https://via.placeholder.com/150'}}
+        style={styles.suggestionImage}
+      /> */}
       <Image
         source={{uri: item.service_urls || 'https://via.placeholder.com/150'}}
         style={styles.suggestionImage}
@@ -170,16 +201,18 @@ const SearchItem = () => {
       <View style={styles.textContainer}>
         <Text style={styles.SuggestionText}>{item.service_tag}</Text>
         <Text style={styles.SuggestionDescription} numberOfLines={2}>
-          {item.service_details.about}
+          {item.service_details?.about}
         </Text>
-        <Text style={styles.SuggestionText}>{item.service_category}</Text>
       </View>
     </TouchableOpacity>
   );
 
-  const renderRecentSearchItem = ({item}) => (
+  /**
+   * Render a single recent search item
+   */
+  const renderRecentSearchItem = (item, index) => (
     <TouchableOpacity
-      key={item.main_service_id}
+      key={`${item.main_service_id}-${index}`}
       style={styles.recentItem}
       onPress={() =>
         navigation.push('ServiceBooking', {
@@ -193,6 +226,9 @@ const SearchItem = () => {
     </TouchableOpacity>
   );
 
+  /**
+   * Render trending searches
+   */
   const renderTrendingSearches = () =>
     trendingSearches.map((item, index) => (
       <TouchableOpacity key={index} style={styles.trendingItem}>
@@ -200,31 +236,17 @@ const SearchItem = () => {
       </TouchableOpacity>
     ));
 
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     const onBackPress = () => {
-  //       navigation.dispatch(
-  //         CommonActions.reset({
-  //           index: 0,
-  //           routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
-  //         }),
-  //       );
-  //       return true;
-  //     };
-  //     BackHandler.addEventListener('hardwareBackPress', onBackPress);
-  //     return () =>
-  //       BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-  //   }, [navigation]),
-  // );
-
+  /**
+   * Override back button behavior
+   */
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
         if (navigation.canGoBack()) {
-          navigation.goBack(); // Goes back to the previous screen
+          navigation.goBack();
           return true;
         }
-        return false; // Allows the default back behavior (e.g., exiting the app)
+        return false;
       };
 
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
@@ -233,10 +255,16 @@ const SearchItem = () => {
     }, [navigation]),
   );
 
+  /**
+   * Handle going back (arrow left)
+   */
   const handleHome = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
 
+  /**
+   * Focus the input whenever this screen is in focus
+   */
   useFocusEffect(
     useCallback(() => {
       if (inputRef.current) {
@@ -245,69 +273,54 @@ const SearchItem = () => {
     }, []),
   );
 
-  // Combine all data into a single array for FlatList
-  const getListData = () => {
-    if (isFocused && suggestions.length > 0) {
-      return [
-        // Header can include search bar or any other components if needed
-        {type: 'searchBar'},
-        // Suggestions list
-        ...suggestions.map(item => ({type: 'suggestion', data: item})),
-      ];
-    } else {
-      return [
-        {type: 'searchBar'},
-        // Conditionally render no results or recents + trending
-        searchQuery && suggestions.length === 0
-          ? {type: 'noResults'}
-          : {type: 'content'},
-        // Recent searches and trending can be part of 'content'
-        ...(!searchQuery && suggestions.length === 0
-          ? [{type: 'recentSearches'}, {type: 'trendingSearches'}]
-          : []),
-      ];
-    }
-  };
-
-  const renderItem = ({item}) => {
-    switch (item.type) {
-      case 'searchBar':
-        return (
-          <View style={styles.searchBar}>
-            <TouchableOpacity onPress={handleHome}>
-              <AntDesign
-                name="arrowleft"
-                size={20}
-                color="#000"
-                style={styles.icon}
-              />
+  return (
+    <View style={styles.mainContainer}>
+      {/* Search bar */}
+      <View style={styles.searchBar}>
+        <TouchableOpacity onPress={handleHome}>
+          <AntDesign
+            name="arrowleft"
+            size={20}
+            color="#000"
+            style={styles.icon}
+          />
+        </TouchableOpacity>
+        <View style={styles.searchInputContainer}>
+          <TextInput
+            ref={inputRef}
+            style={styles.searchInput}
+            placeholder={placeholderText}
+            placeholderTextColor="#000"
+            fontStyle="italic"
+            value={searchQuery}
+            onChangeText={handleInputChange}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setTimeout(() => setIsFocused(false), 100)}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={handleClear} style={styles.clearIcon}>
+              <Entypo name="circle-with-cross" size={20} color="#000" />
             </TouchableOpacity>
-            <View style={styles.searchInputContainer}>
-              <TextInput
-                ref={inputRef}
-                style={styles.searchInput}
-                placeholder={placeholderText}
-                placeholderTextColor="#000"
-                fontStyle="italic"
-                value={searchQuery}
-                onChangeText={handleInputChange}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setTimeout(() => setIsFocused(false), 100)}
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity
-                  onPress={handleClear}
-                  style={styles.clearIcon}>
-                  <Entypo name="circle-with-cross" size={20} color="#000" />
-                </TouchableOpacity>
-              )}
-            </View>
+          )}
+        </View>
+      </View>
+
+      {/* If the user is typing and we have suggestions, show them */}
+      {/* Otherwise, show either no results or recents + trending */}
+      <ScrollView
+        style={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled">
+        {/* Show suggestions if there are any and user is focused */}
+        {isFocused && suggestions.length > 0 && (
+          <View style={styles.suggestionsList}>
+            {suggestions.map((item, index) =>
+              renderSuggestionItem(item, index),
+            )}
           </View>
-        );
-      case 'suggestion':
-        return renderSuggestionItem({item: item.data});
-      case 'noResults':
-        return (
+        )}
+
+        {/* No results found scenario */}
+        {searchQuery.length > 0 && suggestions.length === 0 && !loading && (
           <View style={styles.noResultsContainer}>
             <MaterialIcons name="search-off" size={45} color="#000" />
             <Text style={styles.noResultsText}>No results found</Text>
@@ -325,22 +338,25 @@ const SearchItem = () => {
               </View>
             </View>
           </View>
-        );
-      case 'content':
-        return (
+        )}
+
+        {/* Show Recents + Trending only when there's no search query 
+            or no suggestions (i.e., user hasn't typed or has cleared the input) */}
+        {!searchQuery && suggestions.length === 0 && (
           <View style={styles.searchSuggestionsContainer}>
+            {/* Recent Searches */}
             <View style={styles.recentSearchesContainer}>
               <Text style={styles.sectionTitle}>Recents</Text>
-              <FlatList
-                data={recentSearches}
-                renderItem={renderRecentSearchItem}
-                keyExtractor={item => item.main_service_id.toString()}
-                horizontal={false}
-              />
+              {recentSearches.map((item, index) =>
+                renderRecentSearchItem(item, index),
+              )}
             </View>
+
             <View
               style={[styles.horizontalLine, {width: screenWidth, height: 8}]}
             />
+
+            {/* Trending */}
             <View style={styles.trendingSearchesContainer}>
               <Text style={styles.sectionTitle}>Trending searches</Text>
               <View style={styles.trendingItemsContainer}>
@@ -348,31 +364,18 @@ const SearchItem = () => {
               </View>
             </View>
           </View>
-        );
-      default:
-        return null;
-    }
-  };
+        )}
 
-  return (
-    <View style={styles.mainContainer}>
-      <FlatList
-        data={getListData()}
-        renderItem={renderItem}
-        keyExtractor={(item, index) => `${item.type}-${index}`}
-        ListEmptyComponent={null}
-        ListFooterComponent={
-          loading ? (
-            <LottieView
-              source={require('../assets/searchLoading.json')}
-              autoPlay
-              loop
-              style={styles.loadingAnimation}
-            />
-          ) : null
-        }
-        keyboardShouldPersistTaps="handled"
-      />
+        {/* Display loading indicator at the bottom if loading */}
+        {loading && (
+          <LottieView
+            source={require('../assets/searchLoading.json')}
+            autoPlay
+            loop
+            style={styles.loadingAnimation}
+          />
+        )}
+      </ScrollView>
     </View>
   );
 };
@@ -383,6 +386,9 @@ const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  scrollContainer: {
+    flex: 1,
   },
   recentIcon: {
     padding: 5,
@@ -396,6 +402,7 @@ const styles = StyleSheet.create({
   noResultsContainer: {
     alignItems: 'center',
     marginTop: 30,
+    paddingHorizontal: 20,
   },
   loadingAnimation: {
     width: '100%',
@@ -468,7 +475,6 @@ const styles = StyleSheet.create({
   },
   recentText: {
     color: '#000',
-    display: 'flex',
     alignSelf: 'center',
   },
   trendingSearchesContainer: {
@@ -520,9 +526,5 @@ const styles = StyleSheet.create({
   SuggestionDescription: {
     fontSize: 12,
     color: '#4a4a4a',
-  },
-  subText: {
-    color: '#777',
-    fontSize: 14,
   },
 });
