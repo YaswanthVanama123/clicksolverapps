@@ -50,6 +50,8 @@ const HomeScreen = () => {
   const [isEnabled, setIsEnabled] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [greetingIcon, setGreetingIcon] = useState(null);
+  const [showUpArrow, setShowUpArrow] = useState(false);
+  const [showDownArrow, setShowDownArrow] = useState(false);
 
   // Function to fetch notifications and update state
   const fetchNotifications = useCallback(async () => {
@@ -95,6 +97,18 @@ const HomeScreen = () => {
       fetchNotifications();
     }, [fetchNotifications]),
   );
+
+  const handleScroll = event => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    const containerHeight = event.nativeEvent.layoutMeasurement.height;
+    const contentHeight = event.nativeEvent.contentSize.height;
+
+    // Show up arrow if not at the top
+    setShowUpArrow(offsetY > 0);
+
+    // Show down arrow if not at the bottom
+    setShowDownArrow(offsetY + containerHeight < contentHeight);
+  };
 
   const fetchTrackDetails = async () => {
     try {
@@ -159,8 +173,12 @@ const HomeScreen = () => {
     navigation.push('Earnings');
   };
 
-  const acceptRequest = async data => {
-    const decodedId = Buffer.from(data, 'base64').toString('ascii');
+  const acceptRequest = async userNotificationId => {
+    // Decode the notification ID if needed
+    const decodedId = Buffer.from(userNotificationId, 'base64').toString(
+      'ascii',
+    );
+
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const response = await axios.post(
@@ -170,6 +188,20 @@ const HomeScreen = () => {
       );
 
       if (response.status === 200) {
+        // After a successful request acceptance, remove the notification from state
+        setNotificationsArray(prevNotifications => {
+          const updatedNotifications = prevNotifications.filter(
+            notif => notif.data.user_notification_id !== userNotificationId,
+          );
+
+          // Also update the locally stored notifications
+          EncryptedStorage.setItem(
+            'Requestnotifications',
+            JSON.stringify(updatedNotifications),
+          );
+          return updatedNotifications;
+        });
+
         const {notificationId} = response.data;
         const encodedNotificationId = Buffer.from(
           notificationId.toString(),
@@ -182,11 +214,7 @@ const HomeScreen = () => {
             encodedId: encodedNotificationId,
             screen: 'WorkerNavigation',
           },
-          {
-            headers: {
-              Authorization: `Bearer ${pcs_token}`,
-            },
-          },
+          {headers: {Authorization: `Bearer ${pcs_token}`}},
         );
 
         navigation.dispatch(
@@ -201,6 +229,7 @@ const HomeScreen = () => {
           }),
         );
       } else {
+        // Handle the error case (if needed)
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
@@ -209,11 +238,7 @@ const HomeScreen = () => {
             encodedId: '',
             screen: '',
           },
-          {
-            headers: {
-              Authorization: `Bearer ${pcs_token}`,
-            },
-          },
+          {headers: {Authorization: `Bearer ${pcs_token}`}},
         );
 
         navigation.dispatch(
@@ -756,24 +781,52 @@ const HomeScreen = () => {
             return (
               <View key={index} style={styles.messageBox}>
                 <View style={styles.serviceCostContainer}>
-                  <View>
+                  <View style={styles.serviceContainer}>
                     <Text style={styles.secondaryColor}>Service</Text>
-                    <View style={styles.serviceNamesContainer}>
-                      {Array.isArray(parsedTitle) ? (
-                        parsedTitle.map((service, serviceIndex) => (
-                          <View key={serviceIndex}>
+                    <View
+                      style={{
+                        position:
+                          'relative' /* container for arrows and scroll view */,
+                      }}>
+                      {showUpArrow && (
+                        <View style={styles.arrowUpContainer}>
+                          <Entypo
+                            name="chevron-small-up"
+                            size={20}
+                            color="#9e9e9e"
+                          />
+                        </View>
+                      )}
+
+                      <ScrollView
+                        style={styles.serviceNamesContainer}
+                        contentContainerStyle={styles.serviceNamesContent}
+                        onScroll={handleScroll}
+                        scrollEventThrottle={16}>
+                        {Array.isArray(parsedTitle) ? (
+                          parsedTitle.map((service, serviceIndex) => (
                             <Text
                               key={serviceIndex}
                               style={styles.primaryColor}>
                               {service.serviceName}
                               {serviceIndex < parsedTitle.length - 1
                                 ? ', '
-                                : ''}{' '}
+                                : ''}
                             </Text>
-                          </View>
-                        ))
-                      ) : (
-                        <Text>No services available</Text>
+                          ))
+                        ) : (
+                          <Text>No services available</Text>
+                        )}
+                      </ScrollView>
+
+                      {showDownArrow && (
+                        <View style={styles.arrowDownContainer}>
+                          <Entypo
+                            name="chevron-small-down"
+                            size={20}
+                            color="#9e9e9e"
+                          />
+                        </View>
                       )}
                     </View>
                   </View>
@@ -789,28 +842,21 @@ const HomeScreen = () => {
                       {notification.data.location}
                     </Text>
                   </View>
-                  {/* Distance can be added here if needed */}
                 </View>
                 <View style={styles.buttonsContainer}>
-                  <View>
-                    <TouchableOpacity
-                      onPress={() =>
-                        rejectNotification(
-                          notification.data.user_notification_id,
-                        )
-                      }>
-                      <Entypo name="cross" size={25} color="#9e9e9e" />
-                    </TouchableOpacity>
-                  </View>
-                  <View>
-                    <TouchableOpacity
-                      style={styles.secondaryButton}
-                      onPress={() =>
-                        acceptRequest(notification.data.user_notification_id)
-                      }>
-                      <Text style={styles.secondaryButtonText}>Accept</Text>
-                    </TouchableOpacity>
-                  </View>
+                  <TouchableOpacity
+                    onPress={() =>
+                      rejectNotification(notification.data.user_notification_id)
+                    }>
+                    <Entypo name="cross" size={25} color="#9e9e9e" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.secondaryButton}
+                    onPress={() =>
+                      acceptRequest(notification.data.user_notification_id)
+                    }>
+                    <Text style={styles.secondaryButtonText}>Accept</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             );
@@ -927,7 +973,30 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   serviceNamesContainer: {
+    flexWrap: 'wrap',
+    // Set a fixed height for the services container
+    maxHeight: 60, // Adjust height according to your design
+  },
+  serviceNamesContent: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  arrowUpContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    // Optionally add background color / opacity for better visibility:
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+  },
+  arrowDownContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   textContainerTextCommander: {
     fontSize: 12,
@@ -977,9 +1046,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   serviceCostContainer: {
-    display: 'flex',
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  serviceContainer: {
+    flex: 1,
   },
   addressContainer: {
     flexDirection: 'row',
@@ -1002,7 +1073,7 @@ const styles = StyleSheet.create({
   },
   messageBox: {
     width: screenWidth * 0.85,
-    height: 220,
+    height: 220, // Fixed card height
     backgroundColor: '#fff',
     marginRight: screenWidth * 0.05,
     borderRadius: 10,
@@ -1014,7 +1085,7 @@ const styles = StyleSheet.create({
     padding: 20,
     display: 'flex',
     flexDirection: 'column',
-    gap: 15,
+    justifyContent: 'space-between', // Helps keep buttons at bottom
   },
   messageText: {
     fontSize: 16,

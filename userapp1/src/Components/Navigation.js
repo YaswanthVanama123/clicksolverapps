@@ -9,6 +9,10 @@ import {
   Dimensions,
   TouchableOpacity,
   Modal,
+  PermissionsAndroid,
+  Platform,
+  AppState,
+  ScrollView,
 } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import EncryptedStorage from 'react-native-encrypted-storage';
@@ -24,7 +28,11 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import polyline from '@mapbox/polyline';
 import Entypo from 'react-native-vector-icons/Entypo';
-// import Config from 'react-native-config';
+
+// Import local images
+const startMarker = require('../assets/start-marker.png');
+// const endMarker = require('./assets/end-marker.png');
+const endMarker = require('../assets/end-marker.png');
 
 Mapbox.setAccessToken(
   'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw',
@@ -34,9 +42,7 @@ const Navigation = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const [routeData, setRouteData] = useState(null);
-  // const [locationDetails, setLocationDetails] = useState({ startPoint: [80.519353, 16.987142], endPoint: [80.6093701, 17.1098751] });
   const [locationDetails, setLocationDetails] = useState(null);
-
   const [decodedId, setDecodedId] = useState(null);
   const [addressDetails, setAddressDetails] = useState({});
   const [encodedData, setEncodedData] = useState(null);
@@ -46,7 +52,67 @@ const Navigation = () => {
   const [confirmationModalVisible, setConfirmationModalVisible] =
     useState(false);
   const [cameraBounds, setCameraBounds] = useState(null);
+  const [appState, setAppState] = useState(AppState.currentState);
+  const [showUpArrowService, setShowUpArrowService] = useState(false);
+  const [showDownArrowService, setShowDownArrowService] = useState(false);
 
+  // Handle App State Changes
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (appState.match(/inactive|background/) && nextAppState === 'active') {
+        // App has come to the foreground, refetch data
+        if (decodedId) {
+          fetchLocationDetails();
+        }
+      }
+      setAppState(nextAppState);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [appState, decodedId]);
+
+  // Request Location Permissions
+  useEffect(() => {
+    const requestLocationPermission = async () => {
+      if (Platform.OS === 'android') {
+        try {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            {
+              title: 'Location Permission',
+              message: 'This app needs access to your location',
+              buttonNeutral: 'Ask Me Later',
+              buttonNegative: 'Cancel',
+              buttonPositive: 'OK',
+            },
+          );
+          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+            console.log('Location permission denied');
+          }
+        } catch (err) {
+          console.warn(err);
+        }
+      }
+    };
+
+    requestLocationPermission();
+  }, []);
+
+  const handleServiceScroll = event => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    const containerHeight = event.nativeEvent.layoutMeasurement.height;
+    const contentHeight = event.nativeEvent.contentSize.height;
+
+    // Show the up arrow if not at the top
+    setShowUpArrowService(offsetY > 0);
+
+    // Show the down arrow if the container isn’t scrolled all the way down
+    setShowDownArrowService(offsetY + containerHeight < contentHeight);
+  };
+
+  // Decode Encoded ID
   useEffect(() => {
     const {encodedId} = route.params;
     setEncodedData(encodedId);
@@ -59,6 +125,7 @@ const Navigation = () => {
     }
   }, [route.params]);
 
+  // Handle Back Button
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -76,83 +143,7 @@ const Navigation = () => {
     }, [navigation]),
   );
 
-  const handleCancelBooking = useCallback(async () => {
-    setConfirmationModalVisible(false);
-    setModalVisible(false);
-    try {
-      const response = await axios.post(
-        `https://backend.clicksolver.com/api/user/work/cancel`,
-        {notification_id: decodedId},
-      );
-      console.log('res', response.status);
-      if (response.status === 200) {
-        const cs_token = await EncryptedStorage.getItem('cs_token');
-        await axios.post(
-          `https://backend.clicksolver.com/api/user/action`,
-          {
-            encodedId: encodedData,
-            screen: '',
-          },
-          {
-            headers: {Authorization: `Bearer ${cs_token}`},
-          },
-        );
-
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
-          }),
-        );
-      } else {
-        Alert.alert(
-          'Cancellation failed',
-          'Your cancellation time of 2 minutes is over.',
-        );
-      }
-    } catch (error) {
-      Alert.alert('Error', 'There was an error processing your cancellation.');
-    }
-  }, [decodedId, encodedData, navigation]);
-
-  useEffect(() => {
-    const checkVerificationStatus = async () => {
-      try {
-        const response = await axios.get(
-          `https://backend.clicksolver.com/api/worker/verification/status`,
-          {params: {notification_id: decodedId}},
-        );
-
-        if (response.data === 'true') {
-          const cs_token = await EncryptedStorage.getItem('cs_token');
-          await axios.post(
-            `https://backend.clicksolver.com/api/user/action`,
-            {
-              encodedId: encodedData,
-              screen: 'worktimescreen',
-            },
-            {
-              headers: {Authorization: `Bearer ${cs_token}`},
-            },
-          );
-
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [
-                {name: 'worktimescreen', params: {encodedId: encodedData}},
-              ],
-            }),
-          );
-        }
-      } catch (error) {
-        console.error('Error checking verification status:', error);
-      }
-    };
-
-    if (decodedId) checkVerificationStatus();
-  }, [decodedId, encodedData, navigation]);
-
+  // Fetch Worker Details
   useEffect(() => {
     const fetchWorkerDetails = async () => {
       const jwtToken = await EncryptedStorage.getItem('cs_token');
@@ -198,25 +189,47 @@ const Navigation = () => {
     if (decodedId) fetchWorkerDetails();
   }, [decodedId, navigation]);
 
+  // Check Verification Status
   useEffect(() => {
-    const fetchLocationDetails = async () => {
-      console.log(decodedId);
+    const checkVerificationStatus = async () => {
       try {
         const response = await axios.get(
-          `https://backend.clicksolver.com/api/user/location/navigation`,
+          `https://backend.clicksolver.com/api/worker/verification/status`,
           {params: {notification_id: decodedId}},
         );
-        console.log(response);
-        const {startPoint, endPoint} = response.data;
-        const reversedStart = startPoint.map(parseFloat).reverse();
-        const reversedEnd = endPoint.map(parseFloat).reverse();
-        setLocationDetails({startPoint: reversedStart, endPoint: reversedEnd});
-        fetchRoute(reversedStart, reversedEnd);
+
+        if (response.data === 'true') {
+          const cs_token = await EncryptedStorage.getItem('cs_token');
+          await axios.post(
+            `https://backend.clicksolver.com/api/user/action`,
+            {
+              encodedId: encodedData,
+              screen: 'worktimescreen',
+            },
+            {
+              headers: {Authorization: `Bearer ${cs_token}`},
+            },
+          );
+
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                {name: 'worktimescreen', params: {encodedId: encodedData}},
+              ],
+            }),
+          );
+        }
       } catch (error) {
-        console.error('Error fetching location details:', error);
+        console.error('Error checking verification status:', error);
       }
     };
 
+    if (decodedId) checkVerificationStatus();
+  }, [decodedId, encodedData, navigation]);
+
+  // Fetch Location Details and Route
+  useEffect(() => {
     const fetchOlaRoute = async (startPoint, endPoint, waypoints = []) => {
       try {
         const apiKey = 'iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT';
@@ -262,19 +275,36 @@ const Navigation = () => {
     const fetchRoute = async (startPoint, endPoint) => {
       try {
         const olaRouteData = await fetchOlaRoute(startPoint, endPoint);
-        console.log(olaRouteData);
+        console.log('Ola Route Data:', olaRouteData);
         if (
           olaRouteData &&
           olaRouteData.geometry &&
           olaRouteData.geometry.coordinates.length > 0
         ) {
-          console.log(olaRouteData);
           setRouteData(olaRouteData); // Only set if coordinates are non-empty
         } else {
           console.error('Route data has empty coordinates:', olaRouteData);
         }
       } catch (error) {
         console.error('Error fetching route:', error);
+      }
+    };
+
+    const fetchLocationDetails = async () => {
+      console.log('Fetching location details for decodedId:', decodedId);
+      try {
+        const response = await axios.get(
+          `https://backend.clicksolver.com/api/user/location/navigation`,
+          {params: {notification_id: decodedId}},
+        );
+        console.log('Location Details Response:', response.data);
+        const {startPoint, endPoint} = response.data;
+        const reversedStart = startPoint.map(parseFloat).reverse();
+        const reversedEnd = endPoint.map(parseFloat).reverse();
+        setLocationDetails({startPoint: reversedStart, endPoint: reversedEnd});
+        fetchRoute(reversedStart, reversedEnd);
+      } catch (error) {
+        console.error('Error fetching location details:', error);
       }
     };
 
@@ -285,6 +315,93 @@ const Navigation = () => {
     }
   }, [decodedId]);
 
+  // Compute Bounding Box
+  useEffect(() => {
+    if (
+      locationDetails &&
+      routeData &&
+      routeData.geometry &&
+      routeData.geometry.coordinates.length > 0
+    ) {
+      const allCoordinates = [
+        locationDetails.startPoint,
+        locationDetails.endPoint,
+        ...routeData.geometry.coordinates,
+      ];
+
+      const bounds = computeBoundingBox(allCoordinates);
+      console.log('Computed Bounds:', bounds);
+      setCameraBounds(bounds);
+    }
+  }, [locationDetails, routeData]);
+
+  const computeBoundingBox = coordinates => {
+    let minX, minY, maxX, maxY;
+
+    for (let coord of coordinates) {
+      const [x, y] = coord;
+      if (minX === undefined || x < minX) {
+        minX = x;
+      }
+      if (maxX === undefined || x > maxX) {
+        maxX = x;
+      }
+      if (minY === undefined || y < minY) {
+        minY = y;
+      }
+      if (maxY === undefined || y > maxY) {
+        maxY = y;
+      }
+    }
+
+    return {
+      ne: [maxX, maxY], // North East coordinate
+      sw: [minX, minY], // South West coordinate
+    };
+  };
+
+  // Handle Cancel Booking
+  const handleCancelBooking = useCallback(async () => {
+    setConfirmationModalVisible(false);
+    setModalVisible(false);
+    try {
+      const response = await axios.post(
+        `https://backend.clicksolver.com/api/user/work/cancel`,
+        {notification_id: decodedId},
+      );
+      console.log('Cancellation Response:', response.status);
+      if (response.status === 200) {
+        const cs_token = await EncryptedStorage.getItem('cs_token');
+        await axios.post(
+          `https://backend.clicksolver.com/api/user/action`,
+          {
+            encodedId: encodedData,
+            screen: '',
+          },
+          {
+            headers: {Authorization: `Bearer ${cs_token}`},
+          },
+        );
+
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
+        );
+      } else {
+        Alert.alert(
+          'Cancellation failed',
+          'Your cancellation time of 2 minutes is over.',
+        );
+      }
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+      Alert.alert('Error', 'There was an error processing your cancellation.');
+    }
+  }, [decodedId, encodedData, navigation]);
+
+  // Handle Cancel Modal
   const handleCancelModal = () => {
     setModalVisible(true);
   };
@@ -301,8 +418,10 @@ const Navigation = () => {
     setConfirmationModalVisible(false);
   };
 
+  // Markers
+  let markers = null;
   if (locationDetails) {
-    var markers = {
+    markers = {
       type: 'FeatureCollection',
       features: [
         // Start Marker
@@ -333,71 +452,16 @@ const Navigation = () => {
     };
   }
 
-  // useEffect(() => {
-  //   if (
-  //     locationDetails &&
-  //     routeData &&
-  //     routeData.geometry &&
-  //     routeData.geometry.coordinates
-  //   ) {
-  //     const allCoordinates = [
-  //       locationDetails.startPoint,
-  //       locationDetails.endPoint,
-  //       ...routeData.geometry.coordinates,
-  //     ];
-
-  //     const bounds = computeBoundingBox(allCoordinates);
-  //     setCameraBounds(bounds);
-  //   }
-  // }, [locationDetails, routeData]);
-
-  useEffect(() => {
-    if (
-      locationDetails &&
-      routeData &&
-      routeData.geometry &&
-      routeData.geometry.coordinates.length > 0
-    ) {
-      const allCoordinates = [
-        locationDetails.startPoint,
-        locationDetails.endPoint,
-        ...routeData.geometry.coordinates,
-      ];
-
-      const bounds = computeBoundingBox(allCoordinates);
-      setCameraBounds(bounds);
-    }
-  }, [locationDetails, routeData]);
-
-  const computeBoundingBox = coordinates => {
-    let minX, minY, maxX, maxY;
-
-    for (let coord of coordinates) {
-      const [x, y] = coord;
-      if (minX === undefined || x < minX) {
-        minX = x;
-      }
-      if (maxX === undefined || x > maxX) {
-        maxX = x;
-      }
-      if (minY === undefined || y < minY) {
-        minY = y;
-      }
-      if (maxY === undefined || y > maxY) {
-        maxY = y;
-      }
-    }
-
-    return {
-      ne: [maxX, maxY], // North East coordinate
-      sw: [minX, minY], // South West coordinate
-    };
-  };
-
   return (
     <View style={styles.container}>
       {locationDetails ? (
-        <Mapbox.MapView style={styles.map}>
+        <Mapbox.MapView
+          style={styles.map}
+          onDidFinishLoadingMap={() => {
+            if (cameraBounds) {
+              // Optionally, adjust camera here if needed
+            }
+          }}>
           <Mapbox.Camera
             bounds={
               cameraBounds
@@ -415,12 +479,8 @@ const Navigation = () => {
 
           <Mapbox.Images
             images={{
-              'start-point-icon': {
-                uri: 'https://i.postimg.cc/Pxwby5tW/Screenshot-2024-11-13-165554-removebg-preview.png',
-              },
-              'end-point-icon': {
-                uri: 'https://i.postimg.cc/ZRdQkj5d/Screenshot-2024-11-13-164652-removebg-preview.png',
-              },
+              'start-point-icon': startMarker,
+              'end-point-icon': endMarker,
             }}
           />
 
@@ -453,9 +513,7 @@ const Navigation = () => {
         </View>
       )}
 
-      {/* <TouchableOpacity style={styles.cancelButton} onPress={handleCancelBooking}>
-        <Text style={styles.cancelText}>Cancel</Text>
-      </TouchableOpacity> */}
+      {/* Details Container */}
       <View style={styles.detailsContainer}>
         <View style={styles.minimumChargesContainer}>
           <Text style={styles.serviceFare}>Commander on the way</Text>
@@ -479,21 +537,45 @@ const Navigation = () => {
             </View>
           </View>
         </View>
+
         {/* Service Type */}
         <View style={styles.serviceDetails}>
           <View>
             <View>
               <Text style={styles.serviceType}>Service</Text>
-              <View style={styles.servicesNamesContainer}>
-                {serviceArray.map((serviceItem, index) => (
-                  <View key={index}>
-                    <Text style={styles.serviceText}>
-                      {serviceItem.serviceName}
-                    </Text>
+              <View style={{position: 'relative'}}>
+                {showUpArrowService && (
+                  <View style={styles.arrowUpContainer}>
+                    <Entypo name="chevron-small-up" size={20} color="#9e9e9e" />
                   </View>
-                ))}
+                )}
+
+                <ScrollView
+                  style={styles.servicesNamesContainer}
+                  contentContainerStyle={styles.servicesNamesContent}
+                  onScroll={handleServiceScroll}
+                  scrollEventThrottle={16}>
+                  {serviceArray.map((serviceItem, index) => (
+                    <View key={index} style={styles.serviceItem}>
+                      <Text style={styles.serviceText}>
+                        {serviceItem.serviceName}
+                      </Text>
+                    </View>
+                  ))}
+                </ScrollView>
+
+                {showDownArrowService && (
+                  <View style={styles.arrowDownContainer}>
+                    <Entypo
+                      name="chevron-small-down"
+                      size={20}
+                      color="#9e9e9e"
+                    />
+                  </View>
+                )}
               </View>
             </View>
+
             <View style={styles.pinContainer}>
               <Text style={styles.pinText}>PIN</Text>
 
@@ -606,6 +688,8 @@ const Navigation = () => {
               </View>
             </Modal>
           </View>
+
+          {/* Worker Details */}
           <View style={styles.workerDetailsContainer}>
             <View>
               {addressDetails.profile && (
@@ -646,14 +730,36 @@ const styles = StyleSheet.create({
   serviceText: {
     color: '#212121',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 14,
     marginTop: 5,
   },
   servicesNamesContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
     width: '90%',
+    maxHeight: 60, // Adjust the height based on how many items you expect to show
+    // Remove layout properties like flexDirection and alignItems here
+  },
+  servicesNamesContent: {
+    // Default is column, but you can add spacing if desired:
+    flexDirection: 'column',
+    paddingVertical: 10,
+  },
+  arrowUpContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    zIndex: 1,
+  },
+  arrowDownContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    zIndex: 1,
   },
   firstContainer: {
     flexDirection: 'row',
@@ -703,32 +809,16 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
     minHeight: 0.4 * screenHeight,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   routeLine: {
     lineColor: '#212121',
     lineWidth: 3,
   },
   cancelButton: {
-    position: 'absolute',
-    top: 0.572 * screenHeight,
-    left: 5,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-    width: 80,
-    height: 35,
-  },
-  cancelbuttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  cancelButton: {
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
-    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 1,
@@ -837,36 +927,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  cancelButton: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 1,
-    width: 80,
-    height: 35,
-  },
-  cancelText: {
-    fontSize: 13,
-    color: '#4a4a4a',
-    fontWeight: 'bold',
-  },
   backButtonContainer: {
     width: 40,
     height: 40,
     flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'center', // Distance from the left side of the screen
-    backgroundColor: 'white', // Background color for the circular container
-    borderRadius: 50, // Rounds the container to make it circular
-    // Padding to make the icon container larger
-    elevation: 5, // Elevation for shadow effect (Android)
-    shadowColor: '#000', // Shadow color (iOS)
-    shadowOffset: {width: 0, height: 2}, // Shadow offset (iOS)
-    shadowOpacity: 0.2, // Shadow opacity (iOS)
-    shadowRadius: 4, // Shadow radius (iOS)
+    justifyContent: 'center',
+    backgroundColor: 'white',
+    borderRadius: 50,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
     zIndex: 1,
-    marginHorizontal: 10, // Ensures the icon is above other elements,
+    marginHorizontal: 10,
     marginBottom: 5,
   },
   modalOverlay: {
@@ -880,10 +955,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     padding: 20,
     paddingBottom: 30,
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 10,
   },
   modalTitle: {
     fontSize: 18,
@@ -923,7 +994,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#555',
   },
-
   crossContainer: {
     flexDirection: 'row',
     justifyContent: 'flex-end',

@@ -547,7 +547,7 @@ const WaitingUser = () => {
             <View style={styles.rowSpaceAlignment}>
               <View style={styles.rowAlignment}>
                 {/* Service Name */}
-                <Text style={styles.serviceName}>AC Repairing</Text>
+                <Text style={styles.serviceName}>Service Booked</Text>
               </View>
 
               {/* Cancel Button */}

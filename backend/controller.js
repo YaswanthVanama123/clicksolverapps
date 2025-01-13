@@ -3761,7 +3761,8 @@ const getUserAddressDetails = async (req, res) => {
         UN.area, 
         UN.pincode, 
         UN.alternate_phone_number, 
-        UN.alternate_name 
+        UN.alternate_name ,
+        UN.service_booked
       FROM 
         accepted N
       JOIN 
@@ -3781,8 +3782,14 @@ const getUserAddressDetails = async (req, res) => {
     }
 
     // Destructure and return the address details
-    const { city, area, pincode, alternate_phone_number, alternate_name } =
-      result.rows[0];
+    const {
+      city,
+      area,
+      pincode,
+      alternate_phone_number,
+      alternate_name,
+      service_booked,
+    } = result.rows[0];
     // console.log(result.rows[0])
 
     res.json({
@@ -3791,6 +3798,7 @@ const getUserAddressDetails = async (req, res) => {
       pincode,
       alternate_phone_number,
       alternate_name,
+      service_booked,
     });
   } catch (error) {
     console.error("Error fetching user address details:", error);

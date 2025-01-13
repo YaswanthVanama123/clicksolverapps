@@ -14,6 +14,7 @@ import {
   Easing,
   Dimensions,
   Modal,
+  ScrollView,
 } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import EncryptedStorage from 'react-native-encrypted-storage';
@@ -55,6 +56,18 @@ const WorkerNavigationScreen = () => {
   const [reasonModalVisible, setReasonModalVisible] = useState(false);
   const [confirmationModalVisible, setConfirmationModalVisible] =
     useState(false);
+  const [showUpArrowService, setShowUpArrowService] = useState(false);
+  const [showDownArrowService, setShowDownArrowService] = useState(false);
+  const [serviceArray, setServiceArray] = useState([]);
+
+  const handleServiceScroll = event => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    const containerHeight = event.nativeEvent.layoutMeasurement.height;
+    const contentHeight = event.nativeEvent.contentSize.height;
+
+    setShowUpArrowService(offsetY > 0);
+    setShowDownArrowService(offsetY + containerHeight < contentHeight);
+  };
 
   useEffect(() => {
     const {encodedId} = route.params;
@@ -163,6 +176,7 @@ const WorkerNavigationScreen = () => {
         },
       );
       setAddressDetails(response.data);
+      setServiceArray(response.data.service_booked);
     } catch (error) {
       console.error('Error fetching address details:', error);
     }
@@ -578,11 +592,35 @@ const WorkerNavigationScreen = () => {
               </TouchableOpacity>
             </View>
           </View>
-          <Text style={styles.serviceText}>AC Service & Repairing</Text>
+          <View style={{position: 'relative'}}>
+            {showUpArrowService && (
+              <View style={styles.arrowUpContainer}>
+                <Entypo name="chevron-small-up" size={20} color="#9e9e9e" />
+              </View>
+            )}
+            <ScrollView
+              style={styles.servicesNamesContainer}
+              contentContainerStyle={styles.servicesNamesContent}
+              onScroll={handleServiceScroll}
+              scrollEventThrottle={16}>
+              {serviceArray.map((serviceItem, index) => (
+                <View key={index} style={styles.serviceItem}>
+                  <Text style={styles.serviceText}>
+                    {serviceItem.serviceName}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+            {showDownArrowService && (
+              <View style={styles.arrowDownContainer}>
+                <Entypo name="chevron-small-down" size={20} color="#9e9e9e" />
+              </View>
+            )}
+          </View>
           <Text style={styles.pickupText}>You are at pickup location</Text>
 
           {/* Arrival Button */}
-          <View style={{paddingTop: 20}}>
+          <View style={{paddingTop: 10}}>
             <SwipeButton
               title="I've Arrived"
               titleStyles={{color: titleColor}}
@@ -667,7 +705,7 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
-    minHeight: 0.35 * screenHeight,
+    minHeight: 0.3 * screenHeight,
   },
   routeLine: {
     lineColor: '#212121',
@@ -675,7 +713,7 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     position: 'absolute',
-    top: 0.498 * screenHeight,
+    top: 0.47 * screenHeight,
     left: 5,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -693,7 +731,7 @@ const styles = StyleSheet.create({
   },
   googleMapsButton: {
     position: 'absolute',
-    top: 0.49 * screenHeight,
+    top: 0.463 * screenHeight,
     right: 10,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -757,7 +795,7 @@ const styles = StyleSheet.create({
   pickupText: {
     fontSize: 16,
     color: '#212121',
-    marginTop: 20,
+    marginTop: 10,
   },
   actionButton: {
     backgroundColor: '#EFDCCB',
@@ -767,6 +805,41 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  servicesNamesContainer: {
+    width: '70%',
+    maxHeight: 65, // Adjust height as needed (increasing this value allows more items to be visible before scrolling)
+    // DO NOT include layout properties like flexDirection or alignItems here!
+  },
+  servicesNamesContent: {
+    flexDirection: 'column', // Ensures items are stacked vertically
+  },
+  serviceItem: {
+    marginBottom: 5, // Add spacing between items, adjust as needed
+  },
+  serviceText: {
+    color: '#212121',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  arrowUpContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    zIndex: 1,
+  },
+  arrowDownContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    zIndex: 1,
+  },
+
   backButtonContainer: {
     width: 40,
     height: 40,

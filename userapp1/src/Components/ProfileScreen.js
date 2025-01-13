@@ -160,8 +160,8 @@ const ProfileScreen = () => {
         />
         <MenuItem
           icon="star"
-          text="My Ratings"
-          onPress={() => console.log('Navigate to My Ratings')}
+          text="Account Delete"
+          onPress={() => navigation.push('DeleteAccount', {details: account})}
         />
         <MenuItem
           icon="mode-edit-outline"

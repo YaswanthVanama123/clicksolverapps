@@ -14,7 +14,7 @@ import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 // import Config from 'react-native-config';
 
-const EditProfile = () => {
+const AccountDelete = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -30,7 +30,7 @@ const EditProfile = () => {
     setFullName(details.name);
   };
 
-  const updateProfile = async () => {
+  const deleteAccount = async () => {
     try {
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       console.log('JWT Token: ', jwtToken); // Log the JWT token for debugging
@@ -47,7 +47,7 @@ const EditProfile = () => {
         phone,
       ); // Debug log
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/user/details/update`,
+        `https://backend.clicksolver.com/api/user/account/delete`,
         {name: fullName, email, phone},
         {
           headers: {Authorization: `Bearer ${jwtToken}`},
@@ -95,6 +95,8 @@ const EditProfile = () => {
             value={fullName}
             onChangeText={setFullName}
             testID="fullName-input"
+            editable={false} // Disables editing
+            selectTextOnFocus={false} // Prevents text selection
           />
         </View>
 
@@ -107,6 +109,8 @@ const EditProfile = () => {
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
+              editable={false} // Disables editing
+              selectTextOnFocus={false} // Prevents text selection
             />
           </View>
         </View>
@@ -132,8 +136,8 @@ const EditProfile = () => {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={updateProfile}>
-          <Text style={styles.buttonText}>Update Profile</Text>
+        <TouchableOpacity style={styles.button} onPress={deleteAccount}>
+          <Text style={styles.buttonText}>Delete Account</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -233,4 +237,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default EditProfile;
+export default AccountDelete;

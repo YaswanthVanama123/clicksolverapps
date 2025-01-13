@@ -36,6 +36,7 @@ import ServiceTrackingListScreen from './Components/ServiceTrackingListScreen';
 import ServiceBookingItem from './Components/ServiceBookingItem';
 import UserNotifications from './screens/UserNotifications';
 import ServiceInProgress from './Components/ServiceInProgress';
+import AccountDelete from './Components/AccountDelete';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -432,6 +433,11 @@ function App() {
         <Stack.Screen
           name="Login"
           component={LoginScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="DeleteAccount"
+          component={AccountDelete}
           options={{headerShown: false}}
         />
         <Stack.Screen
