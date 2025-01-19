@@ -356,7 +356,12 @@ function ServiceApp() {
           </ScrollView>
         </View>
 
-        <View style={styles.Servicessection}>
+        <View
+          style={[
+            {
+              paddingBottom: messageBoxDisplay ? 65 : 10,
+            },
+          ]}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Services</Text>
             {/* <Text style={styles.seeAll}>See All</Text> */}
@@ -663,7 +668,7 @@ const styles = StyleSheet.create({
   },
   bookButtonText: {
     color: '#ffffff',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-SemiBold',
     fontSize: 13,
     textAlign: 'center',
   },
@@ -722,7 +727,7 @@ const styles = StyleSheet.create({
   },
 
   textContainerText: {
-    fontSize: 14,
+    fontSize: 13,
     paddingBottom: 5,
     fontFamily: 'RobotoSlab-Bold',
     color: '#212121',
@@ -769,7 +774,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#212E36',
+    // backgroundColor: '#212E36',
+    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
     padding: 20,
@@ -783,16 +789,17 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontFamily: 'RobotoSlab-Medium',
+    color: '#212121',
     marginTop: 10,
     textAlign: 'center',
   },
   modalSubtitle: {
-    fontSize: 14,
-    color: '#CCCCCC',
+    fontSize: 13,
+    color: '#9e9e9e',
     marginVertical: 10,
     textAlign: 'center',
+    fontFamily: 'RobotoSlab-Regular',
   },
   starsContainer: {
     flexDirection: 'row',
@@ -812,6 +819,7 @@ const styles = StyleSheet.create({
     padding: 10,
     color: '#000000',
     fontSize: 14,
+    fontFamily: 'RobotoSlab-Regular',
     marginBottom: 20,
     textAlignVertical: 'top',
   },
@@ -828,7 +836,7 @@ const styles = StyleSheet.create({
   },
   notNowText: {
     color: '#FFFFFF',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
   },
   submitButton: {
     padding: 10,
@@ -837,7 +845,7 @@ const styles = StyleSheet.create({
   },
   submitText: {
     color: '#FFFFFF',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
   },
 });
 
