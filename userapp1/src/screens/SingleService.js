@@ -11,7 +11,11 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import Swiper from 'react-native-swiper';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
 import Entypo from 'react-native-vector-icons/Entypo';
 import Icon from 'react-native-vector-icons/Ionicons';
 import EncryptedStorage from 'react-native-encrypted-storage';
@@ -53,31 +57,72 @@ const SingleService = () => {
     }
   }, [serviceName]);
 
-  useEffect(() => {
-    const fetchStoredCart = async () => {
-      try {
-        const storedCart = await EncryptedStorage.getItem(serviceName);
-        if (storedCart) {
-          const parsedCart = JSON.parse(storedCart);
-          if (Array.isArray(parsedCart)) {
-            setBookedServices(parsedCart);
-            // Update quantities from booked services
-            const parsedQuantities = parsedCart.reduce((acc, service) => {
-              acc[service.main_service_id] = service.quantity;
-              return acc;
-            }, {});
-            setQuantities(parsedQuantities);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching stored cart:', error);
-      }
-    };
-    // First fetch new services, then fetch old cart
-    fetchDetails().then(fetchStoredCart);
-  }, [fetchDetails, serviceName]);
+  // useEffect(() => {
+  //   const fetchStoredCart = async () => {
+  //     try {
+  //       const storedCart = await EncryptedStorage.getItem(serviceName);
+  //       if (storedCart) {
+  //         const parsedCart = JSON.parse(storedCart);
+  //         if (Array.isArray(parsedCart)) {
+  //           setBookedServices(parsedCart);
+  //           // Update quantities from booked services
+  //           const parsedQuantities = parsedCart.reduce((acc, service) => {
+  //             acc[service.main_service_id] = service.quantity;
+  //             return acc;
+  //           }, {});
+  //           setQuantities(parsedQuantities);
+  //         }
+  //       }
+  //     } catch (error) {
+  //       console.error('Error fetching stored cart:', error);
+  //     }
+  //   };
+  //   // First fetch new services, then fetch old cart
+  //   fetchDetails().then(fetchStoredCart);
+  // }, [fetchDetails, serviceName]);
 
   // Recalculate total whenever quantities change
+
+  const fetchStoredCart = useCallback(async () => {
+    try {
+      const storedCart = await EncryptedStorage.getItem(serviceName);
+      if (storedCart) {
+        const parsedCart = JSON.parse(storedCart);
+        if (Array.isArray(parsedCart)) {
+          setBookedServices(parsedCart);
+
+          // Update quantities from booked services
+          const parsedQuantities = parsedCart.reduce((acc, service) => {
+            acc[service.main_service_id] = service.quantity;
+            return acc;
+          }, {});
+          setQuantities(parsedQuantities);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching stored cart:', error);
+    }
+  }, [serviceName]);
+
+  // Runs once when component mounts
+  useEffect(() => {
+    // Then call them in sequence
+    fetchDetails().then(fetchStoredCart);
+  }, [fetchDetails, fetchStoredCart]);
+
+  // Runs every time the screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      // Re-fetch data or sync cart each time user returns
+      fetchDetails().then(fetchStoredCart);
+
+      // Optionally do more stuff here (attach event listeners, etc.)
+      return () => {
+        // Cleanup if necessary
+      };
+    }, [fetchDetails, fetchStoredCart]),
+  );
+
   useEffect(() => {
     const total = services.reduce((acc, service) => {
       const quantity = quantities[service.main_service_id] || 0;
@@ -166,6 +211,21 @@ const SingleService = () => {
   const handleBackPress = () => {
     navigation.goBack();
   };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      // This code will run every time the screen is focused
+      // For example, re-fetch data or reset states:
+      fetchDetails().then(fetchStoredCart);
+
+      // If you have any event listeners, attach them here
+      // and clean them up in the return statement.
+
+      return () => {
+        // Clean up any event listeners if necessary
+      };
+    }, []),
+  );
 
   return (
     <View style={styles.container}>
@@ -569,6 +629,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: '#4a4a4a',
     fontSize: 16,
+    fontFamily: 'RobotoSlab-Medium',
   },
 
   // ---------------------
@@ -711,7 +772,7 @@ const styles = StyleSheet.create({
   },
   loginModalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     color: '#212121',
     marginBottom: 10,
     textAlign: 'center',
@@ -721,6 +782,7 @@ const styles = StyleSheet.create({
     color: '#4a4a4a',
     textAlign: 'center',
     marginBottom: 20,
+    fontFamily: 'RobotoSlab-Regular',
   },
   loginModalButtons: {
     flexDirection: 'row',
@@ -737,7 +799,7 @@ const styles = StyleSheet.create({
   },
   loginCancelText: {
     color: '#FFFFFF',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
   },
   loginProceedButton: {
     flex: 1,
@@ -749,7 +811,7 @@ const styles = StyleSheet.create({
   },
   loginProceedText: {
     color: '#FFFFFF',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
   },
 });
 

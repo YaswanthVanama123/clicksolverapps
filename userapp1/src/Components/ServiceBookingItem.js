@@ -296,13 +296,12 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-SemiBold',
     color: '#1D2951',
     paddingLeft: 30,
   },
   profileCallContainer: {
     flexDirection: 'row',
-
     justifyContent: 'space-between',
   },
   profileImage: {
@@ -317,8 +316,8 @@ const styles = StyleSheet.create({
   },
   profileInitial: {
     color: '#FFFFFF',
+    fontFamily: 'RobotoSlab-Medium',
     fontSize: 22,
-    fontWeight: '800',
   },
   profileTextContainer: {
     flex: 1,
@@ -368,14 +367,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'RobotoSlab-SemiBold',
     color: '#212121',
     marginBottom: 8,
     paddingBottom: 15,
   },
   sectionBookedTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-SemiBold',
     color: '#212121',
     marginBottom: 8,
   },
@@ -390,7 +389,7 @@ const styles = StyleSheet.create({
   },
   sectionPaymentTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-SemiBold',
     color: '#212121',
     marginBottom: 8,
     paddingLeft: 10,
@@ -415,11 +414,12 @@ const styles = StyleSheet.create({
   timelineText: {
     fontSize: 14,
     color: '#212121',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
   },
   timelineTime: {
     fontSize: 10,
     color: '#4a4a4a',
+    fontFamily: 'RobotoSlab-Regular',
   },
   backIcon: {
     marginRight: 10,
@@ -430,11 +430,6 @@ const styles = StyleSheet.create({
     color: '#4a4a4a',
     paddingBottom: 10,
     paddingLeft: 5,
-  },
-  headerText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#212121',
   },
   profileContainer: {
     flexDirection: 'row',
@@ -456,12 +451,13 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     color: '#1D2951',
   },
   userDesignation: {
     fontSize: 14,
     color: '#4a4a4a',
+    fontFamily: 'RobotoSlab-Regular',
   },
 
   pinContainer: {
@@ -500,6 +496,7 @@ const styles = StyleSheet.create({
   serviceDetail: {
     fontSize: 14,
     color: '#212121',
+    fontFamily: 'RobotoSlab-Regular',
     marginBottom: 4,
   },
   addressContainer: {
@@ -512,11 +509,12 @@ const styles = StyleSheet.create({
   },
   addressTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     color: '#212121',
   },
   address: {
-    fontSize: 13,
+    fontSize: 12,
+    fontFamily: 'RobotoSlab-Regular',
     color: '#212121',
   },
   paymentRow: {
@@ -525,13 +523,14 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   paymentLabel: {
-    fontSize: 14,
+    fontSize: 12,
+    fontFamily: 'RobotoSlab-Regular',
     color: '#212121',
   },
   paymentValue: {
     fontSize: 14,
+    fontFamily: 'RobotoSlab-SemiBold',
     color: '#212121',
-    fontWeight: 'bold',
   },
   paymentOptionContainer: {
     flexDirection: 'row',
@@ -555,7 +554,7 @@ const styles = StyleSheet.create({
   payButtonText: {
     fontSize: 16,
     textAlign: 'center',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Regular',
     color: '#fff',
   },
 });

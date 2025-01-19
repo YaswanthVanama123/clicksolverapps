@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   headerText: {
     color: '#212121',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-SemiBold',
   },
   profileContainer: {
     flexDirection: 'column',
@@ -441,20 +441,23 @@ const styles = StyleSheet.create({
   },
   technicianName: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     color: '#212121',
   },
   technicianTitle: {
     color: '#4a4a4a',
+    fontFamily: 'RobotoSlab-Regular',
   },
   estimatedCompletion: {
     color: '#212121',
     fontWeight: '500',
     marginTop: 5,
+    fontFamily: 'RobotoSlab-Medium',
   },
   statusText: {
     color: '#4a4a4a',
     marginTop: 5,
+    fontFamily: 'RobotoSlab-Regular',
   },
   houseImageContainer: {
     alignItems: 'center',
@@ -471,7 +474,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
   },
   serviceDetailsContainer: {
     flexDirection: 'column',
@@ -490,7 +493,7 @@ const styles = StyleSheet.create({
   },
   serviceDetailsTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     color: '#212121',
   },
   iconDetailsContainer: {
@@ -505,9 +508,10 @@ const styles = StyleSheet.create({
   detailText: {
     marginLeft: 10,
     color: '#4a4a4a',
+    fontFamily: 'RobotoSlab-Regular',
   },
   highLightText: {
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
   },
   sectionContainer: {
     marginBottom: 16,
@@ -523,7 +527,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'RobotoSlab-SemiBold',
     color: '#212121',
   },
   innerContainerLine: {
@@ -554,11 +558,12 @@ const styles = StyleSheet.create({
   timelineText: {
     fontSize: 14,
     color: '#212121',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
   },
   timelineTime: {
     fontSize: 10,
     color: '#4a4a4a',
+    fontFamily: 'RobotoSlab-Regular',
   },
   modalOverlay: {
     flex: 1,
@@ -575,12 +580,13 @@ const styles = StyleSheet.create({
   },
   confirmationTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     marginBottom: 10,
     color: '#212121',
   },
   confirmationSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
+    fontFamily: 'RobotoSlab-Regular',
     color: '#666',
     textAlign: 'center',
     marginBottom: 20,
@@ -609,11 +615,11 @@ const styles = StyleSheet.create({
   },
   modalButtonTextCancel: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
   },
   modalButtonTextConfirm: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
   },
 });
 

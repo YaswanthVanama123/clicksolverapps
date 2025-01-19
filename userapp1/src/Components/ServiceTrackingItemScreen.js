@@ -298,12 +298,6 @@ const styles = StyleSheet.create({
   backIcon: {
     marginRight: 10,
   },
-  headerText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1D2951',
-    paddingLeft: 30,
-  },
   profileCallContainer: {
     flexDirection: 'row',
 
@@ -322,6 +316,7 @@ const styles = StyleSheet.create({
   profileInitial: {
     color: '#FFFFFF',
     fontSize: 22,
+    fontFamily: 'RobotoSlab-Medium',
     fontWeight: '800',
   },
   profileTextContainer: {
@@ -386,14 +381,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'RobotoSlab-Medium',
     color: '#212121',
     marginBottom: 8,
     paddingBottom: 15,
   },
   sectionBookedTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     color: '#212121',
     marginBottom: 8,
   },
@@ -408,7 +403,7 @@ const styles = StyleSheet.create({
   },
   sectionPaymentTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     color: '#212121',
     marginBottom: 8,
     paddingLeft: 10,
@@ -416,12 +411,7 @@ const styles = StyleSheet.create({
   innerContainerLine: {
     paddingLeft: 16,
   },
-  serviceDetail: {
-    fontSize: 14,
-    color: '#212121',
-    fontWeight: '500',
-    marginBottom: 4,
-  },
+
   timelineItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -434,18 +424,19 @@ const styles = StyleSheet.create({
   timelineText: {
     fontSize: 14,
     color: '#212121',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Regular',
   },
   timelineTime: {
     fontSize: 10,
     color: '#4a4a4a',
+    fontFamily: 'RobotoSlab-Regular',
   },
   backIcon: {
     marginRight: 10,
   },
   headerText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-SemiBold',
     color: '#212121',
   },
   profileContainer: {
@@ -463,12 +454,13 @@ const styles = StyleSheet.create({
   // },
   userName: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     color: '#1D2951',
   },
   userDesignation: {
     fontSize: 14,
     color: '#4a4a4a',
+    fontFamily: 'RobotoSlab-Regular',
   },
 
   pinContainer: {
@@ -480,6 +472,7 @@ const styles = StyleSheet.create({
   },
   pinText: {
     color: '#1D2951',
+    fontFamily: 'RobotoSlab-Regular',
     fontSize: 16,
     paddingTop: 10,
   },
@@ -498,6 +491,7 @@ const styles = StyleSheet.create({
   },
   pinNumber: {
     color: '#212121',
+    fontFamily: 'RobotoSlab-Regular',
     fontSize: 14,
   },
   innerContainerLine: {
@@ -507,6 +501,7 @@ const styles = StyleSheet.create({
   serviceDetail: {
     fontSize: 14,
     color: '#212121',
+    fontFamily: 'RobotoSlab-Regular',
     marginBottom: 4,
   },
   addressContainer: {
@@ -523,8 +518,9 @@ const styles = StyleSheet.create({
     color: '#212121',
   },
   address: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#212121',
+    fontFamily: 'RobotoSlab-Regular',
   },
   paymentRow: {
     flexDirection: 'row',
@@ -532,24 +528,20 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   paymentLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#212121',
+    fontFamily: 'RobotoSlab-Regular',
   },
   paymentValue: {
     fontSize: 14,
     color: '#212121',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
   },
   paymentOptionContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
     paddingLeft: 16,
-  },
-  paymentOptionText: {
-    fontSize: 14,
-    color: '#000',
-    marginLeft: 8,
   },
   payButton: {
     backgroundColor: '#ff4500',
@@ -562,7 +554,7 @@ const styles = StyleSheet.create({
   payButtonText: {
     fontSize: 16,
     textAlign: 'center',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     color: '#fff',
   },
 });

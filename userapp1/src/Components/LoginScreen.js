@@ -65,6 +65,32 @@ const LoginScreen = () => {
   }, [navigation]);
 
   // Main login function
+  // const login = useCallback(async () => {
+  //   if (!phoneNumber) return; // Early return if phone number is empty
+
+  //   try {
+  //     const response = await loginBackend(phoneNumber);
+  //     const {status, data} = response;
+  //     console.log('status', status);
+  //     if (status === 200) {
+  //       // Worker already signed up
+  //       const {token} = data;
+  //       await EncryptedStorage.setItem('cs_token', token);
+  //       navigation.dispatch(
+  //         CommonActions.reset({
+  //           index: 0,
+  //           routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+  //         }),
+  //       );
+  //     } else if (status === 205) {
+  //       // Worker not signed up, navigate to signup
+  //       navigation.navigate('SignupDetails', {phone_number: phoneNumber});
+  //     }
+  //   } catch (error) {
+  //     console.error('Error during login:', error);
+  //   }
+  // }, [phoneNumber, loginBackend, navigation]);
+
   const login = useCallback(async () => {
     if (!phoneNumber) return; // Early return if phone number is empty
 
@@ -72,16 +98,14 @@ const LoginScreen = () => {
       const response = await loginBackend(phoneNumber);
       const {status, data} = response;
       console.log('status', status);
+
       if (status === 200) {
         // Worker already signed up
         const {token} = data;
         await EncryptedStorage.setItem('cs_token', token);
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
-          }),
-        );
+
+        // Navigate one screen back
+        navigation.goBack();
       } else if (status === 205) {
         // Worker not signed up, navigate to signup
         navigation.navigate('SignupDetails', {phone_number: phoneNumber});
@@ -117,10 +141,10 @@ const LoginScreen = () => {
             <View style={styles.inputContainer}>
               <View style={styles.countryCodeContainer}>
                 <Image source={{uri: FLAG_ICON_URL}} style={styles.flagIcon} />
-                <Text style={styles.picker}>91</Text>
+                <Text style={styles.picker}>+91</Text>
               </View>
               <TextInput
-                style={styles.input}
+                style={[styles.input, {fontFamily: 'RobotoSlab-Medium'}]} // Added fontFamily in style
                 placeholder="Enter Mobile Number"
                 placeholderTextColor="#9e9e9e"
                 keyboardType="phone-pad"
@@ -156,16 +180,17 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 26,
     lineHeight: 26,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Bold',
     color: '#212121',
     width: 100,
   },
-  subheading: {fontSize: 16, fontWeight: 'bold', color: '#333'},
+  subheading: {fontSize: 16, fontFamily: 'RobotoSlab-SemiBold', color: '#333'},
   tagline: {
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
     paddingBottom: 70,
+    fontFamily: 'RobotoSlab-Regular',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -187,7 +212,12 @@ const styles = StyleSheet.create({
     width: 80,
   },
   flagIcon: {width: 24, height: 24},
-  picker: {fontSize: 17, color: '#212121', padding: 10, fontWeight: 'bold'},
+  picker: {
+    fontSize: 17,
+    color: '#212121',
+    padding: 10,
+    fontFamily: 'RobotoSlab-Medium',
+  },
   input: {
     flex: 1,
     height: 56,
@@ -206,7 +236,11 @@ const styles = StyleSheet.create({
     elevation: 5,
     marginTop: 25,
   },
-  buttonText: {color: '#ffffff', fontSize: 16, fontWeight: 'bold'},
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontFamily: 'RobotoSlab-SemiBold',
+  },
 });
 
 export default LoginScreen;

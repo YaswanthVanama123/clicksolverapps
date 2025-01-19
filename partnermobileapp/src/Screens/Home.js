@@ -366,20 +366,6 @@ const HomeScreen = () => {
       created => console.log(`createChannel returned ''`),
     );
 
-    const storeNotificationInBackend = async notification => {
-      try {
-        const pcs_token = await EncryptedStorage.getItem('pcs_token');
-        const fcmToken = await EncryptedStorage.getItem('fcm_token');
-        await axios.post(
-          `${process.env.BackendAPI17}/api/worker/store-notification`,
-          {notification, fcmToken},
-          {headers: {Authorization: `Bearer ${pcs_token}`}},
-        );
-      } catch (error) {
-        console.error('Failed to store notification in backend:', error);
-      }
-    };
-
     const storeNotificationLocally = async notification => {
       console.log('called atleast');
       // Check if notification has notification.data.notification_id
@@ -432,7 +418,6 @@ const HomeScreen = () => {
           );
 
           // Also store in backend
-          storeNotificationInBackend(notification);
         } catch (error) {
           console.error('Failed to store notification locally:', error);
         }

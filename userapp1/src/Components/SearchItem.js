@@ -291,7 +291,7 @@ const SearchItem = () => {
             style={styles.searchInput}
             placeholder={placeholderText}
             placeholderTextColor="#000"
-            fontStyle="italic"
+            fontFamily="RobotoSlab-Regular"
             value={searchQuery}
             onChangeText={handleInputChange}
             onFocus={() => setIsFocused(true)}
@@ -410,8 +410,8 @@ const styles = StyleSheet.create({
   },
   noResultsText: {
     fontSize: 20,
-    fontWeight: 'bold',
     color: '#555555',
+    fontFamily: 'RobotoSlab-Medium',
   },
   noResultsSubText: {
     fontSize: 14,
@@ -419,6 +419,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: 20,
     padding: 6,
+    fontFamily: 'RobotoSlab-Medium',
   },
   horizontalLine: {
     backgroundColor: '#F0F0F0',
@@ -462,7 +463,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   sectionTitle: {
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     marginBottom: 10,
     fontSize: 16,
     color: '#000',
@@ -476,6 +477,7 @@ const styles = StyleSheet.create({
   recentText: {
     color: '#000',
     alignSelf: 'center',
+    fontFamily: 'RobotoSlab-Regular',
   },
   trendingSearchesContainer: {
     marginBottom: 15,
@@ -495,6 +497,7 @@ const styles = StyleSheet.create({
   },
   trendingText: {
     color: '#000',
+    fontFamily: 'RobotoSlab-Regular',
   },
   suggestionsList: {
     marginTop: 5,
@@ -522,9 +525,11 @@ const styles = StyleSheet.create({
     color: '#1D2951',
     fontWeight: '500',
     fontSize: 16,
+    fontFamily: 'RobotoSlab-Medium',
   },
   SuggestionDescription: {
     fontSize: 12,
     color: '#4a4a4a',
+    fontFamily: 'RobotoSlab-Regular',
   },
 });

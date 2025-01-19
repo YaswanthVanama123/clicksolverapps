@@ -291,14 +291,14 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-SemiBold',
     color: '#000',
     marginLeft: 7,
   },
   sortText: {
     fontSize: 16,
     marginRight: 8,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-SemiBold',
     color: '#212121',
   },
   dropdownContainer: {
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   },
   dropdownTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-SemiBold',
     color: '#212121',
     marginBottom: 8,
   },
@@ -331,6 +331,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     color: '#4a4a4a',
+    fontFamily: 'RobotoSlab-Medium',
   },
   serviceContainer: {
     flex: 1,
@@ -369,16 +370,17 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     color: '#212121',
   },
   schedule: {
     fontSize: 13,
     color: '#9e9e9e',
+    fontFamily: 'RobotoSlab-Regular',
   },
   price: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     color: '#212121',
     textAlign: 'right',
   },

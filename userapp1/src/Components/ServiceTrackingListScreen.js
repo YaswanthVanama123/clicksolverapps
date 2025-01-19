@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     color: '#000',
   },
   dropdownContainer: {
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
   },
   dropdownTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-SemiBold',
     color: '#212121',
     marginBottom: 8,
   },
@@ -248,6 +248,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     color: '#4a4a4a',
+    fontFamily: 'RobotoSlab-Regular',
   },
   listContainer: {
     paddingHorizontal: 16,
@@ -284,12 +285,13 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'RobotoSlab-Medium',
     color: '#212121',
   },
   itemDate: {
     fontSize: 12,
     color: '#4a4a4a',
+    fontFamily: 'RobotoSlab-Regular',
   },
   statusLabel: {
     borderRadius: 10,
@@ -309,7 +311,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     color: '#212121',
   },
 });

@@ -254,7 +254,12 @@ const Payment = ({route}) => {
               <View>
                 <Text style={styles.detailsTitle}>Services</Text>
                 {serviceArray.map((service, index) => (
-                  <Text key={index} style={styles.serviceName}>
+                  <Text
+                    key={index}
+                    style={styles.serviceName}
+                    numberOfLines={2} // Limit to 2 lines
+                    ellipsizeMode="tail" // Add ellipsis (...) if the text overflows
+                  >
                     {service.serviceName}
                   </Text>
                 ))}
@@ -325,7 +330,10 @@ const Payment = ({route}) => {
                     />
                   </View>
                   <View>
-                    <Text style={styles.payText}>To Pay ₹ {grandTotal}</Text>
+                    <Text style={styles.payText}>
+                      To Pay ₹{' '}
+                      <Text style={styles.payTextTotal}>{grandTotal}</Text>
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -356,6 +364,7 @@ const Payment = ({route}) => {
                   onChangeText={text => setValue(text)}
                   placeholder="Enter voucher code"
                   placeholderTextColor="#A0A0A0"
+                  fontFamily="RobotoSlab-Regular"
                   onFocus={() => setIsFocused(true)}
                   onBlur={() => setIsFocused(false)}
                 />
@@ -418,30 +427,53 @@ const styles = StyleSheet.create({
   },
   container: {flex: 1, backgroundColor: '#F5F5F5'},
   header: {padding: 10, flexDirection: 'row', gap: 15, alignItems: 'center'},
-  headerTitle: {color: '#212121', fontWeight: 'bold', fontSize: 16},
+  headerTitle: {
+    color: '#212121',
+    fontSize: 16,
+    fontFamily: 'RobotoSlab-SemiBold',
+    textAlign: 'center',
+  },
   serviceSummary: {
     padding: 16,
     backgroundColor: '#FFF',
     margin: 16,
+
     borderRadius: 10,
   },
-  nameText: {fontSize: 18, fontWeight: 'bold', marginTop: 8, color: '#212121'},
-  dateText: {color: '#6E6E6E', marginBottom: 16},
+  nameText: {
+    fontSize: 18,
+    fontFamily: 'RobotoSlab-Medium',
+    marginTop: 8,
+    color: '#212121',
+  },
+  payTextTotal: {
+    fontFamily: 'RobotoSlab-Medium',
+  },
+  dateText: {
+    color: '#6E6E6E',
+    marginBottom: 16,
+    fontFamily: 'RobotoSlab-Regular',
+  },
   detailsBox: {
     backgroundColor: '#F9F9F9',
     padding: 10,
     borderRadius: 8,
     width: '100%',
   },
-  detailsTitle: {fontWeight: 'bold', color: '#4a4a4a', marginTop: 10},
+  detailsTitle: {
+    fontFamily: 'RobotoSlab-Medium',
+    color: '#4a4a4a',
+    marginTop: 10,
+  },
   paymentSummary: {
     backgroundColor: '#FFF',
     margin: 16,
     padding: 16,
     borderRadius: 10,
+    fontFamily: 'RobotoSlab-Medium',
   },
   summaryTitle: {
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     fontSize: 16,
     color: '#4a4a4a',
     marginBottom: 10,
@@ -452,12 +484,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 8,
   },
-  breakdownItem: {color: '#6E6E6E'},
-  breakdownPrice: {fontWeight: 'bold', color: '#212121'},
+  breakdownItem: {
+    color: '#6E6E6E',
+    fontFamily: 'RobotoSlab-Regular',
+    fontSize: 12,
+  },
+  breakdownPrice: {
+    fontWeight: 'bold',
+    color: '#212121',
+    fontFamily: 'RobotoSlab-Medium',
+    fontSize: 13,
+  },
   separatorLine: {height: 1, backgroundColor: '#EEE', marginVertical: 10},
   grandTotalContainer: {flexDirection: 'row', justifyContent: 'space-between'},
-  paidViaText: {color: '#4a4a4a', fontWeight: '500'},
-  grandTotalText: {fontWeight: 'bold', fontSize: 16, color: '#212121'},
+  paidViaText: {
+    color: '#4a4a4a',
+    fontFamily: 'RobotoSlab-Medium',
+    fontSize: 14,
+  },
+  grandTotalText: {
+    fontFamily: 'RobotoSlab-Medium',
+    fontSize: 14,
+    color: '#212121',
+  },
   voucherContainer: {
     backgroundColor: '#FFF',
     padding: 16,
@@ -467,7 +516,12 @@ const styles = StyleSheet.create({
   },
   backIconContainer: {flexDirection: 'row', justifyContent: 'space-between'},
   voucherIconContainer: {flexDirection: 'row', alignItems: 'center'},
-  voucherText: {marginLeft: 8, color: '#6E6E6E'},
+  voucherText: {
+    marginLeft: 8,
+    color: '#6E6E6E',
+    fontFamily: 'RobotoSlab-Medium',
+    fontSize: 14,
+  },
   noticeContainer: {
     flexDirection: 'column',
     alignItems: 'center',
@@ -475,19 +529,54 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
   },
-  noticeText: {marginLeft: 8, color: '#212121'},
+  noticeText: {
+    marginLeft: 8,
+    color: '#212121',
+    fontFamily: 'RobotoSlab-Medium',
+    fontSize: 12,
+  },
   payButton: {
     backgroundColor: '#ff4500',
     padding: 16,
     borderRadius: 25,
     alignItems: 'center',
   },
-  payButtonText: {color: '#FFF', fontWeight: 'bold', fontSize: 15},
-  commanderName: {color: '#212121'},
+  payButtonText: {
+    color: '#FFF',
+
+    fontSize: 15,
+    fontFamily: 'RobotoSlab-Medium',
+  },
+  commanderName: {
+    color: '#212121',
+    fontFamily: 'RobotoSlab-Regular',
+    fontSize: 13,
+  },
   profileImage: {height: 50, width: 50, borderRadius: 25},
-  serviceName: {color: '#212121'},
-  locationText: {color: '#212121'},
-  rowContainer: {flexDirection: 'row', justifyContent: 'space-between'},
+  serviceName: {
+    color: '#212121',
+    flexShrink: 1, // Allow text to shrink if it overflows
+    flexWrap: 'wrap', // Wrap the text to the next line if needed
+    fontSize: 13,
+    maxWidth: 150, // Set a maximum width to limit text length
+    overflow: 'hidden', // Prevent overflow
+    textAlign: 'left', // Align text to the left
+    fontFamily: 'RobotoSlab-Regular',
+  },
+
+  locationText: {
+    color: '#212121',
+    fontFamily: 'RobotoSlab-Regular',
+    fontSize: 13,
+  },
+  rowContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start', // Ensures top alignment of both columns
+    width: '100%',
+    gap: 10, // Add some spacing between the two columns
+  },
+
   profileContainer: {flexDirection: 'row', alignItems: 'center', gap: 10},
   applyContainer: {
     backgroundColor: '#212121',
@@ -517,7 +606,7 @@ const styles = StyleSheet.create({
     margin: 16,
   },
   HideContainer: {flexDirection: 'row', gap: 5, alignItems: 'center'},
-  payText: {color: '#212121'},
+  payText: {color: '#212121', fontFamily: 'RobotoSlab-Regular'},
 
   paymentSummaryContainer: {
     flexDirection: 'row',
@@ -548,7 +637,7 @@ const styles = StyleSheet.create({
   },
   applyButtonText: {
     color: '#9e9e9e',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     fontSize: 13,
   },
   applyButtonTextActive: {color: '#ff4500'},
@@ -558,8 +647,12 @@ const styles = StyleSheet.create({
     gap: 5,
     margin: 15,
   },
-  serviceCostText: {color: '#212121', fontSize: 14},
-  cost: {color: '#212121', fontWeight: 'bold', fontSize: 15},
+  serviceCostText: {
+    color: '#212121',
+    fontSize: 14,
+    fontFamily: 'RobotoSlab-Regular',
+  },
+  cost: {color: '#212121', fontFamily: 'RobotoSlab-Medium', fontSize: 15},
 });
 
 export default Payment;

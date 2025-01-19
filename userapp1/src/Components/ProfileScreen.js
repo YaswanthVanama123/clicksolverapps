@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   profileTitle: {
     fontSize: 18,
     color: '#212121',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-SemiBold',
     paddingVertical: 10,
     paddingLeft: 15,
   },
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   },
   profileName: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     color: '#333',
   },
   inputContainer: {
@@ -244,6 +244,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 15,
+    fontFamily: 'RobotoSlab-Regular',
     marginLeft: 10,
     color: '#333',
   },
@@ -274,10 +275,12 @@ const styles = StyleSheet.create({
   },
   countryCode: {
     fontSize: 15,
+    fontFamily: 'RobotoSlab-Regular',
     color: '#333',
   },
   phoneInput: {
     fontSize: 15,
+    fontFamily: 'RobotoSlab-Regular',
     color: '#333',
     width: '100%',
   },
@@ -301,6 +304,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginLeft: 10,
     color: '#333',
+    fontFamily: 'RobotoSlab-Regular',
   },
   logoutButton: {
     backgroundColor: '#FFFFFF',
@@ -314,7 +318,7 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     color: '#212121',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     fontSize: 16,
   },
   headerContainer: {

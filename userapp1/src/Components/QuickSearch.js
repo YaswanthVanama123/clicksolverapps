@@ -53,8 +53,7 @@ const QuickSearch = () => {
         style={styles.searchInput}
         placeholder={placeholderText}
         placeholderTextColor="#000"
-        fontStyle="italic"
-        fontFamily="RobotoSlab-Regular"
+        fontFamily="RobotoSlab-Medium"
         value={searchQuery}
         onChangeText={handleInputChange}
         onFocus={handleFocus}

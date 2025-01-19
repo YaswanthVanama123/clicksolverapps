@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-SemiBold',
     marginLeft: 10,
     color: '#1D2951',
     textAlign: 'center',
@@ -165,6 +165,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
+    fontFamily: 'RobotoSlab-Medium',
     color: '#4a4a4a',
     marginBottom: 5,
     marginTop: 15,
@@ -177,6 +178,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     backgroundColor: '#f9f9f9',
     color: '#212121',
+    fontFamily: 'RobotoSlab-Regular',
     fontSize: 16,
   },
   inputWithIcon: {
@@ -192,6 +194,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 10,
     color: '#212121',
+    fontFamily: 'RobotoSlab-Regular',
     fontSize: 16,
   },
   phoneInputContainer: {
@@ -212,10 +215,12 @@ const styles = StyleSheet.create({
     marginRight: 10,
     fontSize: 16,
     color: '#212121',
+    fontFamily: 'RobotoSlab-Regular',
   },
   phoneInput: {
     flex: 1,
     color: '#212121',
+    fontFamily: 'RobotoSlab-Regular',
     fontSize: 16,
   },
   button: {
@@ -229,7 +234,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
   },
 });
 
