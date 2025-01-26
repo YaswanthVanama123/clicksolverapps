@@ -37,6 +37,7 @@ const ServiceTrackingListScreen = () => {
             },
           },
         );
+        console.log(response.data);
         setServiceData(response.data);
         setFilteredData(response.data); // Initially display all data
       } catch (error) {

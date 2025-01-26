@@ -250,6 +250,13 @@ function ServiceApp() {
     navigation.push('Notifications');
   };
 
+  const shareReferral = async () => {
+    const referralLink = `https://clicksolver.com/register?ref=${user.referralCode}`;
+    await Share.share({
+      message: `Join Click Solver using my referral link: ${referralLink}`,
+    });
+  };
+
   const handleHelp = () => {
     navigation.push('Help');
   };

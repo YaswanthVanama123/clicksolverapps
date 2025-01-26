@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#212121',
     width: 90,
-    fontWeight: '500',
+    fontFamily: 'RobotoSlab-Regular',
     flex: 1, // Ensures the service name takes remaining space
     textAlign: 'left', // Aligns the service name to the left
   },
@@ -578,10 +578,12 @@ const styles = StyleSheet.create({
   quantity: {
     fontSize: 14,
     color: '#808080',
+    fontFamily: 'RobotoSlab-Regular',
   },
   cost: {
     fontSize: 14,
     color: '#212121',
+    fontFamily: 'RobotoSlab-Regular',
   },
   horizantalLine: {
     width: '100%',
@@ -592,6 +594,7 @@ const styles = StyleSheet.create({
     color: 'red',
     fontSize: 14,
     marginTop: 5,
+    fontFamily: 'RobotoSlab-Medium',
   },
   contactSection: {
     borderTopWidth: 1,
@@ -639,7 +642,7 @@ const styles = StyleSheet.create({
     width: '90%',
     backgroundColor: 'white',
     borderRadius: 9,
-    fontWeight: '500',
+    fontFamily: 'RobotoSlab-Regular',
     paddingHorizontal: 85,
     elevation: 10,
     shadowColor: '#000',
@@ -651,7 +654,7 @@ const styles = StyleSheet.create({
   },
   label: {
     color: '#808080',
-    fontWeight: '500',
+    fontFamily: 'RobotoSlab-Medium',
     fontSize: 12,
     padding: 5,
   },
@@ -684,7 +687,7 @@ const styles = StyleSheet.create({
   },
   confirmButtonText: {
     color: '#FFFFFF',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     textAlign: 'center',
     fontSize: 16,
   },
@@ -703,7 +706,7 @@ const styles = StyleSheet.create({
   },
   completeAddressHead: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-SemiBold',
     marginBottom: 10,
     color: '#1D2951',
   },
@@ -714,6 +717,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     paddingHorizontal: 10,
     color: '#000',
+    fontFamily: 'RobotoSlab-Regular',
   },
   inputView: {
     marginBottom: 10,
@@ -726,7 +730,7 @@ const styles = StyleSheet.create({
   },
   bookButtonText: {
     color: '#FFFFFF',
-    fontWeight: '500',
+    fontFamily: 'RobotoSlab-Medium',
     textAlign: 'center',
     fontSize: 16,
   },

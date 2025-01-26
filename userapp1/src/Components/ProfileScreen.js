@@ -169,6 +169,11 @@ const ProfileScreen = () => {
           onPress={() => navigation.push('EditProfile', {details: account})}
         />
         <MenuItem
+          icon="mode-edit-outline"
+          text="Refer & Earn"
+          onPress={() => navigation.push('ReferralScreen')}
+        />
+        <MenuItem
           icon="info"
           text="About CS"
           onPress={() => console.log('Navigate to About CS')}

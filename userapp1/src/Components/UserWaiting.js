@@ -681,7 +681,7 @@ const styles = StyleSheet.create({
   },
   locationHeadDetails: {
     color: '#121212',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     fontSize: 16,
   },
   rowAlignment: {
@@ -691,13 +691,13 @@ const styles = StyleSheet.create({
   },
   serviceName: {
     color: '#1D2951',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     fontSize: 18,
   },
   searchingText: {
     color: '#212121',
     fontSize: 14,
-    fontWeight: '400',
+    fontFamily: 'RobotoSlab-Regular',
   },
   horizontalLine: {
     width: Dimensions.get('window').width,
@@ -719,6 +719,7 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     textAlign: 'center',
     color: '#9e9e9e',
+    fontFamily: 'RobotoSlab-Medium',
   },
   cancelButton: {
     padding: 7,
@@ -768,6 +769,7 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 18,
     color: '#333',
+    fontFamily: 'RobotoSlab-Medium',
   },
   map: {
     height: '60%',
@@ -912,7 +914,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     textAlign: 'center',
     marginBottom: 5,
     color: '#000',
@@ -925,6 +927,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     paddingBottom: 10,
+    fontFamily: 'RobotoSlab-Regular',
   },
   reasonButton: {
     flexDirection: 'row',
@@ -937,6 +940,7 @@ const styles = StyleSheet.create({
   reasonText: {
     fontSize: 16,
     color: '#333',
+    fontFamily: 'RobotoSlab-Regular',
   },
   crossContainer: {
     flexDirection: 'row',
@@ -954,7 +958,7 @@ const styles = StyleSheet.create({
   },
   confirmationTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     textAlign: 'center',
     paddingBottom: 10,
     marginBottom: 5,
@@ -969,6 +973,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingBottom: 10,
     paddingTop: 10,
+    fontFamily: 'RobotoSlab-Regular',
   },
   confirmButton: {
     backgroundColor: '#FF4500',
@@ -980,7 +985,7 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
   },
 });
 

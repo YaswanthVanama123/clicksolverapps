@@ -17,6 +17,7 @@ const SignUpScreen = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [referralCode, setReferralCode] = useState(''); // New state for referral code
   const route = useRoute();
   const navigation = useNavigation();
 
@@ -35,22 +36,29 @@ const SignUpScreen = () => {
           fullName,
           email,
           phoneNumber,
+          referralCode, // Pass referral code to the backend
         },
       );
 
-      const {token} = response.data;
+      const {token, referralCode: newReferralCode, message} = response.data;
+
       console.log(response.data);
+
       if (token) {
         await EncryptedStorage.setItem('sign_up', 'true');
         await EncryptedStorage.setItem('pcs_token', token);
+        Alert.alert(
+          'Sign Up Successful',
+          message || 'You have signed up successfully.',
+        );
         navigation.replace('PartnerSteps');
       }
     } catch (error) {
       console.error('Sign up error:', error);
-      Alert.alert(
-        'Sign Up Failed',
-        'An error occurred during sign up. Please try again.',
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        'An error occurred during sign up. Please try again.';
+      Alert.alert('Sign Up Failed', errorMessage);
     }
   };
 
@@ -74,6 +82,20 @@ const SignUpScreen = () => {
         onChangeText={setEmail}
         icon={<Icon name="envelope" size={20} color="#000080" />}
         keyboardType="email-address"
+      />
+
+      <InputField
+        placeholder="Phone Number"
+        value={phoneNumber}
+        onChangeText={setPhoneNumber}
+        keyboardType="phone-pad"
+      />
+
+      <TextInput
+        placeholder="Enter referral code (optional)"
+        value={referralCode}
+        onChangeText={setReferralCode}
+        style={styles.input}
       />
 
       <TouchableOpacity style={styles.button} onPress={handleSignUp}>

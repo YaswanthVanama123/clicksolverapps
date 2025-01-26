@@ -4,13 +4,11 @@ import React, {useState, useEffect} from 'react';
 import BackgroundGeolocation from 'react-native-background-geolocation';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import firestore from '@react-native-firebase/firestore';
-import haversine from 'haversine'; // (Still used for distance traveled)
+import haversine from 'haversine';
 import moment from 'moment-timezone';
 
 /**
  * Helper function: Ray-casting algorithm for point-in-polygon.
- * Expects `polygon` as an array of [latitude, longitude] pairs.
- * Returns true if (lat, lng) is inside the polygon.
  */
 function pointInPolygon(lat, lng, polygon) {
   let inside = false;
@@ -29,8 +27,7 @@ function pointInPolygon(lat, lng, polygon) {
 }
 
 /**
- * Returns true if (latitude, longitude) is within at least one polygon in `geofences`.
- * Each geofence has { identifier, vertices: [ [lat, lng], [lat, lng], ... ] }
+ * Returns true if (latitude, longitude) is inside at least one polygon in `geofences`.
  */
 function isLocationInGeofence(latitude, longitude, geofences) {
   return geofences.some(geofence =>
@@ -38,29 +35,19 @@ function isLocationInGeofence(latitude, longitude, geofences) {
   );
 }
 
-/**
- * LocationTracker Component
- *
- * Props:
- *   - isEnabled (Boolean): controls whether tracking is active or not
- *   - onLocationUpdate (Function): callback to receive live location updates in the parent
- */
 const LocationTracker = ({isEnabled, onLocationUpdate}) => {
-  // Keep track of the distance traveled since last Firestore update inside geofence
+  // Keep track of distance traveled inside the geofence since last update
   const [cumulativeDistance, setCumulativeDistance] = useState(0);
 
   /**
-   * Sends location (latitude, longitude) to Firestore. It either updates or creates
-   * a doc in the 'locations' collection, keyed by worker_id.
-   * Also sets the nullCoordinates state in EncryptedStorage based on (0,0).
+   * Sends location to Firestore and updates timestamp.
    */
   const updateFirestoreLocation = async (latitude, longitude) => {
     try {
-      // Retrieve worker ID from EncryptedStorage
       const workerIdStr = await EncryptedStorage.getItem('unique');
       if (!workerIdStr) {
         console.log(
-          'No worker ID found in EncryptedStorage. Skipping update...',
+          'No worker ID found in EncryptedStorage. Skipping Firestore update...',
         );
         return;
       }
@@ -73,13 +60,12 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
         worker_id: workerId,
       };
 
-      // Check if this worker already has a doc
+      // Check existing doc for this worker
       const snapshot = await locationsCollection
         .where('worker_id', '==', workerId)
         .limit(1)
         .get();
 
-      // Update existing doc or add a new doc if not found
       if (!snapshot.empty) {
         const docId = snapshot.docs[0].id;
         await locationsCollection.doc(docId).update({
@@ -96,7 +82,7 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
         );
       }
 
-      // Also set the nullCoordinates flag based on whether we sent (0,0)
+      // Mark whether we just sent (0,0)
       if (latitude === 0 && longitude === 0) {
         await EncryptedStorage.setItem('nullCoordinates', 'true');
       } else {
@@ -108,33 +94,28 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
   };
 
   /**
-   * Main initialization: configure background geolocation, set polygon geofences,
-   * and create event listeners for location and geofence events.
+   * Main setup: define geofences, subscribe to location & geofence events, configure BG Geolocation.
    */
   const initializeGeolocation = () => {
     let onLocationSubscription;
     let onGeofenceSubscription;
 
     const setupGeolocation = async () => {
-      // If no pcs_token, we skip tracking setup
+      // If no pcs_token, skip setup
       const pcsToken = await EncryptedStorage.getItem('pcs_token');
       if (!pcsToken) {
         console.log('No pcs_token found. Skipping location tracking setup.');
         return;
       }
 
-      // **************************************
-      // 1) Define your POLYGON geofences here
-      // **************************************
+      // Define polygon geofences
       const geofences = [
         {
           identifier: 'PolygonA',
           notifyOnEntry: true,
-
           notifyOnExit: true,
           notifyOnDwell: false,
           loiteringDelay: 30000,
-          // FLIP [lng, lat] => [lat, lng]:
           vertices: [
             [17.006761409194525, 80.53093335197622],
             [17.005373260064985, 80.53291176992008],
@@ -153,7 +134,7 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
             [17.003291715895045, 80.52011454583169],
             [17.00505854929827, 80.52875703518436],
             [17.00682448638898, 80.5309333429243],
-            [17.006761409194525, 80.53093335197622], // repeat first to close
+            [17.006761409194525, 80.53093335197622],
           ],
         },
         {
@@ -188,111 +169,141 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
             [16.743659016732067, 81.08236641250511],
           ],
         },
+        {
+          identifier: 'Chandrugonda',
+          notifyOnEntry: true,
+          notifyOnExit: true,
+          notifyOnDwell: false,
+          loiteringDelay: 30000,
+          vertices: [
+            [80.63369145143679, 17.390042404120663],
+            [80.63464400354599, 17.393299672168467],
+            [80.63975074124545, 17.39213817238675],
+            [80.64162938568472, 17.395471151975457],
+            [80.6424231791093, 17.395647899197584],
+            [80.64168230524632, 17.391759420863266],
+            [80.66549013578845, 17.38398742015015],
+            [80.66695273406538, 17.371101579573804],
+            [80.64701080411146, 17.37945102139436],
+            [80.63979862457018, 17.385593101328965],
+            [80.63369949884378, 17.390250991288397],
+            [80.63369145143679, 17.390042404120663],
+          ],
+        },
       ];
 
-      // 2) Subscribe to location updates
+      // Subscribe to location updates
       onLocationSubscription = BackgroundGeolocation.onLocation(
         async location => {
           const {latitude, longitude} = location.coords;
 
-          // Pass the fresh coords to the parent component if needed
+          // Pass coords to parent
           onLocationUpdate(latitude, longitude);
 
-          // Retrieve previous location from storage
-          const prevLocStr = await EncryptedStorage.getItem(
-            'workerPreviousLocation',
-          );
-          const previousLocation = prevLocStr ? JSON.parse(prevLocStr) : null;
-
-          // Check if we're inside at least one polygon geofence
+          // Are we inside any polygon?
           const insideGeofence = isLocationInGeofence(
             latitude,
             longitude,
             geofences,
           );
 
-          // 1) NO previous location
+          // Get previousLocation
+          const prevLocStr = await EncryptedStorage.getItem(
+            'workerPreviousLocation',
+          );
+          const previousLocation = prevLocStr ? JSON.parse(prevLocStr) : null;
+
+          // CASE 1: No previousLocation => first location event
           if (!previousLocation) {
             if (insideGeofence) {
-              // First-time inside => send real coords
               console.log(
-                'First-time location inside geofence => sending real coords',
+                'First-time location is INSIDE geofence => sending real coords',
               );
               await updateFirestoreLocation(latitude, longitude);
-              // Store current coords
+
+              // Store real location
               await EncryptedStorage.setItem(
                 'workerPreviousLocation',
                 JSON.stringify({latitude, longitude}),
               );
               await EncryptedStorage.setItem('nullCoordinates', 'false');
             } else {
-              // First-time outside => send (0,0)
               console.log(
-                'First-time location outside geofence => sending (0,0)',
+                'First-time location is OUTSIDE geofence => sending (0,0)',
               );
               await updateFirestoreLocation(0, 0);
+
+              // Store (0,0) to avoid repeating "first-time outside" logs
               await EncryptedStorage.setItem(
                 'workerPreviousLocation',
-                JSON.stringify(null),
+                JSON.stringify({latitude: 0, longitude: 0}),
               );
               await EncryptedStorage.setItem('nullCoordinates', 'true');
             }
             return;
           }
 
-          // 2) We DO have a previous location
+          // CASE 2: We DO have a previousLocation, check if inside or outside
           if (!insideGeofence) {
-            // Outside scenario
-            const nullCoordinates = await EncryptedStorage.getItem(
-              'nullCoordinates',
+            // Already outside => skip sending (0,0) again
+            console.log(
+              'Already outside geofence => skipping repeated (0,0) update',
             );
-            if (nullCoordinates === 'false') {
-              // If we haven't already sent (0,0), do it now
-              console.log('Outside geofence => sending (0,0)');
-              await updateFirestoreLocation(0, 0);
-              await EncryptedStorage.setItem(
-                'workerPreviousLocation',
-                JSON.stringify(null),
-              );
-              await EncryptedStorage.setItem('nullCoordinates', 'true');
-            }
             return;
           }
 
-          // 3) INSIDE a geofence & previousLocation is not null
+          // CASE 3: INSIDE geofence & we have a previousLocation
+          // Check if previousLocation was (0,0) => means we just came from outside
+          if (
+            previousLocation.latitude === 0 &&
+            previousLocation.longitude === 0
+          ) {
+            console.log(
+              'Re-entered geofence from outside => sending immediate real coords',
+            );
+            await updateFirestoreLocation(latitude, longitude);
+
+            setCumulativeDistance(0);
+            await EncryptedStorage.setItem(
+              'workerPreviousLocation',
+              JSON.stringify({latitude, longitude}),
+            );
+            await EncryptedStorage.setItem('nullCoordinates', 'false');
+            return;
+          }
+
+          // Normal inside scenario => check distance
           const prevCoords = {
             latitude: previousLocation.latitude,
             longitude: previousLocation.longitude,
           };
           const currentCoords = {latitude, longitude};
-
-          // Calculate distance from last known location
           const distanceMoved = haversine(prevCoords, currentCoords, {
             unit: 'km',
           });
-          const updatedCumulative = cumulativeDistance + distanceMoved;
 
-          // If traveled >= 1 km => send location to Firestore
+          const updatedCumulative = cumulativeDistance + distanceMoved;
           if (updatedCumulative >= 1) {
             console.log(
-              `Traveled >=1 km => Updating Firestore with (${latitude}, ${longitude})`,
+              `Inside geofence => traveled >=1 km => sending real coords (${latitude}, ${longitude})`,
             );
             await updateFirestoreLocation(latitude, longitude);
 
-            // Reset cumulative distance
             setCumulativeDistance(0);
-            // Store current coords
             await EncryptedStorage.setItem(
               'workerPreviousLocation',
               JSON.stringify({latitude, longitude}),
             );
             await EncryptedStorage.setItem('nullCoordinates', 'false');
           } else {
-            // Not yet 1 km => just update previousLocation and keep accumulating
             console.log(
-              'Inside geofence but <1 km => updating previousLocation only',
+              `Inside geofence => traveled <1 km => accumulating (total now ~${updatedCumulative.toFixed(
+                3,
+              )} km)`,
             );
             setCumulativeDistance(updatedCumulative);
+
+            // Still update previousLocation so next distance calc is correct
             await EncryptedStorage.setItem(
               'workerPreviousLocation',
               JSON.stringify({latitude, longitude}),
@@ -301,44 +312,41 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
         },
       );
 
-      // 3) Subscribe to geofence events (ENTER, EXIT)
+      // Subscribe to geofence events
       onGeofenceSubscription = BackgroundGeolocation.onGeofence(
         async geofence => {
           const {identifier, action} = geofence;
           console.log(`Geofence event => ID: ${identifier}, Action: ${action}`);
 
           if (action === 'ENTER') {
-            // Worker just entered a polygon
-            console.log(`Entered geofence => ${identifier}`);
-            // Mark nullCoordinates = 'false'
+            console.log(`ENTER geofence => ${identifier}`);
             await EncryptedStorage.setItem('nullCoordinates', 'false');
-
-            // Optional: If you want to do an immediate Firestore update on ENTER
-            // you could trigger one here, but your onLocation callback
-            // typically handles it automatically.
+            // Optional: immediate Firestore update on ENTER is possible,
+            // but typically your onLocation callback handles it.
           } else if (action === 'EXIT') {
-            // Worker just exited a polygon
-            console.log(`Exited geofence => ${identifier}`);
-            // Send (0,0) only if we haven't already
+            console.log(`EXIT geofence => ${identifier}`);
+            // Only send (0,0) once
             const nullCoordinates = await EncryptedStorage.getItem(
               'nullCoordinates',
             );
             if (nullCoordinates === 'false') {
-              console.log(
-                'Exited geofence => sending (0,0) and resetting prevLocation...',
-              );
+              console.log('EXIT => sending (0,0) once');
               await updateFirestoreLocation(0, 0);
+
               await EncryptedStorage.setItem('nullCoordinates', 'true');
+              // Store (0,0) => so we don't spam repeated outside updates
               await EncryptedStorage.setItem(
                 'workerPreviousLocation',
-                JSON.stringify(null),
+                JSON.stringify({latitude: 0, longitude: 0}),
               );
+            } else {
+              console.log('EXIT => already sent (0,0) previously');
             }
           }
         },
       );
 
-      // 4) Listen for provider changes (e.g., user disables GPS)
+      // Provider changes (GPS off, etc.)
       BackgroundGeolocation.onProviderChange(async event => {
         if (!event.enabled) {
           console.log(
@@ -348,25 +356,25 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
           await EncryptedStorage.setItem('nullCoordinates', 'true');
           await EncryptedStorage.setItem(
             'workerPreviousLocation',
-            JSON.stringify(null),
+            JSON.stringify({latitude: 0, longitude: 0}),
           );
           BackgroundGeolocation.stop();
         }
       });
 
-      // 5) Configure the background geolocation
+      // Configure BG Geolocation
       BackgroundGeolocation.ready({
         desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_HIGH,
         distanceFilter: 1,
         stopTimeout: 5,
-        debug: false, // set true to see logs on device
+        debug: false,
         logLevel: BackgroundGeolocation.LOG_LEVEL_OFF,
-        stopOnTerminate: false, // continue tracking after app is terminated
-        startOnBoot: true, // resume tracking after device reboot
+        stopOnTerminate: false,
+        startOnBoot: true,
         batchSync: false,
         autoSync: true,
       }).then(() => {
-        // Add all polygon geofences
+        // Add polygon geofences
         geofences.forEach(geofence => {
           BackgroundGeolocation.addGeofence(geofence).catch(error => {
             console.error(
@@ -378,45 +386,50 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
       });
     };
 
-    // Initialize everything
     setupGeolocation();
 
-    // Return a cleanup function for unmount
+    // Cleanup on unmount
     return () => {
       if (onLocationSubscription) onLocationSubscription.remove();
       if (onGeofenceSubscription) onGeofenceSubscription.remove();
     };
   };
 
-  // On component mount, initialize geolocation
+  // Initialize on component mount
   useEffect(() => {
     const cleanup = initializeGeolocation();
-    return () => cleanup && cleanup();
+    return () => {
+      if (cleanup) cleanup();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Start or stop tracking based on isEnabled
+  // Start/stop tracking based on isEnabled
   useEffect(() => {
     (async () => {
       if (isEnabled) {
+        console.log(
+          'Location tracking enabled => BackgroundGeolocation.start()',
+        );
         BackgroundGeolocation.start();
       } else {
-        console.log(
-          'Tracking disabled => stopping BG Geolocation, sending (0,0)',
-        );
+        console.log('Location tracking disabled => stopping & sending (0,0)');
         BackgroundGeolocation.stop();
+
         await updateFirestoreLocation(0, 0);
         await EncryptedStorage.setItem('nullCoordinates', 'true');
+
+        // Store (0,0) so we don't keep logging "first-time outside"
         await EncryptedStorage.setItem(
           'workerPreviousLocation',
-          JSON.stringify(null),
+          JSON.stringify({latitude: 0, longitude: 0}),
         );
         setCumulativeDistance(0);
       }
     })();
   }, [isEnabled]);
 
-  // This component doesn't render any UI
+  // Component renders no UI
   return null;
 };
 

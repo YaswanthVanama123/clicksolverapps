@@ -51,6 +51,7 @@ const SingleService = () => {
       );
       // Done fetching => turn off the loading
       setLoading(false);
+      console.log('single', relatedServices);
     } catch (error) {
       console.error('Error fetching services:', error);
       setLoading(false);

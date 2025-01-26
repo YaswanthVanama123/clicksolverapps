@@ -124,6 +124,7 @@ const {
   WorkerWorkInProgressDetails,
   workerWorkingStatusUpdated,
   getServicesRegisterPhoneNumber,
+  registerUser,
 } = require("./controller.js");
 
 const router = express.Router();
@@ -189,6 +190,8 @@ router.get("/user/location/navigation", async (req, res) => {
 });
 
 router.post("/service/tracking/update/status", serviceTrackingUpdateStatus);
+
+router.post("/register", registerUser);
 
 router.post(
   "/service/tracking/worker/item/details",

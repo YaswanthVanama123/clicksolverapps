@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-SemiBold',
     marginLeft: 12,
     color: '#1D2951',
   },
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     paddingLeft: 15,
     fontSize: 15,
     color: '#1D2951',
-    fontWeight: '500',
+    fontFamily: 'RobotoSlab-Medium',
   },
   list: {
     paddingHorizontal: 16,
@@ -199,13 +199,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 15,
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-SemiBold',
     marginBottom: 4,
     color: '#212121',
   },
   address: {
     fontSize: 14,
     color: '#4a4a4a',
+    fontFamily: 'RobotoSlab-Regular',
   },
 });
 

@@ -1,44 +1,87 @@
 require_relative '../node_modules/react-native/scripts/react_native_pods'
 require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
 
+# Set the minimum iOS deployment target
+platform :ios, '16.0'
 
-# Resolve react_native_pods.rb with node to allow for hoisting
-require Pod::Executable.execute_command('node', ['-p',
-  'require.resolve(
-    "react-native/scripts/react_native_pods.rb",
-    {paths: [process.argv[1]]},
-  )', __dir__]).strip
-
-platform :ios, min_ios_version_supported
+# Initialize React Native project settings
 prepare_react_native_project!
 
+# Enable frameworks with static linkage globally
+use_frameworks! :linkage => :static
+$RNFirebaseAsStaticFramework = true # Enable Firebase as static frameworks
+
+# Optional: Override linkage based on environment variable
 linkage = ENV['USE_FRAMEWORKS']
-if linkage != nil
+if linkage
   Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
   use_frameworks! :linkage => linkage.to_sym
+else
+  use_modular_headers! # Use modular headers globally to resolve Swift pod issues
 end
 
+# Define the main application target
 target 'userapp1' do
+  # Integrate native modules (e.g., React Native modules)
   config = use_native_modules!
 
+  # Integrate React Native dependencies
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+  # Define a test target
   target 'userapp1Tests' do
     inherit! :complete
-    # Pods for testing
+    # Pods for testing can be added here
   end
 
+  # Post-installation steps to configure pods
   post_install do |installer|
-    # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
+    # Perform React Native post-install steps
     react_native_post_install(
       installer,
       config[:reactNativePath],
       :mac_catalyst_enabled => false,
-      # :ccache_enabled => true
+      :ccache_enabled => false # Set to true if ccache is configured
     )
+
+    # Iterate through each pod target to enforce build settings
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        # Enforce a consistent iOS Deployment Target across all pods
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
+
+        # Exclude arm64 architecture for specific pods to resolve build issues on Apple Silicon
+        if target.name == 'Flipper'
+          config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+        end
+
+        # Additional configurations can be added here if needed
+      end
+    end
+  end
+end
+
+# Define a separate target for React Native Codegen if necessary
+target 'React-Codegen' do
+  # Integrate native modules specific to code generation
+  config = use_native_modules!
+
+  use_react_native!(
+    :path => config[:reactNativePath],
+    :app_path => "#{Pod::Config.instance.installation_root}/..",
+    :codegen_path => "#{Pod::Config.instance.installation_root}/../node_modules/react-native-codegen"
+  )
+
+  post_install do |installer|
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        # Enforce iOS Deployment Target for codegen
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
+      end
+    end
   end
 end

@@ -1,4 +1,5 @@
 const admin = require("./firebaseAdmin.js");
+const crypto = require("crypto");
 const { encrypt, decrypt } = require("./src/utils/encrytion.js");
 const { getMessaging } = require("firebase-admin/messaging"); // Import Firebase Admin SDK
 const db = admin.firestore();
@@ -187,8 +188,47 @@ const accountDetailsUpdate = async (req, res) => {
   }
 };
 
+// const userCompleteSignUp = async (req, res) => {
+//   const { fullName, email, phoneNumber } = req.body;
+
+//   if (!fullName || !email || !phoneNumber) {
+//     return res
+//       .status(400)
+//       .json({ message: "Full name, email, and phone number are required" });
+//   }
+
+//   try {
+//     // Insert the data into the `user` table
+//     const insertQuery = `
+//       INSERT INTO "user" (name, phone_number, email)
+//       VALUES ($1, $2, $3)
+//       RETURNING *;
+//     `;
+//     const values = [fullName, phoneNumber, email];
+
+//     const result = await client.query(insertQuery, values);
+//     const user = result.rows[0];
+
+//     // Generate a token for the new user
+//     const token = generateToken(user);
+
+//     // Set the token as an HTTP-only cookie
+//     res.cookie("token", token, {
+//       httpOnly: true,
+//       secure: process.env.NODE_ENV === "production",
+//       sameSite: "Strict",
+//     });
+
+//     // Send the token in the response
+//     return res.json({ token });
+//   } catch (error) {
+//     console.error("Error in userCompleteSignUp:", error);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// };
+
 const userCompleteSignUp = async (req, res) => {
-  const { fullName, email, phoneNumber } = req.body;
+  const { fullName, email, phoneNumber, referralCode } = req.body;
 
   if (!fullName || !email || !phoneNumber) {
     return res
@@ -197,19 +237,54 @@ const userCompleteSignUp = async (req, res) => {
   }
 
   try {
-    // Insert the data into the `user` table
-    const insertQuery = `
-      INSERT INTO "user" (name, phone_number, email)
-      VALUES ($1, $2, $3)
-      RETURNING *;
-    `;
-    const values = [fullName, phoneNumber, email];
+    // Start a transaction
+    await client.query("BEGIN");
 
-    const result = await client.query(insertQuery, values);
-    const user = result.rows[0];
+    // Updated query to use user_id
+    const result = await client.query(
+      `
+      WITH referrer AS (
+        SELECT user_id FROM "user" WHERE referral_code = $1
+      ), new_user AS (
+        INSERT INTO "user" (name, email, phone_number) 
+        VALUES ($2, $3, $4) 
+        RETURNING user_id
+      ), referral_insert AS (
+        INSERT INTO referrals (referrer_user_id, referred_user_id)
+        SELECT referrer.user_id, new_user.user_id
+        FROM referrer, new_user
+        WHERE referrer.user_id IS NOT NULL
+        RETURNING referrer_user_id
+      ), reward_insert AS (
+        INSERT INTO referral_rewards (user_id, reward_amount, reward_type, status)
+        SELECT referrer_user_id, 100, 'cashback', 'earned'
+        FROM referral_insert
+      )
+      SELECT new_user.user_id AS user_id FROM new_user;
+      `,
+      [referralCode, fullName, email, phoneNumber]
+    );
 
-    // Generate a token for the new user
-    const token = generateToken(user);
+    // Extract the new user_id
+    const newUserId = result.rows[0].user_id;
+
+    // Generate a unique referral code for the new user
+    const newReferralCode = `CS${newUserId}${crypto
+      .randomBytes(2)
+      .toString("hex")
+      .toUpperCase()}`;
+
+    // Update the user's referral code
+    await client.query(
+      'UPDATE "user" SET referral_code = $1 WHERE user_id = $2',
+      [newReferralCode, newUserId]
+    );
+
+    // Commit the transaction
+    await client.query("COMMIT");
+
+    // Generate a token for the user
+    const token = generateToken({ id: newUserId, fullName, email });
 
     // Set the token as an HTTP-only cookie
     res.cookie("token", token, {
@@ -218,9 +293,15 @@ const userCompleteSignUp = async (req, res) => {
       sameSite: "Strict",
     });
 
-    // Send the token in the response
-    return res.json({ token });
+    // Return the response
+    return res.status(201).json({
+      message: "User registered successfully",
+      token,
+      referralCode: newReferralCode,
+    });
   } catch (error) {
+    // Rollback the transaction on error
+    await client.query("ROLLBACK");
     console.error("Error in userCompleteSignUp:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
@@ -1765,6 +1846,7 @@ const getWorkerTrackingServices = async (req, res) => {
         st.service_status,
         st.created_at,
         st.tracking_id,
+        st.tracking_key,
         ws.service
       FROM servicetracking st
       JOIN workerskills ws ON st.worker_id = ws.worker_id
@@ -1864,6 +1946,12 @@ const getAllTrackingServices = async (req, res) => {
 const serviceDeliveryVerification = async (req, res) => {
   const { trackingId, enteredOtp } = req.body;
 
+  if (!trackingId || !enteredOtp) {
+    return res
+      .status(400)
+      .json({ message: "Tracking ID and OTP are required" });
+  }
+
   try {
     const query = `
       WITH fetched_data AS (
@@ -1886,7 +1974,6 @@ const serviceDeliveryVerification = async (req, res) => {
         RETURNING a.time
       )
       SELECT 
-        (SELECT tracking_pin FROM fetched_data) AS tracking_pin,
         (SELECT notification_id FROM fetched_data) AS notification_id,
         EXISTS (SELECT 1 FROM update_accepted) AS otp_verified
       ;
@@ -1894,19 +1981,19 @@ const serviceDeliveryVerification = async (req, res) => {
 
     const result = await client.query(query, [trackingId, enteredOtp]);
 
-    if (result.rows.length === 0 || !result.rows[0].tracking_pin) {
+    if (result.rows.length === 0) {
       return res.status(404).json({ message: "Tracking ID not found" });
     }
 
-    const { tracking_pin, notification_id, otp_verified } = result.rows[0];
+    const { notification_id, otp_verified } = result.rows[0];
 
     if (otp_verified) {
-      const NotificationEncodedId = Buffer.from(
-        notification_id.toString()
-      ).toString("base64");
+      const encodedId = Buffer.from(notification_id.toString()).toString(
+        "base64"
+      );
       return res.status(200).json({
         message: "OTP verified successfully",
-        encodedId: NotificationEncodedId,
+        encodedId,
       });
     } else {
       return res.status(400).json({ message: "Invalid OTP" });
@@ -1961,26 +2048,12 @@ const getPendingWorkers = async (req, res) => {
     const query = `
       SELECT 
         w.worker_id,
-        w.name,
-        w.phone_number,
         w.verification_status,
         w.created_at,
-        w.issues,
-        w.email,
-        ws.profile,
-        ws.proof,
-        ws.service,
-        ws.subservices,
-        ws.personaldetails,
-        ws.address,
-        ba.bank_name,
-        ba.account_number,
-        ba.ifsc_code,
-        ba.account_holder_name
+        w.issues
       FROM workers w
-      INNER JOIN workerskills ws ON w.worker_id = ws.worker_id
-      INNER JOIN bankaccounts ba ON w.worker_id = ba.worker_id
       WHERE w.worker_id IS NOT NULL;
+
     `;
 
     const { rows } = await client.query(query);
@@ -2001,22 +2074,14 @@ const getPendingWorkerDetails = async (req, res) => {
         w.name,
         w.phone_number,
         w.verification_status,
-        w.created_at,
         w.issues,
-        w.email,
-        ws.profile,
         ws.proof,
         ws.service,
         ws.subservices,
         ws.personaldetails,
-        ws.address,
-        ba.bank_name,
-        ba.account_number,
-        ba.ifsc_code,
-        ba.account_holder_name
+        ws.address
       FROM workers w
       INNER JOIN workerskills ws ON w.worker_id = ws.worker_id
-      INNER JOIN bankaccounts ba ON w.worker_id = ba.worker_id
       WHERE w.worker_id = $1;
     `;
 
@@ -2174,12 +2239,12 @@ const updateApproveStatus = async (req, res) => {
 
 const checkApprovalVerificationStatus = async (req, res) => {
   const workerId = req.worker.id;
+
   if (!workerId) {
     return res.status(400).json({ message: "workerId is required." });
   }
 
   try {
-    // Using a WITH clause to check the worker in both tables and join with workerskills
     const query = `
       WITH worker_check AS (
         SELECT worker_id, 'workers' AS source, name, issues, verification_status
@@ -2190,33 +2255,33 @@ const checkApprovalVerificationStatus = async (req, res) => {
         FROM workersverified
         WHERE worker_id = $1
       )
-      SELECT wc.*, ws.service
+      SELECT 
+        wc.name,
+        wc.issues,
+        wc.verification_status,
+        ws.service
       FROM worker_check wc
       LEFT JOIN workerskills ws ON wc.worker_id = ws.worker_id
       LIMIT 1;
     `;
 
-    // Execute the query
     const result = await client.query(query, [workerId]);
 
-    // Check if any rows were returned
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Worker not found." });
     }
 
-    // Determine the source and respond accordingly
     const workerData = result.rows[0];
 
     if (workerData.source === "workersverified") {
       return res.status(201).json({ message: "Worker is verified." });
     }
 
-    // If the worker is in the workers table, send worker details
     return res.status(200).json({
       name: workerData.name,
       issues: workerData.issues,
       verification_status: workerData.verification_status,
-      service: workerData.service, // Include the service field from workerskills
+      service: workerData.service,
     });
   } catch (error) {
     console.error("Error fetching approval verification status:", error);
@@ -2343,31 +2408,21 @@ const getServiceByName = async (req, res) => {
   }
 
   try {
-    // Use a single query to get both the service by name and the related services by title
-    // const query = `
-    //   SELECT s1.*, s2.*
-    //   FROM services s1
-    //   LEFT JOIN services s2
-    //   ON s1.service_title = s2.service_title
-    //   WHERE s1.service_name = $1
-    // `;
-    //   const query = `
-    //   SELECT a.*, s.*
-    //   FROM allservices a
-    //   LEFT JOIN services s ON a.service_category = s.service_name
-    //   WHERE a.service_category = $1
-    // `;
-
     const query = `
-    SELECT a.*, r.service_urls
-    FROM allservices a
-    JOIN (
-        SELECT r.related_services, r.service_urls
-        FROM relatedservices r
-        WHERE r.service_category = $1
-    ) AS r ON a.service_tag = ANY(r.related_services)
-    ORDER BY array_position(r.related_services, a.service_tag);
-`;
+      SELECT 
+        a.main_service_id, 
+        a.cost, 
+        a.service_tag, 
+        a.service_details, 
+        r.service_urls
+      FROM allservices a
+      JOIN (
+          SELECT r.related_services, r.service_urls
+          FROM relatedservices r
+          WHERE r.service_category = $1
+      ) AS r ON a.service_tag = ANY(r.related_services)
+      ORDER BY array_position(r.related_services, a.service_tag);
+    `;
 
     const result = await client.query(query, [serviceName]);
 
@@ -2378,7 +2433,7 @@ const getServiceByName = async (req, res) => {
     // Extract the main service (first row) and the related services (all matching rows)
     const serviceData = result.rows[0]; // First matching row is the main service
     const relatedServicesData = result.rows; // All rows including the first are related services
-    // console.log(serviceData,relatedServicesData.length)
+
     // Return the service and related services as response
     res.status(200).json({
       service: serviceData, // The primary service
@@ -2391,6 +2446,63 @@ const getServiceByName = async (req, res) => {
       .json({ error: "An error occurred while fetching the service" });
   }
 };
+
+// const getServiceByName = async (req, res) => {
+//   const { serviceName } = req.body; // Get the service name from the request body
+//   console.log(serviceName);
+//   if (!serviceName) {
+//     return res.status(400).json({ error: "Service name is required" });
+//   }
+
+//   try {
+//     // Use a single query to get both the service by name and the related services by title
+//     // const query = `
+//     //   SELECT s1.*, s2.*
+//     //   FROM services s1
+//     //   LEFT JOIN services s2
+//     //   ON s1.service_title = s2.service_title
+//     //   WHERE s1.service_name = $1
+//     // `;
+//     //   const query = `
+//     //   SELECT a.*, s.*
+//     //   FROM allservices a
+//     //   LEFT JOIN services s ON a.service_category = s.service_name
+//     //   WHERE a.service_category = $1
+//     // `;
+
+//     const query = `
+//     SELECT a.*, r.service_urls
+//     FROM allservices a
+//     JOIN (
+//         SELECT r.related_services, r.service_urls
+//         FROM relatedservices r
+//         WHERE r.service_category = $1
+//     ) AS r ON a.service_tag = ANY(r.related_services)
+//     ORDER BY array_position(r.related_services, a.service_tag);
+// `;
+
+//     const result = await client.query(query, [serviceName]);
+
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({ error: "Service not found" });
+//     }
+
+//     // Extract the main service (first row) and the related services (all matching rows)
+//     const serviceData = result.rows[0]; // First matching row is the main service
+//     const relatedServicesData = result.rows; // All rows including the first are related services
+//     // console.log(serviceData,relatedServicesData.length)
+//     // Return the service and related services as response
+//     res.status(200).json({
+//       service: serviceData, // The primary service
+//       relatedServices: relatedServicesData, // All related services including the primary one
+//     });
+//   } catch (error) {
+//     console.error("Error fetching service:", error);
+//     res
+//       .status(500)
+//       .json({ error: "An error occurred while fetching the service" });
+//   }
+// };
 
 // Function to get all data from the 'locations' collection
 
@@ -2514,6 +2626,58 @@ const getUserAndWorkerLocation = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Error fetching locations", error: error.message });
+  }
+};
+
+const registerUser = async (req, res) => {
+  const { name, email, phoneNumber, referralCode } = req.body;
+
+  try {
+    // Step 1: Combine all related operations in a single transaction
+    const result = await db.query(
+      `
+      WITH referrer AS (
+        SELECT id FROM users WHERE referral_code = $1
+      ), new_user AS (
+        INSERT INTO users (name, email, phone_number) 
+        VALUES ($2, $3, $4) 
+        RETURNING id
+      ), insert_referral AS (
+        INSERT INTO referrals (referrer_user_id, referred_user_id)
+        SELECT referrer.id, new_user.id
+        FROM referrer, new_user
+        WHERE referrer.id IS NOT NULL
+        RETURNING referrer_user_id
+      )
+      INSERT INTO referral_rewards (user_id, reward_amount, reward_type, status)
+      SELECT referrer_user_id, 100, 'cashback', 'earned'
+      FROM insert_referral
+      RETURNING (SELECT new_user.id FROM new_user) AS user_id;
+      `,
+      [referralCode, name, email, phoneNumber]
+    );
+
+    // Step 2: Generate a unique referral code for the new user
+    const newUserId = result.rows[0].user_id;
+    const newReferralCode = `CS${newUserId}${crypto
+      .randomBytes(2)
+      .toString("hex")
+      .toUpperCase()}`;
+
+    // Step 3: Update the user's referral code in the database
+    await db.query("UPDATE users SET referral_code = $1 WHERE id = $2", [
+      newReferralCode,
+      newUserId,
+    ]);
+
+    // Step 4: Send a success response
+    res.status(201).json({
+      message: "User registered successfully",
+      referralCode: newReferralCode,
+    });
+  } catch (error) {
+    console.error("Error during user registration:", error);
+    res.status(500).json({ message: "An error occurred during registration" });
   }
 };
 
@@ -10201,4 +10365,5 @@ module.exports = {
   WorkerWorkInProgressDetails,
   workerWorkingStatusUpdated,
   getServicesRegisterPhoneNumber,
+  registerUser,
 };

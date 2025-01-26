@@ -14,19 +14,17 @@ import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import {useRoute, useNavigation, CommonActions} from '@react-navigation/native';
-// import Config from 'react-native-config';
 
 const SignUpScreen = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [referralCode, setReferralCode] = useState(''); // Add referral code state
   const route = useRoute();
   const navigation = useNavigation();
 
   const BG_IMAGE_URL =
     'https://i.postimg.cc/rFFQLGRh/Picsart-24-10-01-15-38-43-205.jpg';
-  const LOGO_URL = 'https://i.postimg.cc/hjjpy2SW/Button-1.png';
-  const FLAG_ICON_URL = 'https://i.postimg.cc/C1hkm5sR/india-flag-icon-29.png';
 
   useEffect(() => {
     const {phone_number} = route.params || {};
@@ -43,13 +41,19 @@ const SignUpScreen = () => {
           fullName,
           email,
           phoneNumber,
+          referralCode, // Send the referral code to the backend
         },
       );
 
-      const {token} = response.data;
+      const {token, message} = response.data;
       console.log(response.data);
+
       if (token) {
         await EncryptedStorage.setItem('cs_token', token);
+        Alert.alert(
+          'Sign Up Successful',
+          message || 'You have signed up successfully!',
+        );
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
@@ -61,7 +65,8 @@ const SignUpScreen = () => {
       console.error('Sign up error:', error);
       Alert.alert(
         'Sign Up Failed',
-        'An error occurred during sign up. Please try again.',
+        error.response?.data?.message ||
+          'An error occurred during sign up. Please try again.',
       );
     }
   };
@@ -75,7 +80,9 @@ const SignUpScreen = () => {
           source={{uri: BG_IMAGE_URL}}
           style={styles.backgroundImage}
           resizeMode="stretch">
-          <TouchableOpacity style={styles.backButton}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}>
             <FontAwesome6 name="arrow-left-long" size={24} color="#1D2951" />
           </TouchableOpacity>
 
@@ -93,6 +100,13 @@ const SignUpScreen = () => {
             onChangeText={setEmail}
             icon={<Icon name="envelope" size={20} color="#1D2951" />}
             keyboardType="email-address"
+          />
+
+          <InputField
+            placeholder="Referral Code (Optional)"
+            value={referralCode}
+            onChangeText={setReferralCode}
+            icon={<FontAwesome6 name="gift" size={20} color="#1D2951" />}
           />
 
           <TouchableOpacity style={styles.button} onPress={handleSignUp}>

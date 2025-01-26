@@ -37,6 +37,8 @@ import ServiceBookingItem from './Components/ServiceBookingItem';
 import UserNotifications from './screens/UserNotifications';
 import ServiceInProgress from './Components/ServiceInProgress';
 import AccountDelete from './Components/AccountDelete';
+import ReferralScreen from './Components/ReferralScreen';
+import OnboardingScreen from './Components/OnboardingScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -84,7 +86,7 @@ function TabNavigator() {
       />
       <Tab.Screen
         name="Bookings"
-        component={RecentServices}
+        component={OnboardingScreen}
         options={{headerShown: false}}
       />
       <Tab.Screen
@@ -431,6 +433,12 @@ function App() {
           options={{headerShown: false}}
         />
         <Stack.Screen
+          name="OnboardingScreen"
+          component={OnboardingScreen}
+          options={{headerShown: false}}
+        />
+
+        <Stack.Screen
           name="Login"
           component={LoginScreen}
           options={{headerShown: false}}
@@ -440,6 +448,12 @@ function App() {
           component={AccountDelete}
           options={{headerShown: false}}
         />
+        <Stack.Screen
+          name="ReferralScreen"
+          component={ReferralScreen}
+          options={{headerShown: false}}
+        />
+
         <Stack.Screen
           name="userwaiting"
           component={WaitingUser}
