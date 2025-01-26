@@ -27,9 +27,7 @@ target 'userapp1' do
 
   # Integrate React Native dependencies
   use_react_native!(
-    :path => config[:reactNativePath],
-    # An absolute path to your application root.
-    :app_path => "#{Pod::Config.instance.installation_root}/.."
+    :path => config[:reactNativePath]
   )
 
   # Define a test target
@@ -65,23 +63,5 @@ target 'userapp1' do
   end
 end
 
-# Define a separate target for React Native Codegen if necessary
-target 'React-Codegen' do
-  # Integrate native modules specific to code generation
-  config = use_native_modules!
-
-  use_react_native!(
-    :path => config[:reactNativePath],
-    :app_path => "#{Pod::Config.instance.installation_root}/..",
-    :codegen_path => "#{Pod::Config.instance.installation_root}/../node_modules/react-native-codegen"
-  )
-
-  post_install do |installer|
-    installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        # Enforce iOS Deployment Target for codegen
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
-      end
-    end
-  end
-end
+# Remove the React-Codegen target (not necessary)
+# If codegen is explicitly required, its setup is handled in the default `use_react_native!` method.
