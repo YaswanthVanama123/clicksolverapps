@@ -39,7 +39,9 @@ const SingleService = () => {
     try {
       const response = await axios.post(
         `https://backend.clicksolver.com/api/single/service`,
-        {serviceName},
+        {
+          serviceName,
+        },
       );
       const {relatedServices} = response.data;
       setServices(relatedServices);
@@ -147,8 +149,8 @@ const SingleService = () => {
           return {
             serviceName: service.service_tag,
             quantity,
-            cost: calculateDiscount(parseFloat(service.cost), quantity),
-            originalCost: parseFloat(service.cost) * quantity,
+            // cost: calculateDiscount(parseFloat(service.cost), quantity),
+            cost: parseFloat(service.cost) * quantity,
             url: service.service_details.urls,
             description: service.service_details.about,
             main_service_id: service.main_service_id,
@@ -195,12 +197,26 @@ const SingleService = () => {
     navigation.push('Login');
   };
 
+  // const bookService = async () => {
+  //   try {
+  //     const cs_token = await EncryptedStorage.getItem('cs_token');
+  //     if (cs_token) {
+  //       setModalVisible(false);
+  //       navigation.push('UserLocation', {serviceName: bookedServices});
+  //     } else {
+  //       setLoginModalVisible(true);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error accessing storage:', error);
+  //   }
+  // };
+
   const bookService = async () => {
     try {
       const cs_token = await EncryptedStorage.getItem('cs_token');
       if (cs_token) {
         setModalVisible(false);
-        navigation.push('UserLocation', {serviceName: bookedServices});
+        navigation.push('OrderScreen', {serviceName: bookedServices});
       } else {
         setLoginModalVisible(true);
       }

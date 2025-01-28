@@ -1,15 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Allow localhost for Metro bundler during development -->
+    <!-- Allow cleartext traffic for localhost -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">localhost</domain>
     </domain-config>
 
-    <!-- Allow your backend API -->
+    <!-- Allow cleartext traffic for your backend IP address -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">3.110.189.104</domain>
     </domain-config>
 </network-security-config>
+
+
+
+
+<!-- <?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+    </domain-config>
+
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">3.110.189.104</domain>
+    </domain-config>
+</network-security-config> -->
 
 
 

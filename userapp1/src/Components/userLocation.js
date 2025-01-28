@@ -50,11 +50,12 @@ const UserLocation = () => {
   const [alternateName, setAlternateName] = useState('');
   const [service, setService] = useState([]); // Changed from 'Sample Service' to an array
   const route = useRoute();
-  const {serviceName, suggestion} = route.params;
+  const {serviceName, suggestion, savings} = route.params;
   const mapRef = useRef(null);
   const [cityError, setCityError] = useState('');
   const [areaError, setAreaError] = useState('');
   const [pincodeError, setPincodeError] = useState('');
+  const [discount, setDiscount] = useState(0);
   const [phoneError, setPhoneError] = useState('');
   const [inputText, setInputText] = useState(
     suggestion ? suggestion.title : '',
@@ -72,6 +73,7 @@ const UserLocation = () => {
   useEffect(() => {
     if (serviceName) {
       setService(serviceName);
+      setDiscount(savings);
     }
     if (suggestion) {
       setSuggestionName(suggestion);
@@ -351,6 +353,7 @@ const UserLocation = () => {
                 alternatePhoneNumber,
                 serviceBooked: service,
                 location,
+                discount: discount,
               },
             },
           ],

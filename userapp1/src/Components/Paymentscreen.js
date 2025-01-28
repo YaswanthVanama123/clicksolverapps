@@ -38,20 +38,11 @@ const Payment = ({route}) => {
   const [vocherModal, setVocherModal] = useState(false);
   const [paymentModal, setPaymentModal] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [discount, setDiscount] = useState(100);
+  const [totalCost, setTotalCost] = useState(0);
 
   const [value, setValue] = useState('');
-  const [paymentDetails, setPaymentDetails] = useState({
-    name: 'Hanitha',
-    profile: 'https://i.postimg.cc/mZnDzdqJ/IMG-20240929-WA0024.jpg',
-    date: 'October 09, 2024',
-    services: ['AC repairing', 'AC repairing', 'AC repairing'],
-    area: '2-142 RTC workshop road, Bhavanipuram, Vijayawada 521403',
-    acCost: 500,
-    gst: 25,
-    cgst: 25,
-    cashback: -25,
-    grandTotal: 525,
-  });
+  const [paymentDetails, setPaymentDetails] = useState({});
 
   useEffect(() => {
     if (encodedId) {
@@ -69,33 +60,38 @@ const Payment = ({route}) => {
         },
       );
       const {
-        start_time,
-        end_time,
-        time_worked,
+        // start_time,
+        // end_time,
+        // time_worked,
         service_booked,
         name,
         area,
         city,
         pincode,
-        gstAmount,
-        cgstAmount,
-        discountAmount,
-        fetchedFinalTotalAmount,
+        discount,
+        total_cost,
+        // gstAmount,
+        // cgstAmount,
+        // discountAmount,
+        // fetchedFinalTotalAmount,
         profile,
       } = response.data;
 
-      const startTime = formatTime(start_time);
-      const endTime = formatTime(end_time);
-      const timeWorked = convertTimeStringToReadableFormat(time_worked);
-      const completedTime = convertISODateToReadableFormat(end_time);
+      // const startTime = formatTime(start_time);
+      // const endTime = formatTime(end_time);
+      // const timeWorked = convertTimeStringToReadableFormat(time_worked);
+      // const completedTime = convertISODateToReadableFormat(end_time);
 
       console.log(response.data);
 
+      setDiscount(discount);
+      setTotalCost(total_cost);
+
       setPaymentDetails({
-        start_time: startTime,
-        end_time: endTime,
-        time_worked: timeWorked,
-        date: completedTime,
+        // start_time: startTime,
+        // end_time: endTime,
+        // time_worked: timeWorked,
+        // date: completedTime,
         city,
         area,
         pincode,
@@ -103,10 +99,10 @@ const Payment = ({route}) => {
         profile,
       });
 
-      setGstAmount(gstAmount);
-      setCgstAmount(cgstAmount);
-      setCashback(discountAmount);
-      setGrandTotal(fetchedFinalTotalAmount);
+      // setGstAmount(gstAmount);
+      // setCgstAmount(cgstAmount);
+      // setCashback(discountAmount);
+      // setGrandTotal(fetchedFinalTotalAmount);
       setServiceArray(service_booked);
     } catch (error) {
       console.error('Error fetching payment details:', error);
@@ -293,28 +289,28 @@ const Payment = ({route}) => {
                 ))}
               </View>
               <View style={styles.breakdownContainer}>
-                <Text style={styles.breakdownItem}>GST (5%)</Text>
+                <Text style={styles.breakdownItem}>GST </Text>
                 <Text style={styles.breakdownPrice}>
-                  ₹ {gstAmount.toFixed(2)}
+                  {/* ₹ {gstAmount.toFixed(2)} */}
+                  ₹0.00
                 </Text>
               </View>
               <View style={styles.breakdownContainer}>
-                <Text style={styles.breakdownItem}>CGST (5%)</Text>
+                <Text style={styles.breakdownItem}>CGST</Text>
                 <Text style={styles.breakdownPrice}>
-                  ₹ {cgstAmount.toFixed(2)}
+                  {/* ₹ {cgstAmount.toFixed(2)} */}
+                  ₹0.00
                 </Text>
               </View>
               <View style={styles.breakdownContainer}>
                 <Text style={styles.breakdownItem}>Cashback</Text>
-                <Text style={styles.breakdownPrice}>
-                  - ₹ {cashback.toFixed(2)}
-                </Text>
+                <Text style={styles.breakdownPrice}>- ₹ {discount}</Text>
               </View>
               <View style={styles.separatorLine} />
               <View style={styles.grandTotalContainer}>
                 <Text style={styles.paidViaText}>Paid Via Scan</Text>
                 <Text style={styles.grandTotalText}>
-                  Grand Total ₹ {grandTotal.toFixed(2)}
+                  Grand Total ₹ {totalCost}
                 </Text>
               </View>
             </>
@@ -332,7 +328,7 @@ const Payment = ({route}) => {
                   <View>
                     <Text style={styles.payText}>
                       To Pay ₹{' '}
-                      <Text style={styles.payTextTotal}>{grandTotal}</Text>
+                      <Text style={styles.payTextTotal}>{totalCost}</Text>
                     </Text>
                   </View>
                 </View>

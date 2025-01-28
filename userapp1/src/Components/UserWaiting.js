@@ -54,6 +54,7 @@ const WaitingUser = () => {
   const [confirmationModalVisible, setConfirmationModalVisible] =
     useState(false);
   const [selectedReason, setSelectedReason] = useState('');
+  const [discount, setDiscount] = useState(0);
 
   useEffect(() => {
     if (
@@ -82,6 +83,7 @@ const WaitingUser = () => {
       alternatePhoneNumber,
       serviceBooked,
       location,
+      discount,
     } = route.params;
     console.log('user waiting params', route.params);
     setCity(city);
@@ -91,6 +93,7 @@ const WaitingUser = () => {
     setAlternateName(alternateName);
     setService(serviceBooked);
     setLocation(location);
+    setDiscount(discount);
   }, []);
 
   const fetchData = async () => {
@@ -102,6 +105,7 @@ const WaitingUser = () => {
       alternatePhoneNumber,
       serviceBooked,
       location,
+      discount,
     } = route.params;
     setCity(city);
     setArea(area);
@@ -110,6 +114,7 @@ const WaitingUser = () => {
     setAlternateName(alternateName);
     setService(serviceBooked);
     setLocation(location);
+    setDiscount(discount);
 
     try {
       const jwtToken = await EncryptedStorage.getItem('cs_token');
@@ -127,6 +132,7 @@ const WaitingUser = () => {
           alternateName,
           alternatePhoneNumber,
           serviceBooked,
+          discount,
         },
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
@@ -155,6 +161,7 @@ const WaitingUser = () => {
               alternateName,
               alternatePhoneNumber,
               location,
+              discount,
             },
             {headers: {Authorization: `Bearer ${jwtToken}`}},
           );

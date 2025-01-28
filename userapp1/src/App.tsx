@@ -39,6 +39,8 @@ import ServiceInProgress from './Components/ServiceInProgress';
 import AccountDelete from './Components/AccountDelete';
 import ReferralScreen from './Components/ReferralScreen';
 import OnboardingScreen from './Components/OnboardingScreen';
+import OrderScreen from './Components/OrderScreen';
+import Myrefferals from './Components/Myrefferals';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -86,7 +88,7 @@ function TabNavigator() {
       />
       <Tab.Screen
         name="Bookings"
-        component={OnboardingScreen}
+        component={ReferralScreen}
         options={{headerShown: false}}
       />
       <Tab.Screen
@@ -443,6 +445,13 @@ function App() {
           component={LoginScreen}
           options={{headerShown: false}}
         />
+
+        <Stack.Screen
+          name="OrderScreen"
+          component={OrderScreen}
+          options={{headerShown: false}}
+        />
+
         <Stack.Screen
           name="DeleteAccount"
           component={AccountDelete}
@@ -451,6 +460,11 @@ function App() {
         <Stack.Screen
           name="ReferralScreen"
           component={ReferralScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="Myrefferals"
+          component={Myrefferals}
           options={{headerShown: false}}
         />
 
