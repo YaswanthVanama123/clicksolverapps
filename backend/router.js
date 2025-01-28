@@ -125,6 +125,7 @@ const {
   workerWorkingStatusUpdated,
   getServicesRegisterPhoneNumber,
   registerUser,
+  userCoupons,
 } = require("./controller.js");
 
 const router = express.Router();
@@ -204,6 +205,8 @@ router.post(
 );
 
 router.post("/service/booking/item/details", getServiceBookingItemDetails);
+
+router.post("/user/coupons", authenticateToken, userCoupons);
 
 // Define the route for processing payment
 router.post("/user/payed", processPayment);
@@ -288,18 +291,21 @@ router.post("/worker/payment/scanner/details", async (req, res) => {
   // console.log(start_time);
   // const { time_worked } = getTimeDifferenceInIST(start_time, end_time);
   // const totalAmount = calculatePayment(time_worked);
-  const { name, service } = await getPaymentDetails(notification_id);
-  const {
-    service_booked,
-    gstAmount,
-    cgstAmount,
-    discountAmount,
-    fetchedFinalTotalAmount,
-  } = await getWorkerDetails(notification_id);
+  const { name, service, discount, total_cost } = await getPaymentDetails(
+    notification_id
+  );
+  // const {
+  //   service_booked,
+  //   gstAmount,
+  //   cgstAmount,
+  //   discountAmount,
+  //   fetchedFinalTotalAmount,
+  // } = await getWorkerDetails(notification_id);
   res.json({
-    totalAmount: fetchedFinalTotalAmount,
+    totalAmount: total_cost,
     name,
     service,
+    discount,
   });
 });
 

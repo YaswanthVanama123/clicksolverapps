@@ -751,6 +751,7 @@ const HomeScreen = () => {
             // Parse the title string if it's valid JSON
             let parsedTitle;
             let totalCost = 0;
+            let cost = notification.data.cost;
 
             try {
               parsedTitle = JSON.parse(notification.data.service);
@@ -817,7 +818,7 @@ const HomeScreen = () => {
                   </View>
                   <View>
                     <Text style={styles.secondaryColor}>Cost</Text>
-                    <Text style={styles.primaryColor}>₹{totalCost}</Text>
+                    <Text style={styles.primaryColor}>₹{cost}</Text>
                   </View>
                 </View>
                 <View style={styles.addressContainer}>

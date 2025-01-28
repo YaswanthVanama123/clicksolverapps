@@ -140,3 +140,33 @@ http
   .listen(httpPort, () => {
     console.log(`HTTP redirect server is running on port ${httpPort}`);
   });
+
+// const express = require("express");
+// const cors = require("cors");
+// const router = require("./router");
+// const cookieParser = require("cookie-parser");
+// const bodyParser = require("body-parser");
+
+// const app = express();
+// const port = 5000; // Use port 5000 for the backend server
+
+// // Enable CORS for all routes
+// app.use(cors());
+
+// // Middleware setup
+// app.use(express.json());
+// app.use(cookieParser());
+// app.use(bodyParser.json());
+
+// // Example route
+// app.get("/api/test", (req, res) => {
+//   res.json({ message: "Hello from the backend!" });
+// });
+
+// // Use the router for API routes
+// app.use("/api", router);
+
+// // Start the server
+// app.listen(port, () => {
+//   console.log(`Server is running on port ${port}`);
+// });

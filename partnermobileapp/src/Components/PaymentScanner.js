@@ -52,6 +52,8 @@ const PaymentScanner = ({route}) => {
             },
           );
 
+          console.log(response.data);
+
           const {totalAmount: amount, name, service} = response.data;
           setPaymentDetails({name, service});
           setTotalAmount(Number(amount) || 0);
@@ -86,6 +88,7 @@ const PaymentScanner = ({route}) => {
     try {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       const numberAmmount = Number(totalAmount);
+      console.log('sended data', numberAmmount, paymentMethod, decodedId);
       await axios.post(`${process.env.BackendAPI17}/api/user/payed`, {
         totalAmount: numberAmmount,
         paymentMethod,

@@ -69,7 +69,7 @@ const TaskConfirmation = () => {
             },
           );
           console.log(response.data);
-          const {workDetails, paymentDetails} = response.data;
+          const {workDetails} = response.data;
           setDetails({
             city: workDetails.city,
             area: workDetails.area,
@@ -77,8 +77,12 @@ const TaskConfirmation = () => {
             alternateName: workDetails.alternate_name,
             alternatePhoneNumber: workDetails.alternate_phone_number,
             service: workDetails.service_booked,
+            discount: workDetails.discount,
+            totalCost: workDetails.total_cost,
           });
-          setPaymentDetails(paymentDetails);
+
+          console.log(response.data.workDetails.discount);
+          // setPaymentDetails(paymentDetails);
           setServiceArray(workDetails.service_booked);
         } catch (error) {
           console.error('Error fetching payment details:', error);
@@ -177,25 +181,28 @@ const TaskConfirmation = () => {
             <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>SGST (5%)</Text>
               <Text style={styles.paymentValue}>
-                ₹{paymentDetails.cgstAmount}.00
+                {/* ₹{paymentDetails.cgstAmount}.00 */}
+                ₹0.00
               </Text>
             </View>
             <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>CGST (5%)</Text>
               <Text style={styles.paymentValue}>
-                ₹{paymentDetails.gstAmount}.00
+                {/* ₹{paymentDetails.gstAmount}.00 */}
+                ₹0.00
               </Text>
             </View>
             <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>Cashback (5%)</Text>
               <Text style={styles.paymentValue}>
-                ₹{paymentDetails.discountAmount}.00
+                {/* ₹{paymentDetails.discountAmount}.00 */}- ₹{details.discount}
+                .00
               </Text>
             </View>
             <View style={[styles.horizantalLine, {marginTop: 10}]} />
             <View style={styles.paymentGrandRow}>
               <Text style={styles.paymentTotalValue}>
-                Grand Total ₹{paymentDetails.fetchedFinalTotalAmount}.00
+                Grand Total ₹{details.totalCost}.00
               </Text>
             </View>
             <View style={[styles.horizantalLine]} />

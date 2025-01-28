@@ -227,6 +227,88 @@ const accountDetailsUpdate = async (req, res) => {
 //   }
 // };
 
+// main.1
+
+// const userCompleteSignUp = async (req, res) => {
+//   const { fullName, email, phoneNumber, referralCode } = req.body;
+
+//   if (!fullName || !email || !phoneNumber) {
+//     return res
+//       .status(400)
+//       .json({ message: "Full name, email, and phone number are required" });
+//   }
+
+//   try {
+//     // Start a transaction
+//     await client.query("BEGIN");
+
+//     // Updated query to use user_id
+//     const result = await client.query(
+//       `
+//       WITH referrer AS (
+//         SELECT user_id FROM "user" WHERE referral_code = $1
+//       ), new_user AS (
+//         INSERT INTO "user" (name, email, phone_number)
+//         VALUES ($2, $3, $4)
+//         RETURNING user_id
+//       ), referral_insert AS (
+//         INSERT INTO referrals (referrer_user_id, referred_user_id)
+//         SELECT referrer.user_id, new_user.user_id
+//         FROM referrer, new_user
+//         WHERE referrer.user_id IS NOT NULL
+//         RETURNING referrer_user_id
+//       ), reward_insert AS (
+//         INSERT INTO referral_rewards (user_id, reward_amount, reward_type, status)
+//         SELECT referrer_user_id, 100, 'cashback', 'earned'
+//         FROM referral_insert
+//       )
+//       SELECT new_user.user_id AS user_id FROM new_user;
+//       `,
+//       [referralCode, fullName, email, phoneNumber]
+//     );
+
+//     // Extract the new user_id
+//     const newUserId = result.rows[0].user_id;
+
+//     // Generate a unique referral code for the new user
+//     const newReferralCode = `CS${newUserId}${crypto
+//       .randomBytes(2)
+//       .toString("hex")
+//       .toUpperCase()}`;
+
+//     // Update the user's referral code
+//     await client.query(
+//       'UPDATE "user" SET referral_code = $1 WHERE user_id = $2',
+//       [newReferralCode, newUserId]
+//     );
+
+//     // Commit the transaction
+//     await client.query("COMMIT");
+
+//     // Generate a token for the user
+//     const token = generateToken({ id: newUserId, fullName, email });
+
+//     // Set the token as an HTTP-only cookie
+//     res.cookie("token", token, {
+//       httpOnly: true,
+//       secure: process.env.NODE_ENV === "production",
+//       sameSite: "Strict",
+//     });
+
+//     // Return the response
+//     return res.status(201).json({
+//       message: "User registered successfully",
+//       token,
+//       referralCode: newReferralCode,
+//     });
+//   } catch (error) {
+//     // Rollback the transaction on error
+//     await client.query("ROLLBACK");
+//     console.error("Error in userCompleteSignUp:", error);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// };
+
 const userCompleteSignUp = async (req, res) => {
   const { fullName, email, phoneNumber, referralCode } = req.body;
 
@@ -240,14 +322,14 @@ const userCompleteSignUp = async (req, res) => {
     // Start a transaction
     await client.query("BEGIN");
 
-    // Updated query to use user_id
+    // Updated query to insert referred_by and exclude referral_rewards
     const result = await client.query(
       `
       WITH referrer AS (
         SELECT user_id FROM "user" WHERE referral_code = $1
       ), new_user AS (
-        INSERT INTO "user" (name, email, phone_number) 
-        VALUES ($2, $3, $4) 
+        INSERT INTO "user" (name, email, phone_number, referred_by) 
+        VALUES ($2, $3, $4, (SELECT user_id FROM referrer)) 
         RETURNING user_id
       ), referral_insert AS (
         INSERT INTO referrals (referrer_user_id, referred_user_id)
@@ -255,10 +337,6 @@ const userCompleteSignUp = async (req, res) => {
         FROM referrer, new_user
         WHERE referrer.user_id IS NOT NULL
         RETURNING referrer_user_id
-      ), reward_insert AS (
-        INSERT INTO referral_rewards (user_id, reward_amount, reward_type, status)
-        SELECT referrer_user_id, 100, 'cashback', 'earned'
-        FROM referral_insert
       )
       SELECT new_user.user_id AS user_id FROM new_user;
       `,
@@ -589,6 +667,8 @@ const getServiceTrackingUserItemDetails = async (req, res) => {
       st.service_status,
       st.created_at,
       st.tracking_pin,
+      st.total_cost,
+      st.discount
       w.name,
       w.phone_number,
       un.area,
@@ -611,36 +691,36 @@ const getServiceTrackingUserItemDetails = async (req, res) => {
       });
     }
 
-    const { service_booked } = result.rows[0];
+    // const { service_booked } = result.rows[0];
 
-    if (!service_booked || !Array.isArray(service_booked)) {
-      return res
-        .status(400)
-        .json({ message: "Invalid service_booked data format" });
-    }
+    // if (!service_booked || !Array.isArray(service_booked)) {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "Invalid service_booked data format" });
+    // }
 
-    const gstRate = 0.05;
-    const discountRate = 0.05;
+    // const gstRate = 0.05;
+    // const discountRate = 0.05;
 
-    const fetchedTotalAmount = service_booked.reduce(
-      (total, service) => total + (service.cost || 0),
-      0
-    );
+    // const fetchedTotalAmount = service_booked.reduce(
+    //   (total, service) => total + (service.cost || 0),
+    //   0
+    // );
 
-    const gstAmount = fetchedTotalAmount * gstRate;
-    const cgstAmount = fetchedTotalAmount * gstRate;
-    const discountAmount = fetchedTotalAmount * discountRate;
-    const fetchedFinalTotalAmount =
-      fetchedTotalAmount + gstAmount + cgstAmount - discountAmount;
+    // const gstAmount = fetchedTotalAmount * gstRate;
+    // const cgstAmount = fetchedTotalAmount * gstRate;
+    // const discountAmount = fetchedTotalAmount * discountRate;
+    // const fetchedFinalTotalAmount =
+    //   fetchedTotalAmount + gstAmount + cgstAmount - discountAmount;
 
-    const paymentDetails = {
-      gstAmount,
-      cgstAmount,
-      discountAmount,
-      fetchedFinalTotalAmount,
-    };
+    // const paymentDetails = {
+    //   gstAmount,
+    //   cgstAmount,
+    //   discountAmount,
+    //   fetchedFinalTotalAmount,
+    // };
 
-    res.status(200).json({ data: result.rows[0], paymentDetails });
+    res.status(200).json({ data: result.rows[0] });
   } catch (error) {
     console.error(
       "Error fetching service tracking worker item details: ",
@@ -661,6 +741,8 @@ const getServiceBookingItemDetails = async (req, res) => {
     const query = `
     SELECT
       st.service_booked,
+      st.total_cost,
+      st.discount,
       st.time,
       st.created_at,
       w.name,
@@ -685,36 +767,36 @@ const getServiceBookingItemDetails = async (req, res) => {
       });
     }
 
-    const { service_booked } = result.rows[0];
+    // const { service_booked } = result.rows[0];
 
-    if (!service_booked || !Array.isArray(service_booked)) {
-      return res
-        .status(400)
-        .json({ message: "Invalid service_booked data format" });
-    }
+    // if (!service_booked || !Array.isArray(service_booked)) {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "Invalid service_booked data format" });
+    // }
 
-    const gstRate = 0.05;
-    const discountRate = 0.05;
+    // const gstRate = 0.05;
+    // const discountRate = 0.05;
 
-    const fetchedTotalAmount = service_booked.reduce(
-      (total, service) => total + (service.cost || 0),
-      0
-    );
+    // const fetchedTotalAmount = service_booked.reduce(
+    //   (total, service) => total + (service.cost || 0),
+    //   0
+    // );
 
-    const gstAmount = fetchedTotalAmount * gstRate;
-    const cgstAmount = fetchedTotalAmount * gstRate;
-    const discountAmount = fetchedTotalAmount * discountRate;
-    const fetchedFinalTotalAmount =
-      fetchedTotalAmount + gstAmount + cgstAmount - discountAmount;
+    // const gstAmount = fetchedTotalAmount * gstRate;
+    // const cgstAmount = fetchedTotalAmount * gstRate;
+    // const discountAmount = fetchedTotalAmount * discountRate;
+    // const fetchedFinalTotalAmount =
+    //   fetchedTotalAmount + gstAmount + cgstAmount - discountAmount;
 
-    const paymentDetails = {
-      gstAmount,
-      cgstAmount,
-      discountAmount,
-      fetchedFinalTotalAmount,
-    };
+    // const paymentDetails = {
+    //   gstAmount,
+    //   cgstAmount,
+    //   discountAmount,
+    //   fetchedFinalTotalAmount,
+    // };
 
-    res.status(200).json({ data: result.rows[0], paymentDetails });
+    res.status(200).json({ data: result.rows[0] });
   } catch (error) {
     console.error(
       "Error fetching service tracking worker item details: ",
@@ -766,6 +848,8 @@ const getWorkerDetails = async (notificationId) => {
     const query = `
     SELECT 
         accepted.service_booked, 
+        accepted.discount,
+        accepted.total_cost,
         workersverified.name, 
         usernotifications.area, 
         usernotifications.city, 
@@ -791,28 +875,36 @@ const getWorkerDetails = async (notificationId) => {
       };
     }
 
-    const { service_booked, name, area, city, pincode, profile } =
-      result.rows[0];
-    let gstAmount = 0;
-    let cgstAmount = 0;
-    let discountAmount = 0;
+    const {
+      service_booked,
+      name,
+      area,
+      city,
+      pincode,
+      profile,
+      discount,
+      total_cost,
+    } = result.rows[0];
+    // let gstAmount = 0;
+    // let cgstAmount = 0;
+    // let discountAmount = 0;
 
-    const calculatePayment = (baseAmount) => {
-      const gst = (baseAmount * 5) / 100;
-      const cgst = (baseAmount * 5) / 100;
-      const discount = (baseAmount * 5) / 100;
-      const finalAmount = baseAmount + gst + cgst - discount;
-      gstAmount = gst;
-      cgstAmount = cgst;
-      discountAmount = discount;
-      return finalAmount;
-    };
+    // const calculatePayment = (baseAmount) => {
+    //   const gst = (baseAmount * 5) / 100;
+    //   const cgst = (baseAmount * 5) / 100;
+    //   const discount = (baseAmount * 5) / 100;
+    //   const finalAmount = baseAmount + gst + cgst - discount;
+    //   gstAmount = gst;
+    //   cgstAmount = cgst;
+    //   discountAmount = discount;
+    //   return finalAmount;
+    // };
 
-    const fetchedTotalAmount = service_booked.reduce((total, service) => {
-      return total + (service.cost || 0);
-    }, 0);
+    // const fetchedTotalAmount = service_booked.reduce((total, service) => {
+    //   return total + (service.cost || 0);
+    // }, 0);
 
-    const fetchedFinalTotalAmount = calculatePayment(fetchedTotalAmount);
+    // const fetchedFinalTotalAmount = calculatePayment(fetchedTotalAmount);
     return {
       service_booked,
       name,
@@ -820,10 +912,12 @@ const getWorkerDetails = async (notificationId) => {
       profile,
       city,
       pincode,
-      gstAmount,
-      cgstAmount,
-      discountAmount,
-      fetchedFinalTotalAmount,
+      discount,
+      total_cost,
+      // gstAmount,
+      // cgstAmount,
+      // discountAmount,
+      // fetchedFinalTotalAmount,
     };
   } catch (error) {
     console.error("Error fetching worker details:", error);
@@ -3165,6 +3259,7 @@ const createUserAction = async (req, res) => {
     alternatePhoneNumber,
     pincode,
     location,
+    discount,
   } = req.body;
 
   // console.log("User action creation initiated", req.body);
@@ -3213,6 +3308,7 @@ const createUserAction = async (req, res) => {
           newAction.alternatePhoneNumber = alternatePhoneNumber;
           newAction.pincode = pincode;
           newAction.location = location;
+          newAction.discount = discount;
         }
         // console.log("new action anta ", newAction);
         // console.log("new action anta ra location undha", newAction.location);
@@ -3254,6 +3350,7 @@ const createUserAction = async (req, res) => {
           newAction.alternatePhoneNumber = alternatePhoneNumber;
           newAction.pincode = pincode;
           newAction.location = location;
+          newAction.discount = discount;
         }
 
         newTrack = [newAction];
@@ -3784,6 +3881,38 @@ const fetchLocationDetails = async (notificationId) => {
   } catch (err) {
     console.error("Error fetching location details:", err);
     throw err;
+  }
+};
+
+const userCoupons = async (req, res) => {
+  const userId = req.user.id;
+  try {
+    const result = await client.query(
+      `
+      SELECT 
+        u.service_completed,
+        COALESCE(rr.coupons, NULL) AS coupons
+      FROM 
+        user u
+      LEFT JOIN 
+        referral_rewards rr
+      ON 
+        u.user_id = rr.user_id
+      WHERE 
+        u.user_id = $1
+      `,
+      [userId]
+    );
+
+    if (result.rows.length > 0) {
+      const { service_completed, coupons } = result.rows[0];
+      res.json({ service_completed, coupons });
+    } else {
+      res.status(404).json({ message: "User not found or no data available" });
+    }
+  } catch (error) {
+    console.error("Error fetching user coupons:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -4421,74 +4550,78 @@ const acceptRequest = async (req, res) => {
 
     const combinedQuery = `
       WITH check_accept AS (
-      SELECT notification_id 
-      FROM accepted 
-      WHERE user_notification_id = $1 
-      FOR UPDATE
-    ),
-    get_notification AS (
-      SELECT 
-        n.cancel_status, 
-        n.user_id, 
-        n.notification_id, 
-        n.service_booked, 
-        n.longitude, 
-        n.latitude
-      FROM notifications n
-      WHERE n.user_notification_id = $1 
-      FOR UPDATE
-    ),
-    insert_accept AS (
-      INSERT INTO accepted 
-        (user_notification_id, worker_id, notification_id, status, user_id, service_booked, service_status, pin, longitude, latitude, time)
-      SELECT 
-        $1, 
-        $2, 
-        gn.notification_id, 
-        'accept', 
-        gn.user_id, 
-        gn.service_booked::jsonb,
-        (
-          SELECT jsonb_agg(
-            jsonb_build_object(
-              'accept', 'In progress',
-              'arrived', null,
-              'workCompleted', null,
-              'serviceName', service->>'serviceName',
-              'Quantity' , service->>'quantity'
+        SELECT notification_id 
+        FROM accepted 
+        WHERE user_notification_id = $1 
+        FOR UPDATE
+      ),
+      get_notification AS (
+        SELECT 
+          n.cancel_status, 
+          n.user_id, 
+          n.notification_id, 
+          n.service_booked, 
+          n.longitude, 
+          n.latitude, 
+          n.discount, 
+          n.total_cost
+        FROM notifications n
+        WHERE n.user_notification_id = $1 
+        FOR UPDATE
+      ),
+      insert_accept AS (
+        INSERT INTO accepted 
+          (user_notification_id, worker_id, notification_id, status, user_id, service_booked, service_status, pin, longitude, latitude, time, discount, total_cost)
+        SELECT 
+          $1, 
+          $2, 
+          gn.notification_id, 
+          'accept', 
+          gn.user_id, 
+          gn.service_booked::jsonb,
+          (
+            SELECT jsonb_agg(
+              jsonb_build_object(
+                'accept', 'In progress',
+                'arrived', null,
+                'workCompleted', null,
+                'serviceName', service->>'serviceName',
+                'Quantity' , service->>'quantity'
+              )
             )
-          )
-          FROM jsonb_array_elements(gn.service_booked) AS service
-        ),
-        FLOOR(RANDOM() * 9000) + 1000, 
-        gn.longitude::numeric, 
-        gn.latitude::numeric,
-        jsonb_build_object(
-          'accept', to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS'),
-          'arrived', null,
-          'workCompleted', null,
-          'paymentCompleted', null
-        )
-      FROM get_notification gn
-      RETURNING notification_id
-    ),
-    delete_notification AS (
-      DELETE FROM notifications 
-      WHERE user_notification_id = $1 
-      RETURNING 1
-    )
-    SELECT 
-      ia.notification_id AS inserted_notification_id,
-      ca1.notification_id AS existing_notification_id,
-      gn.cancel_status,
-      gn.user_id,
-      gn.service_booked,
-      gn.longitude,
-      gn.latitude
-    FROM check_accept ca1
-    RIGHT JOIN get_notification gn ON TRUE
-    LEFT JOIN insert_accept ia ON TRUE
-    LEFT JOIN delete_notification dn ON TRUE
+            FROM jsonb_array_elements(gn.service_booked) AS service
+          ),
+          FLOOR(RANDOM() * 9000) + 1000, 
+          gn.longitude::numeric, 
+          gn.latitude::numeric,
+          jsonb_build_object(
+            'accept', to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS'),
+            'arrived', null,
+            'workCompleted', null,
+            'paymentCompleted', null
+          ),
+          gn.discount,
+          gn.total_cost
+        FROM get_notification gn
+        RETURNING notification_id
+      ),
+      delete_notification AS (
+        DELETE FROM notifications 
+        WHERE user_notification_id = $1 
+        RETURNING 1
+      )
+      SELECT 
+        ia.notification_id AS inserted_notification_id,
+        ca1.notification_id AS existing_notification_id,
+        gn.cancel_status,
+        gn.user_id,
+        gn.service_booked,
+        gn.longitude,
+        gn.latitude
+      FROM check_accept ca1
+      RIGHT JOIN get_notification gn ON TRUE
+      LEFT JOIN insert_accept ia ON TRUE
+      LEFT JOIN delete_notification dn ON TRUE;
   `;
 
     const combinedResult = await client.query(combinedQuery, [
@@ -4787,7 +4920,9 @@ const userNavigationCancel = async (req, res) => {
           created_at, 
           worker_id, 
           complete_status,
-          time
+          time,
+          discount,
+          total_cost
       ),
       inserted AS (
         INSERT INTO completenotifications (
@@ -4801,7 +4936,9 @@ const userNavigationCancel = async (req, res) => {
           worker_id, 
           complete_status,
           service_booked, 
-          time
+          time,
+          discount,
+          total_cost
         )
         SELECT 
           accepted_id, 
@@ -4814,15 +4951,21 @@ const userNavigationCancel = async (req, res) => {
           worker_id, 
           'cancel', 
           to_jsonb('service_booked'::text), 
-          time
+          time,
+          discount,
+          total_cost
         FROM updated
-        RETURNING worker_id, notification_id
+        RETURNING 
+          worker_id, 
+          notification_id
       )
-      SELECT i.worker_id, f.fcm_token
+      SELECT 
+        i.worker_id, 
+        f.fcm_token
       FROM inserted i
       JOIN workersverified w ON w.worker_id = i.worker_id
       JOIN fcm f ON f.worker_id = w.worker_id;
-    `,
+      `,
       [notification_id]
     );
 
@@ -5261,7 +5404,9 @@ const workerNavigationCancel = async (req, res) => {
           created_at, 
           worker_id, 
           complete_status,
-          time
+          time,
+          discount,
+          total_cost
       ),
       inserted AS (
         INSERT INTO completenotifications (
@@ -5275,7 +5420,9 @@ const workerNavigationCancel = async (req, res) => {
           worker_id, 
           complete_status,
           service_booked, 
-          time
+          time,
+          discount,
+          total_cost
         )
         SELECT 
           accepted_id, 
@@ -5288,7 +5435,9 @@ const workerNavigationCancel = async (req, res) => {
           worker_id, 
           'cancel', 
           to_jsonb('service_booked'::text), 
-          time
+          time,
+          discount,
+          total_cost
         FROM updated
         RETURNING user_id, notification_id, service_booked
       )
@@ -5296,7 +5445,7 @@ const workerNavigationCancel = async (req, res) => {
       FROM inserted i
       JOIN "user" w ON w.user_id = i.user_id
       JOIN userfcm f ON f.user_id = w.user_id;
-    `,
+      `,
       [notification_id]
     );
 
@@ -6227,11 +6376,13 @@ const getWorkersNearby = async (req, res) => {
       alternateName,
       alternatePhoneNumber,
       serviceBooked,
+      discount,
     } = req.body;
     const created_at = getCurrentTimestamp();
     const serviceArray = JSON.stringify(serviceBooked);
     const serviceNames = serviceBooked.map((s) => s.serviceName);
-    const totalCost = serviceBooked.reduce((acc, s) => acc + s.cost, 0);
+    const totalCost =
+      serviceBooked.reduce((acc, s) => acc + s.cost, 0) - discount;
 
     /**
      *  ┌───────────────────────────────────────────────────────┐
@@ -6348,30 +6499,33 @@ const getWorkersNearby = async (req, res) => {
      */
     const pin = generatePin();
     const query2 = `
-      WITH insert_notifications AS (
-        INSERT INTO notifications (
-          user_notification_id, user_id, worker_id,
-          longitude, latitude, created_at, pin, service_booked
-        )
-        SELECT
-          $1,  -- user_notification_id
-          $2,  -- user_id
-          w.worker_id,
-          $3,  -- user_lon
-          $4,  -- user_lat
-          $5,  -- created_at
-          $6,  -- pin
-          $7   -- serviceArray
-        FROM UNNEST($8::int[]) AS w(worker_id)
-        RETURNING worker_id
-      ),
-      fcm_tokens AS (
-        SELECT fcm_token
-        FROM fcm
-        WHERE worker_id IN (SELECT worker_id FROM insert_notifications)
+    WITH insert_notifications AS (
+      INSERT INTO notifications (
+        user_notification_id, user_id, worker_id,
+        longitude, latitude, created_at, pin, service_booked,
+        discount, total_cost
       )
-      SELECT array_agg(fcm_token) AS tokens FROM fcm_tokens;
-    `;
+      SELECT
+        $1,  -- user_notification_id
+        $2,  -- user_id
+        w.worker_id,
+        $3,  -- user_lon
+        $4,  -- user_lat
+        $5,  -- created_at
+        $6,  -- pin
+        $7,  -- serviceArray
+        $9,  -- discount
+        $10  -- total_cost
+      FROM UNNEST($8::int[]) AS w(worker_id)
+      RETURNING worker_id
+    ),
+    fcm_tokens AS (
+      SELECT fcm_token
+      FROM fcm
+      WHERE worker_id IN (SELECT worker_id FROM insert_notifications)
+    )
+    SELECT array_agg(fcm_token) AS tokens FROM fcm_tokens;
+  `;
 
     const query2Params = [
       user_notification_id, // $1
@@ -6382,6 +6536,8 @@ const getWorkersNearby = async (req, res) => {
       pin, // $6
       serviceArray, // $7
       nearbyWorkers, // $8 :: int[]
+      discount, // $9
+      totalCost, // $10
     ];
 
     const result2 = await client.query(query2, query2Params);
@@ -8406,8 +8562,9 @@ const userUpdateLastLogin = async (req, res) => {
 };
 
 const checkInactiveUsers = async () => {
-  // const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+  // Adjust time to filter inactive users
   const oneMinuteAgo = new Date(Date.now() - 1 * 60 * 1000);
+
   const query = {
     text: `
       SELECT u.*, ft.fcm_token
@@ -8418,19 +8575,48 @@ const checkInactiveUsers = async () => {
     values: [oneMinuteAgo],
   };
 
-  const result = await client.query(query);
+  try {
+    const result = await client.query(query);
 
-  result.rows.forEach(async (user) => {
-    // Send notification using FCM
-    const message = {
-      notification: {
-        title: "We Miss You!",
-        body: "It’s been a while since you last visited us. Come back and check out what’s new!",
-      },
-      token: user.fcm_token,
-    };
-    await getMessaging().send(message);
-  });
+    result.rows.forEach(async (user) => {
+      const message = {
+        notification: {
+          title: "We Miss You!",
+          body: "It’s been a while since you last visited us. Come back and check out what’s new!",
+        },
+        token: user.fcm_token,
+      };
+
+      try {
+        // Send notification using FCM
+        const response = await getMessaging().send(message);
+        console.log(
+          `Notification sent successfully to user_id: ${user.user_id}`,
+          response
+        );
+      } catch (error) {
+        // Handle FCM messaging errors
+        if (error.code === "messaging/registration-token-not-registered") {
+          console.error(
+            `Invalid token for user_id: ${user.user_id}. Removing token...`
+          );
+          // Remove the invalid token from the database
+          const deleteQuery = {
+            text: "DELETE FROM userfcm WHERE fcm_token = $1",
+            values: [user.fcm_token],
+          };
+          await client.query(deleteQuery);
+        } else {
+          console.error(
+            `Error sending notification to user_id: ${user.user_id}`,
+            error
+          );
+        }
+      }
+    });
+  } catch (dbError) {
+    console.error("Database query error:", dbError);
+  }
 };
 
 cron.schedule("0 9 * * *", () => {
@@ -8576,6 +8762,8 @@ const getPaymentDetails = async (notification_id) => {
     const query = `
       SELECT 
         n.service,
+        n.discount,
+        n.total_cost,
         u.name 
       FROM 
         accepted n
@@ -8742,9 +8930,12 @@ const getPaymentDetails = async (notification_id) => {
 const processPayment = async (req, res) => {
   const { totalAmount, paymentMethod, decodedId } = req.body;
 
-  // Input Validation
+  console.log("Total Amount:", totalAmount);
+  console.log("Payment Method:", paymentMethod);
+  console.log("Decoded ID:", decodedId);
+
   if (!totalAmount || !paymentMethod || !decodedId) {
-    return res.status(400).json({
+    return res.status(402).json({
       error:
         "Missing required fields: totalAmount, paymentMethod, and decodedId.",
     });
@@ -8753,248 +8944,95 @@ const processPayment = async (req, res) => {
   try {
     const end_time = new Date();
 
-    // const combinedQuery = `
-    // WITH update_servicecall AS (
-    //   UPDATE servicecall
-    //   SET
-    //     payment = $1,
-    //     payment_type = $2
-    //   WHERE notification_id = $3
-    //   RETURNING notification_id
-    // ),
-    // update_accepted AS (
-    //   UPDATE accepted a
-    //   SET
-    //     time = jsonb_set(
-    //       COALESCE(a.time, '{}'::jsonb),
-    //       '{paymentCompleted}',
-    //       to_jsonb(to_char($4::timestamp, 'YYYY-MM-DD HH24:MI:SS'))
-    //     )
-    //   FROM update_servicecall us
-    //   WHERE a.notification_id = us.notification_id
-    //   RETURNING a.user_id, a.service_booked, a.worker_id, a.notification_id, a.user_notification_id, a.longitude, a.latitude
-    // ),
-    // insert_completenotifications AS (
-    //   INSERT INTO completenotifications (
-    //     accepted_id,
-    //     notification_id,
-    //     user_id,
-    //     user_notification_id,
-    //     service_booked,
-    //     longitude,
-    //     latitude,
-    //     worker_id,
-    //     time
-    //   )
-    //   SELECT
-    //     a.accepted_id,
-    //     a.notification_id,
-    //     a.user_id,
-    //     a.user_notification_id,
-    //     a.service_booked,
-    //     a.longitude,
-    //     a.latitude,
-    //     a.worker_id,
-    //     a.time
-    //   FROM accepted a
-    //   WHERE a.notification_id = $3
-    //   ON CONFLICT (accepted_id) DO NOTHING
-    //   RETURNING *
-    // ),
-    // delete_accepted AS (
-    //   DELETE FROM accepted
-    //   WHERE notification_id = $3
-    //   RETURNING *
-    // ),
-    // delete_servicetracking AS (
-    //   DELETE FROM servicetracking
-    //   WHERE notification_id = $3
-    //   RETURNING *
-    // ),
-    // update_workerlife AS (
-    //   UPDATE workerlife wl
-    //   SET
-    //     service_counts = wl.service_counts + 1,
-    //     money_earned = wl.money_earned + $6,
-    //     balance_amount = CASE
-    //       WHEN $5 = 'cash' THEN wl.balance_amount - ($6 * 0.12)
-    //       ELSE wl.balance_amount + ($6 * 0.88)
-    //     END,
-    //     cashback_approved_times = COALESCE((wl.service_counts + 1) / 6, 0)
-    //   FROM update_accepted ua
-    //   WHERE wl.worker_id = ua.worker_id
-    //   RETURNING wl.worker_id, wl.balance_amount, wl.cashback_approved_times, wl.service_counts
-    // ),
-    // fetch_fcm AS (
-    //   SELECT
-    //     u.fcm_token
-    //   FROM userfcm u
-    //   JOIN update_accepted ua ON u.user_id = ua.user_id
-    // )
-    // SELECT
-    //   ua.user_id,
-    //   ua.service_booked,
-    //   ua.worker_id,
-    //   ARRAY_AGG(fcm.fcm_token) AS fcm_tokens,
-    //   COUNT(da.*) AS deleted_accepted,
-    //   COUNT(ds.*) AS deleted_servicetracking
-    // FROM update_accepted ua
-    // LEFT JOIN fetch_fcm fcm ON TRUE
-    // LEFT JOIN delete_accepted da ON TRUE
-    // LEFT JOIN delete_servicetracking ds ON TRUE
-    // GROUP BY ua.user_id, ua.service_booked, ua.worker_id;
-
-    // `;
-
     const combinedQuery = `
-      WITH update_servicecall AS (
-        UPDATE servicecall
-        SET
-          payment = $1,
-          payment_type = $2
-        WHERE notification_id = $3
-        RETURNING notification_id
-      ),
-      update_accepted AS (
-        UPDATE accepted a
-        SET
-          time = jsonb_set(
-            COALESCE(a.time, '{}'::jsonb),
-            '{paymentCompleted}',
-            to_jsonb(to_char($4::timestamp, 'YYYY-MM-DD HH24:MI:SS'))
-          )
-        FROM update_servicecall us
-        WHERE a.notification_id = us.notification_id
-        RETURNING a.*
-      ),
-      insert_completenotifications AS (
-        INSERT INTO completenotifications (
-          accepted_id,
-          notification_id,
-          user_id,
-          user_notification_id,
-          service_booked,
-          longitude,
-          latitude,
-          worker_id,
-          time
-        )
-        SELECT
-          ua.accepted_id,
-          ua.notification_id,
-          ua.user_id,
-          ua.user_notification_id,
-          ua.service_booked,
-          ua.longitude,
-          ua.latitude,
-          ua.worker_id,
-          ua.time
-        FROM update_accepted ua
-        WHERE ua.notification_id = $3
-        ON CONFLICT (accepted_id) DO NOTHING
-        RETURNING *
-      ),
-      delete_accepted AS (
-        DELETE FROM accepted
-        WHERE notification_id = $3
-        RETURNING *
-      ),
-      delete_servicetracking AS (
-        DELETE FROM servicetracking
-        WHERE notification_id = $3
-        RETURNING *
-      ),
-      update_workerlife AS (
-        UPDATE workerlife wl
-        SET
-          service_counts = wl.service_counts + 1,
-          money_earned = wl.money_earned + $6,
-          balance_amount = CASE
-            WHEN $5 = 'cash' THEN wl.balance_amount - ($6 * 0.12)
-            ELSE wl.balance_amount + ($6 * 0.88)
-          END,
-          cashback_approved_times = COALESCE((wl.service_counts + 1) / 6, 0)
-        FROM update_accepted ua
-        WHERE wl.worker_id = ua.worker_id
-        RETURNING wl.worker_id, wl.balance_amount, wl.cashback_approved_times, wl.service_counts
-      ),
-      fetch_fcm AS (
-        SELECT
-          u.fcm_token
-        FROM userfcm u
-        JOIN update_accepted ua ON u.user_id = ua.user_id
-      )
-      SELECT
-        ua.user_id,
-        ua.service_booked,
-        ua.worker_id,
-        ARRAY_AGG(fcm.fcm_token) AS fcm_tokens,
-        COUNT(da.*) AS deleted_accepted,
-        COUNT(ds.*) AS deleted_servicetracking
-      FROM update_accepted ua
-      LEFT JOIN fetch_fcm fcm ON TRUE
-      LEFT JOIN delete_accepted da ON TRUE
-      LEFT JOIN delete_servicetracking ds ON TRUE
-      GROUP BY ua.user_id, ua.service_booked, ua.worker_id;
+WITH update_servicecall AS (
+  UPDATE servicecall
+  SET
+    payment = $1,
+    payment_type = $2
+  WHERE notification_id = $3
+  RETURNING notification_id
+),
+update_accepted AS (
+  UPDATE accepted a
+  SET
+    time = jsonb_set(
+      COALESCE(a.time, '{}'::jsonb),
+      '{paymentCompleted}',
+      to_jsonb(to_char($4::timestamp, 'YYYY-MM-DD HH24:MI:SS'))
+    )
+  FROM update_servicecall us
+  WHERE a.notification_id = us.notification_id
+  RETURNING a.user_id, a.service_booked, a.worker_id
+),
+mark_service_completed AS (
+  UPDATE "user"
+  SET service_completed = TRUE
+  WHERE user_id IN (SELECT user_id FROM update_servicecall) -- Use IN instead of =
+    AND service_completed = FALSE
+  RETURNING user_id, referred_by
+),
+manage_referral_rewards AS (
+  INSERT INTO referral_rewards (referral_code, coupons, total_referrals)
+  SELECT
+    referred_by AS referral_code,
+    1 AS coupons,
+    1 AS total_referrals
+  FROM mark_service_completed
+  WHERE referred_by IS NOT NULL
+  ON CONFLICT (referral_code)
+  DO UPDATE
+  SET
+    coupons = referral_rewards.coupons + 1,
+    total_referrals = referral_rewards.total_referrals + 1
+  RETURNING referral_code
+),
+update_user_referred_by AS (
+  UPDATE "user"
+  SET referred_by = (SELECT referred_by FROM mark_service_completed LIMIT 1) -- Ensure single row
+  WHERE user_id = (SELECT user_id FROM mark_service_completed LIMIT 1) -- Ensure single row
+  RETURNING user_id
+),
+delete_accepted AS (
+  DELETE FROM accepted
+  WHERE notification_id = $3
+  RETURNING *
+),
+delete_servicetracking AS (
+  DELETE FROM servicetracking
+  WHERE notification_id = $3
+  RETURNING *
+)
+SELECT
+  ua.user_id,
+  ua.service_booked,
+  ua.worker_id,
+  COUNT(da.*) AS deleted_accepted,
+  COUNT(ds.*) AS deleted_servicetracking
+FROM update_accepted ua
+LEFT JOIN delete_accepted da ON TRUE
+LEFT JOIN delete_servicetracking ds ON TRUE
+GROUP BY ua.user_id, ua.service_booked, ua.worker_id;
+
     `;
 
     const values = [
-      totalAmount,
-      paymentMethod,
-      decodedId,
-      end_time,
-      paymentMethod,
-      totalAmount,
+      totalAmount, // $1
+      paymentMethod, // $2
+      decodedId, // $3
+      end_time, // $4
     ];
+
     const combinedResult = await client.query(combinedQuery, values);
-
-    const deleteQuery = `
-      DELETE FROM accepted
-      WHERE notification_id = $1
-    `;
-
-    const deleteQueryResult = await client.query(deleteQuery, [decodedId]);
 
     if (combinedResult.rows.length === 0) {
       return res.status(404).json({ error: "Notification not found." });
     }
 
     const row = combinedResult.rows[0];
-    const { user_id, service_booked, worker_id, fcm_tokens } = row;
+    const { user_id, service_booked, worker_id } = row;
 
-    // Proceed to send notifications if FCM tokens are available
-    if (fcm_tokens.length > 0) {
-      const multicastMessage = {
-        tokens: fcm_tokens,
-        notification: {
-          title: "Click Solver",
-          body: `Your payment of ₹${totalAmount} has been successfully processed via ${paymentMethod}.`,
-        },
-        data: {
-          notification_id: decodedId.toString(),
-          screen: "Home",
-        },
-      };
-
-      try {
-        const response = await getMessaging().sendEachForMulticast(
-          multicastMessage
-        );
-        response.responses.forEach((resItem, index) => {
-          if (!resItem.success) {
-            console.error(
-              `Error sending message to token ${fcm_tokens[index]}:`,
-              resItem.error
-            );
-          }
-        });
-      } catch (error) {
-        console.error("Error sending notifications:", error);
-        return res.status(500).json({ error: "Error sending notifications." });
-      }
-    }
-
-    // Create a background action for the user
+    // Proceed to send notifications if applicable
     const screen = "";
     const encodedNotificationId = Buffer.from(decodedId.toString()).toString(
       "base64"
@@ -9006,6 +9044,8 @@ const processPayment = async (req, res) => {
       service_booked
     );
 
+    await updateWorkerAction(worker_id, encodedNotificationId, screen);
+
     return res.status(200).json({ message: "Payment processed successfully" });
   } catch (error) {
     console.error("Error processing payment:", error);
@@ -9015,18 +9055,21 @@ const processPayment = async (req, res) => {
   }
 };
 
+// main.1
 // const processPayment = async (req, res) => {
 //   const { totalAmount, paymentMethod, decodedId } = req.body;
 
 //   // Input Validation
 //   if (!totalAmount || !paymentMethod || !decodedId) {
-//     return res.status(400).json({ error: 'Missing required fields: totalAmount, paymentMethod, and decodedId.' });
+//     return res.status(400).json({
+//       error:
+//         "Missing required fields: totalAmount, paymentMethod, and decodedId.",
+//     });
 //   }
 
 //   try {
 //     const end_time = new Date();
 
-//     // Single query using CTEs to update servicecall and accepted tables
 //     const combinedQuery = `
 //       WITH update_servicecall AS (
 //         UPDATE servicecall
@@ -9046,37 +9089,96 @@ const processPayment = async (req, res) => {
 //           )
 //         FROM update_servicecall us
 //         WHERE a.notification_id = us.notification_id
-//         RETURNING a.user_id, a.service_booked, a.worker_id
+//         RETURNING a.*
+//       ),
+//       insert_completenotifications AS (
+//         INSERT INTO completenotifications (
+//           accepted_id,
+//           notification_id,
+//           user_id,
+//           user_notification_id,
+//           service_booked,
+//           longitude,
+//           latitude,
+//           worker_id,
+//           time
+//         )
+//         SELECT
+//           ua.accepted_id,
+//           ua.notification_id,
+//           ua.user_id,
+//           ua.user_notification_id,
+//           ua.service_booked,
+//           ua.longitude,
+//           ua.latitude,
+//           ua.worker_id,
+//           ua.time
+//         FROM update_accepted ua
+//         WHERE ua.notification_id = $3
+//         ON CONFLICT (accepted_id) DO NOTHING
+//         RETURNING *
+//       ),
+//       delete_accepted AS (
+//         DELETE FROM accepted
+//         WHERE notification_id = $3
+//         RETURNING *
+//       ),
+//       delete_servicetracking AS (
+//         DELETE FROM servicetracking
+//         WHERE notification_id = $3
+//         RETURNING *
+//       ),
+//       update_workerlife AS (
+//         UPDATE workerlife wl
+//         SET
+//           service_counts = wl.service_counts + 1,
+//           money_earned = wl.money_earned + $6,
+//           balance_amount = CASE
+//             WHEN $5 = 'cash' THEN wl.balance_amount - ($6 * 0.12)
+//             ELSE wl.balance_amount + ($6 * 0.88)
+//           END,
+//           cashback_approved_times = COALESCE((wl.service_counts + 1) / 6, 0)
+//         FROM update_accepted ua
+//         WHERE wl.worker_id = ua.worker_id
+//         RETURNING wl.worker_id, wl.balance_amount, wl.cashback_approved_times, wl.service_counts
 //       ),
 //       fetch_fcm AS (
 //         SELECT
 //           u.fcm_token
 //         FROM userfcm u
 //         JOIN update_accepted ua ON u.user_id = ua.user_id
-//       ),
-//       update_workerlife AS (
-//         UPDATE workerlife wl
-//         SET
-//           cashback_approved_times = COALESCE(service_counts / 6, 0)
-//         FROM update_accepted ua
-//         WHERE wl.worker_id = ua.worker_id
-//         RETURNING wl.worker_id, wl.cashback_approved_times
 //       )
 //       SELECT
 //         ua.user_id,
 //         ua.service_booked,
 //         ua.worker_id,
-//         ARRAY_AGG(fcm.fcm_token) AS fcm_tokens
+//         ARRAY_AGG(fcm.fcm_token) AS fcm_tokens,
+//         COUNT(da.*) AS deleted_accepted,
+//         COUNT(ds.*) AS deleted_servicetracking
 //       FROM update_accepted ua
 //       LEFT JOIN fetch_fcm fcm ON TRUE
+//       LEFT JOIN delete_accepted da ON TRUE
+//       LEFT JOIN delete_servicetracking ds ON TRUE
 //       GROUP BY ua.user_id, ua.service_booked, ua.worker_id;
 //     `;
 
-//     const values = [totalAmount, paymentMethod, decodedId, end_time];
-
+//     const values = [
+//       totalAmount,
+//       paymentMethod,
+//       decodedId,
+//       end_time,
+//       paymentMethod,
+//       totalAmount,
+//     ];
 //     const combinedResult = await client.query(combinedQuery, values);
 
-//     // Check if any records were returned
+//     const deleteQuery = `
+//       DELETE FROM accepted
+//       WHERE notification_id = $1
+//     `;
+
+//     const deleteQueryResult = await client.query(deleteQuery, [decodedId]);
+
 //     if (combinedResult.rows.length === 0) {
 //       return res.status(404).json({ error: "Notification not found." });
 //     }
@@ -9084,57 +9186,56 @@ const processPayment = async (req, res) => {
 //     const row = combinedResult.rows[0];
 //     const { user_id, service_booked, worker_id, fcm_tokens } = row;
 
-//     // Update worker life details
-//     const serviceResult = await updateWorkerLifeDetails(worker_id, totalAmount);
-
 //     // Proceed to send notifications if FCM tokens are available
 //     if (fcm_tokens.length > 0) {
-//       // Create a multicast message object for all tokens
 //       const multicastMessage = {
-//         tokens: fcm_tokens, // An array of tokens to send the same message to
+//         tokens: fcm_tokens,
 //         notification: {
 //           title: "Click Solver",
 //           body: `Your payment of ₹${totalAmount} has been successfully processed via ${paymentMethod}.`,
 //         },
 //         data: {
 //           notification_id: decodedId.toString(),
-//           screen: 'Home'
+//           screen: "Home",
 //         },
 //       };
 
 //       try {
-//         // Use sendEachForMulticast to send the same message to multiple tokens
-//         const response = await getMessaging().sendEachForMulticast(multicastMessage);
-
-//         // Log the responses for each token
+//         const response = await getMessaging().sendEachForMulticast(
+//           multicastMessage
+//         );
 //         response.responses.forEach((resItem, index) => {
-//           if (resItem.success) {
-//             // Optionally log successful sends
-//             // console.log(`Message sent successfully to token ${fcm_tokens[index]}`);
-//           } else {
-//             console.error(`Error sending message to token ${fcm_tokens[index]}:`, resItem.error);
+//           if (!resItem.success) {
+//             console.error(
+//               `Error sending message to token ${fcm_tokens[index]}:`,
+//               resItem.error
+//             );
 //           }
 //         });
 //       } catch (error) {
-//         console.error('Error sending notifications:', error);
-//         return res.status(500).json({ error: 'Error sending notifications.' });
+//         console.error("Error sending notifications:", error);
+//         return res.status(500).json({ error: "Error sending notifications." });
 //       }
-//     } else {
-//       console.error('No FCM tokens to send the message to.');
-//       // Optionally, decide whether to proceed or not. Here, we'll proceed.
 //     }
 
 //     // Create a background action for the user
 //     const screen = "";
-//     const encodedNotificationId = Buffer.from(decodedId.toString()).toString("base64");
-//     await createUserBackgroundAction(user_id, encodedNotificationId, screen, service_booked);
+//     const encodedNotificationId = Buffer.from(decodedId.toString()).toString(
+//       "base64"
+//     );
+//     await createUserBackgroundAction(
+//       user_id,
+//       encodedNotificationId,
+//       screen,
+//       service_booked
+//     );
 
-//     // Respond with success
-//     return res.status(200).json({ message: 'Payment processed successfully' });
-
+//     return res.status(200).json({ message: "Payment processed successfully" });
 //   } catch (error) {
-//     console.error('Error processing payment:', error);
-//     return res.status(500).json({ error: 'An error occurred while processing the payment' });
+//     console.error("Error processing payment:", error);
+//     return res
+//       .status(500)
+//       .json({ error: "An error occurred while processing the payment" });
 //   }
 // };
 
@@ -10190,6 +10291,8 @@ const getWorkDetails = async (req, res) => {
     const queryText = `
       SELECT 
         n.service_booked, 
+        n.discount,
+        n.total_cost,
         un.city, 
         un.area, 
         un.pincode 
@@ -10208,29 +10311,32 @@ const getWorkDetails = async (req, res) => {
 
     if (result.rows.length > 0) {
       const workDetails = result.rows[0];
-      const service_booked = result.rows[0].service_booked;
+      // const service_booked = result.rows[0].service_booked;
 
-      const gstRate = 0.05;
-      const discountRate = 0.05;
+      // const gstRate = 0.05;
+      // const discountRate = 0.05;
 
-      const fetchedTotalAmount = service_booked.reduce(
-        (total, service) => total + (service.cost || 0),
-        0
-      );
+      // const fetchedTotalAmount = service_booked.reduce(
+      //   (total, service) => total + (service.cost || 0),
+      //   0
+      // );
 
-      const gstAmount = fetchedTotalAmount * gstRate;
-      const cgstAmount = fetchedTotalAmount * gstRate;
-      const discountAmount = fetchedTotalAmount * discountRate;
-      const fetchedFinalTotalAmount =
-        fetchedTotalAmount + gstAmount + cgstAmount - discountAmount;
+      // const gstAmount = fetchedTotalAmount * gstRate;
+      // const cgstAmount = fetchedTotalAmount * gstRate;
+      // const discountAmount = fetchedTotalAmount * discountRate;
+      // const fetchedFinalTotalAmount =
+      //   fetchedTotalAmount + gstAmount + cgstAmount - discountAmount;
 
-      const paymentDetails = {
-        gstAmount,
-        cgstAmount,
-        discountAmount,
-        fetchedFinalTotalAmount,
-      };
-      res.status(200).json({ workDetails, paymentDetails });
+      // const paymentDetails = {
+      //   gstAmount,
+      //   cgstAmount,
+      //   discountAmount,
+      //   fetchedFinalTotalAmount,
+      // };
+
+      // const fetchedFinalTotalAmount = fetchedTotalAmount - discount;
+
+      res.status(200).json({ workDetails });
     } else {
       res.status(404).json({ error: "Notification not found" });
     }
@@ -10366,4 +10472,5 @@ module.exports = {
   workerWorkingStatusUpdated,
   getServicesRegisterPhoneNumber,
   registerUser,
+  userCoupons,
 };
