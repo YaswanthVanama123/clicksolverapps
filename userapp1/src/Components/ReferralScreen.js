@@ -25,6 +25,12 @@ const ReferralScreen = () => {
     alert('Referral link copied to clipboard!');
   };
 
+  const referrals = [
+    {id: 1, name: 'Alikana Teja', status: 'Pending'},
+    {id: 2, name: 'John Doe', status: 'Completed'},
+    {id: 3, name: 'Jane Smith', status: 'Pending'},
+  ];
+
   const shareReferralCode = async () => {
     try {
       const result = await Share.share({
@@ -44,6 +50,28 @@ const ReferralScreen = () => {
       console.error('Error sharing:', error.message);
     }
   };
+
+  const renderReferralItem = ({item}) => (
+    <View style={styles.referralItem}>
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText}>
+          {item.name.charAt(0).toUpperCase()}
+        </Text>
+      </View>
+      <View style={styles.referralDetails}>
+        <Text style={styles.referralName}>{item.name}</Text>
+        <Text
+          style={[
+            styles.referralStatus,
+            item.status === 'Pending'
+              ? styles.statusPending
+              : styles.statusCompleted,
+          ]}>
+          {item.status}
+        </Text>
+      </View>
+    </View>
+  );
 
   const shareViaWhatsApp = () => {
     const whatsappMessage = `Join me on this amazing app! Use my referral code: ${referralCode}. Download the app now: ${referralLink}`;
