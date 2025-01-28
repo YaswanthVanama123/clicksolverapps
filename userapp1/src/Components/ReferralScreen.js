@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -9,27 +9,70 @@ import {
   Share,
   Linking,
   PermissionsAndroid,
-  Alert,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import axios from 'axios';
+import EncryptedStorage from 'react-native-encrypted-storage';
 import Contacts from 'react-native-contacts';
 
 const ReferralScreen = () => {
-  const referralCode = 'V87LCFQLT8';
+  // const referralCode = 'V87LCFQLT8';
   const referralLink = `https://example.com/download?referralCode=${referralCode}`;
   const [contacts, setContacts] = useState([]);
   const [showContacts, setShowContacts] = useState(false);
+  const [referrals, setReferrals] = useState([]);
+  const [referralCode, setReferralCode] = useState(null);
+
+  useEffect(() => {
+    const fetchReferrals = async () => {
+      try {
+        const token = await EncryptedStorage.getItem('cs_token');
+        console.log(token);
+
+        const response = await axios.get(
+          'https://backend.clicksolver.com/api/user/referrals',
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        console.log('Original Data:', response.data);
+        const data = response.data[0];
+        setReferralCode(data.referralCode);
+
+        if (Array.isArray(response.data) && response.data.length > 0) {
+          // Transform the data and ensure no value is null
+          const transformedData = response.data.map((item, index) => ({
+            id: index, // Use the index as the ID
+            name: item.name ?? 'Unknown', // Default to 'Unknown' if null or undefined
+            status: item.status_completed === true ? 'success' : 'pending', // Map status
+          }));
+
+          console.log('Transformed Data:', transformedData);
+          setReferrals(transformedData);
+        } else {
+          setReferrals([]); // Empty array if no referrals
+        }
+      } catch (error) {
+        console.log('Error in referral fetch:', error);
+      }
+    };
+
+    fetchReferrals();
+  }, []);
 
   const copyLinkToClipboard = () => {
     Clipboard.setString(referralLink);
-    alert('Referral link copied to clipboard!');
   };
 
-  const referrals = [
-    {id: 1, name: 'Alikana Teja', status: 'Pending'},
-    {id: 2, name: 'John Doe', status: 'Completed'},
-    {id: 3, name: 'Jane Smith', status: 'Pending'},
-  ];
+  // const referrals = [
+  //   {id: 1, name: 'Alikana Teja', status: 'Pending'},
+  //   {id: 2, name: 'John Doe', status: 'Completed'},
+  //   {id: 3, name: 'Jane Smith', status: 'Pending'},
+  // ];
 
   const shareReferralCode = async () => {
     try {
@@ -84,7 +127,6 @@ const ReferralScreen = () => {
         if (supported) {
           return Linking.openURL(whatsappUrl);
         } else {
-          alert('WhatsApp is not installed on your device');
         }
       })
       .catch(err => console.error('Error opening WhatsApp:', err));
@@ -136,10 +178,6 @@ const ReferralScreen = () => {
     try {
       const permission = await requestContactsPermission();
       if (!permission) {
-        Alert.alert(
-          'Permission Denied',
-          'You need to allow access to contacts to use this feature.',
-        );
         return;
       }
 
@@ -148,15 +186,10 @@ const ReferralScreen = () => {
       setShowContacts(true);
     } catch (error) {
       console.error('Error fetching contacts:', error);
-      Alert.alert('Error', 'Failed to fetch contacts.');
     }
   };
 
   const inviteContact = contact => {
-    Alert.alert(
-      'Invite Sent',
-      `An invite has been sent to ${contact.displayName}.`,
-    );
     // Add logic to send invite via SMS or other methods here
   };
 
@@ -214,20 +247,13 @@ const ReferralScreen = () => {
 
       {/* Conditional Rendering for Contacts or Referrals */}
       {!showContacts ? (
-        <FlatList
-          data={[{id: 1, name: 'Alikana Teja'}]}
-          keyExtractor={item => item.id.toString()}
-          renderItem={({item}) => (
-            <View style={styles.referralItem}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {item.name.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-              <Text style={styles.referralName}>{item.name}</Text>
-            </View>
-          )}
-        />
+        data.length > 0 && (
+          <FlatList
+            data={referrals}
+            keyExtractor={item => item.id.toString()}
+            renderItem={renderReferralItem}
+          />
+        )
       ) : (
         <FlatList
           data={contacts}

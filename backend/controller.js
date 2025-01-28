@@ -9469,7 +9469,6 @@ const workerDetails = async (req, res, notification_id) => {
 
 const getServiceCompletedDetails = async (req, res) => {
   const { notification_id } = req.body;
-  // console.log("getServiceCompletedDetails",notification_id)
 
   try {
     // Combine all steps into a single query with a transaction
@@ -9560,6 +9559,7 @@ const getServiceCompletedDetails = async (req, res) => {
               cn.service_booked, 
               cn.longitude, 
               cn.latitude, 
+              cn.total_cost,
               un.area, 
               un.city, 
               un.pincode, 
@@ -9581,6 +9581,7 @@ const getServiceCompletedDetails = async (req, res) => {
           data.service_booked, 
           data.longitude, 
           data.latitude, 
+          data.total_cost,
           data.area, 
           data.city, 
           data.pincode, 
@@ -10346,6 +10347,39 @@ const getWorkDetails = async (req, res) => {
   }
 };
 
+const userReferrals = async (req, res) => {
+  try {
+    const userId = parseInt(req.user.id, 10); // Convert userId to an integer
+
+    // Execute the query and return the result rows directly
+    const result = await client.query(
+      `
+      SELECT 
+        u1.referral_code AS referralCode,
+        u2.name,
+        u2.service_completed
+      FROM "user" u1
+      LEFT JOIN "user" u2 ON u2.referred_by = u1.referral_code
+      WHERE u1.user_id = $1
+      `,
+      [userId]
+    );
+
+    // If no rows are returned, send a 404 response
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "User not found or no referrals available" });
+    }
+
+    // Send the raw result rows directly
+    return res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error fetching user referrals:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 module.exports = {
   getUserById,
   getElectricianServices,
@@ -10473,4 +10507,5 @@ module.exports = {
   getServicesRegisterPhoneNumber,
   registerUser,
   userCoupons,
+  userReferrals,
 };

@@ -126,6 +126,7 @@ const {
   getServicesRegisterPhoneNumber,
   registerUser,
   userCoupons,
+  userReferrals,
 } = require("./controller.js");
 
 const router = express.Router();
@@ -727,6 +728,8 @@ router.post(
 );
 
 router.post("/accept/request", authenticateWorkerToken, acceptRequest);
+
+router.get("/user/referrals", authenticateToken, userReferrals);
 
 router.post("/work/completion/cancel", workCompletionCancel);
 

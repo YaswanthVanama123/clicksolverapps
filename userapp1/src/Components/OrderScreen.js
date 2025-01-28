@@ -89,17 +89,22 @@ const OrderScreen = () => {
 
   // --- QUANTITY LOGIC ---
   const incrementQuantity = index => {
-    setServices(prevServices =>
-      prevServices.map((service, i) =>
-        i === index
-          ? {
-              ...service,
-              quantity: service.quantity + 1,
-              totalCost: service.cost * (service.quantity + 1),
-            }
-          : service,
-      ),
-    );
+    setServices(prevServices => {
+      const updatedServices = prevServices.map((service, i) => {
+        if (i === index) {
+          const updatedQuantity = service.quantity + 1;
+          return {
+            ...service,
+            quantity: updatedQuantity,
+            cost: (service.cost / (updatedQuantity - 1)) * updatedQuantity, // Recalculate the total cost
+
+            // Removed the incorrect cost update
+          };
+        }
+        return service;
+      });
+      return updatedServices;
+    });
   };
 
   const addAddress = async () => {
@@ -117,19 +122,27 @@ const OrderScreen = () => {
   };
 
   const decrementQuantity = index => {
-    setServices(prevServices =>
-      prevServices.map((service, i) =>
-        i === index
-          ? {
+    setServices(prevServices => {
+      const updatedServices = prevServices.map((service, i) => {
+        if (i === index) {
+          if (service.quantity > 1) {
+            const updatedQuantity = service.quantity - 1;
+            const perUnitCost = service.cost / service.quantity; // Calculate per-unit cost based on current total cost
+            const updatedCost = perUnitCost * updatedQuantity; // Recalculate total cost based on updated quantity
+
+            return {
               ...service,
-              quantity: service.quantity > 0 ? service.quantity - 1 : 0,
-              totalCost:
-                service.cost *
-                (service.quantity > 0 ? service.quantity - 1 : 0),
-            }
-          : service,
-      ),
-    );
+              quantity: updatedQuantity,
+              cost: updatedCost, // Update cost only if quantity > 1
+            };
+          }
+          // If quantity is 1, do not update cost
+          return service;
+        }
+        return service;
+      });
+      return updatedServices;
+    });
   };
 
   // --- COUPON CONFIG ---
@@ -146,14 +159,14 @@ const OrderScreen = () => {
       maxDiscount: 75,
       minOrderValue: 249,
       // Condition: completed === 0 => first-timer
-      isAvailable: () => completed === 0,
+      isAvailable: () => completed === false,
     },
     35: {
       label: 'Get 35% OFF on orders above ₹149 – Save up to ₹55!',
       maxDiscount: 55,
       minOrderValue: 149,
       // Condition: completed === 0 => first-timer
-      isAvailable: () => completed === 0,
+      isAvailable: () => completed === false,
     },
   };
 
@@ -242,7 +255,7 @@ const OrderScreen = () => {
                     <Text style={styles.quantityBtnText}>+</Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={styles.itemPrice}>₹{service.totalCost}</Text>
+                <Text style={styles.itemPrice}>₹{service.cost}</Text>
               </View>
             </View>
           ))}
@@ -404,12 +417,15 @@ const OrderScreen = () => {
         </View>
 
         {/* Delivery address */}
-        <Text style={styles.addressQuestion}>
-          Where would you like us to send your skilled worker?
-        </Text>
-        <TouchableOpacity style={styles.addressBtn} onPress={addAddress}>
-          <Text style={styles.addressBtnText}>Add address</Text>
-        </TouchableOpacity>
+        {/* Add Address Section (at the bottom) */}
+        <View style={styles.bottomSection}>
+          <Text style={styles.addressQuestion}>
+            Where would you like us to send your skilled worker?
+          </Text>
+          <TouchableOpacity style={styles.addressBtn} onPress={addAddress}>
+            <Text style={styles.addressBtnText}>Add address</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -640,4 +656,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  // bottomSection: {
+  //   flex: 1,
+  //   position: 'absolute',
+  //   bottom: 0,
+  //   width: '100%',
+  //   backgroundColor: '#fff',
+  //   padding: 16,
+  //   borderTopLeftRadius: 10,
+  //   borderTopRightRadius: 10,
+  //   elevation: 3,
+  // },
 });

@@ -105,7 +105,12 @@ const LoginScreen = () => {
         await EncryptedStorage.setItem('cs_token', token);
 
         // Navigate one screen back
-        navigation.goBack();
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
+        );
       } else if (status === 205) {
         // Worker not signed up, navigate to signup
         navigation.navigate('SignupDetails', {phone_number: phoneNumber});

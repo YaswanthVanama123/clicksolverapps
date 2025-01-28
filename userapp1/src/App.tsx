@@ -88,7 +88,7 @@ function TabNavigator() {
       />
       <Tab.Screen
         name="Bookings"
-        component={ReferralScreen}
+        component={RecentServices}
         options={{headerShown: false}}
       />
       <Tab.Screen
