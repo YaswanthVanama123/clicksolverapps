@@ -21,6 +21,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import LottieView from 'lottie-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SingleService = () => {
   const navigation = useNavigation();
@@ -35,6 +36,7 @@ const SingleService = () => {
   const [originalTotal, setOriginalAmount] = useState(0);
   const [loginModalVisible, setLoginModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
+  const insets = useSafeAreaInsets();
 
   const fetchDetails = useCallback(async () => {
     try {
@@ -249,8 +251,8 @@ const SingleService = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-    <View style={styles.container}>
-      <ScrollView>
+    <View style={{ flex: 1 }}>
+    <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}>
         {/* Top Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.imageIcons} onPress={handleBackPress}>
@@ -368,27 +370,26 @@ const SingleService = () => {
         </View>
       </ScrollView>
 
-      {/* Bottom Cart Bar */}
-      {totalAmount > 0 && (
-        
-        <View style={styles.cartContainer}>
-          <View>
-            {bookedServices.some(
-              service => service.originalCost !== service.cost,
-            ) && (
-              <Text style={styles.originalAmount}>
-                <Text style={styles.crossedText}>₹{originalTotal}</Text>
-              </Text>
-            )}
-            <Text style={styles.ammount}>Total: ₹{totalAmount}</Text>
-          </View>
-          <TouchableOpacity
-            onPress={handleBookNow}
-            style={styles.buttonContainer}>
-            <Text style={styles.buttonText}>View</Text>
-          </TouchableOpacity>
+{/* Bottom Cart Bar */}
+{totalAmount > 0 && (
+      <View style={[styles.cartContainer, { paddingBottom: insets.bottom }]}>
+        <View>
+          {bookedServices.some(
+            service => service.originalCost !== service.cost
+          ) && (
+            <Text style={styles.originalAmount}>
+              <Text style={styles.crossedText}>₹{originalTotal}</Text>
+            </Text>
+          )}
+          <Text style={styles.amount}>Total: ₹{totalAmount}</Text>
         </View>
-      )}
+        <TouchableOpacity
+          onPress={handleBookNow}
+          style={styles.buttonContainer}>
+          <Text style={styles.buttonText}>View</Text>
+        </TouchableOpacity>
+      </View>
+    )}
 
       {/* Modal - Booked Services */}
       <Modal
@@ -663,21 +664,27 @@ const styles = StyleSheet.create({
   //    BOTTOM CART BAR
   // ---------------------
   cartContainer: {
-    position: 'absolute',
-    bottom: 0,
+    position: 'absolute', // Stick to the bottom
+    bottom: -30,            // Align at the very bottom
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '100%',
     backgroundColor: '#FFFFFF',
-    padding: 15,
+    paddingVertical: 15,  // Adequate padding for content
     paddingHorizontal: 25,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: -2 }, // Elevation shadow for a nice look
     shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 4,
+    shadowRadius: 5,
+    elevation: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    zIndex: 10, // Ensure it's above other components
   },
+  
+  
   buttonContainer: {
     backgroundColor: '#ff4500',
     padding: 10,
@@ -710,6 +717,7 @@ const styles = StyleSheet.create({
   // ---------------------
   modalContainer: {
     flex: 1,
+    marginTop:70,
     justifyContent: 'flex-end',
     alignItems: 'flex-end',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',

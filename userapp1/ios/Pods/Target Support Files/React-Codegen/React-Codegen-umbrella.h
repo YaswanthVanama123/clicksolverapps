@@ -53,6 +53,8 @@
 #import "RNContactsSpecJSI.h"
 #import "rnmapbox_maps_specs/rnmapbox_maps_specs.h"
 #import "rnmapbox_maps_specsJSI.h"
+#import "RNPermissionsSpec/RNPermissionsSpec.h"
+#import "RNPermissionsSpecJSI.h"
 #import "rnscreens/rnscreens.h"
 #import "rnscreensJSI.h"
 #import "rnsvg/rnsvg.h"

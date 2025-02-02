@@ -6,7 +6,8 @@ import axios from 'axios';
 import messaging from '@react-native-firebase/messaging';
 import PushNotification from 'react-native-push-notification';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import {PermissionsAndroid} from 'react-native';
+import {PermissionsAndroid,Platform} from 'react-native';
+import {requestMultiple, checkMultiple, PERMISSIONS, RESULTS} from 'react-native-permissions';
 import Feather from 'react-native-vector-icons/Feather';
 import Entypo from 'react-native-vector-icons/Entypo';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -108,45 +109,85 @@ function TabNavigator() {
 function App() {
   const navigationRef = useRef(null);
 
-  // Request user permissions for notifications
-  async function requestUserPermission() {
-    const authStatus = await messaging().requestPermission();
-    const enabled =
-      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-
-    if (enabled) {
-      console.log('Authorization status:', authStatus);
-    } else {
-      console.log('Notification permission not granted');
-    }
-  }
-
-  // Request notification permission for Android
-  async function requestNotificationPermission() {
-    const granted = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-      {
-        title: 'Notification Permission',
-        message:
-          'This app needs access to your notifications so you can receive important updates.',
-        buttonNeutral: 'Ask Me Later',
-        buttonNegative: 'Cancel',
-        buttonPositive: 'OK',
-      },
+  async function requestAllPermissions() {
+    const permissions = {
+      ios: [
+        PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
+        PERMISSIONS.IOS.LOCATION_ALWAYS,
+        PERMISSIONS.IOS.NOTIFICATIONS,
+        PERMISSIONS.IOS.CONTACTS,
+      ],
+      android: [
+        PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
+        PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION,
+        PERMISSIONS.ANDROID.ACCESS_BACKGROUND_LOCATION,
+        PERMISSIONS.ANDROID.POST_NOTIFICATIONS,
+        PERMISSIONS.ANDROID.READ_CONTACTS,
+      ],
+    };
+  
+    const osPermissions = Platform.OS === 'ios' ? permissions.ios : permissions.android;
+  
+    // Check current permission statuses
+    const currentStatuses = await checkMultiple(osPermissions);
+    console.log('Current Permission Statuses:', currentStatuses);
+  
+    // Request permissions if not already granted
+    const permissionsToRequest = osPermissions.filter(
+      (perm) => currentStatuses[perm] !== RESULTS.GRANTED
     );
-    if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-      console.log('You can use the notifications');
+  
+    if (permissionsToRequest.length > 0) {
+      const newStatuses = await requestMultiple(permissionsToRequest);
+      console.log('Updated Permission Statuses:', newStatuses);
     } else {
-      console.log('Notification permission denied');
+      console.log('All necessary permissions are already granted.');
     }
   }
+  
+
+  // Request user permissions for notifications
+  // async function requestUserPermission() {
+  //   const authStatus = await messaging().requestPermission();
+  //   const enabled =
+  //     authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+  //     authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+  //   if (enabled) {
+  //     console.log('Authorization status:', authStatus);
+  //   } else {
+  //     console.log('Notification permission not granted');
+  //   }
+  // }
+
+  // // Request notification permission for Android
+  // async function requestNotificationPermission() {
+  //   const granted = await PermissionsAndroid.request(
+  //     PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+  //     {
+  //       title: 'Notification Permission',
+  //       message:
+  //         'This app needs access to your notifications so you can receive important updates.',
+  //       buttonNeutral: 'Ask Me Later',
+  //       buttonNegative: 'Cancel',
+  //       buttonPositive: 'OK',
+  //     },
+  //   );
+  //   if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+  //     console.log('You can use the notifications');
+  //   } else {
+  //     console.log('Notification permission denied');
+  //   }
+  // }
+
+
 
   // Get FCM tokens and store them
   async function getTokens() {
     try {
       const fcm = await EncryptedStorage.getItem('fcm_token');
       const cs_token = await EncryptedStorage.getItem('cs_token');
+      console.log(fcm);
       if (!fcm && cs_token) {
         const token = await messaging().getToken();
         await EncryptedStorage.setItem('fcm_token', token);
@@ -295,8 +336,9 @@ function App() {
     });
 
     // Request permissions and get tokens
-    requestUserPermission();
-    requestNotificationPermission();
+    requestAllPermissions();
+    // requestUserPermission();
+    // requestNotificationPermission();
     getTokens();
 
     // Create notification channel

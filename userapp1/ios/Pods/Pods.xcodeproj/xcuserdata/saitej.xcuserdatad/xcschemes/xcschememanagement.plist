@@ -249,6 +249,16 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>RNPermissions-RNPermissionsPrivacyInfo.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>RNPermissions.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>RNSVG.xcscheme</key>
 		<dict>
 			<key>isShown</key>

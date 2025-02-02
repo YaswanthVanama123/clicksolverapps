@@ -7,6 +7,9 @@ platform :ios, '16.0'
 require_relative '../node_modules/react-native/scripts/react_native_pods'
 require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
 
+# ✅ Corrected react-native-permissions setup
+require_relative '../node_modules/react-native-permissions/scripts/setup'
+
 prepare_react_native_project!
 
 use_frameworks! :linkage => :static
@@ -20,12 +23,20 @@ target 'userapp1' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+  # ✅ Setup permissions for react-native-permissions
+  setup_permissions([
+    'LocationWhenInUse',    # Foreground location access
+    'LocationAlways',       # Background location access
+    'Notifications',        # Push notifications
+    'Contacts'              # Access to user contacts
+  ])
+
   # If you have a test target:
   target 'userapp1Tests' do
     inherit! :complete
   end
 
-  # >>> ADD THE LINE BELOW <<<
+  # Push Notifications Dependency
   pod 'RNCPushNotificationIOS', :path => '../node_modules/@react-native-community/push-notification-ios'
 
   post_install do |installer|
