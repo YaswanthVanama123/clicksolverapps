@@ -17,7 +17,7 @@ import {
   CommonActions,
   useFocusEffect,
 } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/FontAwesome';
+import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import axios from 'axios';
 import uuid from 'react-native-uuid';
@@ -168,7 +168,7 @@ const PaintingServices = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack}>
-          <FontAwesome6 name="arrow-left-long" size={20} color="#000" />
+            <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{name}</Text>
       </View>

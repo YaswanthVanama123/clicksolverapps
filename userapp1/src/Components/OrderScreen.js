@@ -145,6 +145,10 @@ const OrderScreen = () => {
     });
   };
 
+  const handleBackPress = () => {
+    navigation.goBack();
+  };
+
   // --- COUPON CONFIG ---
   const COUPONS = {
     30: {
@@ -230,10 +234,10 @@ const OrderScreen = () => {
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Header */}
         <View style={styles.headerContainer}>
-          <TouchableOpacity style={styles.backArrow}>
+          <TouchableOpacity style={styles.backArrow} onPress={handleBackPress}>
             <Text style={{fontSize: 18}}>{'<'}</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Venapusa home foods</Text>
+          <Text style={styles.headerTitle}>My Cart</Text>
         </View>
 
         {/* Item Card */}
@@ -263,9 +267,9 @@ const OrderScreen = () => {
           {/* Buttons below the items */}
           <View style={styles.horizontalButtons}>
             <TouchableOpacity style={styles.textBtn}>
-              <Text style={styles.textBtnLabel}>Cooking requests</Text>
+              <Text style={styles.textBtnLabel}>Add any more</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.textBtn}>
+            <TouchableOpacity style={styles.textBtn} onPress={handleBackPress}>
               <Text style={styles.textBtnLabel}>+ Add more items</Text>
             </TouchableOpacity>
           </View>
