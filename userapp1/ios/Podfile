@@ -1,67 +1,48 @@
+# Define podspec sources
+source 'https://cdn.cocoapods.org/'
+source 'https://github.com/CocoaPods/Specs.git'
+
+platform :ios, '16.0'
+
 require_relative '../node_modules/react-native/scripts/react_native_pods'
 require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
 
-# Set the minimum iOS deployment target
-platform :ios, '16.0'
-
-# Initialize React Native project settings
 prepare_react_native_project!
 
-# Enable frameworks with static linkage globally
 use_frameworks! :linkage => :static
-$RNFirebaseAsStaticFramework = true # Enable Firebase as static frameworks
+$RNFirebaseAsStaticFramework = true
 
-# Optional: Override linkage based on environment variable
-linkage = ENV['USE_FRAMEWORKS']
-if linkage
-  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
-  use_frameworks! :linkage => linkage.to_sym
-else
-  use_modular_headers! # Use modular headers globally to resolve Swift pod issues
-end
-
-# Define the main application target
 target 'userapp1' do
-  # Integrate native modules (e.g., React Native modules)
   config = use_native_modules!
 
-  # Integrate React Native dependencies
   use_react_native!(
-    :path => config[:reactNativePath]
+    :path => config[:reactNativePath],
+    :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
-  # Define a test target
+  # If you have a test target:
   target 'userapp1Tests' do
     inherit! :complete
-    # Pods for testing can be added here
   end
 
-  # Post-installation steps to configure pods
+  # >>> ADD THE LINE BELOW <<<
+  pod 'RNCPushNotificationIOS', :path => '../node_modules/@react-native-community/push-notification-ios'
+
   post_install do |installer|
-    # Perform React Native post-install steps
     react_native_post_install(
       installer,
       config[:reactNativePath],
       :mac_catalyst_enabled => false,
-      :ccache_enabled => false # Set to true if ccache is configured
+      :ccache_enabled => false
     )
-
-    # Iterate through each pod target to enforce build settings
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
-        # Enforce a consistent iOS Deployment Target across all pods
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
 
-        # Exclude arm64 architecture for specific pods to resolve build issues on Apple Silicon
         if target.name == 'Flipper'
           config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
         end
-
-        # Additional configurations can be added here if needed
       end
     end
   end
 end
-
-# Remove the React-Codegen target (not necessary)
-# If codegen is explicitly required, its setup is handled in the default `use_react_native!` method.

@@ -20,6 +20,7 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import Icon from 'react-native-vector-icons/Ionicons';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import LottieView from 'lottie-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const SingleService = () => {
   const navigation = useNavigation();
@@ -218,6 +219,8 @@ const SingleService = () => {
         setModalVisible(false);
         navigation.push('OrderScreen', {serviceName: bookedServices});
       } else {
+        console.log("login screen");
+        setModalVisible(false);
         setLoginModalVisible(true);
       }
     } catch (error) {
@@ -245,6 +248,7 @@ const SingleService = () => {
   );
 
   return (
+    <SafeAreaView style={styles.safeArea}>
     <View style={styles.container}>
       <ScrollView>
         {/* Top Header */}
@@ -366,6 +370,7 @@ const SingleService = () => {
 
       {/* Bottom Cart Bar */}
       {totalAmount > 0 && (
+        
         <View style={styles.cartContainer}>
           <View>
             {bookedServices.some(
@@ -487,10 +492,15 @@ const SingleService = () => {
         </View>
       </Modal>
     </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },  
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',

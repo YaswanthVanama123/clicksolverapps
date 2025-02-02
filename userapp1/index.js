@@ -1,12 +1,13 @@
-import {AppRegistry} from 'react-native';
+// import { AppRegistry, Text } from 'react-native';
+
+// const YaswanthApp = () => {
+//   return <Text style={{ fontSize: 24, textAlign: 'center', marginTop: 50 }}></Text>;
+// };
+
+// AppRegistry.registerComponent("userapp1", () => YaswanthApp);
+
+
+import { AppRegistry } from 'react-native';
 import App from './src/App';
-import {name as appName} from './app.json';
-import crashlytics from '@react-native-firebase/crashlytics';
 
-// Set up a global error handler
-ErrorUtils.setGlobalHandler((error, isFatal) => {
-  crashlytics().recordError(error);
-  console.log('Global Error:', error);
-});
-
-AppRegistry.registerComponent(appName, () => App);
+AppRegistry.registerComponent("userapp1", () => App);

@@ -24,6 +24,7 @@ import uuid from 'react-native-uuid';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import LottieView from 'lottie-react-native'; // Import LottieView
 import PushNotification from 'react-native-push-notification';
+import { SafeAreaView } from 'react-native-safe-area-context';
 // import Config from 'react-native-config';
 
 const PaintingServices = () => {
@@ -162,6 +163,7 @@ const PaintingServices = () => {
   }, [navigation]);
 
   return (
+    <SafeAreaView style={styles.safeArea}>
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
@@ -212,6 +214,7 @@ const PaintingServices = () => {
         ))}
       </ScrollView>
     </View>
+    </SafeAreaView>
   );
 };
 
@@ -238,6 +241,10 @@ const ServiceItem = React.memo(
 );
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },  
   container: {
     flex: 1,
     backgroundColor: '#ffffff',

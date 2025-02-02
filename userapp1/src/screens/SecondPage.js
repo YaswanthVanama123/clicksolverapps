@@ -23,6 +23,7 @@ import Foundation from 'react-native-vector-icons/Foundation';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 // import Config from 'react-native-config';
 import crashlytics from '@react-native-firebase/crashlytics';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 function ServiceApp() {
   const [services, setServices] = useState([]);
@@ -320,6 +321,7 @@ function ServiceApp() {
   };
 
   return (
+    <SafeAreaView style={styles.safeArea}>
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.userInfo}>
@@ -366,7 +368,7 @@ function ServiceApp() {
         <View
           style={[
             {
-              paddingBottom: messageBoxDisplay ? 65 : 10,
+              paddingBottom: messageBoxDisplay ? 135 : 70,
             },
           ]}>
           <View style={styles.sectionHeader}>
@@ -519,14 +521,19 @@ function ServiceApp() {
         </View>
       </Modal>
     </View>
+    </SafeAreaView>
   );
 }
 
 const screenWidth = Dimensions.get('window').width; // Get screen width
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
+  },  
+  container: {
+  
     backgroundColor: '#FFFFFF',
     padding: 20,
     paddingBottom: 0,
