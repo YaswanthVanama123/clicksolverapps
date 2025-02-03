@@ -64,6 +64,11 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>FirebaseAuthInterop.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>FirebaseCore-FirebaseCore_Privacy.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -90,6 +95,16 @@
 			<false/>
 		</dict>
 		<key>FirebaseCoreInternal.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>FirebaseCrashlytics-FirebaseCrashlytics_Privacy.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>FirebaseCrashlytics.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -130,6 +145,16 @@
 			<false/>
 		</dict>
 		<key>FirebaseMessaging.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>FirebaseRemoteConfigInterop.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>FirebaseSessions.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -209,6 +234,16 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>PromisesSwift-Promises_Privacy.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>PromisesSwift.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>RCT-Folly.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -270,6 +305,11 @@
 			<false/>
 		</dict>
 		<key>RNFBAuth.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>RNFBCrashlytics.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -429,11 +469,6 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
-		<key>React-RuntimeHermes.xcscheme</key>
-		<dict>
-			<key>isShown</key>
-			<false/>
-		</dict>
 		<key>React-callinvoker.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -459,7 +494,7 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
-		<key>React-hermes.xcscheme</key>
+		<key>React-jsc.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -609,11 +644,6 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
-		<key>hermes-engine.xcscheme</key>
-		<dict>
-			<key>isShown</key>
-			<false/>
-		</dict>
 		<key>leveldb-library-leveldb_Privacy.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -640,6 +670,11 @@
 			<false/>
 		</dict>
 		<key>lottie-react-native.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>nanopb-nanopb_Privacy.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>

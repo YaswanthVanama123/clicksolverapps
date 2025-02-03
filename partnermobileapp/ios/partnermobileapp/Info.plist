@@ -12,6 +12,10 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundleVersion</key>
+	<string>1.0.0</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This app requires access to your location for better service and navigation.</string>
 	<key>NSLocationAlwaysUsageDescription</key>

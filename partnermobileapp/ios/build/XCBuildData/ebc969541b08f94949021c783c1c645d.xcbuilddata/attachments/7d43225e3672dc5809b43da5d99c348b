@@ -1,0 +1,5 @@
+ extern const unsigned char partnermobileappVersionString[];
+ extern const double partnermobileappVersionNumber;
+
+ const unsigned char partnermobileappVersionString[] __attribute__ ((used)) = "@(#)PROGRAM:partnermobileapp  PROJECT:partnermobileapp-1" "\n";
+ const double partnermobileappVersionNumber __attribute__ ((used)) = (double)1.;

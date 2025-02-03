@@ -32,7 +32,6 @@
     "React-runtimeexecutor": [
       "0.74.5"
     ],
-    "React-jsi": [],
-    "hermes-engine": []
+    "React-jsi": []
   }
 }

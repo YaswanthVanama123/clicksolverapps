@@ -1,11 +1,10 @@
 #import "AppDelegate.h"
 #import <React/RCTBundleURLProvider.h>
 #import <React/RCTRootView.h>
-#import <Firebase.h> // Import Firebase
+#import <Firebase.h> // Firebase
 #import <UserNotifications/UserNotifications.h> // Push Notifications
 #import <RNCPushNotificationIOS.h> // Push Notifications for iOS
 #import <TSBackgroundFetch/TSBackgroundFetch.h> // Background Fetch
-#import "RNBootSplash.h" // Splash Screen
 
 #ifdef FB_SONARKIT_ENABLED
 #import <FlipperKit/FlipperClient.h>
@@ -16,6 +15,9 @@ static void InitializeFlipper(UIApplication *application) {
   [client start];
 }
 #endif
+
+@interface AppDelegate () <UNUserNotificationCenterDelegate>
+@end
 
 @implementation AppDelegate
 
@@ -31,7 +33,7 @@ static void InitializeFlipper(UIApplication *application) {
 
   // ✅ Register Push Notifications
   UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
-  center.delegate = self;
+  center.delegate = self; // Ensure AppDelegate conforms to UNUserNotificationCenterDelegate
   [application registerForRemoteNotifications];
 
   // ✅ Setup Background Fetch for Geolocation
@@ -53,9 +55,6 @@ static void InitializeFlipper(UIApplication *application) {
   self.window.rootViewController = rootViewController;
   [self.window makeKeyAndVisible];
 
-  // ✅ Initialize Splash Screen
-  [RNBootSplash initWithStoryboard:@"LaunchScreen" rootView:rootView];
-
   return YES;
 }
 
@@ -70,6 +69,13 @@ static void InitializeFlipper(UIApplication *application) {
 // Handle Push Notifications
 - (void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
   [RNCPushNotificationIOS didRegisterForRemoteNotificationsWithDeviceToken:deviceToken];
+}
+
+// Implement UNUserNotificationCenterDelegate methods if needed
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center
+       willPresentNotification:(UNNotification *)notification
+         withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler {
+  completionHandler(UNNotificationPresentationOptionAlert + UNNotificationPresentationOptionSound);
 }
 
 @end
