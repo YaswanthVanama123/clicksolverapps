@@ -10,6 +10,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Rating = ({navigation}) => {
   const [rating, setRating] = useState(0);
@@ -34,52 +35,58 @@ const Rating = ({navigation}) => {
   };
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity
-        style={styles.closeButton}
-        onPress={() => navigation.goBack()}>
-        <Icon name="close" size={20} color="#FFFFFF" />
-      </TouchableOpacity>
-      <Text style={styles.modalTitle}>How was the quality of your call?</Text>
-      <Text style={styles.modalSubtitle}>
-        Your answer is anonymous. This helps us improve our service.
-      </Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => navigation.goBack()}>
+          <Icon name="close" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
+        <Text style={styles.modalTitle}>How was the quality of your call?</Text>
+        <Text style={styles.modalSubtitle}>
+          Your answer is anonymous. This helps us improve our service.
+        </Text>
 
-      {/* Star Rating */}
-      <View style={styles.starsContainer}>
-        {[1, 2, 3, 4, 5].map(star => (
-          <TouchableOpacity
-            key={star}
-            onPress={() => setRating(star)}
-            style={styles.starButton}>
-            <MaterialCommunityIcons
-              name={star <= rating ? 'star' : 'star-outline'}
-              size={30}
-              color={star <= rating ? '#FFD700' : '#A9A9A9'}
-            />
-          </TouchableOpacity>
-        ))}
+        {/* Star Rating */}
+        <View style={styles.starsContainer}>
+          {[1, 2, 3, 4, 5].map(star => (
+            <TouchableOpacity
+              key={star}
+              onPress={() => setRating(star)}
+              style={styles.starButton}>
+              <MaterialCommunityIcons
+                name={star <= rating ? 'star' : 'star-outline'}
+                size={30}
+                color={star <= rating ? '#FFD700' : '#A9A9A9'}
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Comment Box */}
+        <TextInput
+          style={styles.commentBox}
+          placeholder="Write your comment here..."
+          placeholderTextColor="#A9A9A9"
+          multiline
+          value={comment}
+          onChangeText={setComment}
+        />
+
+        {/* Submit Button */}
+        <TouchableOpacity onPress={submitFeedback} style={styles.submitButton}>
+          <Text style={styles.submitText}>Submit</Text>
+        </TouchableOpacity>
       </View>
-
-      {/* Comment Box */}
-      <TextInput
-        style={styles.commentBox}
-        placeholder="Write your comment here..."
-        placeholderTextColor="#A9A9A9"
-        multiline
-        value={comment}
-        onChangeText={setComment}
-      />
-
-      {/* Submit Button */}
-      <TouchableOpacity onPress={submitFeedback} style={styles.submitButton}>
-        <Text style={styles.submitText}>Submit</Text>
-      </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  }, 
   container: {
     flex: 1,
     backgroundColor: '#1D2951',

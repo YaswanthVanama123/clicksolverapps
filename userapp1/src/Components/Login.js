@@ -3,6 +3,7 @@ import {View, TextInput, Button, StyleSheet, Alert} from 'react-native';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import {useNavigation, CommonActions} from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Login = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -69,27 +70,33 @@ const Login = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        placeholder="Phone Number"
-        value={phoneNumber}
-        onChangeText={setPhoneNumber}
-        keyboardType="phone-pad"
-        maxLength={10}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Name"
-        value={name}
-        onChangeText={setName}
-      />
-      <Button title="Login" onPress={login} />
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <TextInput
+          style={styles.input}
+          placeholder="Phone Number"
+          value={phoneNumber}
+          onChangeText={setPhoneNumber}
+          keyboardType="phone-pad"
+          maxLength={10}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Name"
+          value={name}
+          onChangeText={setName}
+        />
+        <Button title="Login" onPress={login} />
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  }, 
   container: {
     flex: 1,
     justifyContent: 'center',

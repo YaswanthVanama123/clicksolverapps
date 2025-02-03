@@ -97,6 +97,7 @@ const ServiceTrackingItemScreen = () => {
   }, []);
 
   return (
+    <SafeAreaView style={styles.safeArea}>
     <View style={styles.container}>
       <View style={styles.header}>
         <Icon
@@ -275,10 +276,15 @@ const ServiceTrackingItemScreen = () => {
         </TouchableOpacity>
       </ScrollView>
     </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  }, 
   container: {
     flex: 1,
     backgroundColor: '#ffffff',

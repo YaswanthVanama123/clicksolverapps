@@ -119,7 +119,7 @@ const WaitingUser = () => {
     try {
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       if (!jwtToken) {
-        Alert.alert('Error', 'No token found');
+        // Alert.alert('Error', 'No token found');
         return;
       }
 
@@ -167,11 +167,11 @@ const WaitingUser = () => {
           );
         }
       } else {
-        Alert.alert('Error', 'Unexpected response status');
+        // Alert.alert('Error', 'Unexpected response status');
       }
     } catch (error) {
       console.error('Error fetching nearby workers:', error);
-      Alert.alert('Error', 'Failed to fetch nearby workers');
+      // Alert.alert('Error', 'Failed to fetch nearby workers');
     }
   };
 
@@ -289,10 +289,10 @@ const WaitingUser = () => {
     attemptCountRef.current += 1;
 
     if (attemptCountRef.current > 3) {
-      Alert.alert(
-        'No workers found',
-        'Unable to find workers after 3 attempts. Please try again later.',
-      );
+      // Alert.alert(
+      //   'No workers found',
+      //   'Unable to find workers after 3 attempts. Please try again later.',
+      // );
       await axios.post(
         `https://backend.clicksolver.com/api/user/cancellation`,
         {

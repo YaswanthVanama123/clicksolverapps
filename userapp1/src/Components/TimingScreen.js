@@ -15,6 +15,7 @@ import {
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
 import Svg, {Circle} from 'react-native-svg';
+import { SafeAreaView } from 'react-native-safe-area-context';
 // import Config from 'react-native-config';
 
 const TimingScreen = () => {
@@ -267,87 +268,89 @@ const TimingScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Time Tracking</Text>
-      </View>
-      <View style={styles.timeBoxes}>
-        <TimeBox label="Hours" value={hours} />
-        <TimeBox label="Minutes" value={minutes} />
-        <TimeBox label="Seconds" value={seconds} />
-      </View>
-      <View style={styles.chargeInfo}>
-        <Text style={styles.mainText}>The minimum charge is 149₹</Text>
-        <Text style={styles.subText}>
-          Next Every half hour, you will be charged for 49₹
-        </Text>
-        <Text style={styles.subText}>The minimum charge is 30 minutes</Text>
-      </View>
-      <View style={styles.progressWrapper}>
-        <View style={styles.progressInfo}>
-          <Text style={styles.progressText}>Progress</Text>
-          <Text style={styles.progressPercentage}>50%</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Time Tracking</Text>
         </View>
-        <View style={styles.progressBarBackground}>
-          <View style={styles.progressBar} />
+        <View style={styles.timeBoxes}>
+          <TimeBox label="Hours" value={hours} />
+          <TimeBox label="Minutes" value={minutes} />
+          <TimeBox label="Seconds" value={seconds} />
         </View>
-      </View>
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={handleCompleteClick}>
-          <Text style={styles.buttonText}>Complete</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={handleCompleteClick}>
-          <Text style={styles.buttonText}>Resend</Text>
-        </TouchableOpacity>
-      </View>
-      {showMessage && (
-        <View style={styles.Messagecontainer}>
-          <View style={styles.card}>
-            <View style={styles.timerContainer}>
-              <Svg width="150" height="150" viewBox="0 0 100 100">
-                <Circle
-                  cx="50"
-                  cy="50"
-                  r="44"
-                  stroke="#71717A"
-                  strokeWidth="8"
-                  fill="transparent"
-                />
-                <Circle
-                  cx="50"
-                  cy="50"
-                  r="44"
-                  stroke="#18181B"
-                  strokeWidth="8"
-                  strokeDasharray="276.46"
-                  strokeDashoffset={strokeDashoffset}
-                  strokeLinecap="round"
-                  fill="transparent"
-                />
-              </Svg>
-              <Text style={styles.timerText}>{timeLeft}s</Text>
-            </View>
-            <Text style={styles.statusText}>
-              {isWaiting
-                ? 'Waiting for worker response...'
-                : 'No response received'}
-            </Text>
-            <TouchableOpacity
-              style={styles.resendButton}
-              onPress={handleCancelMessageBox}>
-              <Text style={styles.resendButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            {!isWaiting && (
-              <TouchableOpacity
-                style={styles.resendButton}
-                onPress={handleCompleteClick}>
-                <Text style={styles.resendButtonText}>Resend Request</Text>
-              </TouchableOpacity>
-            )}
+        <View style={styles.chargeInfo}>
+          <Text style={styles.mainText}>The minimum charge is 149₹</Text>
+          <Text style={styles.subText}>
+            Next Every half hour, you will be charged for 49₹
+          </Text>
+          <Text style={styles.subText}>The minimum charge is 30 minutes</Text>
+        </View>
+        <View style={styles.progressWrapper}>
+          <View style={styles.progressInfo}>
+            <Text style={styles.progressText}>Progress</Text>
+            <Text style={styles.progressPercentage}>50%</Text>
+          </View>
+          <View style={styles.progressBarBackground}>
+            <View style={styles.progressBar} />
           </View>
         </View>
-      )}
-    </View>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.button} onPress={handleCompleteClick}>
+            <Text style={styles.buttonText}>Complete</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={handleCompleteClick}>
+            <Text style={styles.buttonText}>Resend</Text>
+          </TouchableOpacity>
+        </View>
+        {showMessage && (
+          <View style={styles.Messagecontainer}>
+            <View style={styles.card}>
+              <View style={styles.timerContainer}>
+                <Svg width="150" height="150" viewBox="0 0 100 100">
+                  <Circle
+                    cx="50"
+                    cy="50"
+                    r="44"
+                    stroke="#71717A"
+                    strokeWidth="8"
+                    fill="transparent"
+                  />
+                  <Circle
+                    cx="50"
+                    cy="50"
+                    r="44"
+                    stroke="#18181B"
+                    strokeWidth="8"
+                    strokeDasharray="276.46"
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                    fill="transparent"
+                  />
+                </Svg>
+                <Text style={styles.timerText}>{timeLeft}s</Text>
+              </View>
+              <Text style={styles.statusText}>
+                {isWaiting
+                  ? 'Waiting for worker response...'
+                  : 'No response received'}
+              </Text>
+              <TouchableOpacity
+                style={styles.resendButton}
+                onPress={handleCancelMessageBox}>
+                <Text style={styles.resendButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              {!isWaiting && (
+                <TouchableOpacity
+                  style={styles.resendButton}
+                  onPress={handleCompleteClick}>
+                  <Text style={styles.resendButtonText}>Resend Request</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
+      </View>
+    </SafeAreaView>
   );
 };
 
@@ -359,6 +362,10 @@ const TimeBox = ({label, value}) => (
 );
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  }, 
   container: {
     flex: 1,
     padding: 16,

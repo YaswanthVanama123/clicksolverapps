@@ -14,6 +14,7 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import {useNavigation} from '@react-navigation/native';
 import axios from 'axios';
+import { SafeAreaView } from 'react-native-safe-area-context';
 // import Config from 'react-native-config';
 
 const ProfileScreen = () => {
@@ -111,84 +112,90 @@ const ProfileScreen = () => {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.detailsContainer}>
-        <View style={styles.profileContainer}>
-          <View style={styles.profileImage}>
-            <MaterialIcons name="person" size={40} color="#FFFFFF" />
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.detailsContainer}>
+          <View style={styles.profileContainer}>
+            <View style={styles.profileImage}>
+              <MaterialIcons name="person" size={40} color="#FFFFFF" />
+            </View>
+            <Text style={styles.profileName}>{account.name}</Text>
           </View>
-          <Text style={styles.profileName}>{account.name}</Text>
-        </View>
 
-        <View style={styles.inputContainer}>
-          <MaterialIcons name="email" size={24} color="#4a4a4a" />
-          <TextInput
-            value={account.email}
-            editable={false}
-            style={styles.input}
-          />
-        </View>
-
-        <View style={styles.phoneContainer}>
-          <View style={styles.flagAndCode}>
-            <Image
-              source={{uri: 'https://flagcdn.com/w40/in.png'}}
-              style={styles.flagIcon}
+          <View style={styles.inputContainer}>
+            <MaterialIcons name="email" size={24} color="#4a4a4a" />
+            <TextInput
+              value={account.email}
+              editable={false}
+              style={styles.input}
             />
-            <Text style={styles.countryCode}>+91</Text>
           </View>
-          <TextInput
-            value={account.phoneNumber}
-            editable={false}
-            style={styles.phoneInput}
-          />
+
+          <View style={styles.phoneContainer}>
+            <View style={styles.flagAndCode}>
+              <Image
+                source={{uri: 'https://flagcdn.com/w40/in.png'}}
+                style={styles.flagIcon}
+              />
+              <Text style={styles.countryCode}>+91</Text>
+            </View>
+            <TextInput
+              value={account.phoneNumber}
+              editable={false}
+              style={styles.phoneInput}
+            />
+          </View>
         </View>
-      </View>
 
-      <View style={styles.divider} />
+        <View style={styles.divider} />
 
-      <View style={styles.optionsContainer}>
-        <MenuItem
-          icon="book"
-          text="My Services"
-          onPress={() => navigation.push('RecentServices')}
-        />
-        <MenuItem
-          icon="help"
-          text="Help & Support"
-          onPress={() => navigation.push('Help')}
-        />
-        <MenuItem
-          icon="star"
-          text="Account Delete"
-          onPress={() => navigation.push('DeleteAccount', {details: account})}
-        />
-        <MenuItem
-          icon="mode-edit-outline"
-          text="Edit Profile"
-          onPress={() => navigation.push('EditProfile', {details: account})}
-        />
-        <MenuItem
-          icon="mode-edit-outline"
-          text="Refer & Earn"
-          onPress={() => navigation.push('ReferralScreen')}
-        />
-        <MenuItem
-          icon="info"
-          text="About CS"
-          onPress={() => console.log('Navigate to About CS')}
-        />
+        <View style={styles.optionsContainer}>
+          <MenuItem
+            icon="book"
+            text="My Services"
+            onPress={() => navigation.push('RecentServices')}
+          />
+          <MenuItem
+            icon="help"
+            text="Help & Support"
+            onPress={() => navigation.push('Help')}
+          />
+          <MenuItem
+            icon="star"
+            text="Account Delete"
+            onPress={() => navigation.push('DeleteAccount', {details: account})}
+          />
+          <MenuItem
+            icon="mode-edit-outline"
+            text="Edit Profile"
+            onPress={() => navigation.push('EditProfile', {details: account})}
+          />
+          <MenuItem
+            icon="mode-edit-outline"
+            text="Refer & Earn"
+            onPress={() => navigation.push('ReferralScreen')}
+          />
+          <MenuItem
+            icon="info"
+            text="About CS"
+            onPress={() => console.log('Navigate to About CS')}
+          />
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 const screenWidth = Dimensions.get('window').width;
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  }, 
   container: {
     flexGrow: 1,
     backgroundColor: '#FFFFFF',

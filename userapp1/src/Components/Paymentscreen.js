@@ -21,6 +21,7 @@ import {
 import axios from 'axios';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import Entypo from 'react-native-vector-icons/Entypo';
+import { SafeAreaView } from 'react-native-safe-area-context';
 // import Config from 'react-native-config';
 
 const Payment = ({route}) => {
@@ -222,6 +223,7 @@ const Payment = ({route}) => {
   };
 
   return (
+    <SafeAreaView style={styles.safeArea}>
     <View style={styles.mainContainer}>
       <ScrollView style={styles.container}>
         {/* Service Summary Section */}
@@ -407,10 +409,15 @@ const Payment = ({route}) => {
         </TouchableOpacity>
       </View>
     </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  }, 
   mainContainer: {flex: 1},
   iconContainer: {
     backgroundColor: '#ff4500',

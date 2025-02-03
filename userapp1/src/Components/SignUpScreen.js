@@ -14,6 +14,7 @@ import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import {useRoute, useNavigation, CommonActions} from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const SignUpScreen = () => {
   const [fullName, setFullName] = useState('');
@@ -72,49 +73,51 @@ const SignUpScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ImageBackground
-          source={{uri: BG_IMAGE_URL}}
-          style={styles.backgroundImage}
-          resizeMode="stretch">
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}>
-            <FontAwesome6 name="arrow-left-long" size={24} color="#1D2951" />
-          </TouchableOpacity>
+     <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoidingView}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <ImageBackground
+            source={{uri: BG_IMAGE_URL}}
+            style={styles.backgroundImage}
+            resizeMode="stretch">
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}>
+              <FontAwesome6 name="arrow-left-long" size={24} color="#1D2951" />
+            </TouchableOpacity>
 
-          <Text style={styles.title}>Sign Up</Text>
+            <Text style={styles.title}>Sign Up</Text>
 
-          <InputField
-            placeholder="Full Name"
-            value={fullName}
-            onChangeText={setFullName}
-          />
+            <InputField
+              placeholder="Full Name"
+              value={fullName}
+              onChangeText={setFullName}
+            />
 
-          <InputField
-            placeholder="Email Address"
-            value={email}
-            onChangeText={setEmail}
-            icon={<Icon name="envelope" size={20} color="#1D2951" />}
-            keyboardType="email-address"
-          />
+            <InputField
+              placeholder="Email Address"
+              value={email}
+              onChangeText={setEmail}
+              icon={<Icon name="envelope" size={20} color="#1D2951" />}
+              keyboardType="email-address"
+            />
 
-          <InputField
-            placeholder="Referral Code (Optional)"
-            value={referralCode}
-            onChangeText={setReferralCode}
-            icon={<FontAwesome6 name="gift" size={20} color="#1D2951" />}
-          />
+            <InputField
+              placeholder="Referral Code (Optional)"
+              value={referralCode}
+              onChangeText={setReferralCode}
+              icon={<FontAwesome6 name="gift" size={20} color="#1D2951" />}
+            />
 
-          <TouchableOpacity style={styles.button} onPress={handleSignUp}>
-            <Text style={styles.buttonText}>Sign Up</Text>
-          </TouchableOpacity>
-        </ImageBackground>
-      </KeyboardAvoidingView>
-    </View>
+            <TouchableOpacity style={styles.button} onPress={handleSignUp}>
+              <Text style={styles.buttonText}>Sign Up</Text>
+            </TouchableOpacity>
+          </ImageBackground>
+        </KeyboardAvoidingView>
+      </View>
+    </SafeAreaView>
   );
 };
 
@@ -133,6 +136,10 @@ const InputField = ({placeholder, value, onChangeText, icon, keyboardType}) => (
 );
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  }, 
   container: {
     flex: 1,
     justifyContent: 'center',

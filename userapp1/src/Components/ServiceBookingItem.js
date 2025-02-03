@@ -15,6 +15,7 @@ import {useNavigation, CommonActions, useRoute} from '@react-navigation/native';
 import axios from 'axios';
 import Entypo from 'react-native-vector-icons/Entypo';
 import AntDesign from 'react-native-vector-icons/AntDesign';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // import Config from 'react-native-config';
 
@@ -110,6 +111,7 @@ const ServiceBookingItem = () => {
   }, []);
 
   return (
+    <SafeAreaView style={styles.safeArea}>
     <View style={styles.container}>
       <View style={styles.header}>
         <Icon
@@ -271,10 +273,15 @@ const ServiceBookingItem = () => {
         </TouchableOpacity>
       </ScrollView>
     </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  }, 
   container: {
     flex: 1,
     backgroundColor: '#ffffff',

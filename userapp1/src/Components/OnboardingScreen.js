@@ -2,6 +2,7 @@ import React, {useRef} from 'react';
 import {View, Text, Image, StyleSheet, TouchableOpacity} from 'react-native';
 import Swiper from 'react-native-swiper';
 import LinearGradient from 'react-native-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const OnboardingScreen = () => {
   const swiperRef = useRef(null); // Create a ref for the Swiper
@@ -46,6 +47,7 @@ const OnboardingScreen = () => {
   };
 
   return (
+    <SafeAreaView style={styles.safeArea}>
     <Swiper
       ref={swiperRef}
       showsButtons={false}
@@ -82,10 +84,15 @@ const OnboardingScreen = () => {
         </View>
       ))}
     </Swiper>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  }, 
   slide: {
     flex: 1,
   },

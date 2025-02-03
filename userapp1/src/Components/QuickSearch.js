@@ -1,6 +1,7 @@
 import React, {useState, useEffect, useCallback} from 'react';
 import {View, TextInput, StyleSheet} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const QuickSearch = () => {
   const initialPlaceholder = 'Search for ';
@@ -48,22 +49,25 @@ const QuickSearch = () => {
   }, [navigation]);
 
   return (
-    <View style={styles.container}>
-      <TextInput
-        style={styles.searchInput}
-        placeholder={placeholderText}
-        placeholderTextColor="#000"
-        fontFamily="RobotoSlab-Medium"
-        value={searchQuery}
-        onChangeText={handleInputChange}
-        onFocus={handleFocus}
-        onBlur={() => setTimeout(() => setIsFocused(false), 100)}
-      />
-    </View>
+      
+        <View style={styles.container}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder={placeholderText}
+            placeholderTextColor="#000"
+            fontFamily="RobotoSlab-Medium"
+            value={searchQuery}
+            onChangeText={handleInputChange}
+            onFocus={handleFocus}
+            onBlur={() => setTimeout(() => setIsFocused(false), 100)}
+          />
+        </View>
+      
   );
 };
 
 const styles = StyleSheet.create({
+
   container: {
     width: '100%',
     padding: 10,

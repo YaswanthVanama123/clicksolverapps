@@ -1,6 +1,7 @@
 import axios from 'axios';
 import React, {useEffect} from 'react';
 import {View, Text, StyleSheet, ScrollView, Image} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {SvgXml} from 'react-native-svg'; // Install react-native-svg for icons
 
 const electricianIcon = `
@@ -9,6 +10,7 @@ const electricianIcon = `
 
 const Help = () => {
   return (
+    <SafeAreaView style={styles.safeArea}>
     <ScrollView style={styles.container}>
       {/* How It Works Section */}
       <View style={styles.section}>
@@ -90,10 +92,15 @@ const Help = () => {
         </View>
       </View>
     </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },  
   container: {
     flex: 1,
     backgroundColor: '#f7fafc',

@@ -285,14 +285,39 @@ const UserLocation = () => {
     );
   };
 
+  // const handleConfirmLocation = async () => {
+  //   setShowMessageBox(true);
+  //   try {
+  //     const token = await EncryptedStorage.getItem('cs_token');
+  //     if (!token) {
+  //       console.error('No token found');
+  //       return;
+  //     }
+  //     const response = await axios.get(
+  //       `https://backend.clicksolver.com/api/get/user`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       },
+  //     );
+  //     const data = response.data;
+  //     setAlternatePhoneNumber(data.phone_number || '');
+  //     setAlternateName(data.name);
+  //   } catch (error) {
+  //     console.error('Failed to fetch user data:', error);
+  //   }
+  // };
   const handleConfirmLocation = async () => {
-    setShowMessageBox(true);
+    setShowMessageBox(true); // Open modal
+  
     try {
       const token = await EncryptedStorage.getItem('cs_token');
       if (!token) {
         console.error('No token found');
         return;
       }
+  
       const response = await axios.get(
         `https://backend.clicksolver.com/api/get/user`,
         {
@@ -301,13 +326,23 @@ const UserLocation = () => {
           },
         },
       );
-      const data = response.data;
-      setAlternatePhoneNumber(data.phone_number || '');
-      setAlternateName(data.name);
+  
+      if (response.status === 200) {
+        const data = response.data;
+        console.log('User data fetched:', data);
+        setAlternatePhoneNumber(data.phone_number || '');
+        setAlternateName(data.name);
+      } else {
+        console.warn('Unexpected response:', response);
+      }
     } catch (error) {
       console.error('Failed to fetch user data:', error);
+      Alert.alert('Error', 'Failed to fetch user data. Please try again.');
+      setShowMessageBox(false); // Close modal in case of error
     }
   };
+  
+
 
   const handleBookCommander = () => {
     let hasError = false;
@@ -550,6 +585,10 @@ const UserLocation = () => {
 export default UserLocation;
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  }, 
   page: {
     flex: 1,
   },

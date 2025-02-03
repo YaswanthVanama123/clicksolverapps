@@ -21,6 +21,7 @@ import {
   useNavigation,
 } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const SearchItem = () => {
   const initialPlaceholder = 'Search for ';
@@ -274,115 +275,121 @@ const SearchItem = () => {
   );
 
   return (
-    <View style={styles.mainContainer}>
-      {/* Search bar */}
-      <View style={styles.searchBar}>
-        <TouchableOpacity onPress={handleHome}>
-          <AntDesign
-            name="arrowleft"
-            size={20}
-            color="#000"
-            style={styles.icon}
-          />
-        </TouchableOpacity>
-        <View style={styles.searchInputContainer}>
-          <TextInput
-            ref={inputRef}
-            style={styles.searchInput}
-            placeholder={placeholderText}
-            placeholderTextColor="#000"
-            fontFamily="RobotoSlab-Regular"
-            value={searchQuery}
-            onChangeText={handleInputChange}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setTimeout(() => setIsFocused(false), 100)}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={handleClear} style={styles.clearIcon}>
-              <Entypo name="circle-with-cross" size={20} color="#000" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* If the user is typing and we have suggestions, show them */}
-      {/* Otherwise, show either no results or recents + trending */}
-      <ScrollView
-        style={styles.scrollContainer}
-        keyboardShouldPersistTaps="handled">
-        {/* Show suggestions if there are any and user is focused */}
-        {isFocused && suggestions.length > 0 && (
-          <View style={styles.suggestionsList}>
-            {suggestions.map((item, index) =>
-              renderSuggestionItem(item, index),
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.mainContainer}>
+        {/* Search bar */}
+        <View style={styles.searchBar}>
+          <TouchableOpacity onPress={handleHome}>
+            <AntDesign
+              name="arrowleft"
+              size={20}
+              color="#000"
+              style={styles.icon}
+            />
+          </TouchableOpacity>
+          <View style={styles.searchInputContainer}>
+            <TextInput
+              ref={inputRef}
+              style={styles.searchInput}
+              placeholder={placeholderText}
+              placeholderTextColor="#000"
+              fontFamily="RobotoSlab-Regular"
+              value={searchQuery}
+              onChangeText={handleInputChange}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setTimeout(() => setIsFocused(false), 100)}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={handleClear} style={styles.clearIcon}>
+                <Entypo name="circle-with-cross" size={20} color="#000" />
+              </TouchableOpacity>
             )}
           </View>
-        )}
+        </View>
 
-        {/* No results found scenario */}
-        {searchQuery.length > 0 && suggestions.length === 0 && !loading && (
-          <View style={styles.noResultsContainer}>
-            <MaterialIcons name="search-off" size={45} color="#000" />
-            <Text style={styles.noResultsText}>No results found</Text>
-            <Text style={styles.noResultsSubText}>
-              We couldn't find what you were looking for. Please check your
-              keywords again!
-            </Text>
-            <View
-              style={[styles.horizontalLine, {width: screenWidth, height: 8}]}
-            />
-            <View style={styles.trendingSearchesContainer}>
-              <Text style={styles.sectionTitle}>Trending searches</Text>
-              <View style={styles.trendingItemsContainer}>
-                {renderTrendingSearches()}
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Show Recents + Trending only when there's no search query 
-            or no suggestions (i.e., user hasn't typed or has cleared the input) */}
-        {!searchQuery && suggestions.length === 0 && (
-          <View style={styles.searchSuggestionsContainer}>
-            {/* Recent Searches */}
-            <View style={styles.recentSearchesContainer}>
-              <Text style={styles.sectionTitle}>Recents</Text>
-              {recentSearches.map((item, index) =>
-                renderRecentSearchItem(item, index),
+        {/* If the user is typing and we have suggestions, show them */}
+        {/* Otherwise, show either no results or recents + trending */}
+        <ScrollView
+          style={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled">
+          {/* Show suggestions if there are any and user is focused */}
+          {isFocused && suggestions.length > 0 && (
+            <View style={styles.suggestionsList}>
+              {suggestions.map((item, index) =>
+                renderSuggestionItem(item, index),
               )}
             </View>
+          )}
 
-            <View
-              style={[styles.horizontalLine, {width: screenWidth, height: 8}]}
-            />
-
-            {/* Trending */}
-            <View style={styles.trendingSearchesContainer}>
-              <Text style={styles.sectionTitle}>Trending searches</Text>
-              <View style={styles.trendingItemsContainer}>
-                {renderTrendingSearches()}
+          {/* No results found scenario */}
+          {searchQuery.length > 0 && suggestions.length === 0 && !loading && (
+            <View style={styles.noResultsContainer}>
+              <MaterialIcons name="search-off" size={45} color="#000" />
+              <Text style={styles.noResultsText}>No results found</Text>
+              <Text style={styles.noResultsSubText}>
+                We couldn't find what you were looking for. Please check your
+                keywords again!
+              </Text>
+              <View
+                style={[styles.horizontalLine, {width: screenWidth, height: 8}]}
+              />
+              <View style={styles.trendingSearchesContainer}>
+                <Text style={styles.sectionTitle}>Trending searches</Text>
+                <View style={styles.trendingItemsContainer}>
+                  {renderTrendingSearches()}
+                </View>
               </View>
             </View>
-          </View>
-        )}
+          )}
 
-        {/* Display loading indicator at the bottom if loading */}
-        {loading && (
-          <LottieView
-            source={require('../assets/searchLoading.json')}
-            autoPlay
-            loop
-            style={styles.loadingAnimation}
-          />
-        )}
-      </ScrollView>
-    </View>
+          {/* Show Recents + Trending only when there's no search query 
+              or no suggestions (i.e., user hasn't typed or has cleared the input) */}
+          {!searchQuery && suggestions.length === 0 && (
+            <View style={styles.searchSuggestionsContainer}>
+              {/* Recent Searches */}
+              <View style={styles.recentSearchesContainer}>
+                <Text style={styles.sectionTitle}>Recents</Text>
+                {recentSearches.map((item, index) =>
+                  renderRecentSearchItem(item, index),
+                )}
+              </View>
+
+              <View
+                style={[styles.horizontalLine, {width: screenWidth, height: 8}]}
+              />
+
+              {/* Trending */}
+              <View style={styles.trendingSearchesContainer}>
+                <Text style={styles.sectionTitle}>Trending searches</Text>
+                <View style={styles.trendingItemsContainer}>
+                  {renderTrendingSearches()}
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Display loading indicator at the bottom if loading */}
+          {loading && (
+            <LottieView
+              source={require('../assets/searchLoading.json')}
+              autoPlay
+              loop
+              style={styles.loadingAnimation}
+            />
+          )}
+        </ScrollView>
+      </View>
+    </SafeAreaView>
   );
 };
 
 export default SearchItem;
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },  
   mainContainer: {
     flex: 1,
     backgroundColor: '#fff',

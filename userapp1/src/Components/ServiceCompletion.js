@@ -18,6 +18,7 @@ import {
   CommonActions,
   useFocusEffect,
 } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 // import Config from 'react-native-config';
 
 // Set Mapbox access token
@@ -106,54 +107,60 @@ const ServiceCompletion = () => {
   const {paymentDetails, totalAmount, center} = locationDetails;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>
-        Service Completed with {paymentDetails.name}
-      </Text>
-      <Text style={styles.subHeading}>
-        Collected amount in {paymentDetails.payment_type}
-      </Text>
-
-      <View style={styles.amountContainer}>
-        <Text style={styles.amount}>₹{totalAmount}</Text>
-        <Feather name="check-circle" size={40} color="#4CAF50" />
-      </View>
-
-      <Text style={styles.date}>26/04/2023 05:45 PM</Text>
-      <Text style={styles.serviceType}>{paymentDetails.service}</Text>
-
-      <View style={styles.locationContainer}>
-        <Image
-          style={styles.locationIcon}
-          source={{
-            uri: 'https://i.postimg.cc/rpb2czKR/1000051859-removebg-preview.png',
-          }} // Pin icon
-        />
-        <Text style={styles.locationText}>
-          {paymentDetails.area} {paymentDetails.city}, {paymentDetails.pincode}
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <Text style={styles.heading}>
+          Service Completed with {paymentDetails.name}
         </Text>
-        <Text style={styles.time}>5:45 PM</Text>
-      </View>
+        <Text style={styles.subHeading}>
+          Collected amount in {paymentDetails.payment_type}
+        </Text>
 
-      <Mapbox.MapView style={styles.map}>
-        <Mapbox.Camera zoomLevel={17} centerCoordinate={center} />
-        <Mapbox.PointAnnotation id="current-location" coordinate={center}>
-          <View style={styles.markerContainer}>
-            <Octicons name="dot-fill" size={25} color="#0E52FB" />
-          </View>
-        </Mapbox.PointAnnotation>
-      </Mapbox.MapView>
+        <View style={styles.amountContainer}>
+          <Text style={styles.amount}>₹{totalAmount}</Text>
+          <Feather name="check-circle" size={40} color="#4CAF50" />
+        </View>
 
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.doneButton} onPress={onBackPress}>
-          <Text style={styles.doneText}>Done</Text>
-        </TouchableOpacity>
+        <Text style={styles.date}>26/04/2023 05:45 PM</Text>
+        <Text style={styles.serviceType}>{paymentDetails.service}</Text>
+
+        <View style={styles.locationContainer}>
+          <Image
+            style={styles.locationIcon}
+            source={{
+              uri: 'https://i.postimg.cc/rpb2czKR/1000051859-removebg-preview.png',
+            }} // Pin icon
+          />
+          <Text style={styles.locationText}>
+            {paymentDetails.area} {paymentDetails.city}, {paymentDetails.pincode}
+          </Text>
+          <Text style={styles.time}>5:45 PM</Text>
+        </View>
+
+        <Mapbox.MapView style={styles.map}>
+          <Mapbox.Camera zoomLevel={17} centerCoordinate={center} />
+          <Mapbox.PointAnnotation id="current-location" coordinate={center}>
+            <View style={styles.markerContainer}>
+              <Octicons name="dot-fill" size={25} color="#0E52FB" />
+            </View>
+          </Mapbox.PointAnnotation>
+        </Mapbox.MapView>
+
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.doneButton} onPress={onBackPress}>
+            <Text style={styles.doneText}>Done</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  }, 
   container: {
     flex: 1,
     padding: 20,

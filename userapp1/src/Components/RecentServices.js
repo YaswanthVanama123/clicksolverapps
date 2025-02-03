@@ -209,60 +209,66 @@ const RecentServices = () => {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={handleOutsidePress}>
-      <SafeAreaView style={styles.screenContainer}>
-        <View style={styles.headerContainer}>
-          <View style={styles.sortContainerLeft}>
-            <Feather name="shopping-cart" size={18} color="#212121" />
-            <Text style={styles.headerTitle}>My services</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <TouchableWithoutFeedback onPress={handleOutsidePress}>
+        <SafeAreaView style={styles.screenContainer}>
+          <View style={styles.headerContainer}>
+            <View style={styles.sortContainerLeft}>
+              <Feather name="shopping-cart" size={18} color="#212121" />
+              <Text style={styles.headerTitle}>My services</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setIsFilterVisible(!isFilterVisible)}
+              style={styles.sortContainerRight}>
+              <Text style={styles.sortText}>Sort by Status</Text>
+              <Icon name="filter-list" size={24} color="#000" />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            onPress={() => setIsFilterVisible(!isFilterVisible)}
-            style={styles.sortContainerRight}>
-            <Text style={styles.sortText}>Sort by Status</Text>
-            <Icon name="filter-list" size={24} color="#000" />
-          </TouchableOpacity>
-        </View>
 
-        {/* Filter Dropdown */}
-        {isFilterVisible && (
-          <View style={styles.dropdownContainer}>
-            <Text style={styles.dropdownTitle}>SORT BY STATUS</Text>
-            {filterOptions.map((option, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.dropdownOption}
-                onPress={() => toggleFilter(option)}>
-                <Icon
-                  name={
-                    selectedFilters.includes(option)
-                      ? 'check-box'
-                      : 'check-box-outline-blank'
-                  }
-                  size={20}
-                  color="#4a4a4a"
-                />
-                <Text style={styles.dropdownText}>{option}</Text>
-              </TouchableOpacity>
-            ))}
+          {/* Filter Dropdown */}
+          {isFilterVisible && (
+            <View style={styles.dropdownContainer}>
+              <Text style={styles.dropdownTitle}>SORT BY STATUS</Text>
+              {filterOptions.map((option, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.dropdownOption}
+                  onPress={() => toggleFilter(option)}>
+                  <Icon
+                    name={
+                      selectedFilters.includes(option)
+                        ? 'check-box'
+                        : 'check-box-outline-blank'
+                    }
+                    size={20}
+                    color="#4a4a4a"
+                  />
+                  <Text style={styles.dropdownText}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          <View style={styles.serviceContainer}>
+            <FlatList
+              data={filteredData}
+              renderItem={({item}) => (
+                <ServiceItem item={item} formatDate={formatDate} />
+              )}
+              keyExtractor={(item, index) => index.toString()}
+            />
           </View>
-        )}
-
-        <View style={styles.serviceContainer}>
-          <FlatList
-            data={filteredData}
-            renderItem={({item}) => (
-              <ServiceItem item={item} formatDate={formatDate} />
-            )}
-            keyExtractor={(item, index) => index.toString()}
-          />
-        </View>
-      </SafeAreaView>
-    </TouchableWithoutFeedback>
+        </SafeAreaView>
+      </TouchableWithoutFeedback>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  }, 
   screenContainer: {
     flex: 1,
     backgroundColor: '#f5f5f5',

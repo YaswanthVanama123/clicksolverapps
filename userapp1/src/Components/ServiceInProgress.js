@@ -21,6 +21,7 @@ import {
 } from '@react-navigation/native';
 import axios from 'axios';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 // import Config from 'react-native-config';
 
 const ServiceInProgressScreen = () => {
@@ -183,202 +184,208 @@ const ServiceInProgressScreen = () => {
   };
 
   return (
-    <View style={styles.mainContainer}>
-      <View style={styles.headerContainer}>
-        <FontAwesome6
-          name="arrow-left-long"
-          size={20}
-          color="#212121"
-          style={styles.leftIcon}
-        />
-        <Text style={styles.headerText}>Service In Progress</Text>
-      </View>
-      <ScrollView style={styles.container}>
-        <View style={styles.profileContainer}>
-          <View style={styles.technicianContainer}>
-            <Image
-              source={{
-                uri:
-                  details.profile ||
-                  'https://i.postimg.cc/mZnDzdqJ/IMG-20240929-WA0024.jpg',
-              }}
-              style={styles.technicianImage}
-            />
-            <View style={styles.technicianDetails}>
-              <Text style={styles.technicianName}>{details.name}</Text>
-              <Text style={styles.technicianTitle}>Certified Technician</Text>
-            </View>
-          </View>
-          <Text style={styles.estimatedCompletion}>
-            Estimated Completion: 2 hours
-          </Text>
-          <Text style={styles.statusText}>
-            Status: Working on your{' '}
-            {services.map(service => service.name).join(', ')} to ensure optimal
-            performance.
-          </Text>
-        </View>
-        <View style={styles.houseImageContainer}>
-          <LottieView
-            source={require('../assets/serviceLoading.json')}
-            autoPlay
-            loop
-            style={styles.loadingAnimation}
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.mainContainer}>
+        <View style={styles.headerContainer}>
+          <FontAwesome6
+            name="arrow-left-long"
+            size={20}
+            color="#212121"
+            style={styles.leftIcon}
           />
+          <Text style={styles.headerText}>Service In Progress</Text>
         </View>
-
-        <TouchableOpacity style={styles.button} onPress={handleCompleteClick}>
-          <Text style={styles.buttonText}>Service Completed</Text>
-        </TouchableOpacity>
-
-        <View style={styles.serviceDetailsContainer}>
-          <View style={styles.serviceDetailsHeaderContainer}>
-            <Text style={styles.serviceDetailsTitle}>Service Details</Text>
-            <TouchableOpacity>
-              <Icon name="keyboard-arrow-right" size={24} color="#ff4500" />
-            </TouchableOpacity>
+        <ScrollView style={styles.container}>
+          <View style={styles.profileContainer}>
+            <View style={styles.technicianContainer}>
+              <Image
+                source={{
+                  uri:
+                    details.profile ||
+                    'https://i.postimg.cc/mZnDzdqJ/IMG-20240929-WA0024.jpg',
+                }}
+                style={styles.technicianImage}
+              />
+              <View style={styles.technicianDetails}>
+                <Text style={styles.technicianName}>{details.name}</Text>
+                <Text style={styles.technicianTitle}>Certified Technician</Text>
+              </View>
+            </View>
+            <Text style={styles.estimatedCompletion}>
+              Estimated Completion: 2 hours
+            </Text>
+            <Text style={styles.statusText}>
+              Status: Working on your{' '}
+              {services.map(service => service.name).join(', ')} to ensure optimal
+              performance.
+            </Text>
           </View>
-          <View style={styles.iconDetailsContainer}>
-            <View style={styles.detailsRow}>
-              <Icon name="calendar-today" size={20} color="#ff4500" />
-              <Text style={styles.detailText}>
-                Work started{' '}
-                <Text style={styles.highLightText}>
-                  {formatDate(details.created_at)}
+          <View style={styles.houseImageContainer}>
+            <LottieView
+              source={require('../assets/serviceLoading.json')}
+              autoPlay
+              loop
+              style={styles.loadingAnimation}
+            />
+          </View>
+
+          <TouchableOpacity style={styles.button} onPress={handleCompleteClick}>
+            <Text style={styles.buttonText}>Service Completed</Text>
+          </TouchableOpacity>
+
+          <View style={styles.serviceDetailsContainer}>
+            <View style={styles.serviceDetailsHeaderContainer}>
+              <Text style={styles.serviceDetailsTitle}>Service Details</Text>
+              <TouchableOpacity>
+                <Icon name="keyboard-arrow-right" size={24} color="#ff4500" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.iconDetailsContainer}>
+              <View style={styles.detailsRow}>
+                <Icon name="calendar-today" size={20} color="#ff4500" />
+                <Text style={styles.detailText}>
+                  Work started{' '}
+                  <Text style={styles.highLightText}>
+                    {formatDate(details.created_at)}
+                  </Text>
                 </Text>
-              </Text>
+              </View>
+              <View style={styles.detailsRow}>
+                <Icon name="location-on" size={20} color="#ff4500" />
+                <Text style={styles.detailText}>
+                  Location:{' '}
+                  <Text style={styles.highLightText}>{details.area}</Text>
+                </Text>
+              </View>
             </View>
-            <View style={styles.detailsRow}>
-              <Icon name="location-on" size={20} color="#ff4500" />
-              <Text style={styles.detailText}>
-                Location:{' '}
-                <Text style={styles.highLightText}>{details.area}</Text>
-              </Text>
-            </View>
-          </View>
-          <View>
-            <View style={{marginTop: 20}}>
-              {services.map((service, index) => {
-                const timelineData = generateTimelineData(service.status);
-                return (
-                  <View style={styles.ServiceCardsContainer} key={index}>
-                    <View style={styles.technicianContainer}>
-                      <Image
-                        source={{
-                          uri: service.image,
-                        }}
-                        style={styles.technicianImage}
-                      />
-                      <View style={styles.technicianDetails}>
-                        <Text style={styles.technicianName}>
-                          {service.name}
-                        </Text>
-                        <Text style={styles.technicianTitle}>
-                          Quantity: {service.quantity}
-                        </Text>
+            <View>
+              <View style={{marginTop: 20}}>
+                {services.map((service, index) => {
+                  const timelineData = generateTimelineData(service.status);
+                  return (
+                    <View style={styles.ServiceCardsContainer} key={index}>
+                      <View style={styles.technicianContainer}>
+                        <Image
+                          source={{
+                            uri: service.image,
+                          }}
+                          style={styles.technicianImage}
+                        />
+                        <View style={styles.technicianDetails}>
+                          <Text style={styles.technicianName}>
+                            {service.name}
+                          </Text>
+                          <Text style={styles.technicianTitle}>
+                            Quantity: {service.quantity}
+                          </Text>
+                        </View>
                       </View>
-                    </View>
-                    <Text style={styles.statusText}>
-                      Service Status:{' '}
-                      <Text style={styles.highLightText}>
-                        {timelineData.find(item => item.time)?.title ||
-                          'Pending'}
+                      <Text style={styles.statusText}>
+                        Service Status:{' '}
+                        <Text style={styles.highLightText}>
+                          {timelineData.find(item => item.time)?.title ||
+                            'Pending'}
+                        </Text>
                       </Text>
-                    </Text>
-                    <Text style={styles.statusText}>
-                      Estimated Completion:{' '}
-                      <Text style={styles.highLightText}>2 hours</Text>
-                    </Text>
+                      <Text style={styles.statusText}>
+                        Estimated Completion:{' '}
+                        <Text style={styles.highLightText}>2 hours</Text>
+                      </Text>
 
-                    {/* Timeline Section */}
-                    <View style={styles.sectionContainer}>
-                      <View style={styles.serviceTimeLineContainer}>
-                        <Text style={styles.sectionTitle}>
-                          Service Timeline
-                        </Text>
-                      </View>
-                      <View style={styles.innerContainerLine}>
-                        {timelineData.map((item, idx) => (
-                          <View key={item.key} style={styles.timelineItem}>
-                            <View style={styles.iconAndLineContainer}>
-                              <MaterialCommunityIcons
-                                name="circle"
-                                size={14}
-                                color={item.iconColor}
-                              />
-                              {idx !== timelineData.length - 1 && (
-                                <View
-                                  style={[
-                                    styles.lineSegment,
-                                    {
-                                      backgroundColor:
-                                        timelineData[idx + 1].iconColor,
-                                    },
-                                  ]}
+                      {/* Timeline Section */}
+                      <View style={styles.sectionContainer}>
+                        <View style={styles.serviceTimeLineContainer}>
+                          <Text style={styles.sectionTitle}>
+                            Service Timeline
+                          </Text>
+                        </View>
+                        <View style={styles.innerContainerLine}>
+                          {timelineData.map((item, idx) => (
+                            <View key={item.key} style={styles.timelineItem}>
+                              <View style={styles.iconAndLineContainer}>
+                                <MaterialCommunityIcons
+                                  name="circle"
+                                  size={14}
+                                  color={item.iconColor}
                                 />
-                              )}
-                            </View>
-                            <View style={styles.timelineContent}>
-                              <View style={styles.timelineTextContainer}>
-                                <Text style={styles.timelineText}>
-                                  {item.title}
-                                </Text>
-                                <Text style={styles.timelineTime}>
-                                  {item.time
-                                    ? formatDate(item.time)
-                                    : 'Pending'}
-                                </Text>
+                                {idx !== timelineData.length - 1 && (
+                                  <View
+                                    style={[
+                                      styles.lineSegment,
+                                      {
+                                        backgroundColor:
+                                          timelineData[idx + 1].iconColor,
+                                      },
+                                    ]}
+                                  />
+                                )}
+                              </View>
+                              <View style={styles.timelineContent}>
+                                <View style={styles.timelineTextContainer}>
+                                  <Text style={styles.timelineText}>
+                                    {item.title}
+                                  </Text>
+                                  <Text style={styles.timelineTime}>
+                                    {item.time
+                                      ? formatDate(item.time)
+                                      : 'Pending'}
+                                  </Text>
+                                </View>
                               </View>
                             </View>
-                          </View>
-                        ))}
+                          ))}
+                        </View>
                       </View>
                     </View>
-                  </View>
-                );
-              })}
+                  );
+                })}
+              </View>
             </View>
           </View>
-        </View>
-      </ScrollView>
-      {/* Confirmation Modal for Service Completion */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={confirmationModalVisible}
-        onRequestClose={() => setConfirmationModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.confirmationModalContainer}>
-            <Text style={styles.confirmationTitle}>
-              Confirm Service Completion
-            </Text>
-            <Text style={styles.confirmationSubtitle}>
-              Are you sure you want to mark the service as completed? Please
-              click the button only if the entire work is finished. Once the
-              service is marked as completed, we will no longer track it, and it
-              will be considered successfully completed.
-            </Text>
+        </ScrollView>
+        {/* Confirmation Modal for Service Completion */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={confirmationModalVisible}
+          onRequestClose={() => setConfirmationModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.confirmationModalContainer}>
+              <Text style={styles.confirmationTitle}>
+                Confirm Service Completion
+              </Text>
+              <Text style={styles.confirmationSubtitle}>
+                Are you sure you want to mark the service as completed? Please
+                click the button only if the entire work is finished. Once the
+                service is marked as completed, we will no longer track it, and it
+                will be considered successfully completed.
+              </Text>
 
-            <View style={styles.modalButtonsContainer}>
-              <TouchableOpacity
-                style={styles.modalButtonCancel}
-                onPress={() => setConfirmationModalVisible(false)}>
-                <Text style={styles.modalButtonTextCancel}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalButtonConfirm}
-                onPress={handleConfirmComplete}>
-                <Text style={styles.modalButtonTextConfirm}>Confirm</Text>
-              </TouchableOpacity>
+              <View style={styles.modalButtonsContainer}>
+                <TouchableOpacity
+                  style={styles.modalButtonCancel}
+                  onPress={() => setConfirmationModalVisible(false)}>
+                  <Text style={styles.modalButtonTextCancel}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalButtonConfirm}
+                  onPress={handleConfirmComplete}>
+                  <Text style={styles.modalButtonTextConfirm}>Confirm</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  }, 
   mainContainer: {
     flex: 1,
   },

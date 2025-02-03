@@ -194,112 +194,118 @@ const ReferralScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Back Button */}
-      <TouchableOpacity style={styles.backButton}>
-        <Ionicons name="arrow-back" size={24} color="#212121" />
-      </TouchableOpacity>
-
-      {/* Title and Subtitle */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Refer Friends</Text>
-        <Text style={styles.subtitle}>Invite your friends</Text>
-        <Text style={styles.description}>
-          ...to the cool new way of managing money!
-        </Text>
-      </View>
-
-      {/* How It Works Section */}
-      <View style={styles.howItWorks}>
-        <View style={styles.step}>
-          <Ionicons name="document-text-outline" size={20} color="#ffffff" />
-          <Text style={styles.stepText}>
-            Share your referral link or code with a friend.
-          </Text>
-        </View>
-        <View style={styles.step}>
-          <Ionicons name="person-add-outline" size={20} color="#ffffff" />
-          <Text style={styles.stepText}>
-            Your friend joins using your link or code.
-          </Text>
-        </View>
-        <View style={styles.step}>
-          <Ionicons name="gift-outline" size={20} color="#ffffff" />
-          <Text style={styles.stepText}>
-            Both you and your friend enjoy amazing benefits.
-          </Text>
-        </View>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabs}>
-        <TouchableOpacity
-          style={[styles.tab, !showContacts && styles.activeTab]}
-          onPress={() => setShowContacts(false)}>
-          <Text style={styles.tabText}>Your Referrals</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        {/* Back Button */}
+        <TouchableOpacity style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#212121" />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, showContacts && styles.activeTab]}
-          onPress={fetchContacts}>
-          <Text style={styles.tabText}>Invite Contacts</Text>
-        </TouchableOpacity>
-      </View>
 
-      {/* Conditional Rendering for Contacts or Referrals */}
-      {!showContacts ? (
-        data.length > 0 && (
+        {/* Title and Subtitle */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Refer Friends</Text>
+          <Text style={styles.subtitle}>Invite your friends</Text>
+          <Text style={styles.description}>
+            ...to the cool new way of managing money!
+          </Text>
+        </View>
+
+        {/* How It Works Section */}
+        <View style={styles.howItWorks}>
+          <View style={styles.step}>
+            <Ionicons name="document-text-outline" size={20} color="#ffffff" />
+            <Text style={styles.stepText}>
+              Share your referral link or code with a friend.
+            </Text>
+          </View>
+          <View style={styles.step}>
+            <Ionicons name="person-add-outline" size={20} color="#ffffff" />
+            <Text style={styles.stepText}>
+              Your friend joins using your link or code.
+            </Text>
+          </View>
+          <View style={styles.step}>
+            <Ionicons name="gift-outline" size={20} color="#ffffff" />
+            <Text style={styles.stepText}>
+              Both you and your friend enjoy amazing benefits.
+            </Text>
+          </View>
+        </View>
+
+        {/* Tabs */}
+        <View style={styles.tabs}>
+          <TouchableOpacity
+            style={[styles.tab, !showContacts && styles.activeTab]}
+            onPress={() => setShowContacts(false)}>
+            <Text style={styles.tabText}>Your Referrals</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, showContacts && styles.activeTab]}
+            onPress={fetchContacts}>
+            <Text style={styles.tabText}>Invite Contacts</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Conditional Rendering for Contacts or Referrals */}
+        {!showContacts ? (
+          data.length > 0 && (
+            <FlatList
+              data={referrals}
+              keyExtractor={item => item.id.toString()}
+              renderItem={renderReferralItem}
+            />
+          )
+        ) : (
           <FlatList
-            data={referrals}
-            keyExtractor={item => item.id.toString()}
-            renderItem={renderReferralItem}
+            data={contacts}
+            keyExtractor={item => item.recordID}
+            renderItem={renderContactItem}
+            contentContainerStyle={styles.contactList}
           />
-        )
-      ) : (
-        <FlatList
-          data={contacts}
-          keyExtractor={item => item.recordID}
-          renderItem={renderContactItem}
-          contentContainerStyle={styles.contactList}
-        />
-      )}
+        )}
 
-      {/* Referral Code */}
-      <View style={styles.referralCodeSection}>
-        <Text style={styles.referralLabel}>Share your code:</Text>
-        <TouchableOpacity
-          style={styles.copyCodeContainer}
-          onPress={copyLinkToClipboard}>
-          <Text style={styles.referralCode}>{referralCode}</Text>
-          <Ionicons
-            name="copy-outline"
-            size={20}
-            color="#ffffff"
-            style={styles.copyIcon}
-          />
-        </TouchableOpacity>
-      </View>
+        {/* Referral Code */}
+        <View style={styles.referralCodeSection}>
+          <Text style={styles.referralLabel}>Share your code:</Text>
+          <TouchableOpacity
+            style={styles.copyCodeContainer}
+            onPress={copyLinkToClipboard}>
+            <Text style={styles.referralCode}>{referralCode}</Text>
+            <Ionicons
+              name="copy-outline"
+              size={20}
+              color="#ffffff"
+              style={styles.copyIcon}
+            />
+          </TouchableOpacity>
+        </View>
 
-      {/* Share Buttons */}
-      <View style={styles.shareButtons}>
-        <TouchableOpacity style={styles.shareButton} onPress={shareViaWhatsApp}>
-          <Ionicons name="logo-whatsapp" size={20} color="white" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.shareButton}
-          onPress={copyLinkToClipboard}>
-          <Ionicons name="link-outline" size={20} color="white" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.shareButton}
-          onPress={shareReferralCode}>
-          <Ionicons name="share-social-outline" size={20} color="white" />
-        </TouchableOpacity>
+        {/* Share Buttons */}
+        <View style={styles.shareButtons}>
+          <TouchableOpacity style={styles.shareButton} onPress={shareViaWhatsApp}>
+            <Ionicons name="logo-whatsapp" size={20} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.shareButton}
+            onPress={copyLinkToClipboard}>
+            <Ionicons name="link-outline" size={20} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.shareButton}
+            onPress={shareReferralCode}>
+            <Ionicons name="share-social-outline" size={20} color="white" />
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  }, 
   container: {
     flex: 1,
     // backgroundColor: '#EDE7F6',

@@ -28,6 +28,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import polyline from '@mapbox/polyline';
 import Entypo from 'react-native-vector-icons/Entypo';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Import local images
 const startMarker = require('../assets/start-marker.png');
@@ -453,272 +454,278 @@ const Navigation = () => {
   }
 
   return (
-    <View style={styles.container}>
-      {locationDetails ? (
-        <Mapbox.MapView
-          style={styles.map}
-          onDidFinishLoadingMap={() => {
-            if (cameraBounds) {
-              // Optionally, adjust camera here if needed
-            }
-          }}>
-          <Mapbox.Camera
-            bounds={
-              cameraBounds
-                ? {
-                    ne: cameraBounds.ne,
-                    sw: cameraBounds.sw,
-                    paddingLeft: 50,
-                    paddingRight: 50,
-                    paddingTop: 50,
-                    paddingBottom: 50,
-                  }
-                : null
-            }
-          />
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        {locationDetails ? (
+          <Mapbox.MapView
+            style={styles.map}
+            onDidFinishLoadingMap={() => {
+              if (cameraBounds) {
+                // Optionally, adjust camera here if needed
+              }
+            }}>
+            <Mapbox.Camera
+              bounds={
+                cameraBounds
+                  ? {
+                      ne: cameraBounds.ne,
+                      sw: cameraBounds.sw,
+                      paddingLeft: 50,
+                      paddingRight: 50,
+                      paddingTop: 50,
+                      paddingBottom: 50,
+                    }
+                  : null
+              }
+            />
 
-          <Mapbox.Images
-            images={{
-              'start-point-icon': startMarker,
-              'end-point-icon': endMarker,
-            }}
-          />
+            <Mapbox.Images
+              images={{
+                'start-point-icon': startMarker,
+                'end-point-icon': endMarker,
+              }}
+            />
 
-          {/* Add Markers */}
-          {markers && (
-            <Mapbox.ShapeSource id="markerSource" shape={markers}>
-              <Mapbox.SymbolLayer
-                id="markerLayer"
-                style={{
-                  iconImage: ['get', 'icon'],
-                  iconSize: ['get', 'iconSize'],
-                  iconAllowOverlap: true,
-                  iconAnchor: 'bottom',
-                  iconOffset: [0, -10],
-                }}
-              />
-            </Mapbox.ShapeSource>
-          )}
+            {/* Add Markers */}
+            {markers && (
+              <Mapbox.ShapeSource id="markerSource" shape={markers}>
+                <Mapbox.SymbolLayer
+                  id="markerLayer"
+                  style={{
+                    iconImage: ['get', 'icon'],
+                    iconSize: ['get', 'iconSize'],
+                    iconAllowOverlap: true,
+                    iconAnchor: 'bottom',
+                    iconOffset: [0, -10],
+                  }}
+                />
+              </Mapbox.ShapeSource>
+            )}
 
-          {/* Add Route Line */}
-          {routeData && (
-            <Mapbox.ShapeSource id="routeSource" shape={routeData}>
-              <Mapbox.LineLayer id="routeLine" style={styles.routeLine} />
-            </Mapbox.ShapeSource>
-          )}
-        </Mapbox.MapView>
-      ) : (
-        <View style={styles.loadingContainer}>
-          <Text>Loading Map...</Text>
-        </View>
-      )}
+            {/* Add Route Line */}
+            {routeData && (
+              <Mapbox.ShapeSource id="routeSource" shape={routeData}>
+                <Mapbox.LineLayer id="routeLine" style={styles.routeLine} />
+              </Mapbox.ShapeSource>
+            )}
+          </Mapbox.MapView>
+        ) : (
+          <View style={styles.loadingContainer}>
+            <Text>Loading Map...</Text>
+          </View>
+        )}
 
-      {/* Details Container */}
-      <View style={styles.detailsContainer}>
-        <View style={styles.minimumChargesContainer}>
-          <Text style={styles.serviceFare}>Commander on the way</Text>
-        </View>
+        {/* Details Container */}
+        <View style={styles.detailsContainer}>
+          <View style={styles.minimumChargesContainer}>
+            <Text style={styles.serviceFare}>Commander on the way</Text>
+          </View>
 
-        <View style={styles.firstContainer}>
-          <View>
-            {/* Service Location */}
-            <View style={styles.locationContainer}>
-              <Image
-                source={{
-                  uri: 'https://i.postimg.cc/qvJw8Kzy/Screenshot-2024-11-13-170828-removebg-preview.png',
-                }}
-                style={styles.locationPinImage}
-              />
-              <View style={styles.locationDetails}>
-                <Text style={styles.locationAddress}>
-                  {addressDetails.area}
-                </Text>
+          <View style={styles.firstContainer}>
+            <View>
+              {/* Service Location */}
+              <View style={styles.locationContainer}>
+                <Image
+                  source={{
+                    uri: 'https://i.postimg.cc/qvJw8Kzy/Screenshot-2024-11-13-170828-removebg-preview.png',
+                  }}
+                  style={styles.locationPinImage}
+                />
+                <View style={styles.locationDetails}>
+                  <Text style={styles.locationAddress}>
+                    {addressDetails.area}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
-        </View>
 
-        {/* Service Type */}
-        <View style={styles.serviceDetails}>
-          <View>
+          {/* Service Type */}
+          <View style={styles.serviceDetails}>
             <View>
-              <Text style={styles.serviceType}>Service</Text>
-              <View style={{position: 'relative'}}>
-                {showUpArrowService && (
-                  <View style={styles.arrowUpContainer}>
-                    <Entypo name="chevron-small-up" size={20} color="#9e9e9e" />
-                  </View>
-                )}
+              <View>
+                <Text style={styles.serviceType}>Service</Text>
+                <View style={{position: 'relative'}}>
+                  {showUpArrowService && (
+                    <View style={styles.arrowUpContainer}>
+                      <Entypo name="chevron-small-up" size={20} color="#9e9e9e" />
+                    </View>
+                  )}
 
-                <ScrollView
-                  style={styles.servicesNamesContainer}
-                  contentContainerStyle={styles.servicesNamesContent}
-                  onScroll={handleServiceScroll}
-                  scrollEventThrottle={16}>
-                  {serviceArray.map((serviceItem, index) => (
-                    <View key={index} style={styles.serviceItem}>
-                      <Text style={styles.serviceText}>
-                        {serviceItem.serviceName}
-                      </Text>
+                  <ScrollView
+                    style={styles.servicesNamesContainer}
+                    contentContainerStyle={styles.servicesNamesContent}
+                    onScroll={handleServiceScroll}
+                    scrollEventThrottle={16}>
+                    {serviceArray.map((serviceItem, index) => (
+                      <View key={index} style={styles.serviceItem}>
+                        <Text style={styles.serviceText}>
+                          {serviceItem.serviceName}
+                        </Text>
+                      </View>
+                    ))}
+                  </ScrollView>
+
+                  {showDownArrowService && (
+                    <View style={styles.arrowDownContainer}>
+                      <Entypo
+                        name="chevron-small-down"
+                        size={20}
+                        color="#9e9e9e"
+                      />
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              <View style={styles.pinContainer}>
+                <Text style={styles.pinText}>PIN</Text>
+
+                {/* Display each pin digit in its own box */}
+                <View style={styles.pinBoxesContainer}>
+                  {pin.split('').map((digit, index) => (
+                    <View key={index} style={styles.pinBox}>
+                      <Text style={styles.pinNumber}>{digit}</Text>
                     </View>
                   ))}
-                </ScrollView>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={handleCancelModal}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
 
-                {showDownArrowService && (
-                  <View style={styles.arrowDownContainer}>
-                    <Entypo
-                      name="chevron-small-down"
-                      size={20}
-                      color="#9e9e9e"
-                    />
+              {/* Modal for Cancellation Reasons */}
+              <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={closeModal}>
+                <View style={styles.modalOverlay}>
+                  <TouchableOpacity
+                    onPress={closeModal}
+                    style={styles.backButtonContainer}>
+                    <AntDesign name="arrowleft" size={20} color="black" />
+                  </TouchableOpacity>
+
+                  <View style={styles.modalContainer}>
+                    {/* Title and Subtitle */}
+                    <Text style={styles.modalTitle}>
+                      What is the reason for your cancellation?
+                    </Text>
+                    <Text style={styles.modalSubtitle}>
+                      Could you let us know why you're canceling?
+                    </Text>
+
+                    {/* Cancellation Reasons */}
+                    <TouchableOpacity
+                      style={styles.reasonButton}
+                      onPress={openConfirmationModal}>
+                      <Text style={styles.reasonText}>Found a better price</Text>
+                      <AntDesign name="right" size={16} color="#4a4a4a" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.reasonButton}
+                      onPress={openConfirmationModal}>
+                      <Text style={styles.reasonText}>Wrong work location</Text>
+                      <AntDesign name="right" size={16} color="#4a4a4a" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.reasonButton}
+                      onPress={openConfirmationModal}>
+                      <Text style={styles.reasonText}>Wrong service booked</Text>
+                      <AntDesign name="right" size={16} color="#4a4a4a" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.reasonButton}
+                      onPress={openConfirmationModal}>
+                      <Text style={styles.reasonText}>
+                        More time to assign a commander
+                      </Text>
+                      <AntDesign name="right" size={16} color="#4a4a4a" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.reasonButton}
+                      onPress={openConfirmationModal}>
+                      <Text style={styles.reasonText}>Others</Text>
+                      <AntDesign name="right" size={16} color="#4a4a4a" />
+                    </TouchableOpacity>
                   </View>
+                </View>
+              </Modal>
+
+              {/* Confirmation Modal */}
+              <Modal
+                animationType="slide"
+                transparent={true}
+                visible={confirmationModalVisible}
+                onRequestClose={closeConfirmationModal}>
+                <View style={styles.modalOverlay}>
+                  <View style={styles.crossContainer}>
+                    <TouchableOpacity
+                      onPress={closeConfirmationModal}
+                      style={styles.backButtonContainer}>
+                      <Entypo name="cross" size={20} color="black" />
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.confirmationModalContainer}>
+                    <Text style={styles.confirmationTitle}>
+                      Are you sure you want to cancel this Service?
+                    </Text>
+                    <Text style={styles.confirmationSubtitle}>
+                      Please avoid canceling – we’re working to connect you with
+                      the best expert to solve your problem.
+                    </Text>
+
+                    <TouchableOpacity
+                      style={styles.confirmButton}
+                      onPress={handleCancelBooking}>
+                      <Text style={styles.confirmButtonText}>
+                        Cancel my service
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </Modal>
+            </View>
+
+            {/* Worker Details */}
+            <View style={styles.workerDetailsContainer}>
+              <View>
+                {addressDetails.profile && (
+                  <Image
+                    source={{uri: addressDetails.profile}}
+                    style={styles.image}
+                  />
                 )}
+                <Text style={styles.workerName}>{addressDetails.name}</Text>
               </View>
-            </View>
-
-            <View style={styles.pinContainer}>
-              <Text style={styles.pinText}>PIN</Text>
-
-              {/* Display each pin digit in its own box */}
-              <View style={styles.pinBoxesContainer}>
-                {pin.split('').map((digit, index) => (
-                  <View key={index} style={styles.pinBox}>
-                    <Text style={styles.pinNumber}>{digit}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={handleCancelModal}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
-
-            {/* Modal for Cancellation Reasons */}
-            <Modal
-              animationType="slide"
-              transparent={true}
-              visible={modalVisible}
-              onRequestClose={closeModal}>
-              <View style={styles.modalOverlay}>
-                <TouchableOpacity
-                  onPress={closeModal}
-                  style={styles.backButtonContainer}>
-                  <AntDesign name="arrowleft" size={20} color="black" />
+              <View style={styles.iconsContainer}>
+                <TouchableOpacity style={styles.actionButton}>
+                  <MaterialIcons name="call" size={18} color="#FF5722" />
                 </TouchableOpacity>
 
-                <View style={styles.modalContainer}>
-                  {/* Title and Subtitle */}
-                  <Text style={styles.modalTitle}>
-                    What is the reason for your cancellation?
-                  </Text>
-                  <Text style={styles.modalSubtitle}>
-                    Could you let us know why you're canceling?
-                  </Text>
-
-                  {/* Cancellation Reasons */}
-                  <TouchableOpacity
-                    style={styles.reasonButton}
-                    onPress={openConfirmationModal}>
-                    <Text style={styles.reasonText}>Found a better price</Text>
-                    <AntDesign name="right" size={16} color="#4a4a4a" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.reasonButton}
-                    onPress={openConfirmationModal}>
-                    <Text style={styles.reasonText}>Wrong work location</Text>
-                    <AntDesign name="right" size={16} color="#4a4a4a" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.reasonButton}
-                    onPress={openConfirmationModal}>
-                    <Text style={styles.reasonText}>Wrong service booked</Text>
-                    <AntDesign name="right" size={16} color="#4a4a4a" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.reasonButton}
-                    onPress={openConfirmationModal}>
-                    <Text style={styles.reasonText}>
-                      More time to assign a commander
-                    </Text>
-                    <AntDesign name="right" size={16} color="#4a4a4a" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.reasonButton}
-                    onPress={openConfirmationModal}>
-                    <Text style={styles.reasonText}>Others</Text>
-                    <AntDesign name="right" size={16} color="#4a4a4a" />
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity style={styles.actionButton}>
+                  <AntDesign name="message1" size={18} color="#FF5722" />
+                </TouchableOpacity>
               </View>
-            </Modal>
-
-            {/* Confirmation Modal */}
-            <Modal
-              animationType="slide"
-              transparent={true}
-              visible={confirmationModalVisible}
-              onRequestClose={closeConfirmationModal}>
-              <View style={styles.modalOverlay}>
-                <View style={styles.crossContainer}>
-                  <TouchableOpacity
-                    onPress={closeConfirmationModal}
-                    style={styles.backButtonContainer}>
-                    <Entypo name="cross" size={20} color="black" />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.confirmationModalContainer}>
-                  <Text style={styles.confirmationTitle}>
-                    Are you sure you want to cancel this Service?
-                  </Text>
-                  <Text style={styles.confirmationSubtitle}>
-                    Please avoid canceling – we’re working to connect you with
-                    the best expert to solve your problem.
-                  </Text>
-
-                  <TouchableOpacity
-                    style={styles.confirmButton}
-                    onPress={handleCancelBooking}>
-                    <Text style={styles.confirmButtonText}>
-                      Cancel my service
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </Modal>
-          </View>
-
-          {/* Worker Details */}
-          <View style={styles.workerDetailsContainer}>
-            <View>
-              {addressDetails.profile && (
-                <Image
-                  source={{uri: addressDetails.profile}}
-                  style={styles.image}
-                />
-              )}
-              <Text style={styles.workerName}>{addressDetails.name}</Text>
-            </View>
-            <View style={styles.iconsContainer}>
-              <TouchableOpacity style={styles.actionButton}>
-                <MaterialIcons name="call" size={18} color="#FF5722" />
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.actionButton}>
-                <AntDesign name="message1" size={18} color="#FF5722" />
-              </TouchableOpacity>
             </View>
           </View>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const screenHeight = Dimensions.get('window').height;
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  }, 
   container: {
     flex: 1,
   },

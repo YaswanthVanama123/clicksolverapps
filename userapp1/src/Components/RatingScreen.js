@@ -19,6 +19,7 @@ import {
   CommonActions,
   useFocusEffect,
 } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Rating = () => {
   const [rating, setRating] = useState(null); // Set to null initially to show all emojis
@@ -111,115 +112,121 @@ const Rating = () => {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Give Feedback</Text>
-      {/* <Text style={styles.ratingLabel}>Rate your experience</Text> */}
-      {/* <Text style={styles.experienceText}>How was experience with our Commander</Text> */}
-      {/* <View style={styles.profileContainer}>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.container}>
+        <Text style={styles.title}>Give Feedback</Text>
+        {/* <Text style={styles.ratingLabel}>Rate your experience</Text> */}
+        {/* <Text style={styles.experienceText}>How was experience with our Commander</Text> */}
+        {/* <View style={styles.profileContainer}>
+          <View>
+            <Image source={{uri: "https://i.postimg.cc/mZnDzdqJ/IMG-20240929-WA0024.jpg"}} style={styles.profileImage}/>
+          </View>
+          <View style={styles.detailsContainer}>
+            <Text style={styles.workerName}>Yaswanth</Text>
+            <Text style={styles.profession}>Electrician</Text>
+          </View>
+        </View> */}
         <View>
-          <Image source={{uri: "https://i.postimg.cc/mZnDzdqJ/IMG-20240929-WA0024.jpg"}} style={styles.profileImage}/>
+          <Text style={styles.commanderName}>Commander</Text>
+          <TextInput
+            style={[styles.Commanderinput]}
+            placeholder="Comment, if any?"
+            placeholderTextColor="#aaa"
+            value="Yaswanth"
+            onChangeText={setComments}
+            editable={false}
+          />
         </View>
-        <View style={styles.detailsContainer}>
-          <Text style={styles.workerName}>Yaswanth</Text>
-          <Text style={styles.profession}>Electrician</Text>
+        {/* Display the selected emoji above, if any */}
+        {rating !== null && (
+          <View style={styles.selectedEmojiContainer}>
+            <Animated.Text
+              style={[
+                styles.selectedEmoji,
+                {transform: [{scale: emojiAnimations[rating]}]},
+              ]}>
+              {emojis[rating]}
+            </Animated.Text>
+            <Text style={[styles.emojiLabel, styles.glowText]}>
+              {emojiLabels[rating]}
+            </Text>
+          </View>
+        )}
+
+        {/* Display all emojis in a row */}
+        <View style={styles.emojisContainer}>
+          {emojis.map((emoji, index) => (
+            <View key={index} style={styles.emojiContainer}>
+              <TouchableOpacity onPress={() => handleEmojiPress(index)}>
+                <Animated.Text
+                  style={[
+                    styles.emoji,
+                    {
+                      opacity: rating === index ? 1 : 0.5,
+                      transform: [{scale: emojiAnimations[index]}],
+                    },
+                  ]}>
+                  {emoji}
+                </Animated.Text>
+              </TouchableOpacity>
+              <Text style={styles.emojiLabel}>{emojiLabels[index]}</Text>
+            </View>
+          ))}
         </View>
-      </View> */}
-      <View>
-        <Text style={styles.commanderName}>Commander</Text>
+
+        {/* Rating type selector and comments input */}
+        <View style={styles.radioContainer}>
+          <TouchableOpacity
+            style={styles.radioRow}
+            onPress={() => toggleRatingType('worker')}>
+            <Icon
+              name={
+                selectedRatingType === 'worker'
+                  ? 'radio-button-checked'
+                  : 'radio-button-unchecked'
+              }
+              size={20}
+              color={selectedRatingType === 'app' ? '#4a4a4a' : '#ff4500'}
+            />
+            <Text style={styles.radioLabel}>Rating for Worker</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.radioRow}
+            onPress={() => toggleRatingType('app')}>
+            <Icon
+              name={
+                selectedRatingType === 'app'
+                  ? 'radio-button-checked'
+                  : 'radio-button-unchecked'
+              }
+              size={20}
+              color={selectedRatingType === 'app' ? '#ff4500' : '#4a4a4a'}
+            />
+            <Text style={styles.radioLabel}>Rating for App</Text>
+          </TouchableOpacity>
+        </View>
         <TextInput
-          style={[styles.Commanderinput]}
+          style={[styles.input, styles.textarea]}
+          multiline
+          numberOfLines={4}
           placeholder="Comment, if any?"
           placeholderTextColor="#aaa"
-          value="Yaswanth"
+          value={comments}
           onChangeText={setComments}
-          editable={false}
         />
-      </View>
-      {/* Display the selected emoji above, if any */}
-      {rating !== null && (
-        <View style={styles.selectedEmojiContainer}>
-          <Animated.Text
-            style={[
-              styles.selectedEmoji,
-              {transform: [{scale: emojiAnimations[rating]}]},
-            ]}>
-            {emojis[rating]}
-          </Animated.Text>
-          <Text style={[styles.emojiLabel, styles.glowText]}>
-            {emojiLabels[rating]}
-          </Text>
-        </View>
-      )}
-
-      {/* Display all emojis in a row */}
-      <View style={styles.emojisContainer}>
-        {emojis.map((emoji, index) => (
-          <View key={index} style={styles.emojiContainer}>
-            <TouchableOpacity onPress={() => handleEmojiPress(index)}>
-              <Animated.Text
-                style={[
-                  styles.emoji,
-                  {
-                    opacity: rating === index ? 1 : 0.5,
-                    transform: [{scale: emojiAnimations[index]}],
-                  },
-                ]}>
-                {emoji}
-              </Animated.Text>
-            </TouchableOpacity>
-            <Text style={styles.emojiLabel}>{emojiLabels[index]}</Text>
-          </View>
-        ))}
-      </View>
-
-      {/* Rating type selector and comments input */}
-      <View style={styles.radioContainer}>
-        <TouchableOpacity
-          style={styles.radioRow}
-          onPress={() => toggleRatingType('worker')}>
-          <Icon
-            name={
-              selectedRatingType === 'worker'
-                ? 'radio-button-checked'
-                : 'radio-button-unchecked'
-            }
-            size={20}
-            color={selectedRatingType === 'app' ? '#4a4a4a' : '#ff4500'}
-          />
-          <Text style={styles.radioLabel}>Rating for Worker</Text>
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+          <Text style={styles.submitButtonText}>PUBLISH FEEDBACK</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.radioRow}
-          onPress={() => toggleRatingType('app')}>
-          <Icon
-            name={
-              selectedRatingType === 'app'
-                ? 'radio-button-checked'
-                : 'radio-button-unchecked'
-            }
-            size={20}
-            color={selectedRatingType === 'app' ? '#ff4500' : '#4a4a4a'}
-          />
-          <Text style={styles.radioLabel}>Rating for App</Text>
-        </TouchableOpacity>
-      </View>
-      <TextInput
-        style={[styles.input, styles.textarea]}
-        multiline
-        numberOfLines={4}
-        placeholder="Comment, if any?"
-        placeholderTextColor="#aaa"
-        value={comments}
-        onChangeText={setComments}
-      />
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-        <Text style={styles.submitButtonText}>PUBLISH FEEDBACK</Text>
-      </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  }, 
   container: {
     flex: 1,
     padding: 20,

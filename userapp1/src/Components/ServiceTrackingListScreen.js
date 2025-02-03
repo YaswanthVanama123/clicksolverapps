@@ -14,6 +14,7 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
 import uuid from 'react-native-uuid';
 import {useNavigation} from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 // import Config from 'react-native-config';
 
 const ServiceTrackingListScreen = () => {
@@ -144,6 +145,7 @@ const ServiceTrackingListScreen = () => {
   );
 
   return (
+    <SafeAreaView style={styles.safeArea}>
     <TouchableWithoutFeedback onPress={handleOutsidePress}>
       <View style={styles.container}>
         {/* Header */}
@@ -191,10 +193,15 @@ const ServiceTrackingListScreen = () => {
         </View>
       </View>
     </TouchableWithoutFeedback>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  }, 
   container: {
     flex: 1,
     backgroundColor: '#f3f3f3',
