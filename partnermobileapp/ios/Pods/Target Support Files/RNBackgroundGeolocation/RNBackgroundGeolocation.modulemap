@@ -1,0 +1,6 @@
+framework module RNBackgroundGeolocation {
+  umbrella header "RNBackgroundGeolocation-umbrella.h"
+
+  export *
+  module * { export * }
+}

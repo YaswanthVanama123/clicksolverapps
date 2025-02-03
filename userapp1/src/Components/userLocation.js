@@ -374,27 +374,33 @@ const UserLocation = () => {
     }
 
     if (!hasError) {
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [
-            {
-              name: 'userwaiting',
-              params: {
-                area,
-                city,
-                pincode,
-                alternateName,
-                alternatePhoneNumber,
-                serviceBooked: service,
-                location,
-                discount: discount,
+      setShowMessageBox(false);
+      
+      setTimeout(() => {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'userwaiting',
+                params: {
+                  area,
+                  city,
+                  pincode,
+                  alternateName,
+                  alternatePhoneNumber,
+                  serviceBooked: service,
+                  location,
+                  discount: discount,
+                },
               },
-            },
-          ],
-        }),
-      );
+            ],
+          }),
+        );
+      }, 0); // Executes after the state update
     }
+    
+    
   };
 
   const handlePressLocation = e => {

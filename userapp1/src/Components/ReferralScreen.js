@@ -14,6 +14,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import Contacts from 'react-native-contacts';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ReferralScreen = () => {
   // const referralCode = 'V87LCFQLT8';
@@ -248,7 +249,7 @@ const ReferralScreen = () => {
 
         {/* Conditional Rendering for Contacts or Referrals */}
         {!showContacts ? (
-          data.length > 0 && (
+          referrals.length > 0 && (
             <FlatList
               data={referrals}
               keyExtractor={item => item.id.toString()}

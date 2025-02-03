@@ -1,0 +1,6 @@
+framework module Pods_partnermobileapp {
+  umbrella header "Pods-partnermobileapp-umbrella.h"
+
+  export *
+  module * { export * }
+}
