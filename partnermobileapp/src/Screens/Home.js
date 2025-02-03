@@ -669,7 +669,7 @@ const HomeScreen = () => {
                   ]}
                 />
               </TouchableOpacity>
-              <Text>{isEnabled ? 'On' : 'Off'}</Text>
+              <Text style={styles.status}>{isEnabled ? 'On' : 'Off'}</Text>
             </View>
           </View>
           <View>
@@ -957,6 +957,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#212121',
     marginLeft: 10,
+  },
+  status:{
+    paddingLeft:10
   },
   serviceNamesContainer: {
     flexWrap: 'wrap',
