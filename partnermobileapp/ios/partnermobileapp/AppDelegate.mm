@@ -33,7 +33,7 @@ static void InitializeFlipper(UIApplication *application) {
 
   // ✅ Register Push Notifications
   UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
-  center.delegate = self; // Ensure AppDelegate conforms to UNUserNotificationCenterDelegate
+  center.delegate = self; // Set AppDelegate as delegate for notifications
   [application registerForRemoteNotifications];
 
   // ✅ Setup Background Fetch for Geolocation
@@ -47,17 +47,24 @@ static void InitializeFlipper(UIApplication *application) {
                                                    moduleName:@"partnermobileapp"
                                             initialProperties:nil];
 
+  // ✅ Set Background Color for Root View
   rootView.backgroundColor = [[UIColor alloc] initWithRed:1.0 green:1.0 blue:1.0 alpha:1.0];
 
+  // ✅ Setup Main Window
   self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
   UIViewController *rootViewController = [UIViewController new];
   rootViewController.view = rootView;
+
+  // ✅ Ensure Safe Area Insets Are Handled
+  rootViewController.additionalSafeAreaInsets = UIEdgeInsetsZero;
+
   self.window.rootViewController = rootViewController;
   [self.window makeKeyAndVisible];
 
   return YES;
 }
 
+// ✅ Source URL for React Native Bridge
 - (NSURL *)sourceURLForBridge:(RCTBridge *)bridge {
 #if DEBUG
   return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@"index"];
@@ -66,16 +73,24 @@ static void InitializeFlipper(UIApplication *application) {
 #endif
 }
 
-// Handle Push Notifications
+// ✅ Register for Remote Notifications
 - (void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
   [RNCPushNotificationIOS didRegisterForRemoteNotificationsWithDeviceToken:deviceToken];
 }
 
-// Implement UNUserNotificationCenterDelegate methods if needed
+// ✅ Handle Push Notification (Foreground)
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center
        willPresentNotification:(UNNotification *)notification
          withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler {
   completionHandler(UNNotificationPresentationOptionAlert + UNNotificationPresentationOptionSound);
+}
+
+// ✅ Handle Push Notification (Background)
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center
+       didReceiveNotificationResponse:(UNNotificationResponse *)response
+       withCompletionHandler:(void (^)(void))completionHandler {
+  [RNCPushNotificationIOS didReceiveNotificationResponse:response];
+  completionHandler();
 }
 
 @end

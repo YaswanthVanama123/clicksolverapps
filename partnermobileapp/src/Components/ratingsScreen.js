@@ -97,7 +97,7 @@ const RatingsScreen = () => {
         if (!token) throw new Error('Token not found');
 
         const response = await axios.get(
-          `${process.env.BackendAPI17}/api/worker/ratings`,
+          `https://backend.clicksolver.com/api/worker/ratings`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

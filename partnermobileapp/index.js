@@ -80,3 +80,35 @@ const FCMBackgroundTask = async (remoteMessage) => {
 
 // Register the Headless JS task
 AppRegistry.registerHeadlessTask('FCMBackgroundTask', () => FCMBackgroundTask);
+
+
+
+
+// import React from 'react';
+// import { AppRegistry, View, Text, StyleSheet, StatusBar } from 'react-native';
+// import { name as appName } from './app.json';
+
+// const YaswanthView = () => (
+//   <>
+//     {/* Ensure the status bar doesn't interfere with the layout */}
+  
+
+//     {/* Full-screen View */}
+//     <View style={styles.container}>
+//       <Text style={styles.text}>Yaswanth</Text>
+//     </View>
+//   </>
+// );
+
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1, // Ensures the View takes up the full height of the screen
+
+//   },
+//   text: {
+//     fontSize: 24,
+//     fontWeight: 'bold',
+//   },
+// });
+
+// AppRegistry.registerComponent(appName, () => YaswanthView);

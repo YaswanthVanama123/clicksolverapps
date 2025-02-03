@@ -61,7 +61,7 @@ const ServiceBookingItem = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.post(
-          `${process.env.BackendAPI17}/api/service/booking/item/details`,
+          `https://backend.clicksolver.com/api/service/booking/item/details`,
           {tracking_id},
         );
         const {data, paymentDetails} = response.data;

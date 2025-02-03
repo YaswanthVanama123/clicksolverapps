@@ -31,7 +31,7 @@ const SignUpScreen = () => {
   const handleSignUp = async () => {
     try {
       const response = await axios.post(
-        `${process.env.BackendAPI17}/api/worker/signup`,
+        `https://backend.clicksolver.com/api/worker/signup`,
         {
           fullName,
           email,

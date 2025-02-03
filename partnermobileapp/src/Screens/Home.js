@@ -116,7 +116,7 @@ const HomeScreen = () => {
 
       if (pcs_token) {
         const response = await axios.get(
-          `${process.env.BackendAPI17}/api/worker/track/details`,
+          `https://backend.clicksolver.com/api/worker/track/details`,
           {
             headers: {Authorization: `Bearer ${pcs_token}`},
           },
@@ -182,7 +182,7 @@ const HomeScreen = () => {
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const response = await axios.post(
-        `${process.env.BackendAPI17}/api/accept/request`,
+        `https://backend.clicksolver.com/api/accept/request`,
         {user_notification_id: decodedId},
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
@@ -209,7 +209,7 @@ const HomeScreen = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `${process.env.BackendAPI17}/api/worker/action`,
+          `https://backend.clicksolver.com/api/worker/action`,
           {
             encodedId: encodedNotificationId,
             screen: 'WorkerNavigation',
@@ -233,7 +233,7 @@ const HomeScreen = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `${process.env.BackendAPI17}/api/worker/action`,
+          `https://backend.clicksolver.com/api/worker/action`,
           {
             encodedId: '',
             screen: '',
@@ -333,7 +333,7 @@ const HomeScreen = () => {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
       await axios.post(
-        `${process.env.BackendAPI17}/api/worker/store-fcm-token`,
+        `https://backend.clicksolver.com/api/worker/store-fcm-token`,
         {fcmToken: token},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );

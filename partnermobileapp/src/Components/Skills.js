@@ -147,7 +147,7 @@ const RegistrationScreen = () => {
         navigation.replace('Login');
       }
       const response = await axios.post(
-        `${process.env.BackendAPI17}/api/registration/submit`,
+        `https://backend.clicksolver.com/api/registration/submit`,
         formData,
         {
           headers: {
@@ -171,7 +171,7 @@ const RegistrationScreen = () => {
         navigation.replace('Login');
       }
       const response = await axios.get(
-        `${process.env.BackendAPI17}/api/service/categories`,
+        `https://backend.clicksolver.com/api/service/categories`,
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
@@ -194,26 +194,34 @@ const RegistrationScreen = () => {
 
   const handleLogout = async () => {
     try {
-      await EncryptedStorage.removeItem('pcs_token');
-      await EncryptedStorage.removeItem('partnerSteps');
-      await EncryptedStorage.removeItem('start_time');
-      await EncryptedStorage.removeItem('notifications');
-      await EncryptedStorage.removeItem('workerPreviousLocation');
-      await EncryptedStorage.removeItem('Requestnotifications');
-      await EncryptedStorage.removeItem('verification');
-      await EncryptedStorage.removeItem('start_time');
-      await EncryptedStorage.removeItem('sign_up');
-      await EncryptedStorage.removeItem('fcm_token');
-      await EncryptedStorage.removeItem('start_work_time');
-      await EncryptedStorage.removeItem('nullCoordinates');
-      await EncryptedStorage.removeItem('start_work_time');
-      await EncryptedStorage.removeItem('start_work_time');
-
+      const keys = [
+        'pcs_token',
+        'partnerSteps',
+        'start_time',
+        'notifications',
+        'workerPreviousLocation',
+        'Requestnotifications',
+        'verification',
+        'sign_up',
+        'fcm_token',
+        'start_work_time',
+        'nullCoordinates'
+      ];
+  
+      for (const key of keys) {
+        const value = await EncryptedStorage.getItem(key);
+        if (value !== null) {
+          await EncryptedStorage.removeItem(key);
+        }
+      }
+  
+      console.log('Logout successful, all necessary storage items removed.');
       navigation.replace('Login');
     } catch (error) {
       console.error('Error logging out:', error);
     }
   };
+  
 
   const handleImagePick = async fieldName => {
     const options = {
@@ -248,7 +256,7 @@ const RegistrationScreen = () => {
     if (field === 'skillCategory') {
       try {
         const response = await axios.post(
-          `${process.env.BackendAPI17}/api/subservice/checkboxes`,
+          `https://backend.clicksolver.com/api/subservice/checkboxes`,
           {selectedService: value},
         );
         const data = response.data;
@@ -280,7 +288,7 @@ const RegistrationScreen = () => {
 
       // 1) GET the profile details:
       const response = await axios.get(
-        `${process.env.BackendAPI17}/api/profile/detsils`,
+        `https://backend.clicksolver.com/api/profile/detsils`,
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
@@ -322,7 +330,7 @@ const RegistrationScreen = () => {
 
       // 2) POST to /api/subservice/checkboxes with the service
       const subserviceResponse = await axios.post(
-        `${process.env.BackendAPI17}/api/subservice/checkboxes`,
+        `https://backend.clicksolver.com/api/subservice/checkboxes`,
         {selectedService: data.service}, // e.g. "Electrician Services"
         {
           headers: {

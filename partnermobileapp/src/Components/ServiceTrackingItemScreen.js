@@ -126,7 +126,7 @@ const ServiceTrackingItemScreen = () => {
     const fetchBookings = async () => {
       try {
         const {
-          data: {data, paymentDetails},
+          data: {data, paymentDetails}, 
         } = await axios.post(
           `https://backend.clicksolver.com/api/service/tracking/worker/item/details`,
           {tracking_id},

@@ -46,7 +46,7 @@ const PaymentScanner = ({route}) => {
       if (decodedId) {
         try {
           const response = await axios.post(
-            `${process.env.BackendAPI17}/api/worker/payment/scanner/details`,
+            `https://backend.clicksolver.com/api/worker/payment/scanner/details`,
             {
               notification_id: decodedId,
             },
@@ -89,14 +89,14 @@ const PaymentScanner = ({route}) => {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       const numberAmmount = Number(totalAmount);
       console.log('sended data', numberAmmount, paymentMethod, decodedId);
-      await axios.post(`${process.env.BackendAPI17}/api/user/payed`, {
+      await axios.post(`https://backend.clicksolver.com/api/user/payed`, {
         totalAmount: numberAmmount,
         paymentMethod,
         decodedId,
       });
 
       await axios.post(
-        `${process.env.BackendAPI17}/api/worker/action`,
+        `https://backend.clicksolver.com/api/worker/action`,
         {
           encodedId,
           screen: '',

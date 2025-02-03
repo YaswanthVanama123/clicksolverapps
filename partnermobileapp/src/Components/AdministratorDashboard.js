@@ -108,7 +108,7 @@ const DashboardScreen = () => {
     console.log(process.env.BackendAPI17);
     try {
       const response = await axios.post(
-        `${process.env.BackendAPI17}/api/administrator/service/date/details`,
+        `https://backend.clicksolver.com/api/administrator/service/date/details`,
         payload,
       );
       console.log(response.data);

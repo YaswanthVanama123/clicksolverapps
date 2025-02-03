@@ -64,7 +64,7 @@ const BankAccountScreen = () => {
           navigation.replace('Login');
         }
         const response = await axios.post(
-          `${process.env.BackendAPI17}/api/account/submit`,
+          `https://backend.clicksolver.com/api/account/submit`,
           bankAccountDetails,
           {
             headers: {

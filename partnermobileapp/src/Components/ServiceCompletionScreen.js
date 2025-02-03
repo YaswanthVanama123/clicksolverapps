@@ -45,7 +45,7 @@ const ServiceCompletionScreen = () => {
       const fetchPaymentDetails = async () => {
         try {
           const response = await axios.post(
-            `${process.env.BackendAPI17}/api/worker/payment/service/completed/details`,
+            `https://backend.clicksolver.com/api/worker/payment/service/completed/details`,
             {
               notification_id: decodedId,
             },

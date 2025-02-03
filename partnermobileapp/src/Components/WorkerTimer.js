@@ -90,7 +90,7 @@ const WorkerTimer = () => {
       try {
         // Send the details and notification_id in the request body
         const response = await axios.post(
-          `${process.env.BackendAPI17}/api/add/tracking`,
+          `https://backend.clicksolver.com/api/add/tracking`,
           {
             notification_id: decodedId,
             details: details, // Add details here
@@ -230,7 +230,7 @@ const WorkerTimer = () => {
             workedTime = startTimeData[matchingIndex].worked_time;
           } else {
             const response = await axios.post(
-              `${process.env.BackendAPI17}/api/work/time/started`,
+              `https://backend.clicksolver.com/api/work/time/started`,
               {
                 notification_id: decodedId,
               },

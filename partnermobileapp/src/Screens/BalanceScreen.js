@@ -137,7 +137,7 @@ const BalanceScreen = () => {
       if (!pcs_token) throw new Error('pcs_token not found');
 
       const response = await axios.post(
-        `${process.env.BackendAPI17}/api/balance/ammount`,
+        `https://backend.clicksolver.com/api/balance/ammount`,
         {},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );

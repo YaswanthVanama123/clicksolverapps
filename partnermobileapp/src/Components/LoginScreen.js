@@ -33,9 +33,10 @@ const LoginScreen = () => {
 
   // Function to call the backend API for login
   const loginBackend = async phoneNumber => {
+    console.log("backend",process.env.BackendAPI17)
     try {
       const response = await axios.post(
-        `${process.env.BackendAPI17}/api/worker/login`,
+        `https://backend.clicksolver.com/api/worker/login`,
         {phone_number: phoneNumber},
       );
       return response;

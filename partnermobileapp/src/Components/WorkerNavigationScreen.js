@@ -117,7 +117,7 @@ const WorkerNavigationScreen = () => {
   const checkCancellationStatus = async () => {
     try {
       const response = await axios.get(
-        `${process.env.BackendAPI17}/api/worker/cancelled/status`,
+        `https://backend.clicksolver.com/api/worker/cancelled/status`,
         {
           params: {notification_id: decodedId},
         },
@@ -126,7 +126,7 @@ const WorkerNavigationScreen = () => {
       if (response.data.notificationStatus === 'usercanceled') {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         await axios.post(
-          `${process.env.BackendAPI17}/api/worker/action`,
+          `https://backend.clicksolver.com/api/worker/action`,
           {
             encodedId: '',
             screen: '',
@@ -170,7 +170,7 @@ const WorkerNavigationScreen = () => {
   const fetchAddressDetails = useCallback(async () => {
     try {
       const response = await axios.get(
-        `${process.env.BackendAPI17}/api/user/address/details`,
+        `https://backend.clicksolver.com/api/user/address/details`,
         {
           params: {notification_id: decodedId},
         },
@@ -185,7 +185,7 @@ const WorkerNavigationScreen = () => {
   const fetchLocationDetails = async () => {
     try {
       const response = await axios.post(
-        `${process.env.BackendAPI17}/api/service/location/navigation`,
+        `https://backend.clicksolver.com/api/service/location/navigation`,
         {
           notification_id: decodedId,
         },
@@ -207,7 +207,7 @@ const WorkerNavigationScreen = () => {
 
     try {
       const response = await axios.post(
-        `${process.env.BackendAPI17}/api/worker/work/cancel`,
+        `https://backend.clicksolver.com/api/worker/work/cancel`,
         {notification_id: decodedId},
       );
 
@@ -222,7 +222,7 @@ const WorkerNavigationScreen = () => {
 
         // Send data to the backend
         await axios.post(
-          `${process.env.BackendAPI17}/api/worker/action`,
+          `https://backend.clicksolver.com/api/worker/action`,
           {
             encodedId: '',
             screen: '',
