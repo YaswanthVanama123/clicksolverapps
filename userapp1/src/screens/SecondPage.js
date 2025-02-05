@@ -1,9 +1,4 @@
 import React, {useEffect, useRef, useState, useMemo} from 'react';
-import Icon from 'react-native-vector-icons/Ionicons';
-import Feather from 'react-native-vector-icons/Feather';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import {useNavigation, useRoute} from '@react-navigation/native';
-import EncryptedStorage from 'react-native-encrypted-storage';
 import {
   View,
   Text,
@@ -15,17 +10,24 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
-import axios from 'axios';
-import uuid from 'react-native-uuid';
-import QuickSearch from '../Components/QuickSearch';
-import LottieView from 'lottie-react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/Ionicons';
+import Feather from 'react-native-vector-icons/Feather';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Foundation from 'react-native-vector-icons/Foundation';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-// import Config from 'react-native-config';
-import crashlytics from '@react-native-firebase/crashlytics';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-function ServiceApp() {
+import axios from 'axios';
+import uuid from 'react-native-uuid';
+import LottieView from 'lottie-react-native';
+import crashlytics from '@react-native-firebase/crashlytics';
+import EncryptedStorage from 'react-native-encrypted-storage';
+
+import QuickSearch from '../Components/QuickSearch';
+
+const screenWidth = Dimensions.get('window').width;
+
+function ServiceApp({navigation, route}) {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [greeting, setGreeting] = useState('');
@@ -36,12 +38,10 @@ function ServiceApp() {
   const [isModalVisible, setModalVisible] = useState(false);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
-  const screenWidth = Dimensions.get('window').width;
+  const [decodedId, setDecodedId] = useState(null);
+
   const scrollViewRef = useRef(null);
-  const itemWidth = screenWidth * 0.95;
-  const navigation = useNavigation();
-  const route = useRoute(); // Access route parameters
-  const [decodedId, setDecodedId] = useState(null); // Store decoded ID
+
   const messageBoxWidth =
     trackScreen.length > 1 ? screenWidth * 0.85 : screenWidth * 0.9;
 
@@ -84,56 +84,26 @@ function ServiceApp() {
     [],
   );
 
-  // Close modal
-  const closeModal = () => {
-    setRating(0); // Reset rating
-    setComment(''); // Reset comment
-    setModalVisible(false);
-  };
-
+  // --------------------------------
+  //           HOOKS
+  // --------------------------------
   useEffect(() => {
     crashlytics().log('ServiceApp component mounted');
   }, []);
 
   useEffect(() => {
-    const {encodedId} = route.params || {}; // Get encodedId from params
+    // If route.params has an encodedId for rating
+    const {encodedId} = route.params || {};
     if (encodedId) {
       try {
-        const decoded = atob(encodedId); // Decode the encodedId
-        setDecodedId(decoded); // Update state with the decoded ID
-        setModalVisible(true); // Show rating screen
+        const decoded = atob(encodedId);
+        setDecodedId(decoded);
+        setModalVisible(true);
       } catch (error) {
         console.error('Failed to decode encodedId:', error);
       }
     }
   }, [route.params]);
-
-  // Handle rating and comment submission
-  const submitFeedback = async () => {
-    try {
-      const response = await axios.post(
-        `https://backend.clicksolver.com/api/user/feedback`, // Replace with your backend URL
-        {
-          rating: rating,
-          comment: comment,
-          notification_id: decodedId,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${await EncryptedStorage.getItem(
-              'cs_token',
-            )}`,
-          },
-        },
-      );
-
-      console.log('Feedback submitted successfully:', response.data);
-    } catch (error) {
-      console.error('Error submitting feedback:', error);
-    } finally {
-      closeModal();
-    }
-  };
 
   useEffect(() => {
     fetchServices();
@@ -141,12 +111,15 @@ function ServiceApp() {
     setGreetingBasedOnTime();
   }, []);
 
+  // --------------------------------
+  //           API CALLS
+  // --------------------------------
   const fetchTrackDetails = async () => {
     try {
       const cs_token = await EncryptedStorage.getItem('cs_token');
       if (cs_token) {
         const response = await axios.get(
-          `https://backend.clicksolver.com/api/user/track/details`,
+          'https://backend.clicksolver.com/api/user/track/details',
           {
             headers: {Authorization: `Bearer ${cs_token}`},
           },
@@ -162,6 +135,48 @@ function ServiceApp() {
     } catch (error) {
       console.error('Error fetching track details:', error);
     }
+  };
+
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      crashlytics().log('Attempting to fetch services from API');
+
+      const response = await axios.get(
+        'https://backend.clicksolver.com/api/servicecategories',
+        {timeout: 10000},
+      );
+
+      crashlytics().log('Services fetched successfully');
+      console.log('Response Data:', response.data);
+
+      const servicesWithIds = response.data.map(service => ({
+        ...service,
+        id: uuid.v4(),
+      }));
+      setServices(servicesWithIds);
+    } catch (error) {
+      crashlytics().log('Error occurred while fetching services');
+      crashlytics().recordError(error);
+      console.error('Detailed Error:', error.toJSON ? error.toJSON() : error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --------------------------------
+  //           UI ACTIONS
+  // --------------------------------
+  const handleNotification = () => {
+    navigation.push('Notifications');
+  };
+
+  const handleHelp = () => {
+    navigation.push('Help');
+  };
+
+  const handleBookCommander = serviceId => {
+    navigation.push('serviceCategory', {serviceObject: serviceId});
   };
 
   const setGreetingBasedOnTime = () => {
@@ -184,88 +199,9 @@ function ServiceApp() {
     setGreetingIcon(icon);
   };
 
-  // const fetchServices = async () => {
-  //   try {
-  //     setLoading(true);
-  //     const response = await axios.get(
-  //       `https://backend.clicksolver.com/api/servicecategories`,
-  //     );
-  //     const servicesWithIds = response.data.map(service => ({
-  //       ...service,
-  //       id: uuid.v4(),
-  //     }));
-  //     setServices(servicesWithIds);
-  //   } catch (error) {
-  //     console.error('Error fetching services:', error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  async function fetchServices() {
-    try {
-      setLoading(true);
-      crashlytics().log('Attempting to fetch services from API');
-
-      const response = await axios.get(
-        'https://backend.clicksolver.com/api/servicecategories',
-        {
-          timeout: 10000, // Set a timeout of 10 seconds
-        },
-      );
-
-      crashlytics().log('Services fetched successfully');
-      console.log('Response Data:', response.data);
-
-      const servicesWithIds = response.data.map(service => ({
-        ...service,
-        id: uuid.v4(),
-      }));
-      setServices(servicesWithIds);
-    } catch (error) {
-      crashlytics().log('Error occurred while fetching services');
-      crashlytics().log(`Error details: ${JSON.stringify(error, null, 2)}`);
-      crashlytics().recordError(error);
-
-      if (error.response) {
-        crashlytics().log(`Response status: ${error.response.status}`);
-        crashlytics().log(
-          `Response data: ${JSON.stringify(error.response.data)}`,
-        );
-      } else if (error.request) {
-        crashlytics().log(
-          'No response received from the server. Request may have timed out or been blocked.',
-        );
-      } else {
-        crashlytics().log(`Request error: ${error.message}`);
-      }
-
-      // Log the error details to console for further debugging
-      console.error('Detailed Error:', error.toJSON ? error.toJSON() : error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleNotification = () => {
-    navigation.push('Notifications');
-  };
-
-  const shareReferral = async () => {
-    const referralLink = `https://clicksolver.com/register?ref=${user.referralCode}`;
-    await Share.share({
-      message: `Join Click Solver using my referral link: ${referralLink}`,
-    });
-  };
-
-  const handleHelp = () => {
-    navigation.push('Help');
-  };
-
-  const handleBookCommander = serviceId => {
-    navigation.push('serviceCategory', {serviceObject: serviceId});
-  };
-
+  // --------------------------------
+  //           RENDER UI
+  // --------------------------------
   const renderSpecialOffers = () => {
     return specialOffers.map(offer => (
       <View
@@ -320,236 +256,275 @@ function ServiceApp() {
     ));
   };
 
+  // --------------------------------
+  //          RATING MODAL
+  // --------------------------------
+  const submitFeedback = async () => {
+    try {
+      const response = await axios.post(
+        'https://backend.clicksolver.com/api/user/feedback',
+        {
+          rating,
+          comment,
+          notification_id: decodedId,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${await EncryptedStorage.getItem(
+              'cs_token',
+            )}`,
+          },
+        },
+      );
+      console.log('Feedback submitted successfully:', response.data);
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+    } finally {
+      closeModal();
+    }
+  };
+
+  const closeModal = () => {
+    setRating(0);
+    setComment('');
+    setModalVisible(false);
+  };
+
+  // --------------------------------
+  //           COMPONENT
+  // --------------------------------
   return (
     <SafeAreaView style={styles.safeArea}>
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.userInfo}>
-          <View style={styles.userInitialCircle}>
-            <Text style={styles.userInitialText}>
-              {name.charAt(0).toUpperCase()}
-            </Text>
+      <View style={styles.container}>
+        {/* Header Row */}
+        <View style={styles.header}>
+          {/* User Info */}
+          <View style={styles.userInfo}>
+            <View style={styles.userInitialCircle}>
+              <Text style={styles.userInitialText}>
+                {name?.charAt?.(0)?.toUpperCase() || 'U'}
+              </Text>
+            </View>
+            <View style={styles.greeting}>
+              <Text style={styles.greetingText}>
+                {greeting}{' '}
+                <Text style={styles.greetingIcon}>{greetingIcon}</Text>
+              </Text>
+              <Text style={styles.userName}>{name}</Text>
+            </View>
           </View>
-          <View style={styles.greeting}>
-            <Text style={styles.greetingText}>
-              {greeting} <Text style={styles.greetingIcon}>{greetingIcon}</Text>
-            </Text>
-            <Text style={styles.userName}>{name}</Text>
+
+          {/* Icons on the Right */}
+          <View style={styles.headerIcons}>
+            <TouchableOpacity onPress={handleNotification}>
+              <Icon name="notifications-outline" size={23} color="#212121" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleHelp}>
+              <Feather name="help-circle" size={23} color="#212121" />
+            </TouchableOpacity>
           </View>
         </View>
-        <View style={styles.headerIcons}>
-          <TouchableOpacity onPress={handleNotification}>
-            <Icon name="notifications-outline" size={23} color="#212121" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleHelp}>
-            <Feather name="help-circle" size={23} color="#212121" />
-          </TouchableOpacity>
-        </View>
-      </View>
 
-      <QuickSearch />
+        {/* Quick Search */}
+        <QuickSearch />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollViewContent}
-        showsVerticalScrollIndicator={false}>
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Special Offers</Text>
-            {/* <Text style={styles.seeAll}>See All</Text> */}
+        {/* Main Scrollable Content */}
+        <ScrollView
+          contentContainerStyle={styles.scrollViewContent}
+          showsVerticalScrollIndicator={false}>
+          {/* Special Offers */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Special Offers</Text>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.offersScrollView}>
+              {renderSpecialOffers()}
+            </ScrollView>
           </View>
+
+          {/* Services */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Services</Text>
+            </View>
+            {renderServices()}
+          </View>
+        </ScrollView>
+
+        {/* Tracking Message Box 
+            - Now in normal layout flow (no absolute positioning).
+            - Renders below the ScrollView automatically, 
+              so no extra padding is needed.
+        */}
+        {messageBoxDisplay && (
           <ScrollView
             horizontal
+            ref={scrollViewRef}
+            contentContainerStyle={styles.scrollViewHorizontal}
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.offersScrollView}>
-            {renderSpecialOffers()}
+            style={styles.messageBoxWrapper}>
+            {trackScreen.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[styles.messageBoxContainer, {width: messageBoxWidth}]}
+                onPress={() =>
+                  navigation.replace(item.screen, {
+                    encodedId: item.encodedId,
+                    area: item.area,
+                    city: item.city,
+                    pincode: item.pincode,
+                    alternateName: item.alternateName,
+                    alternatePhoneNumber: item.alternatePhoneNumber,
+                    serviceBooked: item.serviceBooked,
+                    location: item.location,
+                  })
+                }>
+                <View style={styles.messageBox1}>
+                  <View style={styles.startingContainer}>
+                    <View style={styles.timeContainer}>
+                      {item.screen === 'Paymentscreen' ? (
+                        <Foundation name="paypal" size={24} color="#ffffff" />
+                      ) : item.screen === 'UserNavigation' ? (
+                        <MaterialCommunityIcons
+                          name="truck"
+                          size={24}
+                          color="#ffffff"
+                        />
+                      ) : item.screen === 'userwaiting' ? (
+                        <Feather name="search" size={24} color="#ffffff" />
+                      ) : item.screen === 'OtpVerification' ? (
+                        <Feather name="shield" size={24} color="#ffffff" />
+                      ) : item.screen === 'worktimescreen' ? (
+                        <MaterialCommunityIcons
+                          name="hammer"
+                          size={24}
+                          color="#ffffff"
+                        />
+                      ) : (
+                        <Feather name="alert-circle" size={24} color="#000" />
+                      )}
+                    </View>
+                    <View>
+                      <Text style={styles.textContainerText}>
+                        {item.serviceBooked && item.serviceBooked.length > 0
+                          ? item.serviceBooked
+                              .slice(0, 2)
+                              .map(service => service.serviceName)
+                              .join(', ') +
+                            (item.serviceBooked.length > 2 ? '...' : '')
+                          : 'Switch board & Socket repairing'}
+                      </Text>
+                      <Text style={styles.textContainerTextCommander}>
+                        {item.screen === 'Paymentscreen'
+                          ? 'Payment in progress'
+                          : item.screen === 'UserNavigation'
+                          ? 'Commander is on the way'
+                          : item.screen === 'OtpVerification'
+                          ? 'User is waiting for your help'
+                          : item.screen === 'worktimescreen'
+                          ? 'Work in progress'
+                          : 'Nothing'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.rightIcon}>
+                    <Feather name="chevrons-right" size={18} color="#9e9e9e" />
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
           </ScrollView>
-        </View>
+        )}
 
-        <View
-          style={[
-            {
-              paddingBottom: messageBoxDisplay ? 135 : 70,
-            },
-          ]}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Services</Text>
-            {/* <Text style={styles.seeAll}>See All</Text> */}
-          </View>
-          {renderServices()}
-        </View>
-      </ScrollView>
+        {/* Rating Modal */}
+        <Modal visible={isModalVisible} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              {/* Close Button */}
+              <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+                <Icon name="close" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
 
-      {messageBoxDisplay && (
-        <ScrollView
-          horizontal
-          ref={scrollViewRef}
-          contentContainerStyle={styles.scrollViewHorizontal}
-          showsHorizontalScrollIndicator={false}
-          style={styles.absoluteMessageBox}>
-          {trackScreen.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[styles.messageBoxContainer, {width: messageBoxWidth}]} // Apply dynamic width here
-              onPress={() =>
-                navigation.replace(item.screen, {
-                  encodedId: item.encodedId,
-                  area: item.area,
-                  city: item.city,
-                  pincode: item.pincode,
-                  alternateName: item.alternateName,
-                  alternatePhoneNumber: item.alternatePhoneNumber,
-                  serviceBooked: item.serviceBooked,
-                  location: item.location,
-                })
-              }>
-              <View style={styles.messageBox1}>
-                <View style={styles.startingContainer}>
-                  <View style={styles.timeContainer}>
-                    {console.log(item.screen)}
-                    {item.screen === 'Paymentscreen' ? (
-                      <Foundation name="paypal" size={24} color="#ffffff" />
-                    ) : item.screen === 'UserNavigation' ? (
-                      <MaterialCommunityIcons
-                        name="truck"
-                        size={24}
-                        color="#ffffff"
-                      />
-                    ) : item.screen === 'userwaiting' ? (
-                      <Feather name="search" size={24} color="#ffffff" />
-                    ) : item.screen === 'OtpVerification' ? (
-                      <Feather name="shield" size={24} color="#ffffff" />
-                    ) : item.screen === 'worktimescreen' ? (
-                      <MaterialCommunityIcons
-                        name="hammer"
-                        size={24}
-                        color="#ffffff"
-                      />
-                    ) : (
-                      <Feather name="alert-circle" size={24} color="#000" />
-                    )}
-                  </View>
-                  <View>
-                    <Text style={styles.textContainerText}>
-                      {item.serviceBooked && item.serviceBooked.length > 0
-                        ? item.serviceBooked
-                            .slice(0, 2) // Take only the first 2 items
-                            .map(service => service.serviceName)
-                            .join(', ') +
-                          (item.serviceBooked.length > 2 ? '...' : '') // Add "..." if there are more than 2 items
-                        : 'Switch board & Socket repairing'}
-                    </Text>
-                    <Text style={styles.textContainerTextCommander}>
-                      {item.screen === 'Paymentscreen'
-                        ? 'Payment in progress'
-                        : item.screen === 'UserNavigation'
-                        ? 'Commander is on the way'
-                        : item.screen === 'OtpVerification'
-                        ? 'User is waiting for your help'
-                        : item.screen === 'worktimescreen'
-                        ? 'Work in progress'
-                        : 'Nothing'}
-                    </Text>
-                  </View>
-                </View>
+              {/* Title and Subtitle */}
+              <Text style={styles.modalTitle}>
+                How was the quality of your Service?
+              </Text>
+              <Text style={styles.modalSubtitle}>
+                Your answer is anonymous. This helps us improve our service.
+              </Text>
 
-                <View style={styles.rightIcon}>
-                  <Feather name="chevrons-right" size={18} color="#9e9e9e" />
-                </View>
+              {/* Star Rating */}
+              <View style={styles.starsContainer}>
+                {[1, 2, 3, 4, 5].map(star => (
+                  <TouchableOpacity
+                    key={star}
+                    onPress={() => setRating(star)}
+                    style={styles.starButton}>
+                    <MaterialCommunityIcons
+                      name={star <= rating ? 'star' : 'star-outline'}
+                      size={30}
+                      color={star <= rating ? '#FFD700' : '#A9A9A9'}
+                    />
+                  </TouchableOpacity>
+                ))}
               </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
 
-      {/* Rating Modal */}
-      <Modal visible={isModalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            {/* Close Button */}
-            <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-              <Icon name="close" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
+              {/* Comment Box */}
+              <TextInput
+                style={styles.commentBox}
+                placeholder="Write your comment here..."
+                placeholderTextColor="#A9A9A9"
+                multiline
+                value={comment}
+                onChangeText={setComment}
+              />
 
-            {/* Title and Subtitle */}
-            <Text style={styles.modalTitle}>
-              How was the quality of your Service?
-            </Text>
-            <Text style={styles.modalSubtitle}>
-              Your answer is anonymous. This helps us improve our service.
-            </Text>
-
-            {/* Star Rating */}
-            <View style={styles.starsContainer}>
-              {[1, 2, 3, 4, 5].map(star => (
+              {/* Buttons */}
+              <View style={styles.modalButtons}>
                 <TouchableOpacity
-                  key={star}
-                  onPress={() => setRating(star)}
-                  style={styles.starButton}>
-                  <MaterialCommunityIcons
-                    name={star <= rating ? 'star' : 'star-outline'}
-                    size={30}
-                    color={star <= rating ? '#FFD700' : '#A9A9A9'}
-                  />
+                  onPress={closeModal}
+                  style={styles.notNowButton}>
+                  <Text style={styles.notNowText}>Not now</Text>
                 </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Comment Box */}
-            <TextInput
-              style={styles.commentBox}
-              placeholder="Write your comment here..."
-              placeholderTextColor="#A9A9A9"
-              multiline
-              value={comment}
-              onChangeText={setComment}
-            />
-
-            {/* Buttons */}
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                onPress={closeModal}
-                style={styles.notNowButton}>
-                <Text style={styles.notNowText}>Not now</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={submitFeedback}
-                style={styles.submitButton}>
-                <Text style={styles.submitText}>Submit</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={submitFeedback}
+                  style={styles.submitButton}>
+                  <Text style={styles.submitText}>Submit</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+      </View>
     </SafeAreaView>
   );
 }
 
-const screenWidth = Dimensions.get('window').width; // Get screen width
+export default ServiceApp;
 
+// --------------------------------
+//           STYLES
+// --------------------------------
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-  },  
+  },
   container: {
-  
+    flex: 1,
     backgroundColor: '#FFFFFF',
     padding: 20,
     paddingBottom: 0,
+    // Removed bottom padding so we rely on normal layout.
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
-  },
-  Servicessection: {
-    marginBottom: 20,
-  },
-  offersScrollView: {
-    display: 'flex',
-    gap: 10,
   },
   userInfo: {
     flexDirection: 'row',
@@ -564,17 +539,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 10,
   },
-  loadingAnimation: {
-    width: '100%',
-    height: '100%',
-  },
   userInitialText: {
     fontSize: 18,
     color: '#333',
     fontFamily: 'RobotoSlab-Bold',
-  },
-  scrollViewContent: {
-    flexGrow: 1,
   },
   greeting: {
     flexDirection: 'column',
@@ -582,7 +550,6 @@ const styles = StyleSheet.create({
   },
   greetingText: {
     fontSize: 14,
-    fontFamily: 'Roboto',
     lineHeight: 18.75,
     fontStyle: 'italic',
     color: '#808080',
@@ -601,9 +568,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 15,
   },
-  section: {
-    marginBottom: 20,
+  scrollViewContent: {
+    // You can add slight padding if you want some spacing at the bottom,
+    // but it's not required for final item to be visible
+    paddingBottom: 10,
   },
+  // section: {
+  //   marginBottom: 20,
+  // },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -615,9 +587,9 @@ const styles = StyleSheet.create({
     color: '#1D2951',
     fontFamily: 'RobotoSlab-Bold',
   },
-  seeAll: {
-    fontSize: 14,
-    color: '#4a4a4a',
+  offersScrollView: {
+    display: 'flex',
+    gap: 10,
   },
   offerCard: {
     flexDirection: 'row',
@@ -630,7 +602,7 @@ const styles = StyleSheet.create({
     padding: 15,
   },
   offerTitle: {
-    fontSize: 40,
+    fontSize: 30,
     fontFamily: 'RobotoSlab-Bold',
   },
   offerSubtitle: {
@@ -649,6 +621,10 @@ const styles = StyleSheet.create({
     width: 119,
     height: 136,
     alignSelf: 'flex-end',
+  },
+  loadingAnimation: {
+    width: '100%',
+    height: 200,
   },
   serviceCard: {
     flexDirection: 'row',
@@ -669,6 +645,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingLeft: 10,
   },
+  serviceTitle: {
+    fontSize: 16,
+    fontFamily: 'RobotoSlab-Bold',
+    color: '#333',
+  },
   bookButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -686,51 +667,35 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
   },
-  absoluteMessageBox: {
-    position: 'absolute',
-    bottom: 2,
-    left: 0,
-    right: 0,
+
+  // Message Box (Now in normal flow)
+  messageBoxWrapper: {
+    marginTop: 10,
   },
   scrollViewHorizontal: {
-    paddingHorizontal: 10, // Add padding to give space on the left and right
     alignItems: 'center',
   },
   messageBoxContainer: {
     backgroundColor: '#ffffff',
-    borderRadius: 10,
+    borderRadius: 20,
     flexDirection: 'row',
-    padding: 10,
-    marginHorizontal: 5,
+    padding: 15,
+
     justifyContent: 'space-between',
     alignItems: 'center',
     elevation: 3,
-    width: screenWidth * 0.9, // Set width to 80% of screen width for peek effect
   },
-  // startingContainer: {
-  //   flexDirection: 'row',
-  //   alignItems: 'center',
-  // },
-  startingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1, // Ensures it occupies available space
-  },
-
-  // messageBox1: {
-  //   flexDirection: 'row',
-  //   alignItems: 'center',
-  //   justifyContent: 'space-between',
-  //   width: '100%',
-  // },
-  // Updated Styles
   messageBox1: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    flex: 1, // Added flex property
+    flex: 1,
   },
-
+  startingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
   timeContainer: {
     width: 45,
     height: 45,
@@ -739,7 +704,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   textContainerText: {
     fontSize: 13,
     paddingBottom: 5,
@@ -754,41 +718,17 @@ const styles = StyleSheet.create({
     fontFamily: 'RobotoSlab-Regular',
     marginLeft: 10,
   },
-
   rightIcon: {
     marginLeft: 8,
   },
-  iconContainer: {
-    marginRight: 10,
-  },
-  iconImage: {
-    width: 40,
-    height: 40,
-    resizeMode: 'contain',
-  },
-  serviceInfoContainer: {
-    flex: 1,
-  },
-  serviceTitle: {
-    fontSize: 16,
-    fontFamily: 'RobotoSlab-Bold',
-    color: '#333',
-  },
-  rightIcon: {
-    marginLeft: 8,
-  },
-  waitingText: {
-    fontSize: 12,
-    color: '#1D2951',
-  },
 
+  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    // backgroundColor: '#212E36',
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
@@ -862,5 +802,3 @@ const styles = StyleSheet.create({
     fontFamily: 'RobotoSlab-Medium',
   },
 });
-
-export default ServiceApp;

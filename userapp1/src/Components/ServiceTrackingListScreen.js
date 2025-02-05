@@ -14,7 +14,7 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
 import uuid from 'react-native-uuid';
 import {useNavigation} from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 // import Config from 'react-native-config';
 
 const ServiceTrackingListScreen = () => {
@@ -146,53 +146,53 @@ const ServiceTrackingListScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-    <TouchableWithoutFeedback onPress={handleOutsidePress}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.headerContainer}>
-          <Icon name="arrow-back" size={24} color="#000" />
-          <Text style={styles.headerTitle}>Service Tracking</Text>
-          <TouchableOpacity
-            onPress={() => setIsFilterVisible(!isFilterVisible)}>
-            <Icon name="filter-list" size={24} color="#000" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Filter Dropdown */}
-        {isFilterVisible && (
-          <View style={styles.dropdownContainer}>
-            <Text style={styles.dropdownTitle}>PROJECT TYPE</Text>
-            {filterOptions.map((option, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.dropdownOption}
-                onPress={() => toggleFilter(option)}>
-                <Icon
-                  name={
-                    selectedFilters.includes(option)
-                      ? 'check-box'
-                      : 'check-box-outline-blank'
-                  }
-                  size={20}
-                  color="#4a4a4a"
-                />
-                <Text style={styles.dropdownText}>{option}</Text>
-              </TouchableOpacity>
-            ))}
+      <TouchableWithoutFeedback onPress={handleOutsidePress}>
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.headerContainer}>
+            <Icon name="arrow-back" size={24} color="#000" />
+            <Text style={styles.headerTitle}>Service Tracking</Text>
+            <TouchableOpacity
+              onPress={() => setIsFilterVisible(!isFilterVisible)}>
+              <Icon name="filter-list" size={24} color="#000" />
+            </TouchableOpacity>
           </View>
-        )}
 
-        {/* Service List */}
-        <View style={styles.trackingItems}>
-          <FlatList
-            data={filteredData}
-            renderItem={renderItem}
-            keyExtractor={() => uuid.v4()}
-            contentContainerStyle={styles.listContainer}
-          />
+          {/* Filter Dropdown */}
+          {isFilterVisible && (
+            <View style={styles.dropdownContainer}>
+              <Text style={styles.dropdownTitle}>PROJECT TYPE</Text>
+              {filterOptions.map((option, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.dropdownOption}
+                  onPress={() => toggleFilter(option)}>
+                  <Icon
+                    name={
+                      selectedFilters.includes(option)
+                        ? 'check-box'
+                        : 'check-box-outline-blank'
+                    }
+                    size={20}
+                    color="#4a4a4a"
+                  />
+                  <Text style={styles.dropdownText}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Service List */}
+          <View style={styles.trackingItems}>
+            <FlatList
+              data={filteredData}
+              renderItem={renderItem}
+              keyExtractor={() => uuid.v4()}
+              contentContainerStyle={styles.listContainer}
+            />
+          </View>
         </View>
-      </View>
-    </TouchableWithoutFeedback>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 };
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-  }, 
+  },
   container: {
     flex: 1,
     backgroundColor: '#f3f3f3',
@@ -262,11 +262,11 @@ const styles = StyleSheet.create({
   },
   itemContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between', // Space out items evenly
     backgroundColor: '#fff',
     borderRadius: 10,
-    padding: 20,
+    padding: 16, // Reduce padding slightly for compact layout
     marginBottom: 16,
     elevation: 2,
     shadowColor: '#000',
@@ -279,16 +279,17 @@ const styles = StyleSheet.create({
     paddingTop: 16, // Add space between the header and list items
   },
   serviceIconContainer: {
-    width: 50,
-    height: 50,
+    width: 40, // Adjust width and height for compact design
+    height: 40,
     backgroundColor: '#ff5722',
-    borderRadius: 50,
+    borderRadius: 20, // Keep it circular
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 8, // Reduce margin for better spacing
   },
   itemTextContainer: {
-    flex: 1,
+    flex: 2, // Allow the text to take more space
+    marginRight: 8, // Provide some spacing before the status label
   },
   itemTitle: {
     fontSize: 14,
@@ -307,6 +308,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // statusLabel: {
+  //   flex: 1, // Allow it to fit in one line with other elements
+  //   borderRadius: 20, // Rounded button-like appearance
+  //   paddingVertical: 6, // Compact padding
+  //   paddingHorizontal: 10,
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
+  // },
   inProgress: {
     backgroundColor: '#ffecb3',
   },

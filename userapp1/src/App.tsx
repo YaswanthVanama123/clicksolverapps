@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {NavigationContainer, CommonActions} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
@@ -6,8 +6,13 @@ import axios from 'axios';
 import messaging from '@react-native-firebase/messaging';
 import PushNotification from 'react-native-push-notification';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import {PermissionsAndroid,Platform} from 'react-native';
-import {requestMultiple, checkMultiple, PERMISSIONS, RESULTS} from 'react-native-permissions';
+import {ActivityIndicator, Platform, View} from 'react-native';
+import {
+  requestMultiple,
+  checkMultiple,
+  PERMISSIONS,
+  RESULTS,
+} from 'react-native-permissions';
 import Feather from 'react-native-vector-icons/Feather';
 import Entypo from 'react-native-vector-icons/Entypo';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -108,6 +113,7 @@ function TabNavigator() {
 
 function App() {
   const navigationRef = useRef(null);
+  const [initialRoute, setInitialRoute] = useState<string | null>(null);
 
   async function requestAllPermissions() {
     const permissions = {
@@ -125,18 +131,19 @@ function App() {
         PERMISSIONS.ANDROID.READ_CONTACTS,
       ],
     };
-  
-    const osPermissions = Platform.OS === 'ios' ? permissions.ios : permissions.android;
-  
+
+    const osPermissions =
+      Platform.OS === 'ios' ? permissions.ios : permissions.android;
+
     // Check current permission statuses
     const currentStatuses = await checkMultiple(osPermissions);
     console.log('Current Permission Statuses:', currentStatuses);
-  
+
     // Request permissions if not already granted
     const permissionsToRequest = osPermissions.filter(
-      (perm) => currentStatuses[perm] !== RESULTS.GRANTED
+      perm => currentStatuses[perm] !== RESULTS.GRANTED,
     );
-  
+
     if (permissionsToRequest.length > 0) {
       const newStatuses = await requestMultiple(permissionsToRequest);
       console.log('Updated Permission Statuses:', newStatuses);
@@ -144,7 +151,6 @@ function App() {
       console.log('All necessary permissions are already granted.');
     }
   }
-  
 
   // Request user permissions for notifications
   // async function requestUserPermission() {
@@ -179,8 +185,6 @@ function App() {
   //     console.log('Notification permission denied');
   //   }
   // }
-
-
 
   // Get FCM tokens and store them
   async function getTokens() {
@@ -460,12 +464,43 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const checkOnboarding = async () => {
+      try {
+        const onboarded = await EncryptedStorage.getItem('onboarded');
+
+        if (onboarded) {
+          setInitialRoute('Tabs'); // Navigate to Tabs
+          navigationRef.current?.navigate('Tabs');
+        } else {
+          setInitialRoute('OnboardingScreen');
+          navigationRef.current?.navigate('OnboardingScreen');
+        }
+      } catch (error) {
+        console.error('Error retrieving tokens:', error);
+        setInitialRoute('Login'); // Default to Login if error occurs
+        navigationRef.current?.navigate('Login'); // Force navigation to Login
+      }
+    };
+
+    checkOnboarding();
+  }, []);
+
+  // Show a loading screen or null until initialRoute is determined
+  // if (!initialRoute) {
+  //   return (
+  //     <View>
+  //       <ActivityIndicator size="large" color="#0000ff" />
+  //     </View>
+  //   );
+  // }
+  //
+  useEffect(() => {
     SplashScreen.hide();
   }, []);
 
   return (
     <NavigationContainer ref={navigationRef}>
-      <Stack.Navigator>
+      <Stack.Navigator initialRouteName={initialRoute}>
         <Stack.Screen
           name="Tabs"
           component={TabNavigator}

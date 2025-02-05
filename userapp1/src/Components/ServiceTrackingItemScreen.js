@@ -98,184 +98,189 @@ const ServiceTrackingItemScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Icon
-          name="arrow-left-long"
-          size={20}
-          color="#212121"
-          style={styles.backIcon}
-        />
-        <Text style={styles.headerText}>Service Trackings</Text>
-      </View>
-      <ScrollView>
-        {/* User Profile */}
-        <View style={styles.profileContainer}>
-          {/* <Image
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Icon
+            name="arrow-left-long"
+            size={20}
+            color="#212121"
+            style={styles.backIcon}
+          />
+          <Text style={styles.headerText}>Service Trackings</Text>
+        </View>
+        <ScrollView>
+          {/* User Profile */}
+          <View style={styles.profileContainer}>
+            {/* <Image
           source={{ uri: details.profile }}
           style={styles.profileImage}
           resizeMode="cover"
         /> */}
-          <View style={styles.profileImage}>
-            <Text style={styles.profileInitial}>
-              {details.name ? details.name.charAt(0).toUpperCase() : ''}
-            </Text>
-          </View>
-          <View style={styles.profileTextContainer}>
-            <View>
-              <Text style={styles.userName}>{details.name}</Text>
-              <Text style={styles.userDesignation}>{details.service}</Text>
+            <View style={styles.profileImage}>
+              <Text style={styles.profileInitial}>
+                {details.name ? details.name.charAt(0).toUpperCase() : ''}
+              </Text>
             </View>
+            <View style={styles.profileTextContainer}>
+              <View>
+                <Text style={styles.userName}>{details.name}</Text>
+                <Text style={styles.userDesignation}>{details.service}</Text>
+              </View>
 
-            <TouchableOpacity style={styles.callIconContainer}>
-              <MaterialIcons name="call" size={22} color="#FF5722" />
+              <TouchableOpacity style={styles.callIconContainer}>
+                <MaterialIcons name="call" size={22} color="#FF5722" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* PIN */}
+          <View style={styles.pinContainer}>
+            <Text style={styles.pinText}>PIN</Text>
+
+            {/* Display each pin digit in its own box */}
+            <View style={styles.pinBoxesContainer}>
+              {pin.split('').map((digit, index) => (
+                <View key={index} style={styles.pinBox}>
+                  <Text style={styles.pinNumber}>{digit}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.horizantalLine} />
+
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionBookedTitle}>Service Details</Text>
+            <View style={styles.innerContainer}>
+              {serviceArray.map((service, index) => (
+                <Text key={index} style={styles.serviceDetail}>
+                  {service.serviceName}
+                </Text>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.horizantalLine} />
+
+          <View style={styles.sectionContainer}>
+            <View style={styles.serviceTimeLineContainer}>
+              <Text style={styles.sectionTitle}>Service Timeline</Text>
+            </View>
+            <View style={styles.innerContainerLine}>
+              {getTimelineData.map((item, index) => (
+                <View key={index} style={styles.timelineItem}>
+                  <View style={{alignItems: 'center'}}>
+                    <MaterialCommunityIcons
+                      name="circle"
+                      size={14}
+                      color={item.iconColor}
+                      style={styles.timelineIcon}
+                    />
+                    {index !== getTimelineData.length - 1 && (
+                      <View
+                        style={[
+                          styles.lineSegment,
+                          {
+                            backgroundColor:
+                              getTimelineData[index + 1].iconColor,
+                          },
+                        ]}
+                      />
+                    )}
+                  </View>
+                  <View style={styles.timelineTextContainer}>
+                    <Text style={styles.timelineText}>{item.title}</Text>
+                    <Text style={styles.timelineTime}>{item.time}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.horizantalLine} />
+
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Address</Text>
+            <View style={styles.addressContainer}>
+              <Image
+                source={{
+                  uri: 'https://i.postimg.cc/rpb2czKR/1000051859-removebg-preview.png',
+                }}
+                style={styles.locationPinImage}
+              />
+              <View style={styles.addressTextContainer}>
+                <Text style={styles.address}>{details.area}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Payment Details */}
+          <View style={styles.paymentInnerContainer}>
+            <TouchableOpacity
+              style={styles.paymentSummaryContainer}
+              onPress={togglePaymentDetails}
+              accessibilityRole="button"
+              accessibilityLabel="Toggle Payment Details">
+              <Text style={styles.sectionPaymentTitle}>Payment Details</Text>
+              <Animated.View style={{transform: [{rotate: rotateInterpolate}]}}>
+                <Entypo name="chevron-small-right" size={20} color="#ff4500" />
+              </Animated.View>
             </TouchableOpacity>
           </View>
-        </View>
+          <View style={styles.sectionContainer}>
+            {/* Payment Summary with Toggle */}
 
-        {/* PIN */}
-        <View style={styles.pinContainer}>
-          <Text style={styles.pinText}>PIN</Text>
-
-          {/* Display each pin digit in its own box */}
-          <View style={styles.pinBoxesContainer}>
-            {pin.split('').map((digit, index) => (
-              <View key={index} style={styles.pinBox}>
-                <Text style={styles.pinNumber}>{digit}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.horizantalLine} />
-
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionBookedTitle}>Service Details</Text>
-          <View style={styles.innerContainer}>
-            {serviceArray.map((service, index) => (
-              <Text key={index} style={styles.serviceDetail}>
-                {service.serviceName}
-              </Text>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.horizantalLine} />
-
-        <View style={styles.sectionContainer}>
-          <View style={styles.serviceTimeLineContainer}>
-            <Text style={styles.sectionTitle}>Service Timeline</Text>
-          </View>
-          <View style={styles.innerContainerLine}>
-            {getTimelineData.map((item, index) => (
-              <View key={index} style={styles.timelineItem}>
-                <View style={{alignItems: 'center'}}>
-                  <MaterialCommunityIcons
-                    name="circle"
-                    size={14}
-                    color={item.iconColor}
-                    style={styles.timelineIcon}
-                  />
-                  {index !== getTimelineData.length - 1 && (
-                    <View
-                      style={[
-                        styles.lineSegment,
-                        {backgroundColor: getTimelineData[index + 1].iconColor},
-                      ]}
-                    />
-                  )}
-                </View>
-                <View style={styles.timelineTextContainer}>
-                  <Text style={styles.timelineText}>{item.title}</Text>
-                  <Text style={styles.timelineTime}>{item.time}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.horizantalLine} />
-
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Address</Text>
-          <View style={styles.addressContainer}>
-            <Image
-              source={{
-                uri: 'https://i.postimg.cc/rpb2czKR/1000051859-removebg-preview.png',
-              }}
-              style={styles.locationPinImage}
-            />
-            <View style={styles.addressTextContainer}>
-              <Text style={styles.address}>{details.area}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Payment Details */}
-        <View style={styles.paymentInnerContainer}>
-          <TouchableOpacity
-            style={styles.paymentSummaryContainer}
-            onPress={togglePaymentDetails}
-            accessibilityRole="button"
-            accessibilityLabel="Toggle Payment Details">
-            <Text style={styles.sectionPaymentTitle}>Payment Details</Text>
-            <Animated.View style={{transform: [{rotate: rotateInterpolate}]}}>
-              <Entypo name="chevron-small-right" size={20} color="#ff4500" />
-            </Animated.View>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.sectionContainer}>
-          {/* Payment Summary with Toggle */}
-
-          {/* Conditionally Render Payment Details */}
-          {paymentExpanded && (
-            <>
-              <View style={styles.PaymentItemContainer}>
-                {serviceArray.map((service, index) => (
-                  <View key={index} style={styles.paymentRow}>
-                    <Text style={styles.paymentLabel}>
-                      {service.serviceName}
-                    </Text>
+            {/* Conditionally Render Payment Details */}
+            {paymentExpanded && (
+              <>
+                <View style={styles.PaymentItemContainer}>
+                  {serviceArray.map((service, index) => (
+                    <View key={index} style={styles.paymentRow}>
+                      <Text style={styles.paymentLabel}>
+                        {service.serviceName}
+                      </Text>
+                      <Text style={styles.paymentValue}>
+                        ₹{service.cost.toFixed(2)}
+                      </Text>
+                    </View>
+                  ))}
+                  <View style={styles.paymentRow}>
+                    <Text style={styles.paymentLabel}>SGST (5%)</Text>
                     <Text style={styles.paymentValue}>
-                      ₹{service.cost.toFixed(2)}
+                      ₹{paymentDetails.cgstAmount.toFixed(2)}
                     </Text>
                   </View>
-                ))}
-                <View style={styles.paymentRow}>
-                  <Text style={styles.paymentLabel}>SGST (5%)</Text>
-                  <Text style={styles.paymentValue}>
-                    ₹{paymentDetails.cgstAmount.toFixed(2)}
-                  </Text>
+                  <View style={styles.paymentRow}>
+                    <Text style={styles.paymentLabel}>CGST (5%)</Text>
+                    <Text style={styles.paymentValue}>
+                      ₹{paymentDetails.gstAmount.toFixed(2)}
+                    </Text>
+                  </View>
+                  <View style={styles.paymentRow}>
+                    <Text style={styles.paymentLabel}>Cashback (5%)</Text>
+                    <Text style={styles.paymentValue}>
+                      ₹{paymentDetails.discountAmount.toFixed(2)}
+                    </Text>
+                  </View>
+                  <View style={styles.paymentRow}>
+                    <Text style={styles.paymentLabel}>Pay Via Scan</Text>
+                    <Text style={styles.paymentValue}>
+                      Grand Total ₹
+                      {paymentDetails.fetchedFinalTotalAmount.toFixed(2)}
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.paymentRow}>
-                  <Text style={styles.paymentLabel}>CGST (5%)</Text>
-                  <Text style={styles.paymentValue}>
-                    ₹{paymentDetails.gstAmount.toFixed(2)}
-                  </Text>
-                </View>
-                <View style={styles.paymentRow}>
-                  <Text style={styles.paymentLabel}>Cashback (5%)</Text>
-                  <Text style={styles.paymentValue}>
-                    ₹{paymentDetails.discountAmount.toFixed(2)}
-                  </Text>
-                </View>
-                <View style={styles.paymentRow}>
-                  <Text style={styles.paymentLabel}>Pay Via Scan</Text>
-                  <Text style={styles.paymentValue}>
-                    Grand Total ₹
-                    {paymentDetails.fetchedFinalTotalAmount.toFixed(2)}
-                  </Text>
-                </View>
-              </View>
-            </>
-          )}
-        </View>
+              </>
+            )}
+          </View>
 
-        <TouchableOpacity style={styles.payButton} onPress={openPhonePeScanner}>
-          <Text style={styles.payButtonText}>PAY</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
+          <TouchableOpacity
+            style={styles.payButton}
+            onPress={openPhonePeScanner}>
+            <Text style={styles.payButtonText}>PAY</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -284,7 +289,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-  }, 
+  },
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
