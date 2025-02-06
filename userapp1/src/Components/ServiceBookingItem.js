@@ -232,7 +232,7 @@ const ServiceBookingItem = () => {
                 <View style={styles.PaymentItemContainer}>
                   {serviceArray.map((service, index) => (
                     <View key={index} style={styles.paymentRow}>
-                      <Text style={styles.paymentLabel}>
+                      <Text style={styles.paymentLabelHead}>
                         {service.serviceName}
                       </Text>
                       <Text style={styles.paymentValue}>
@@ -240,29 +240,31 @@ const ServiceBookingItem = () => {
                       </Text>
                     </View>
                   ))}
-                  <View style={styles.paymentRow}>
+                  {/* <View style={styles.paymentRow}>
                     <Text style={styles.paymentLabel}>SGST (5%)</Text>
                     <Text style={styles.paymentValue}>
-                      {/* ₹{paymentDetails.cgstAmount.toFixed(2)} */}
+                       ₹{paymentDetails.cgstAmount.toFixed(2)} 
                     </Text>
                   </View>
                   <View style={styles.paymentRow}>
                     <Text style={styles.paymentLabel}>CGST (5%)</Text>
                     <Text style={styles.paymentValue}>
-                      {/* ₹{paymentDetails.gstAmount.toFixed(2)} */}
+                      ₹{paymentDetails.gstAmount.toFixed(2)}
                     </Text>
-                  </View>
+                  </View> */}
+                  {details.discount > 0 && (
+                    <View style={styles.paymentRow}>
+                      <Text style={styles.paymentLabel}>Cashback (5%)</Text>
+                      <Text style={styles.paymentValue}>
+                        {/* ₹{paymentDetails.discountAmount.toFixed(2)} */}₹
+                        {details.discount}
+                      </Text>
+                    </View>
+                  )}
                   <View style={styles.paymentRow}>
-                    <Text style={styles.paymentLabel}>Cashback (5%)</Text>
+                    <Text style={styles.paymentValue}> Grand Total</Text>
                     <Text style={styles.paymentValue}>
-                      {/* ₹{paymentDetails.discountAmount.toFixed(2)} */}₹
-                      {details.discount}
-                    </Text>
-                  </View>
-                  <View style={styles.paymentRow}>
-                    <Text style={styles.paymentLabel}>Pay Via Scan</Text>
-                    <Text style={styles.paymentValue}>
-                      Grand Total ₹ {details.total_cost}
+                      ₹ {details.total_cost}
                       {/* {paymentDetails.fetchedFinalTotalAmount.toFixed(2)} */}
                     </Text>
                   </View>
@@ -534,6 +536,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   paymentLabel: {
+    fontSize: 12,
+    fontFamily: 'RobotoSlab-Regular',
+    color: '#212121',
+  },
+  paymentLabelHead: {
+    width: '80%',
     fontSize: 12,
     fontFamily: 'RobotoSlab-Regular',
     color: '#212121',

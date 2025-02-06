@@ -662,23 +662,23 @@ const getServiceTrackingUserItemDetails = async (req, res) => {
     const { tracking_id } = req.body;
     // console.log(tracking_id)
     const query = `
-    SELECT
-      st.service_booked,
-      st.service_status,
-      st.created_at,
-      st.tracking_pin,
-      st.total_cost,
-      st.discount
-      w.name,
-      w.phone_number,
-      un.area,
-      ws.profile,
-      ws.service
-    FROM servicetracking st
-    JOIN workersverified w ON st.worker_id = w.worker_id
-    JOIN usernotifications un ON st.user_notification_id = un.user_notification_id
-    JOIN workerskills ws ON w.worker_id = ws.worker_id
-    WHERE st.tracking_id = $1;
+      SELECT
+        st.service_booked,
+        st.service_status,
+        st.created_at,
+        st.tracking_pin,
+        st.total_cost,
+        st.discount,  
+        w.name,
+        w.phone_number,
+        un.area,
+        ws.profile,
+        ws.service
+      FROM servicetracking st
+      JOIN workersverified w ON st.worker_id = w.worker_id
+      JOIN usernotifications un ON st.user_notification_id = un.user_notification_id
+      JOIN workerskills ws ON w.worker_id = ws.worker_id
+      WHERE st.tracking_id = $1;
   `;
 
     const values = [tracking_id];

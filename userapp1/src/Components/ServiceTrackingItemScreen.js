@@ -18,6 +18,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Entypo from 'react-native-vector-icons/Entypo';
 import {useRoute} from '@react-navigation/native';
 import axios from 'axios';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 const ServiceTrackingItemScreen = () => {
   const [titleColor, setTitleColor] = useState('#FFFFFF');
@@ -236,7 +237,7 @@ const ServiceTrackingItemScreen = () => {
                 <View style={styles.PaymentItemContainer}>
                   {serviceArray.map((service, index) => (
                     <View key={index} style={styles.paymentRow}>
-                      <Text style={styles.paymentLabel}>
+                      <Text style={styles.paymentLabelHead}>
                         {service.serviceName}
                       </Text>
                       <Text style={styles.paymentValue}>
@@ -244,7 +245,7 @@ const ServiceTrackingItemScreen = () => {
                       </Text>
                     </View>
                   ))}
-                  <View style={styles.paymentRow}>
+                  {/* <View style={styles.paymentRow}>
                     <Text style={styles.paymentLabel}>SGST (5%)</Text>
                     <Text style={styles.paymentValue}>
                       ₹{paymentDetails.cgstAmount.toFixed(2)}
@@ -255,18 +256,18 @@ const ServiceTrackingItemScreen = () => {
                     <Text style={styles.paymentValue}>
                       ₹{paymentDetails.gstAmount.toFixed(2)}
                     </Text>
-                  </View>
+                  </View> */}
                   <View style={styles.paymentRow}>
                     <Text style={styles.paymentLabel}>Cashback (5%)</Text>
                     <Text style={styles.paymentValue}>
-                      ₹{paymentDetails.discountAmount.toFixed(2)}
+                      {/* ₹{paymentDetails.discountAmount.toFixed(2)} */}
                     </Text>
                   </View>
                   <View style={styles.paymentRow}>
-                    <Text style={styles.paymentLabel}>Pay Via Scan</Text>
+                    <Text style={styles.paymentLabel}>Grand Total</Text>
                     <Text style={styles.paymentValue}>
-                      Grand Total ₹
-                      {paymentDetails.fetchedFinalTotalAmount.toFixed(2)}
+                      ₹
+                      {/* {paymentDetails.fetchedFinalTotalAmount.toFixed(2)} */}
                     </Text>
                   </View>
                 </View>
@@ -537,6 +538,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 4,
+  },
+  paymentLabelHead: {
+    width: '80%',
+    fontSize: 12,
+    fontFamily: 'RobotoSlab-Regular',
+    color: '#212121',
   },
   paymentLabel: {
     fontSize: 12,
