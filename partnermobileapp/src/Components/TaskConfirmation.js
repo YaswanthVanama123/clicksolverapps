@@ -192,13 +192,16 @@ const TaskConfirmation = () => {
                 ₹0.00
               </Text>
             </View>
-            <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>Cashback (5%)</Text>
-              <Text style={styles.paymentValue}>
+            {details.discount > 0 &&
+              <View style={styles.paymentRow}>
+                <Text style={styles.paymentLabel}>Cashback (5%)</Text>
+                <Text style={styles.paymentValue}>
                 {/* ₹{paymentDetails.discountAmount}.00 */}- ₹{details.discount}
                 .00
-              </Text>
-            </View>
+                </Text>
+              </View>
+            }
+
             <View style={[styles.horizantalLine, {marginTop: 10}]} />
             <View style={styles.paymentGrandRow}>
               <Text style={styles.paymentTotalValue}>

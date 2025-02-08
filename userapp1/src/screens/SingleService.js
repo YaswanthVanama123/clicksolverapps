@@ -250,7 +250,7 @@ const SingleService = () => {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={{ flex: 1 }} edges={["top","left","right"]}>
     <View style={{ flex: 1 }}>
     <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}>
         {/* Top Header */}
@@ -372,7 +372,7 @@ const SingleService = () => {
 
 {/* Bottom Cart Bar */}
 {totalAmount > 0 && (
-      <View style={[styles.cartContainer, { paddingBottom: insets.bottom }]}>
+      <View style={[styles.cartContainer]}>
         <View>
           {bookedServices.some(
             service => service.originalCost !== service.cost
@@ -665,7 +665,7 @@ const styles = StyleSheet.create({
   // ---------------------
   cartContainer: {
     position: 'absolute', // Stick to the bottom
-    bottom: -30,            // Align at the very bottom
+    bottom: 0,            // Align at the very bottom
     left: 0,
     right: 0,
     flexDirection: 'row',

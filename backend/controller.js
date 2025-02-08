@@ -3884,9 +3884,27 @@ const fetchLocationDetails = async (notificationId) => {
   }
 };
 
+
 const userCoupons = async (req, res) => {
   const userId = req.user.id;
   try {
+    // const result = await client.query(
+    //   `
+    //   SELECT 
+    //     u.service_completed,
+    //     COALESCE(rr.coupons, NULL) AS coupons
+    //   FROM 
+    //     user u
+    //   LEFT JOIN 
+    //     referral_rewards rr
+    //   ON 
+    //     u.user_id = rr.user_id
+    //   WHERE 
+    //     u.user_id = $1
+    //   `,
+    //   [userId]
+    // );
+
     const result = await client.query(
       `
       SELECT 
@@ -3897,12 +3915,13 @@ const userCoupons = async (req, res) => {
       LEFT JOIN 
         referral_rewards rr
       ON 
-        u.user_id = rr.user_id
+        u.referral_code = rr.referral_code
       WHERE 
         u.user_id = $1
       `,
       [userId]
     );
+    
 
     if (result.rows.length > 0) {
       const { service_completed, coupons } = result.rows[0];

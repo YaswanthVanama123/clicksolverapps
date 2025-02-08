@@ -77,13 +77,14 @@ const Payment = ({route}) => {
         // fetchedFinalTotalAmount,
         profile,
       } = response.data;
+      console.log("total cost ",response.data.total_cost)
 
       // const startTime = formatTime(start_time);
       // const endTime = formatTime(end_time);
       // const timeWorked = convertTimeStringToReadableFormat(time_worked);
       // const completedTime = convertISODateToReadableFormat(end_time);
 
-      console.log(response.data);
+
 
       setDiscount(discount);
       setTotalCost(total_cost);
@@ -304,10 +305,12 @@ const Payment = ({route}) => {
                   ₹0.00
                 </Text>
               </View>
+              {discount > 0 &&               
               <View style={styles.breakdownContainer}>
                 <Text style={styles.breakdownItem}>Cashback</Text>
                 <Text style={styles.breakdownPrice}>- ₹ {discount}</Text>
-              </View>
+              </View>}
+
               <View style={styles.separatorLine} />
               <View style={styles.grandTotalContainer}>
                 <Text style={styles.paidViaText}>Paid Via Scan</Text>
@@ -402,7 +405,7 @@ const Payment = ({route}) => {
       <View style={styles.buttonAmmountContainer}>
         <View>
           <Text style={styles.serviceCostText}>Service cost</Text>
-          <Text style={styles.cost}>₹ {grandTotal}</Text>
+          <Text style={styles.cost}>₹ {totalCost}</Text>
         </View>
         <TouchableOpacity style={styles.payButton} onPress={openPhonePeScanner}>
           <Text style={styles.payButtonText}>Pay Now</Text>

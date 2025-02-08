@@ -2,6 +2,8 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.firebase.crashlytics'
+
 
 Project background_geolocation = project(':react-native-background-geolocation')
 apply from: "${background_geolocation.projectDir}/app.gradle"

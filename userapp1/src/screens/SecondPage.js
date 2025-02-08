@@ -710,7 +710,7 @@ const styles = StyleSheet.create({
     fontFamily: 'RobotoSlab-Bold',
     color: '#212121',
     marginLeft: 10,
-    width: '95%',
+    width: '90%',
   },
   textContainerTextCommander: {
     fontSize: 12,

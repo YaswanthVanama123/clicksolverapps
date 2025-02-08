@@ -1,8 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.yourapp">
+    package="com.partnermobileapp">
 
     <!-- Internet Access -->
     <uses-permission android:name="android.permission.INTERNET" />
+   
+
 
     <!-- Location Permissions (Physical Location - All Time) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />

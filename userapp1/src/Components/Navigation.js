@@ -58,21 +58,7 @@ const Navigation = () => {
   const [showDownArrowService, setShowDownArrowService] = useState(false);
 
   // Handle App State Changes
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', nextAppState => {
-      if (appState.match(/inactive|background/) && nextAppState === 'active') {
-        // App has come to the foreground, refetch data
-        if (decodedId) {
-          fetchLocationDetails();
-        }
-      }
-      setAppState(nextAppState);
-    });
 
-    return () => {
-      subscription.remove();
-    };
-  }, [appState, decodedId]);
 
   // Request Location Permissions
   useEffect(() => {
@@ -316,6 +302,22 @@ const Navigation = () => {
     }
   }, [decodedId]);
 
+  // useEffect(() => {
+  //   const subscription = AppState.addEventListener('change', nextAppState => {
+  //     if (appState.match(/inactive|background/) && nextAppState === 'active') {
+  //       // App has come to the foreground, refetch data
+  //       if (decodedId) {
+  //         fetchLocationDetails();
+  //       }
+  //     }
+  //     setAppState(nextAppState);
+  //   });
+
+  //   return () => {
+  //     subscription.remove();
+  //   };
+  // }, [appState, decodedId]);
+
   // Compute Bounding Box
   useEffect(() => {
     if (
@@ -456,65 +458,66 @@ const Navigation = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {locationDetails ? (
-          <Mapbox.MapView
-            style={styles.map}
-            onDidFinishLoadingMap={() => {
-              if (cameraBounds) {
-                // Optionally, adjust camera here if needed
-              }
-            }}>
-            <Mapbox.Camera
-              bounds={
-                cameraBounds
-                  ? {
-                      ne: cameraBounds.ne,
-                      sw: cameraBounds.sw,
-                      paddingLeft: 50,
-                      paddingRight: 50,
-                      paddingTop: 50,
-                      paddingBottom: 50,
-                    }
-                  : null
-              }
-            />
+        <View style={styles.mapContainer}>
+          {locationDetails ? (
+            <Mapbox.MapView
+              style={styles.map}
+              onDidFinishLoadingMap={() => {
+                if (cameraBounds) {
+                  // Optionally, adjust camera here if needed
+                }
+              }}>
+              <Mapbox.Camera
+                bounds={
+                  cameraBounds
+                    ? {
+                        ne: cameraBounds.ne,
+                        sw: cameraBounds.sw,
+                        paddingLeft: 50,
+                        paddingRight: 50,
+                        paddingTop: 50,
+                        paddingBottom: 50,
+                      }
+                    : null
+                }
+              />
 
-            <Mapbox.Images
-              images={{
-                'start-point-icon': startMarker,
-                'end-point-icon': endMarker,
-              }}
-            />
+              <Mapbox.Images
+                images={{
+                  'start-point-icon': startMarker,
+                  'end-point-icon': endMarker,
+                }}
+              />
 
-            {/* Add Markers */}
-            {markers && (
-              <Mapbox.ShapeSource id="markerSource" shape={markers}>
-                <Mapbox.SymbolLayer
-                  id="markerLayer"
-                  style={{
-                    iconImage: ['get', 'icon'],
-                    iconSize: ['get', 'iconSize'],
-                    iconAllowOverlap: true,
-                    iconAnchor: 'bottom',
-                    iconOffset: [0, -10],
-                  }}
-                />
-              </Mapbox.ShapeSource>
-            )}
+              {/* Add Markers */}
+              {markers && (
+                <Mapbox.ShapeSource id="markerSource" shape={markers}>
+                  <Mapbox.SymbolLayer
+                    id="markerLayer"
+                    style={{
+                      iconImage: ['get', 'icon'],
+                      iconSize: ['get', 'iconSize'],
+                      iconAllowOverlap: true,
+                      iconAnchor: 'bottom',
+                      iconOffset: [0, -10],
+                    }}
+                  />
+                </Mapbox.ShapeSource>
+              )}
 
-            {/* Add Route Line */}
-            {routeData && (
-              <Mapbox.ShapeSource id="routeSource" shape={routeData}>
-                <Mapbox.LineLayer id="routeLine" style={styles.routeLine} />
-              </Mapbox.ShapeSource>
-            )}
-          </Mapbox.MapView>
-        ) : (
-          <View style={styles.loadingContainer}>
-            <Text>Loading Map...</Text>
-          </View>
-        )}
-
+              {/* Add Route Line */}
+              {routeData && (
+                <Mapbox.ShapeSource id="routeSource" shape={routeData}>
+                  <Mapbox.LineLayer id="routeLine" style={styles.routeLine} />
+                </Mapbox.ShapeSource>
+              )}
+            </Mapbox.MapView>
+          ) : (
+            <View style={styles.loadingContainer}>
+              <Text>Loading Map...</Text>
+            </View>
+          )}
+        </View>
         {/* Details Container */}
         <View style={styles.detailsContainer}>
           <View style={styles.minimumChargesContainer}>
@@ -719,14 +722,22 @@ const Navigation = () => {
   );
 };
 
+const bottomCardHeight = 330;
+
 const screenHeight = Dimensions.get('window').height;
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-  }, 
+  },
   container: {
+    flex: 1,
+  },
+  mapContainer: {
+    flex: 1, // Ensure it takes up the remaining space
+  },
+  map: {
     flex: 1,
   },
   markerImage: {
@@ -809,13 +820,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 10,
   },
-  map: {
-    flex: 1,
-    minHeight: 0.4 * screenHeight,
-  },
   loadingContainer: {
     flex: 1,
-    minHeight: 0.4 * screenHeight,
+    // minHeight: 0.4 * screenHeight,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -866,14 +873,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   detailsContainer: {
-    flex: 2,
+    height: bottomCardHeight, // Fixed height
     backgroundColor: '#ffffff',
     padding: 15,
     paddingHorizontal: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: -5},
+    shadowOffset: { width: 0, height: -5 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 10,

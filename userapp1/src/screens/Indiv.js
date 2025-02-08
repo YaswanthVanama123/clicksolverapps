@@ -176,10 +176,10 @@ const PaintingServices = () => {
       <View style={styles.banner}>
         <View style={styles.bannerText}>
           <View style={styles.bannerDetails}>
-            <Text style={styles.bannerPrice}>Just 149/-</Text>
+            <Text style={styles.bannerPrice}>Just 49/-</Text>
             <Text style={styles.bannerDescription}>{name}</Text>
             <Text style={styles.bannerInfo}>
-              Minimum charges for first half and hour
+            Just pay to book a Commander Inspection!
             </Text>
           </View>
         </View>

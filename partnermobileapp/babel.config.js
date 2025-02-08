@@ -8,7 +8,7 @@ module.exports = function (api) {
         moduleName: '@env',
         path: '.env',
       }],
-      'react-native-reanimated/plugin', // Separate entry for react-native-reanimated plugin
+      // 'react-native-reanimated/plugin', // Separate entry for react-native-reanimated plugin
     ],
   };
 };

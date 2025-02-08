@@ -403,6 +403,7 @@ const WorkerNavigationScreen = () => {
 
   return (
     <View style={styles.container}>
+     <View style={styles.mapContainer}>
       <Mapbox.MapView style={styles.map}>
         <Mapbox.Camera
           bounds={
@@ -455,6 +456,7 @@ const WorkerNavigationScreen = () => {
           </Mapbox.ShapeSource>
         )}
       </Mapbox.MapView>
+      </View>
       <TouchableOpacity style={styles.cancelButton} onPress={handleCancelModal}>
         <Text style={styles.cancelText}>Cancel</Text>
       </TouchableOpacity>
@@ -560,7 +562,7 @@ const WorkerNavigationScreen = () => {
         <View style={styles.detailsContainer}>
           <View style={styles.minimumChargesContainer}>
             <Text style={styles.serviceFare}>
-              Minimum Service Fare: <Text style={styles.amount}>₹199</Text>
+            Safety: <Text style={styles.amount}>Be quick, stay safe!</Text>
             </Text>
           </View>
 
@@ -651,12 +653,15 @@ const WorkerNavigationScreen = () => {
     </View>
   );
 };
-
+const bottomCardHeight = 330;
 const screenHeight = Dimensions.get('window').height;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  mapContainer: {
+    flex: 1, // Ensures it takes up the remaining height
   },
   markerImage: {
     width: 25, // Adjust size as needed
@@ -705,7 +710,7 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
-    minHeight: 0.3 * screenHeight,
+    
   },
   routeLine: {
     lineColor: '#212121',
@@ -713,7 +718,7 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     position: 'absolute',
-    top: 0.47 * screenHeight,
+    bottom: 335, // 250px from the bottom
     left: 5,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -724,6 +729,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 35,
   },
+  
   cancelText: {
     fontSize: 13,
     color: '#4a4a4a',
@@ -731,7 +737,7 @@ const styles = StyleSheet.create({
   },
   googleMapsButton: {
     position: 'absolute',
-    top: 0.463 * screenHeight,
+    bottom: 335,
     right: 10,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -748,14 +754,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   detailsContainer: {
-    flex: 2,
+    height: bottomCardHeight, // Fixed height for the details card
     backgroundColor: '#ffffff',
     padding: 15,
     paddingHorizontal: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: -5},
+    shadowOffset: { width: 0, height: -5 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 10,

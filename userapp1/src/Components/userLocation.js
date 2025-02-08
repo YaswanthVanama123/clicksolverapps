@@ -418,31 +418,35 @@ const UserLocation = () => {
 
   return (
     <SafeAreaView style={styles.page}>
-      <View style={styles.searchBoxContainer}>
-        <View style={styles.iconSearchContainer}>
-          <TouchableOpacity onPress={handleBackPress}>
-            <FontAwesome6 name="arrow-left-long" size={18} color="gray" />
-          </TouchableOpacity>
-        </View>
-        <TextInput
-          style={styles.searchBox}
-          placeholder="Search location ..."
-          placeholderTextColor="#1D2951"
-          onFocus={() => navigation.replace('LocationSearch', {serviceName})}
-          value={inputText} // Bind state here
-          onChangeText={text => setInputText(text)} // Update state when text changes
-        />
-        <View style={styles.iconContainer}>
-          <TouchableOpacity onPress={() => setSuggestionName('')}>
-            <EvilIcons name="hearto" size={20} color="#808080" />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.iconDotContainer}>
-          <TouchableOpacity onPress={() => setSuggestionName('')}>
-            <Octicons name="dot-fill" size={17} color="#4CAF50" />
-          </TouchableOpacity>
-        </View>
-      </View>
+<View style={styles.searchBoxContainer}>
+  <View style={styles.searchInnerContainer}>
+    {/* Back Icon */}
+    <TouchableOpacity onPress={handleBackPress} style={{marginRight: 10}}>
+      <FontAwesome6 name="arrow-left-long" size={18} color="gray" />
+    </TouchableOpacity>
+
+    {/* Green Dot (10px after Back Icon) */}
+    <View style={{marginRight: 10}}>
+      <Octicons name="dot-fill" size={17} color="#4CAF50" />
+    </View>
+
+    {/* Search Input */}
+    <TextInput
+      style={styles.searchBox}
+      placeholder="Search location ..."
+      placeholderTextColor="#1D2951"
+      onFocus={() => navigation.replace('LocationSearch', { serviceName })}
+      value={inputText}
+      onChangeText={setInputText}
+    />
+
+    {/* Heart Icon */}
+    <TouchableOpacity onPress={() => setSuggestionName('')}>
+      <EvilIcons name="hearto" size={20} color="#808080" />
+    </TouchableOpacity>
+  </View>
+</View>
+
       <View style={[styles.container, {height: screenHeight * 0.75}]}>
         <Mapbox.MapView
           ref={mapRef}
@@ -666,9 +670,24 @@ const styles = StyleSheet.create({
     top: 30,
     left: 0,
     right: 0,
-    alignItems: 'center',
     zIndex: 1,
+    alignItems: 'center',
   },
+    // The inner row that holds icons + TextInput
+    searchInnerContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'white',
+      borderRadius: 9,
+      width: '90%',              // or you can keep a fixed width if you prefer
+      elevation: 10,            // For Android shadow
+      shadowColor: '#000',      // For iOS shadow
+      shadowOffset: {width: 0, height: 2},
+      shadowOpacity: 0.8,
+      shadowRadius: 2,
+      paddingHorizontal: 10,
+      height: 55,
+    },
   iconContainer: {
     position: 'absolute',
     right: 40,
@@ -686,19 +705,11 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   searchBox: {
-    height: 55,
-    width: '90%',
-    backgroundColor: 'white',
-    borderRadius: 9,
-    fontFamily: 'RobotoSlab-Regular',
-    paddingHorizontal: 85,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.8,
-    shadowRadius: 2,
+    flex: 1,                  // This ensures TextInput stretches across remaining space
     color: '#1D2951',
     fontSize: 14,
+    fontFamily: 'RobotoSlab-Regular',
+    paddingHorizontal: 5,
   },
   label: {
     color: '#808080',
