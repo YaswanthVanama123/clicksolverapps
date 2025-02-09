@@ -52,78 +52,43 @@ const smsEndpoint = `https://rest-api.telesign.com/v1/messaging`;
 //   }
 // };
 
+
 const Partnerlogin = async (req, res) => {
   const { phone_number } = req.body;
   if (!phone_number) {
     return res.status(400).json({ message: "Phone number is required" });
   } else if (phone_number === "my name is veerappa") {
-    res.status(202).json({ message: "Internal server error" });
+    return res.status(202).json({ message: "Internal server error" }); // FIXED!
   }
 
   try {
-    // Query to check the existence of phone_number in both tables and get signup step details
-    // const query = `
-    //   WITH workersverified_check AS (
-    //     SELECT worker_id
-    //     FROM workersverified
-    //     WHERE phone_number = $1
-    //     LIMIT 1
-    //   ),
-    //   workers_check AS (
-    //     SELECT worker_id
-    //     FROM workers
-    //     WHERE phone_number = $1
-    //     LIMIT 1
-    //   )
-    //   SELECT
-    //     CASE
-    //       WHEN EXISTS (SELECT 1 FROM workersverified_check) THEN 200
-    //       WHEN EXISTS (SELECT 1 FROM workers_check) THEN 201
-    //       ELSE 400
-    //     END AS status_code,
-    //     (SELECT worker_id FROM workersverified_check) AS verified_worker_id,
-    //     (SELECT worker_id FROM workers_check) AS worker_id,
-    //     EXISTS (SELECT 1 FROM workers_check) AS step1,
-    //     EXISTS (SELECT 1 FROM workerskills WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step2,
-    //     EXISTS (SELECT 1 FROM bankaccounts WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step3
-    // `;
-
     const query = `
-    WITH workersverified_check AS (
-    SELECT worker_id
-    FROM workersverified
-    WHERE phone_number = $1
-    LIMIT 1
-),
-workers_check AS (
-    SELECT worker_id
-    FROM workers
-    WHERE phone_number = $1
-    LIMIT 1
-)
-SELECT 
-    CASE 
-        WHEN EXISTS (SELECT 1 FROM workersverified_check) THEN 200
-        WHEN EXISTS (SELECT 1 FROM workers_check) THEN 201
-        ELSE 400
-    END AS status_code,
-    COALESCE((SELECT worker_id FROM workersverified_check), 
-             (SELECT worker_id FROM workers_check)) AS worker_id,
-    EXISTS (SELECT 1 FROM workers_check) AS step1,
-    EXISTS (SELECT 1 FROM workerskills WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step2,
-    EXISTS (SELECT 1 FROM bankaccounts WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step3;
-
+      WITH workersverified_check AS (
+        SELECT worker_id FROM workersverified WHERE phone_number = $1 LIMIT 1
+      ),
+      workers_check AS (
+        SELECT worker_id FROM workers WHERE phone_number = $1 LIMIT 1
+      )
+      SELECT 
+        CASE 
+          WHEN EXISTS (SELECT 1 FROM workersverified_check) THEN 200
+          WHEN EXISTS (SELECT 1 FROM workers_check) THEN 201
+          ELSE 400
+        END AS status_code,
+        COALESCE((SELECT worker_id FROM workersverified_check), 
+                 (SELECT worker_id FROM workers_check)) AS worker_id,
+        EXISTS (SELECT 1 FROM workers_check) AS step1,
+        EXISTS (SELECT 1 FROM workerskills WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step2,
+        EXISTS (SELECT 1 FROM bankaccounts WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step3;
     `;
 
     const result = await client.query(query, [phone_number]);
     const statusCode = result.rows[0].status_code;
-    const workerId =
-      result.rows[0].verified_worker_id || result.rows[0].worker_id;
+    const workerId = result.rows[0].worker_id;
     const stepsCompleted =
       result.rows[0].step1 && result.rows[0].step2 && result.rows[0].step3;
 
     if (statusCode === 200) {
-      // Worker found in workersverified table
       const token = generateWorkerToken({ worker_id: workerId });
       res.cookie("token", token, {
         httpOnly: true,
@@ -146,16 +111,119 @@ SELECT
         stepsCompleted,
       });
     } else {
-      // Phone number not found in both tables
-      return res
-        .status(203)
-        .json({ message: "Phone number not registered", phone_number });
+      return res.status(203).json({ message: "Phone number not registered", phone_number });
     }
   } catch (error) {
     console.error("Error logging in worker:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+
+// const Partnerlogin = async (req, res) => {
+//   const { phone_number } = req.body;
+//   if (!phone_number) {
+//     return res.status(400).json({ message: "Phone number is required" });
+//   } else if (phone_number === "my name is veerappa") {
+//     res.status(202).json({ message: "Internal server error" });
+//   }
+
+//   try {
+//     // Query to check the existence of phone_number in both tables and get signup step details
+//     // const query = `
+//     //   WITH workersverified_check AS (
+//     //     SELECT worker_id
+//     //     FROM workersverified
+//     //     WHERE phone_number = $1
+//     //     LIMIT 1
+//     //   ),
+//     //   workers_check AS (
+//     //     SELECT worker_id
+//     //     FROM workers
+//     //     WHERE phone_number = $1
+//     //     LIMIT 1
+//     //   )
+//     //   SELECT
+//     //     CASE
+//     //       WHEN EXISTS (SELECT 1 FROM workersverified_check) THEN 200
+//     //       WHEN EXISTS (SELECT 1 FROM workers_check) THEN 201
+//     //       ELSE 400
+//     //     END AS status_code,
+//     //     (SELECT worker_id FROM workersverified_check) AS verified_worker_id,
+//     //     (SELECT worker_id FROM workers_check) AS worker_id,
+//     //     EXISTS (SELECT 1 FROM workers_check) AS step1,
+//     //     EXISTS (SELECT 1 FROM workerskills WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step2,
+//     //     EXISTS (SELECT 1 FROM bankaccounts WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step3
+//     // `;
+
+//     const query = `
+//     WITH workersverified_check AS (
+//     SELECT worker_id
+//     FROM workersverified
+//     WHERE phone_number = $1
+//     LIMIT 1
+// ),
+// workers_check AS (
+//     SELECT worker_id
+//     FROM workers
+//     WHERE phone_number = $1
+//     LIMIT 1
+// )
+// SELECT 
+//     CASE 
+//         WHEN EXISTS (SELECT 1 FROM workersverified_check) THEN 200
+//         WHEN EXISTS (SELECT 1 FROM workers_check) THEN 201
+//         ELSE 400
+//     END AS status_code,
+//     COALESCE((SELECT worker_id FROM workersverified_check), 
+//              (SELECT worker_id FROM workers_check)) AS worker_id,
+//     EXISTS (SELECT 1 FROM workers_check) AS step1,
+//     EXISTS (SELECT 1 FROM workerskills WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step2,
+//     EXISTS (SELECT 1 FROM bankaccounts WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step3;
+
+//     `;
+
+//     const result = await client.query(query, [phone_number]);
+//     const statusCode = result.rows[0].status_code;
+//     const workerId =
+//       result.rows[0].verified_worker_id || result.rows[0].worker_id;
+//     const stepsCompleted =
+//       result.rows[0].step1 && result.rows[0].step2 && result.rows[0].step3;
+
+//     if (statusCode === 200) {
+//       // Worker found in workersverified table
+//       const token = generateWorkerToken({ worker_id: workerId });
+//       res.cookie("token", token, {
+//         httpOnly: true,
+//         secure: process.env.NODE_ENV === "production",
+//         sameSite: "Strict",
+//       });
+//       return res.status(200).json({ token, workerId });
+//     } else if (statusCode === 201) {
+//       const token = generateWorkerToken({ worker_id: workerId });
+//       res.cookie("token", token, {
+//         httpOnly: true,
+//         secure: process.env.NODE_ENV === "production",
+//         sameSite: "Strict",
+//       });
+
+//       return res.status(201).json({
+//         message: "Phone number found in workers, please complete sign up",
+//         token,
+//         workerId,
+//         stepsCompleted,
+//       });
+//     } else {
+//       // Phone number not found in both tables
+//       return res
+//         .status(203)
+//         .json({ message: "Phone number not registered", phone_number });
+//     }
+//   } catch (error) {
+//     console.error("Error logging in worker:", error);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// };
 
 const accountDetailsUpdate = async (req, res) => {
   const userId = req.user.id; // Get user ID from the request
