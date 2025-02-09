@@ -29,7 +29,7 @@ import ServiceApp from './screens/SecondPage';
 import PaintingServices from './screens/Indiv';
 import SearchItem from './Components/SearchItem';
 import SplashScreen from 'react-native-splash-screen';
-import Help from './Components/Help';
+import HelpScreen from './Components/HelpScreen';
 import SingleService from './screens/SingleService';
 import RecentServices from './Components/RecentServices';
 import ProfileScreen from './Components/ProfileScreen';
@@ -47,6 +47,7 @@ import ReferralScreen from './Components/ReferralScreen';
 import OnboardingScreen from './Components/OnboardingScreen';
 import OrderScreen from './Components/OrderScreen';
 import Myrefferals from './Components/Myrefferals';
+import Help from './Components/Help';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -622,7 +623,7 @@ function App() {
         />
         <Stack.Screen
           name="Help"
-          component={Help}
+          component={HelpScreen}
           options={{headerShown: false}}
         />
         <Stack.Screen

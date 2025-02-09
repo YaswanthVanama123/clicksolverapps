@@ -304,7 +304,7 @@ router.post("/worker/payment/scanner/details", async (req, res) => {
   // } = await getWorkerDetails(notification_id);
   res.json({ 
     totalAmount: total_cost,
-    name,
+    name, 
     service,
     discount,
   });

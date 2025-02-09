@@ -226,12 +226,14 @@ function ServiceApp({navigation, route}) {
   const renderServices = () => {
     if (loading) {
       return (
+        <View style={styles.fullScreenLoader}>
         <LottieView
           source={require('../assets/cardsLoading.json')}
           autoPlay
           loop
-          style={styles.loadingAnimation}
+          style={styles.ScreenLoader}
         />
+      </View>
       );
     }
 
@@ -622,9 +624,20 @@ const styles = StyleSheet.create({
     height: 136,
     alignSelf: 'flex-end',
   },
-  loadingAnimation: {
+  fullScreenLoader: {
+    flex: 1,
     width: '100%',
-    height: 200,
+    height: '100%',
+    position: 'absolute', 
+    top: 0,
+    left: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF', // Optional: Add background to overlay
+    zIndex: 10, // Ensure it appears above other content
+  },
+  ScreenLoader:{
+    flex:1
   },
   serviceCard: {
     flexDirection: 'row',

@@ -16,6 +16,7 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const OrderScreen = () => {
   const [services, setServices] = useState([]);
@@ -231,11 +232,11 @@ const OrderScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}> 
         {/* Header */}
         <View style={styles.headerContainer}>
           <TouchableOpacity style={styles.backArrow} onPress={handleBackPress}>
-            <Text style={{fontSize: 18}}>{'<'}</Text>
+           <Icon name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>My Cart</Text>
         </View>

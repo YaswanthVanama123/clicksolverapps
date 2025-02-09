@@ -24,14 +24,13 @@ import uuid from 'react-native-uuid';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import LottieView from 'lottie-react-native'; // Import LottieView
 import PushNotification from 'react-native-push-notification';
-import { SafeAreaView } from 'react-native-safe-area-context';
-// import Config from 'react-native-config';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 const PaintingServices = () => {
   const navigation = useNavigation();
   const [subservice, setSubServices] = useState([]);
   const [name, setName] = useState('');
-  const [loading, setLoading] = useState(true); // Track loading state
+  const [loading, setLoading] = useState(true);
   const route = useRoute();
 
   useEffect(() => {
@@ -87,7 +86,6 @@ const PaintingServices = () => {
       // Check if notifications are enabled
       PushNotification.checkPermissions(permissions => {
         if (!permissions.alert) {
-          // If notifications are not enabled, prompt the user to go to settings
           Alert.alert(
             'Notifications Required',
             'You need to enable notifications to proceed. Go to app settings to enable them.',
@@ -121,31 +119,6 @@ const PaintingServices = () => {
 
   const proceedToBookCommander = useCallback(
     async serviceId => {
-      // try {
-      //   const cs_token = await EncryptedStorage.getItem('cs_token');
-      //   if (cs_token) {
-      //     const response = await axios.get(
-      //       `https://backend.clicksolver.com/api/user/track/details`,
-      //       {
-      //         headers: {Authorization: `Bearer ${cs_token}`},
-      //       },
-      //     );
-
-      //     const track = response?.data?.track || [];
-      //     const isTracking = track.some(
-      //       item => item.serviceBooked === serviceId,
-      //     );
-      //     if (isTracking) {
-      //       Alert.alert('Already in tracking');
-      //     } else {
-      //       navigation.push('ServiceBooking', {
-      //         serviceName: serviceId,
-      //       });
-      //     }
-      //   }
-      // } catch (error) {
-      //   console.error('Error fetching track details:', error);
-      // }
       navigation.push('ServiceBooking', {
         serviceName: serviceId,
       });
@@ -162,58 +135,66 @@ const PaintingServices = () => {
     );
   }, [navigation]);
 
+  // Dummy search handler; add your search functionality here.
+  const handleSearch = useCallback(() => {
+   navigation.push('SearchItem')
+  }, []);
+
   return (
     <SafeAreaView style={styles.safeArea}>
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack}>
+      <View style={styles.container}>
+        {/* Header with back arrow, title, and search icon */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleBack} style={styles.iconContainer}>
             <Icon name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{name}</Text>
-      </View>
-
-      <View style={styles.banner}>
-        <View style={styles.bannerText}>
-          <View style={styles.bannerDetails}>
-            <Text style={styles.bannerPrice}>Just 49/-</Text>
-            <Text style={styles.bannerDescription}>{name}</Text>
-            <Text style={styles.bannerInfo}>
-            Just pay to book a Commander Inspection!
-            </Text>
-          </View>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{name}</Text>
+          <TouchableOpacity onPress={handleSearch} style={styles.iconContainer}>
+            <Icon name="search" size={24} color="#000" />
+          </TouchableOpacity>
         </View>
-        <Image
-          source={{
-            uri: 'https://i.postimg.cc/nLSx6CFs/ec25d95ccdd81fad0f55cc8d83a8222e.png',
-          }}
-          style={styles.bannerImage}
-        />
-      </View>
 
-      {/* Loading Animation */}
-      {loading && (
-        <LottieView
-          source={require('../assets/cardsLoading.json')} // Path to your Lottie JSON file
-          autoPlay
-          loop
-          style={styles.loadingAnimation}
-        />
-      )}
-
-      {/* Services */}
-      <ScrollView style={styles.services}>
-        {subservice.map(service => (
-          <ServiceItem
-            key={service.id}
-            title={service.service_name}
-            imageUrl={service.service_urls}
-            handleBookCommander={handleBookCommander}
-            serviceId={service.service_name}
+        <View style={styles.banner}>
+          <View style={styles.bannerText}>
+            <View style={styles.bannerDetails}>
+              <Text style={styles.bannerPrice}>Just 49/-</Text>
+              <Text style={styles.bannerDescription}>{name}</Text>
+              <Text style={styles.bannerInfo}>
+                Just pay to book a Commander Inspection!
+              </Text>
+            </View>
+          </View>
+          <Image
+            source={{
+              uri: 'https://i.postimg.cc/nLSx6CFs/ec25d95ccdd81fad0f55cc8d83a8222e.png',
+            }}
+            style={styles.bannerImage}
           />
-        ))}
-      </ScrollView>
-    </View>
+        </View>
+
+        {/* Loading Animation */}
+        {loading && (
+          <LottieView
+            source={require('../assets/cardsLoading.json')}
+            autoPlay
+            loop
+            style={styles.loadingAnimation}
+          />
+        )}
+
+        {/* Services List */}
+        <ScrollView style={styles.services}>
+          {subservice.map(service => (
+            <ServiceItem
+              key={service.id}
+              title={service.service_name}
+              imageUrl={service.service_urls}
+              handleBookCommander={handleBookCommander}
+              serviceId={service.service_name}
+            />
+          ))}
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -244,7 +225,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-  },  
+  },
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
@@ -254,10 +235,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 15,
+    justifyContent: 'space-between',
+  },
+  iconContainer: {
+    padding: 5,
   },
   headerTitle: {
     fontSize: 20,
-    marginLeft: 10,
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 10,
     color: '#1D2951',
     fontFamily: 'RobotoSlab-Bold',
     lineHeight: 23.44,
@@ -304,12 +291,6 @@ const styles = StyleSheet.create({
     height: 100,
     resizeMode: 'cover',
     transform: [{rotate: '0deg'}],
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 200,
   },
   services: {
     flex: 1,

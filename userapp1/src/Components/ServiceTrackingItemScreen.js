@@ -70,11 +70,11 @@ const ServiceTrackingItemScreen = () => {
           `https://backend.clicksolver.com/api/service/tracking/user/item/details`,
           {tracking_id},
         );
-        const {data, paymentDetails} = response.data;
-        console.log(typeof data.tracking_pin);
+        const {data} = response.data;
+     
         setPin(data.tracking_pin);
         setDetails(data);
-        setPaymentDetails(paymentDetails);
+      
         setServiceArray(data.service_booked);
       } catch (error) {
         console.error('Error fetching bookings data:', error);
@@ -257,16 +257,18 @@ const ServiceTrackingItemScreen = () => {
                       ₹{paymentDetails.gstAmount.toFixed(2)}
                     </Text>
                   </View> */}
+                  {details.discount > 0 &&
                   <View style={styles.paymentRow}>
-                    <Text style={styles.paymentLabel}>Cashback (5%)</Text>
+                    <Text style={styles.paymentLabel}>Discount</Text>
                     <Text style={styles.paymentValue}>
                       {/* ₹{paymentDetails.discountAmount.toFixed(2)} */}
+                      ₹{details.discount}
                     </Text>
-                  </View>
+                  </View> }
                   <View style={styles.paymentRow}>
                     <Text style={styles.paymentLabel}>Grand Total</Text>
                     <Text style={styles.paymentValue}>
-                      ₹
+                      ₹{details.total_cost}
                       {/* {paymentDetails.fetchedFinalTotalAmount.toFixed(2)} */}
                     </Text>
                   </View>

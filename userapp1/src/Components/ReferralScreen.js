@@ -4,68 +4,68 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  FlatList,
   Clipboard,
   Share,
   Linking,
   PermissionsAndroid,
-  ScrollView,
   Platform,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import Contacts from 'react-native-contacts';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ReferralScreen = () => {
-  const [referrals, setReferrals] = useState([]);
-  const [referralCode, setReferralCode] = useState(null);
-
   const [contacts, setContacts] = useState([]);
   const [showContacts, setShowContacts] = useState(false);
+  const [referrals, setReferrals] = useState([]);
+  const [referralCode, setReferralCode] = useState(null);
+  const [referralLink, setReferralLink] = useState(null);
 
-  // Build a dynamic referral link using your referralCode (once retrieved)
-  const referralLink = referralCode
-    ? `https://example.com/download?referralCode=${referralCode}`
-    : '';
-
-  // 1) Fetch referrals from the backend
   useEffect(() => {
     const fetchReferrals = async () => {
       try {
         const token = await EncryptedStorage.getItem('cs_token');
-        console.log('Token from EncryptedStorage:', token);
+        if (!token) {
+          console.error("No token found in storage.");
+          return;
+        }
 
-        // IMPORTANT: Depending on your server setup, you might need
-        // either GET with no extra object param or pass headers differently
         const response = await axios.get(
           'https://backend.clicksolver.com/api/user/referrals',
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          },
+          }
         );
 
-        console.log('API Response:', response.data);
-
-        if (Array.isArray(response.data) && response.data.length > 0) {
-          // The first item may have the referralCode
+        console.log('Original Data:', response.data);
+        
+        if (response.data.length > 0) {
           const data = response.data[0];
-          if (data.referralCode) {
-            setReferralCode(data.referralCode);
-          }
+          const refundCode = data.referralcode;
+          console.log("date", refundCode);
 
-          // Transform each item to ensure no null values & map statuses
-          const transformedData = response.data.map((item, index) => ({
-            id: index, // or item._id if your API returns an ID
-            name: item.name ?? 'Unknown',
+          // Set code and link
+          setReferralCode(refundCode);
+          setReferralLink(`https://play.google.com/apps/internaltest/4701348414051959035?referralCode=${refundCode}`);
+
+          // Transform referral data
+        
+          const transformedData = response.data
+          .filter(item => item.name) // Only include items with a truthy name
+          .map((item, index) => ({
+            id: index,
+            name: item.name,
             status: item.status_completed ? 'Completed' : 'Pending',
           }));
+        
 
           setReferrals(transformedData);
         } else {
-          // If array is empty, set no referrals
           setReferrals([]);
         }
       } catch (error) {
@@ -76,7 +76,65 @@ const ReferralScreen = () => {
     fetchReferrals();
   }, []);
 
-  // 2) Permissions for Android to read contacts
+  // 1) Separate copy function for CODE
+  const copyCodeToClipboard = () => {
+    if (referralCode) {
+      Clipboard.setString(referralCode);
+    }
+  };
+
+  // 2) Separate copy function for LINK
+  const copyLinkToClipboard = () => {
+    if (referralLink) {
+      Clipboard.setString(referralLink);
+    }
+  };
+
+  const shareReferralCode = async () => {
+    try {
+      const result = await Share.share({
+        message: `Join me on this amazing app! Use my referral code: ${referralCode}. Download the app now: ${referralLink}`,
+      });
+
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          console.log('Shared with activity type:', result.activityType);
+        } else {
+          console.log('Shared successfully');
+        }
+      } else if (result.action === Share.dismissedAction) {
+        console.log('Share dismissed');
+      }
+    } catch (error) {
+      console.error('Error sharing:', error.message);
+    }
+  };
+
+  // 3) Direct or normal WhatsApp share
+  const shareViaWhatsApp = () => {
+    const whatsappMessage = `Join me on this amazing app! Use my referral code: ${referralCode}. Download the app now: ${referralLink}`;
+    const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(whatsappMessage)}`;
+
+    Linking.canOpenURL(whatsappUrl)
+      .then(supported => {
+        if (supported) {
+          return Linking.openURL(whatsappUrl);
+        } 
+      })
+      .catch(err => console.error('Error opening WhatsApp:', err));
+  };
+
+  // 4) SMS invite
+  const inviteViaSMS = (phoneNumber) => {
+    if (!phoneNumber) return;
+    const smsMessage = `Join me on this amazing app! Use my referral code: ${referralCode}. Download the app now: ${referralLink}`;
+    const url = `sms:${phoneNumber}?body=${encodeURIComponent(smsMessage)}`;
+
+    Linking.openURL(url).catch(err => {
+      console.error('Error launching SMS app:', err);
+    });
+  };
+
   const requestContactsPermission = async () => {
     if (Platform.OS === 'android') {
       const granted = await PermissionsAndroid.request(
@@ -94,13 +152,46 @@ const ReferralScreen = () => {
     return true;
   };
 
-  // 3) Fetch device contacts
+  const renderContactItem = ({item}) => {
+    const phoneNumber = item.phoneNumbers && item.phoneNumbers.length > 0
+      ? item.phoneNumbers[0].number.replace(/\s+/g, '')
+      : null;
+
+    return (
+      <TouchableOpacity
+        style={styles.contactItem}
+        onPress={() => inviteViaSMS(phoneNumber)}
+      >
+        <View style={styles.contactAvatar}>
+          <Text style={styles.contactInitials}>
+            {item.displayName ? item.displayName[0].toUpperCase() : '?'}
+          </Text>
+        </View>
+        <View style={styles.contactDetails}>
+          <Text style={styles.contactName}>{item.displayName}</Text>
+          {item.phoneNumbers && item.phoneNumbers.length > 0 && (
+            <Text style={styles.contactNumber}>
+              {item.phoneNumbers[0].number}
+            </Text>
+          )}
+        </View>
+        <TouchableOpacity
+          style={styles.inviteButton}
+          onPress={() => inviteViaSMS(phoneNumber)}
+        >
+          <Text style={styles.inviteButtonText}>Invite</Text>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    );
+  };
+
   const fetchContacts = async () => {
     try {
       const permission = await requestContactsPermission();
       if (!permission) {
         return;
       }
+
       const contactsList = await Contacts.getAll();
       setContacts(contactsList);
       setShowContacts(true);
@@ -109,131 +200,38 @@ const ReferralScreen = () => {
     }
   };
 
-  // 4) Copy the referral link (which includes the code) to clipboard
-  const copyLinkToClipboard = () => {
-    if (referralLink) {
-      Clipboard.setString(referralLink);
-      console.log('Referral link copied to clipboard:', referralLink);
-    }
-  };
-
-  // 5) Invite contact placeholder (SMS logic could go here)
-  const inviteContact = contact => {
-    // Implement SMS or other invite logic. Example with linking to SMS:
-    // const phoneNumber = contact.phoneNumbers?.[0]?.number || '';
-    // Linking.openURL(`sms:${phoneNumber}?body=${encodeURIComponent(yourMessage)}`);
-    console.log('Invite contact pressed:', contact.displayName);
-  };
-
-  // 6) Share referral code via system share sheet
-  const shareReferralCode = async () => {
-    try {
-      const message = `Join me on this amazing app! Use my referral code: ${referralCode}. Download now: ${referralLink}`;
-      const result = await Share.share({
-        message,
-      });
-      if (result.action === Share.sharedAction) {
-        console.log('Shared successfully:', result.activityType);
-      } else if (result.action === Share.dismissedAction) {
-        console.log('Share dismissed');
-      }
-    } catch (error) {
-      console.error('Error sharing:', error.message);
-    }
-  };
-
-  // 7) Share on WhatsApp specifically
-  const shareViaWhatsApp = () => {
-    if (!referralCode || !referralLink) return;
-    const whatsappMessage = `Join me on this amazing app! Use my referral code: ${referralCode}. Download the app now: ${referralLink}`;
-    const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(
-      whatsappMessage,
-    )}`;
-
-    Linking.canOpenURL(whatsappUrl)
-      .then(supported => {
-        if (supported) {
-          return Linking.openURL(whatsappUrl);
-        } else {
-          console.log('WhatsApp not installed or not supported.');
-        }
-      })
-      .catch(err => console.error('Error opening WhatsApp:', err));
-  };
-
-  // 8) Render referrals dynamically (no FlatList, just map for simplicity)
-  const renderReferrals = () => {
-    if (!referrals || referrals.length === 0) {
-      return <Text style={styles.noContactsText}>No referrals yet!</Text>;
-    }
-    return referrals.map(item => (
-      <View key={item.id} style={styles.referralItem}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {item.name.charAt(0).toUpperCase()}
-          </Text>
-        </View>
-        <View style={styles.referralDetails}>
-          <Text style={styles.referralName}>{item.name}</Text>
-          <Text
-            style={[
-              styles.referralStatus,
-              item.status === 'Pending'
-                ? styles.statusPending
-                : styles.statusCompleted,
-            ]}>
-            {item.status}
-          </Text>
-        </View>
+  const renderReferralItem = ({item}) => (
+    <View style={styles.referralItem}>
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText}>
+          {item.name.charAt(0).toUpperCase()}
+        </Text>
       </View>
-    ));
-  };
-
-  // 9) Render contacts dynamically
-  const renderContacts = () => {
-    if (!contacts || contacts.length === 0) {
-      return <Text style={styles.noContactsText}>No contacts to invite</Text>;
-    }
-    return contacts.map(contact => (
-      <View key={contact.recordID} style={styles.contactItem}>
-        <View style={styles.contactAvatar}>
-          <Text style={styles.contactInitials}>
-            {contact.displayName ? contact.displayName[0].toUpperCase() : '?'}
-          </Text>
-        </View>
-        <View style={styles.contactDetails}>
-          <Text style={styles.contactName}>{contact.displayName}</Text>
-          {contact.phoneNumbers && contact.phoneNumbers.length > 0 && (
-            <Text style={styles.contactNumber}>
-              {contact.phoneNumbers[0].number}
-            </Text>
-          )}
-        </View>
-        <TouchableOpacity
-          style={styles.inviteButton}
-          onPress={() => inviteContact(contact)}>
-          <Text style={styles.inviteButtonText}>Invite</Text>
-        </TouchableOpacity>
+      <View style={styles.referralDetails}>
+        <Text style={styles.referralName}>{item.name}</Text>
+        <Text
+          style={[
+            styles.referralStatus,
+            item.status === 'Pending'
+              ? styles.statusPending
+              : styles.statusCompleted,
+          ]}>
+          {item.status}
+        </Text>
       </View>
-    ));
-  };
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* We wrap everything in ONE ScrollView so we can use stickyHeaderIndices */}
-      <ScrollView
-        stickyHeaderIndices={[2]}
-        // Child index 0 = top header
-        // Child index 1 = how-it-works
-        // Child index 2 = the tab bar (pinned when scrolling)
-      >
-        {/* (0) Top Header Section */}
-        <View style={styles.headerContainer}>
-          {/* Back Button */}
-          <TouchableOpacity style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#212121" />
-          </TouchableOpacity>
+      <View style={styles.container}>
+        {/* Back Button */}
+        <TouchableOpacity style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#212121" />
+        </TouchableOpacity>
 
+        {/* Title and Subtitle */}
+        <View style={styles.header}>
           <Text style={styles.title}>Refer Friends</Text>
           <Text style={styles.subtitle}>Invite your friends</Text>
           <Text style={styles.description}>
@@ -241,7 +239,7 @@ const ReferralScreen = () => {
           </Text>
         </View>
 
-        {/* (1) The "How It Works" orange container */}
+        {/* How It Works Section */}
         <View style={styles.howItWorks}>
           <View style={styles.step}>
             <Ionicons name="document-text-outline" size={20} color="#ffffff" />
@@ -263,39 +261,48 @@ const ReferralScreen = () => {
           </View>
         </View>
 
-        {/* (2) Sticky Tab Bar */}
+        {/* Tabs */}
         <View style={styles.tabs}>
-          <View>
-            <TouchableOpacity
-              style={[styles.tab, !showContacts && styles.activeTab]}
-              onPress={() => setShowContacts(false)}>
-              <Text style={styles.tabText}>Your Referrals</Text>
-            </TouchableOpacity>
-          </View>
-          <View>
-            <TouchableOpacity
-              style={[styles.tab, showContacts && styles.activeTab]}
-              onPress={fetchContacts}>
-              <Text style={styles.tabText}>Invite Contacts</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={[styles.tab, !showContacts && styles.activeTab]}
+            onPress={() => setShowContacts(false)}>
+            <Text style={styles.tabText}>Your Referrals</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, showContacts && styles.activeTab]}
+            onPress={fetchContacts}>
+            <Text style={styles.tabText}>Invite Contacts</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* (3) Content Below Tabs (scrolls behind pinned tabs) */}
-        <View style={styles.contentBelowTabs}>
-          {showContacts ? renderContacts() : renderReferrals()}
+        {/* Scrollable Content Area */}
+        <View style={{ flex: 1 }}>
+          {!showContacts ? (
+            referrals.length > 0 && (
+              <FlatList
+                data={referrals}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={renderReferralItem}
+                contentContainerStyle={{ paddingBottom: 20 }}
+              />
+            )
+          ) : (
+            <FlatList
+              data={contacts}
+              keyExtractor={(item) => item.recordID}
+              renderItem={renderContactItem}
+              contentContainerStyle={[styles.contactList, { flexGrow: 1 }]}
+            />
+          )}
         </View>
 
-        {/* (4) Referral Code Section */}
+        {/* Referral Code Section */}
         <View style={styles.referralCodeSection}>
-          <Text style={styles.referralLabel}>Share your code:</Text>
+          <Text style={styles.referralLabel}>Your Code:</Text>
           <TouchableOpacity
             style={styles.copyCodeContainer}
-            onPress={copyLinkToClipboard}
-            disabled={!referralCode}>
-            <Text style={styles.referralCode}>
-              {referralCode ? referralCode : 'Loading...'}
-            </Text>
+            onPress={copyCodeToClipboard}>
+            <Text style={styles.referralCode}>{referralCode || 'N/A'}</Text>
             <Ionicons
               name="copy-outline"
               size={20}
@@ -305,28 +312,23 @@ const ReferralScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* (5) Share Buttons Section */}
+        {/* Share Buttons */}
         <View style={styles.shareButtons}>
-          <TouchableOpacity
-            style={styles.shareButton}
-            onPress={shareViaWhatsApp}
-            disabled={!referralCode}>
+          <TouchableOpacity style={styles.shareButton} onPress={shareViaWhatsApp}>
             <Ionicons name="logo-whatsapp" size={20} color="white" />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.shareButton}
-            onPress={copyLinkToClipboard}
-            disabled={!referralCode}>
+            onPress={copyLinkToClipboard}>
             <Ionicons name="link-outline" size={20} color="white" />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.shareButton}
-            onPress={shareReferralCode}
-            disabled={!referralCode}>
+            onPress={shareReferralCode}>
             <Ionicons name="share-social-outline" size={20} color="white" />
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -335,15 +337,22 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-  },
-  headerContainer: {
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+  }, 
+  container: {
+    flex: 1,
     backgroundColor: '#ffffff',
   },
   backButton: {
-    marginBottom: 10,
+    padding: 10,
+    position: 'absolute',
+    top: 10,
+    left: 5,
+    zIndex: 10,
+  },
+  header: {
+    marginTop: 60,
+    paddingHorizontal: 20,
+    alignItems: 'center',
   },
   title: {
     fontSize: 24,
@@ -360,6 +369,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#9e9e9e',
     marginTop: 5,
+    textAlign: 'center',
   },
   howItWorks: {
     backgroundColor: '#FF8A66',
@@ -377,36 +387,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#ffffff',
   },
-
   tabs: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-    backgroundColor: '#fff', // so it stays solid behind the sticky header
+    justifyContent: 'space-between',
+    marginHorizontal: 20,
+    marginTop: 10,
   },
   tab: {
+    fontSize: 16,
+    color: '#ff5722',
+    textAlign: 'center',
     paddingVertical: 10,
     flex: 1,
-    textAlign: 'center',
-  },
-  tabText: {
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#212121',
   },
   activeTab: {
+    fontWeight: 'bold',
     borderBottomWidth: 2,
-    borderBottomColor: '#ff5722',
+    borderBottomColor: '#4A148C',
   },
-  contentBelowTabs: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-
   referralItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginHorizontal: 20,
+    marginVertical: 10,
   },
   avatar: {
     width: 40,
@@ -423,7 +426,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   referralDetails: {
-    flexDirection: 'column',
+    flex: 1,
   },
   referralName: {
     fontSize: 16,
@@ -431,28 +434,23 @@ const styles = StyleSheet.create({
   },
   referralStatus: {
     fontSize: 14,
-    color: '#757575',
   },
   statusPending: {
-    // Example color or style for Pending
-    color: '#FFA726',
+    color: 'orange',
   },
   statusCompleted: {
-    // Example color or style for Completed
-    color: '#4CAF50',
+    color: 'green',
   },
-
   referralCodeSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
-    paddingHorizontal: 20,
     justifyContent: 'space-between',
+    marginHorizontal: 20,
+    marginVertical: 20,
   },
   referralLabel: {
     fontSize: 16,
     color: '#212121',
-    marginRight: 10,
   },
   copyCodeContainer: {
     flexDirection: 'row',
@@ -470,12 +468,11 @@ const styles = StyleSheet.create({
   copyIcon: {
     marginLeft: 5,
   },
-
   shareButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginHorizontal: 20,
-    marginBottom: 40,
+    marginBottom: 10,
   },
   shareButton: {
     backgroundColor: '#ff5722',
@@ -486,8 +483,9 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 5,
   },
-
-  // Contacts
+  contactList: {
+    padding: 16,
+  },
   contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -495,11 +493,6 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginBottom: 12,
-    // Example shadow/elevation
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
     elevation: 2,
   },
   contactAvatar: {
@@ -538,13 +531,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: 'bold',
-  },
-
-  noContactsText: {
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#757575',
-    marginVertical: 10,
   },
 });
 
