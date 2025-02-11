@@ -1427,12 +1427,46 @@ const getWorkerCashbackDetails = async (req, res) => {
   }
 };
 
+const getWorkerBalanceDetails = async (req, res) => {
+  try {
+    const { worker_id } = req.body; // Get worker_id from the request body
+    console.log(worker_id);
+
+    const query = `
+    SELECT 
+      servicecall.payment, 
+      servicecall.payment_type, 
+      servicecall.notification_id, 
+      "user".name,
+      "user".phone_number,
+      workerlife.cashback_history,
+      workerlife.balance_payment_history  -- Updated field name (if applicable)
+    FROM servicecall
+    LEFT JOIN completenotifications 
+      ON servicecall.notification_id = completenotifications.notification_id
+    LEFT JOIN "user" 
+      ON completenotifications.user_id = "user".user_id
+    LEFT JOIN workerlife 
+      ON servicecall.worker_id = workerlife.worker_id
+    WHERE servicecall.worker_id = $1 
+      AND servicecall.payment IS NOT NULL;
+  `;
+
+    const values = [worker_id];
+    const result = await client.query(query, values);
+
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error fetching worker cashback details:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 const pendingBalanceWorkers = async (req, res) => {
   try {
     const query = `
       SELECT 
-        wl.balance_amount,
-        wl.balance_payment_history,
+        wl.balance_amount, 
         wl.worker_id,
         ws.profile,
         ws.service,
@@ -2036,6 +2070,72 @@ const getWorkerTrackingServices = async (req, res) => {
   }
 };
 
+const workerMessage = async (req, res) => {
+  try {
+    const { worker_id, message } = req.body;
+
+    if (!worker_id || !message) {
+      return res.status(400).json({ error: "worker_id and message are required" });
+    }
+
+    // Fetch FCM tokens for the worker
+    const fcmQuery = `SELECT fcm_token FROM fcm WHERE worker_id = $1;`;
+    const { rows } = await client.query(fcmQuery, [worker_id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "No FCM tokens found for this worker." });
+    }
+
+    // Extract FCM tokens
+    const fcmTokens = rows.map(row => row.fcm_token);
+
+    // Construct the FCM multicast message
+    const multicastMessage = {
+      tokens: fcmTokens, // Sending to multiple tokens
+      notification: {
+        title: "Payment Reminder",
+        body: message,
+      },
+      android: {
+        priority: "high",
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: "default",
+          },
+        },
+      },
+    };
+
+    // Send message using Firebase Admin SDK
+    try {
+      const response = await getMessaging().sendEachForMulticast(multicastMessage);
+
+      // Log failures if any
+      response.responses.forEach((res, index) => {
+        if (!res.success) {
+          console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+        }
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Message sent successfully",
+        response: response.responses,
+      });
+
+    } catch (error) {
+      console.error("Error sending notifications:", error);
+      return res.status(500).json({ error: "Failed to send message" });
+    }
+  } catch (error) {
+    console.error("Error processing request:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+
 const getAllTrackingServices = async (req, res) => {
   try {
     console.log("Hi");
@@ -2208,17 +2308,43 @@ const getUserTrackingServices = async (req, res) => {
 const getPendingWorkers = async (req, res) => {
   try {
     const query = `
-      SELECT 
-        w.worker_id,
-        w.verification_status,
-        w.created_at,
-        w.issues
-      FROM workers w
-      WHERE w.worker_id IS NOT NULL;
-
-    `;
+    SELECT 
+      w.worker_id,
+      w.verification_status,
+      w.created_at,
+      w.issues
+    FROM workers w
+    INNER JOIN workerskills ws ON w.worker_id = ws.worker_id
+    WHERE w.worker_id IS NOT NULL;
+  `;
+  
 
     const { rows } = await client.query(query);
+    res.status(200).json({ success: true, data: rows });
+  } catch (error) {
+    console.error("Error fetching pending workers:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+const getPendingWorkersNotStarted = async (req, res) => {
+  try {
+    const query = `
+    SELECT 
+      w.worker_id,
+      w.phone_number,
+      w.verification_status,
+      w.created_at,
+      w.issues
+    FROM workers w
+    LEFT JOIN workerskills ws ON w.worker_id = ws.worker_id
+    WHERE ws.worker_id IS NULL;
+
+  `;
+  
+
+    const { rows } = await client.query(query);
+    console.log(rows)
     res.status(200).json({ success: true, data: rows });
   } catch (error) {
     console.error("Error fetching pending workers:", error);
@@ -2254,6 +2380,8 @@ const getPendingWorkerDetails = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+
 
 const updateIssues = async (req, res) => {
   const { workerId, issues } = req.body;
@@ -10883,6 +11011,371 @@ const userReferrals = async (req, res) => {
   }
 };
 
+const workerSearch = async (req, res) => {
+  try {
+    const { phone_number } = req.query;
+
+    if (!phone_number) {
+      return res.status(400).json({ error: "Phone number is required" });
+    }
+
+    // Query to fetch worker details, skills, and life stats
+    const query = `
+      SELECT 
+        w.worker_id,
+        w.name,
+        w.email,
+        ws.profile,
+        ws.service,
+        ws.subservices,
+        wl.balance_amount,
+        wl.service_counts,
+        wl.money_earned,
+        wl.average_rating
+      FROM workersverified w
+      LEFT JOIN workerskills ws ON w.worker_id = ws.worker_id
+      LEFT JOIN workerlife wl ON w.worker_id = wl.worker_id
+      WHERE w.phone_number = $1;
+    `;
+
+    const { rows } = await client.query(query, [phone_number]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Worker not found" });
+    }
+
+    // Return the first result (assuming phone_number is unique)
+    return res.status(200).json(rows[0]);
+
+  } catch (error) {
+    console.error("Error searching worker:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+const cashbackHistory = async (req, res) => {
+  const { worker_id } = req.query;
+
+  // Validate input
+  if (!worker_id) {
+    return res.status(400).json({ error: "worker_id is required" });
+  }
+
+  try {
+    // Query to fetch cashback-related data for the worker
+    const query = `
+      SELECT 
+        cashback_history,
+        cashback_gain,
+        cashback_approved_times
+      FROM workerlife
+      WHERE worker_id = $1;
+    `;
+
+    const { rows } = await client.query(query, [worker_id]);
+
+    // Check if worker exists
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Worker not found" });
+    }
+
+    // Return the cashback data
+    return res.status(200).json(rows[0]);
+  } catch (error) {
+    console.error("Error fetching cashback history:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+const balanceHistory = async (req, res) => {
+  const { worker_id } = req.query;
+
+  if (!worker_id) {
+    return res.status(400).json({ error: 'worker_id is required' });
+  }
+
+  try {
+    const query = `
+      SELECT balance_payment_history
+      FROM workerlife
+      WHERE worker_id = $1;
+    `;
+    const { rows } = await client.query(query, [worker_id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Worker not found' });
+    }
+
+    res.status(200).json(rows[0]);
+  } catch (error) {
+    console.error('Error fetching balance history:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+const getWorkerServiceHistory = async (req, res) => {
+  try {
+    const { worker_id } = req.query; // Get worker_id from the request body
+    console.log(worker_id);
+
+    const query = `
+    SELECT 
+      payment, 
+      payment_type, 
+      end_time
+    FROM servicecall
+    WHERE worker_id = $1 
+      AND payment IS NOT NULL;
+  `;
+    const values = [worker_id];
+    const result = await client.query(query, values);
+
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error fetching WorkerServiceHistory:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+const currentService = async (req, res) => {
+  const { worker_id } = req.query;
+
+  // Validate input
+  if (!worker_id) {
+    return res.status(400).json({ error: 'worker_id is required' });
+  }
+
+  try {
+    // Query to fetch the current service details
+    const query = `
+      SELECT 
+        screen_name, 
+        params
+      FROM workeraction
+      WHERE worker_id = $1;
+    `;
+
+    const { rows } = await client.query(query, [worker_id]);
+
+    // Check if any data is found
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'No current service found for the worker' });
+    }
+
+    // Respond with the fetched data
+    res.status(200).json(rows[0]);
+  } catch (error) {
+    console.error('Error fetching current service:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+const workerScreenChange = async (req, res) => {
+  try {
+    let { worker_id, params, screen } = req.body;
+    console.log("req.body is", req.body);
+
+    // If params is a string, parse it into JSON.
+    if (typeof params === "string") {
+      try {
+        params = JSON.parse(params);
+      } catch (parseError) {
+        console.warn("Failed to parse params string:", params);
+        return res.status(400).json({
+          success: false,
+          message:
+            "Params should be a valid JSON object or a stringified JSON object.",
+        });
+      }
+    }
+
+    // Validate params and check for encodedId.
+    if (!params || typeof params !== "object" || !params.encodedId) {
+      console.warn("Invalid params structure:", params);
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid params format. Expected { encodedId: <Base64String> }",
+      });
+    }
+
+    // Use the provided encodedId (assuming it matches the stored value).
+    const encodedId = params.encodedId;
+
+    // Single query combining both updates using CTEs.
+    const query = `
+      WITH updated_worker AS (
+        UPDATE workeraction
+        SET screen_name = CASE WHEN $2 = '' THEN '' ELSE $2 END
+        WHERE worker_id = $1
+        RETURNING worker_id
+      ),
+      updated_useraction AS (
+        UPDATE useraction
+        SET track = (
+          SELECT jsonb_agg(new_elem)
+          FROM (
+            SELECT 
+              CASE 
+                WHEN elem->>'encodedId' = $3 THEN 
+                  CASE 
+                    WHEN $2 = '' THEN NULL
+                    ELSE elem || jsonb_build_object('screen', $2)
+                  END
+                ELSE elem
+              END AS new_elem
+            FROM jsonb_array_elements(track) AS elem
+          ) AS sub
+          WHERE new_elem IS NOT NULL
+        )
+        WHERE user_id IN (
+          SELECT user_id FROM accepted WHERE worker_id = $1
+        )
+        RETURNING user_id, track
+      )
+      SELECT * FROM updated_useraction;
+    `;
+
+    // Execute the query with parameters:
+    // $1: worker_id, $2: screen, $3: encodedId
+    const result = await client.query(query, [worker_id, screen, encodedId]);
+
+    return res.status(200).json({
+      success: true,
+      message: "Worker screen updated successfully",
+      data: result.rows,
+    });
+  } catch (error) {
+    console.error("Error updating worker screen:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+
+
+
+
+
+const administratorDetails = async (req, res) => {
+  try {
+    const { date, startDate, endDate } = req.body;
+    console.log("Received payload:", req.body); // Debugging log
+
+    // Define parameters array
+    let queryParams = [];
+    let paramIndex = 1;
+
+    // Worker & User date condition
+    let workerUserDateCondition = '1=1'; // Default: No filter
+    if (date) {
+      workerUserDateCondition = `DATE(created_at) = $${paramIndex}`;
+      queryParams.push(date);
+      paramIndex++;
+    } else if (startDate && endDate) {
+      workerUserDateCondition = `DATE(created_at) BETWEEN $${paramIndex} AND $${paramIndex + 1}`;
+      queryParams.push(startDate, endDate);
+      paramIndex += 2;
+    }
+
+    // Service call condition
+    let serviceCallCondition = '1=1';
+    if (startDate && endDate) {
+      serviceCallCondition = `DATE(end_time) BETWEEN $${paramIndex} AND $${paramIndex + 1}`;
+      queryParams.push(startDate, endDate);
+      paramIndex += 2;
+    } else if (date) {
+      serviceCallCondition = `DATE(end_time) = $${paramIndex}`;
+      queryParams.push(date);
+      paramIndex++;
+    }
+
+    // Cancellation count condition
+    let cancelCondition = '1=1';
+    if (startDate && endDate) {
+      cancelCondition = `DATE(created_at) BETWEEN $${paramIndex} AND $${paramIndex + 1} AND complete_status = 'cancel'`;
+      queryParams.push(startDate, endDate);
+      paramIndex += 2;
+    } else if (date) {
+      cancelCondition = `DATE(created_at) = $${paramIndex} AND complete_status = 'cancel'`;
+      queryParams.push(date);
+      paramIndex++;
+    }
+
+    // SQL Query using CTEs
+    const query = `
+      WITH worker_count AS (
+        SELECT COUNT(*) AS total_workers 
+        FROM workersverified
+        WHERE ${workerUserDateCondition}
+      ),
+      user_count AS (
+        SELECT COUNT(*) AS total_users 
+        FROM "user"
+        WHERE ${workerUserDateCondition}
+      ),
+      service_count AS (
+        SELECT COUNT(*) AS total_services, COALESCE(SUM(payment), 0) AS total_earnings
+        FROM servicecall
+        WHERE ${serviceCallCondition}
+      ),
+      balance_sum AS (
+        SELECT COALESCE(SUM(balance_amount), 0) AS total_balance
+        FROM workerlife
+      ),
+      negative_balance_count AS (
+        SELECT COUNT(*) AS negative_balance_workers
+        FROM workerlife
+        WHERE balance_amount < 0
+      ),
+      cancel_count AS (
+        SELECT COUNT(*) AS total_cancels
+        FROM completenotifications
+        WHERE ${cancelCondition}
+      )
+      SELECT 
+        wc.total_workers,
+        uc.total_users,
+        sc.total_services,
+        sc.total_earnings,
+        bs.total_balance,
+        nb.negative_balance_workers,
+        cc.total_cancels
+      FROM worker_count wc
+      CROSS JOIN user_count uc
+      CROSS JOIN service_count sc
+      CROSS JOIN balance_sum bs
+      CROSS JOIN negative_balance_count nb
+      CROSS JOIN cancel_count cc;
+    `;
+
+    // Execute Query Securely
+    const result = await client.query(query, queryParams);
+
+
+    res.status(200).json({
+      success: true,
+      message: "Administrator details fetched successfully",
+      data: result.rows[0],
+    });
+
+  } catch (error) {
+    console.error("Error fetching administrator details:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+
+
+
+
 module.exports = {
   getUserById,
   getElectricianServices,
@@ -11011,4 +11504,14 @@ module.exports = {
   registerUser,
   userCoupons,
   userReferrals,
+  getWorkerBalanceDetails,
+  workerMessage,
+  workerSearch,
+  cashbackHistory,
+  balanceHistory,
+  getWorkerServiceHistory,
+  currentService,
+  workerScreenChange ,
+  getPendingWorkersNotStarted,
+  administratorDetails
 };

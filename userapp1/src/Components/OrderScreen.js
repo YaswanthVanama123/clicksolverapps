@@ -243,7 +243,7 @@ const OrderScreen = () => {
 
         {/* Item Card */}
         <View style={styles.itemCard}>
-          {services.map((service, index) => (
+          {services.map((service, index) => ( 
             <View key={service.main_service_id}>
               <View style={styles.itemCardTop}>
                 <Text style={styles.itemName}>{service.serviceName}</Text>
@@ -467,6 +467,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 16,
+    textAlign:'center',
+    color:'#212121',
     fontWeight: '600',
   },
   itemCard: {
@@ -486,6 +488,7 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 16,
+    color:'#212121',
     width: '50%',
     fontWeight: '600',
   },
@@ -507,12 +510,14 @@ const styles = StyleSheet.create({
   },
   quantityBtnText: {
     fontSize: 16,
+    color:'#212121',
     fontWeight: 'bold',
   },
   quantityValue: {
     marginHorizontal: 8,
     fontSize: 16,
     fontWeight: '600',
+    color:'#212121',
   },
   horizontalButtons: {
     flexDirection: 'row',
@@ -565,11 +570,13 @@ const styles = StyleSheet.create({
   },
   savingsTitle: {
     fontSize: 14,
+    color:'#212121',
     width: '60%',
     fontWeight: '600',
   },
   savingsTitleHead: {
     fontSize: 16,
+    color:'#212121',
     fontWeight: '600',
   },
   offersRow: {
@@ -611,6 +618,7 @@ const styles = StyleSheet.create({
   },
   deliveryTypeHeading: {
     fontSize: 14,
+    color:'#212121',
     fontWeight: '600',
     marginBottom: 8,
   },
@@ -619,6 +627,7 @@ const styles = StyleSheet.create({
   },
   deliveryOptionText: {
     fontSize: 14,
+    color:'#212121',
     fontWeight: '500',
   },
   deliverySubText: {
@@ -636,6 +645,7 @@ const styles = StyleSheet.create({
   },
   paymentInfo: {
     fontSize: 16,
+    color:'#212121',
     fontWeight: '600',
     marginBottom: 4,
   },
@@ -645,6 +655,7 @@ const styles = StyleSheet.create({
   },
   addressQuestion: {
     marginTop: 16,
+    color:'#212121',
     marginHorizontal: 16,
     fontSize: 14,
     fontWeight: '500',

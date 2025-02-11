@@ -10,13 +10,29 @@ import moment from 'moment-timezone';
 /**
  * Helper function: Ray-casting algorithm for point-in-polygon.
  */
+// function pointInPolygon(lat, lng, polygon) {
+//   let inside = false;
+//   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+//     const lat_i = polygon[i][0];
+//     const lng_i = polygon[i][1];
+//     const lat_j = polygon[j][0];
+//     const lng_j = polygon[j][1];
+
+//     const intersect =
+//       lng_i > lng !== lng_j > lng &&
+//       lat < ((lat_j - lat_i) * (lng - lng_i)) / (lng_j - lng_i) + lat_i;
+//     if (intersect) inside = !inside;
+//   }
+//   return inside;
+// }
+
 function pointInPolygon(lat, lng, polygon) {
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const lat_i = polygon[i][0];
-    const lng_i = polygon[i][1];
-    const lat_j = polygon[j][0];
-    const lng_j = polygon[j][1];
+    const lat_i = polygon[i][1]; // Use index 1 for latitude
+    const lng_i = polygon[i][0]; // Use index 0 for longitude
+    const lat_j = polygon[j][1];
+    const lng_j = polygon[j][0];
 
     const intersect =
       lng_i > lng !== lng_j > lng &&
@@ -26,14 +42,29 @@ function pointInPolygon(lat, lng, polygon) {
   return inside;
 }
 
+
 /**
  * Returns true if (latitude, longitude) is inside at least one polygon in `geofences`.
  */
+// function isLocationInGeofence(latitude, longitude, geofences) {
+//   return geofences.some(geofence =>
+//     pointInPolygon(latitude, longitude, geofence.vertices),
+//   );
+// }
+
 function isLocationInGeofence(latitude, longitude, geofences) {
-  return geofences.some(geofence =>
-    pointInPolygon(latitude, longitude, geofence.vertices),
-  );
+  return geofences.some(geofence => {
+    // console.log(
+    //   `Checking location (${latitude}, ${longitude}) inside geofence: ${geofence.identifier}`
+    // );
+    // console.log('Geofence vertices:', JSON.stringify(geofence.vertices, null, 2));
+
+    // Ensure geofences are being checked in the correct format
+    return pointInPolygon(latitude, longitude, geofence.vertices);
+  });
 }
+
+
 
 const LocationTracker = ({isEnabled, onLocationUpdate}) => {
   // Keep track of distance traveled inside the geofence since last update
@@ -176,18 +207,14 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
           notifyOnDwell: false,
           loiteringDelay: 30000,
           vertices: [
-            [80.63369145143679, 17.390042404120663],
-            [80.63464400354599, 17.393299672168467],
-            [80.63975074124545, 17.39213817238675],
-            [80.64162938568472, 17.395471151975457],
-            [80.6424231791093, 17.395647899197584],
-            [80.64168230524632, 17.391759420863266],
-            [80.66549013578845, 17.38398742015015],
-            [80.66695273406538, 17.371101579573804],
-            [80.64701080411146, 17.37945102139436],
-            [80.63979862457018, 17.385593101328965],
-            [80.63369949884378, 17.390250991288397],
-            [80.63369145143679, 17.390042404120663],
+            [80.64383938669391, 17.423755538674854],
+            [80.6315471762353, 17.389371713719086],
+            [80.65814202706389, 17.3705781492812],
+            [80.65868367559256, 17.35589044663952],
+            [80.67539867010885, 17.352953626975193],
+            [80.68080578992158, 17.42039248928549],
+            [80.64316436757031, 17.423369978622517],
+            [80.64383938669391, 17.423755538674854],
           ],
         },
       ];

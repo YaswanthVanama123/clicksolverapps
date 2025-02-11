@@ -127,6 +127,16 @@ const {
   registerUser,
   userCoupons,
   userReferrals,
+  getWorkerBalanceDetails,
+  workerMessage,
+  workerSearch,
+  cashbackHistory,
+  getWorkerServiceHistory,
+  currentService,
+  balanceHistory ,
+  workerScreenChange,
+  getPendingWorkersNotStarted,
+  administratorDetails
 } = require("./controller.js");
 
 const router = express.Router();
@@ -141,6 +151,11 @@ router.post("/single/service", getServiceByName);
 router.post("/individual/worker/pending/verification", getPendingWorkerDetails);
 
 router.get("/workers/pending/verification", getPendingWorkers);
+
+router.get("/workers/pending/notStarted", getPendingWorkersNotStarted);
+
+router.post("/administrator/service/date/details",administratorDetails)
+
 
 router.post(
   "/service/tracking/delivery/verification",
@@ -578,11 +593,26 @@ router.post("/worker/working/status/updated", workerWorkingStatusUpdated);
 
 router.post("/worker/work/progress/details", WorkerWorkInProgressDetails);
 
+router.get("/worker/balance/history",balanceHistory);
+
 router.post("/administrator/service/date/details", getDashboardDetails);
 
 router.get("/workers/pending/cashback", getWorkersPendingCashback);
 
+router.post("/worker/screen/change",workerScreenChange)
+
 router.post("/worker/pending/cashback", getWorkerCashbackDetails);
+
+router.post("/worker/pending/balance", getWorkerBalanceDetails);
+
+router.get("/worker/service/history", getWorkerServiceHistory);
+
+router.get("/worker/current/service", currentService);
+
+
+
+router.post("/worker/message", workerMessage);
+
 
 router.get("/pending/balance/workers", pendingBalanceWorkers);
 
@@ -752,5 +782,9 @@ router.get("/user/address/details", getUserAddressDetails);
 router.post("/workers-nearby", authenticateToken, getWorkersNearby);
 
 router.get("/services", getServicesBySearch);
+
+router.get("/worker/search", workerSearch);
+
+router.get("/worker/cashback/history",cashbackHistory)
 
 module.exports = router;
