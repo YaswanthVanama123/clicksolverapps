@@ -14,6 +14,7 @@ import {
   Pressable,
   Alert,
   BackHandler,
+  ActivityIndicator, // Import ActivityIndicator
 } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import Geolocation from 'react-native-geolocation-service';
@@ -38,9 +39,12 @@ Mapbox.setAccessToken(
 );
 
 const placesClient = new Places('iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT');
+
 const UserLocation = () => {
   const navigation = useNavigation();
   const [location, setLocation] = useState(null);
+  const [locationLoading, setLocationLoading] = useState(true); // New state to show spinner until location is fetched
+  const [confirmLoading, setConfirmLoading] = useState(false);   // New state to show spinner while fetching user data
   const [suggestionName, setSuggestionName] = useState({});
   const [showMessageBox, setShowMessageBox] = useState(false);
   const [city, setCity] = useState('');
@@ -80,16 +84,6 @@ const UserLocation = () => {
     }
   }, [route.params]);
 
-  //   useEffect(()=>{
-  //       // Example usage:
-
-  //       calculateDistanceBetweenCoordinates(startCoordinates, endCoordinates).then(distance => {
-  //     if (distance !== null) {
-  //         console.log(`Calculated Distance: ${distanceInKilometers.toFixed(2)} km`);
-  //     }
-  // })
-  //   },[])
-
   useEffect(() => {
     const requestLocationPermission = async () => {
       try {
@@ -106,6 +100,7 @@ const UserLocation = () => {
           );
           if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
             console.log('Location permission denied');
+            setLocationLoading(false);
             return;
           }
         }
@@ -117,14 +112,17 @@ const UserLocation = () => {
             fetchAndSetPlaceDetails(latitude, longitude);
             setLocation([longitude, latitude]);
             sendDataToServer(longitude, latitude);
+            setLocationLoading(false);
           },
           error => {
             console.error('Geolocation error:', error);
+            setLocationLoading(false);
           },
           {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
         );
       } catch (err) {
         console.warn(err);
+        setLocationLoading(false);
       }
     };
 
@@ -149,22 +147,21 @@ const UserLocation = () => {
       // Use Ola Maps Places reverse geocode
       const response = await placesClient.reverse_geocode(latitude, longitude);
       const place = response.body.results[0];
-      // console.log("details", JSON.stringify(response.body, null, 2)); // For detailed inspection
 
       if (response && response.body && response.body.results.length > 0) {
         const addressComponents = response.body.results[0].address_components;
 
-        // Extract city, prioritizing 'sublocality' if it seems to match the desired result
+        // Extract city, prioritizing 'sublocality' if available
         const city =
           addressComponents.find(
             component =>
-              component.types.includes('sublocality') || // Prioritize sublocality first
+              component.types.includes('sublocality') ||
               component.types.includes('locality') ||
               component.types.includes('administrative_area_level_3') ||
               component.types.includes('administrative_area_level_2'),
           )?.long_name || '';
 
-        // Extract area information, using a broader range of potential sources
+        // Extract area information using the formatted address
         const area = place.formatted_address || '';
 
         // Extract pincode directly from 'postal_code'
@@ -184,32 +181,26 @@ const UserLocation = () => {
     }
   }, []);
 
-  // Function to calculate the distance between two coordinates using Ola Maps Routes
-
   const calculateDistanceBetweenCoordinates = async (
     startCoordinates,
     endCoordinates,
   ) => {
     try {
-      const apiKey = 'iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT'; // Replace with your API key
+      const apiKey = 'iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT';
 
-      // Format the coordinates as required by the Distance Matrix API
       const origins = `${startCoordinates.latitude},${startCoordinates.longitude}`;
       const destinations = `${endCoordinates.latitude},${endCoordinates.longitude}`;
 
-      // Construct the API URL
       const url = `https://api.olamaps.io/routing/v1/distanceMatrix?origins=${origins}&destinations=${destinations}&api_key=${apiKey}`;
 
-      // Make the API request
       const response = await axios.get(url, {
         headers: {
-          'X-Request-Id': 'your-request-id', // Optional, but useful for tracking requests
+          'X-Request-Id': 'your-request-id',
         },
       });
 
       console.log('distanceResponse', response.data);
 
-      // Check if the response contains valid data
       if (response && response.data && response.data.rows.length > 0) {
         const elements = response.data.rows[0].elements;
 
@@ -234,7 +225,6 @@ const UserLocation = () => {
       }
     } catch (error) {
       if (error.response) {
-        // Log details of the error response
         console.error('Error calculating distance:', error.response.data);
       } else {
         console.error('Error calculating distance:', error.message);
@@ -268,9 +258,7 @@ const UserLocation = () => {
   }, []);
 
   const handleCrosshairsPress = () => {
-    // Clear the TextInput value
     setInputText('');
-
     Geolocation.getCurrentPosition(
       position => {
         const {latitude, longitude} = position.coords;
@@ -285,39 +273,17 @@ const UserLocation = () => {
     );
   };
 
-  // const handleConfirmLocation = async () => {
-  //   setShowMessageBox(true);
-  //   try {
-  //     const token = await EncryptedStorage.getItem('cs_token');
-  //     if (!token) {
-  //       console.error('No token found');
-  //       return;
-  //     }
-  //     const response = await axios.get(
-  //       `https://backend.clicksolver.com/api/get/user`,
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //       },
-  //     );
-  //     const data = response.data;
-  //     setAlternatePhoneNumber(data.phone_number || '');
-  //     setAlternateName(data.name);
-  //   } catch (error) {
-  //     console.error('Failed to fetch user data:', error);
-  //   }
-  // };
+  // When "Confirm Location" is pressed, show the modal immediately and fetch user data.
   const handleConfirmLocation = async () => {
-    setShowMessageBox(true); // Open modal
-  
+    setConfirmLoading(true);
+    setShowMessageBox(true);
     try {
       const token = await EncryptedStorage.getItem('cs_token');
       if (!token) {
         console.error('No token found');
+        setConfirmLoading(false);
         return;
       }
-  
       const response = await axios.get(
         `https://backend.clicksolver.com/api/get/user`,
         {
@@ -326,7 +292,6 @@ const UserLocation = () => {
           },
         },
       );
-  
       if (response.status === 200) {
         const data = response.data;
         console.log('User data fetched:', data);
@@ -338,11 +303,10 @@ const UserLocation = () => {
     } catch (error) {
       console.error('Failed to fetch user data:', error);
       Alert.alert('Error', 'Failed to fetch user data. Please try again.');
-      setShowMessageBox(false); // Close modal in case of error
+      setShowMessageBox(false);
     }
+    setConfirmLoading(false);
   };
-  
-
 
   const handleBookCommander = () => {
     let hasError = false;
@@ -375,7 +339,6 @@ const UserLocation = () => {
 
     if (!hasError) {
       setShowMessageBox(false);
-      
       setTimeout(() => {
         navigation.dispatch(
           CommonActions.reset({
@@ -397,10 +360,8 @@ const UserLocation = () => {
             ],
           }),
         );
-      }, 0); // Executes after the state update
+      }, 0);
     }
-    
-    
   };
 
   const handlePressLocation = e => {
@@ -418,34 +379,31 @@ const UserLocation = () => {
 
   return (
     <SafeAreaView style={styles.page}>
-<View style={styles.searchBoxContainer}>
-  <View style={styles.searchInnerContainer}>
-    {/* Back Icon */}
-    <TouchableOpacity onPress={handleBackPress} style={{marginRight: 10}}>
-      <FontAwesome6 name="arrow-left-long" size={18} color="gray" />
-    </TouchableOpacity>
-
-    {/* Green Dot (10px after Back Icon) */}
-    <View style={{marginRight: 10}}>
-      <Octicons name="dot-fill" size={17} color="#4CAF50" />
-    </View>
-
-    {/* Search Input */}
-    <TextInput
-      style={styles.searchBox}
-      placeholder="Search location ..."
-      placeholderTextColor="#1D2951"
-      onFocus={() => navigation.replace('LocationSearch', { serviceName })}
-      value={inputText}
-      onChangeText={setInputText}
-    />
-
-    {/* Heart Icon */}
-    <TouchableOpacity onPress={() => setSuggestionName('')}>
-      <EvilIcons name="hearto" size={20} color="#808080" />
-    </TouchableOpacity>
-  </View>
-</View>
+      <View style={styles.searchBoxContainer}>
+        <View style={styles.searchInnerContainer}>
+          {/* Back Icon */}
+          <TouchableOpacity onPress={handleBackPress} style={{marginRight: 10}}>
+            <FontAwesome6 name="arrow-left-long" size={18} color="gray" />
+          </TouchableOpacity>
+          {/* Green Dot */}
+          <View style={{marginRight: 10}}>
+            <Octicons name="dot-fill" size={17} color="#4CAF50" />
+          </View>
+          {/* Search Input */}
+          <TextInput
+            style={styles.searchBox}
+            placeholder="Search location ..."
+            placeholderTextColor="#1D2951"
+            onFocus={() => navigation.replace('LocationSearch', {serviceName})}
+            value={inputText}
+            onChangeText={setInputText}
+          />
+          {/* Heart Icon */}
+          <TouchableOpacity onPress={() => setSuggestionName('')}>
+            <EvilIcons name="hearto" size={20} color="#808080" />
+          </TouchableOpacity>
+        </View>
+      </View>
 
       <View style={[styles.container, {height: screenHeight * 0.75}]}>
         <Mapbox.MapView
@@ -465,6 +423,11 @@ const UserLocation = () => {
             </>
           )}
         </Mapbox.MapView>
+        {locationLoading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FF5722" />
+          </View>
+        )}
       </View>
       <View style={[styles.bookingCard, {height: screenHeight * 0.3}]}>
         <View>
@@ -493,7 +456,11 @@ const UserLocation = () => {
           <TouchableOpacity
             style={styles.confirmButton}
             onPress={handleConfirmLocation}>
-            <Text style={styles.confirmButtonText}>Confirm Location</Text>
+            {confirmLoading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.confirmButtonText}>Confirm Location</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -505,80 +472,89 @@ const UserLocation = () => {
           onRequestClose={() => setShowMessageBox(false)}>
           <View style={styles.messageBoxBackdrop}>
             <View style={styles.messageBox}>
-              <Text style={styles.completeAddressHead}>
-                Enter complete address!
-              </Text>
-              <Text style={styles.label}>City</Text>
-              <View style={styles.inputView}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="City"
-                  value={city}
-                  onChangeText={setCity}
-                />
-                {cityError ? (
-                  <Text style={styles.errorText}>{cityError}</Text>
-                ) : null}
-              </View>
-              <Text style={styles.label}>Area</Text>
-              <View style={styles.inputView}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Area"
-                  value={area}
-                  onChangeText={setArea}
-                />
-                {areaError ? (
-                  <Text style={styles.errorText}>{areaError}</Text>
-                ) : null}
-              </View>
-              <Text style={styles.label}>Pincode</Text>
-              <View style={styles.inputView}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Pincode"
-                  value={pincode}
-                  onChangeText={setPincode}
-                />
-                {pincodeError ? (
-                  <Text style={styles.errorText}>{pincodeError}</Text>
-                ) : null}
-              </View>
-              <Text style={styles.label}>Phone number</Text>
-              <View style={styles.inputView}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Alternate phone number"
-                  keyboardType="phone-pad"
-                  value={alternatePhoneNumber}
-                  onChangeText={setAlternatePhoneNumber}
-                />
-                {phoneError ? (
-                  <Text style={styles.errorText}>{phoneError}</Text>
-                ) : null}
-              </View>
-              <Text style={styles.label}>Name</Text>
-              <View style={styles.inputView}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Alternate name"
-                  value={alternateName}
-                  onChangeText={setAlternateName}
-                />
-                {nameError ? (
-                  <Text style={styles.errorText}>{nameError}</Text>
-                ) : null}
-              </View>
-              <TouchableOpacity
-                style={styles.bookButton}
-                onPress={handleBookCommander}>
-                <Text style={styles.bookButtonText}>Book Commander</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setShowMessageBox(false)}>
-                <Text style={styles.closeButtonText}>×</Text>
-              </TouchableOpacity>
+              {confirmLoading ? (
+                <View style={styles.loadingContent}>
+                  <ActivityIndicator size="large" color="#FF5722" />
+                  <Text style={styles.loadingText}>Fetching details...</Text>
+                </View>
+              ) : (
+                <>
+                  <Text style={styles.completeAddressHead}>
+                    Enter complete address!
+                  </Text>
+                  <Text style={styles.label}>City</Text>
+                  <View style={styles.inputView}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="City"
+                      value={city}
+                      onChangeText={setCity}
+                    />
+                    {cityError ? (
+                      <Text style={styles.errorText}>{cityError}</Text>
+                    ) : null}
+                  </View>
+                  <Text style={styles.label}>Area</Text>
+                  <View style={styles.inputView}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Area"
+                      value={area}
+                      onChangeText={setArea}
+                    />
+                    {areaError ? (
+                      <Text style={styles.errorText}>{areaError}</Text>
+                    ) : null}
+                  </View>
+                  <Text style={styles.label}>Pincode</Text>
+                  <View style={styles.inputView}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Pincode"
+                      value={pincode}
+                      onChangeText={setPincode}
+                    />
+                    {pincodeError ? (
+                      <Text style={styles.errorText}>{pincodeError}</Text>
+                    ) : null}
+                  </View>
+                  <Text style={styles.label}>Phone number</Text>
+                  <View style={styles.inputView}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Alternate phone number"
+                      keyboardType="phone-pad"
+                      value={alternatePhoneNumber}
+                      onChangeText={setAlternatePhoneNumber}
+                    />
+                    {phoneError ? (
+                      <Text style={styles.errorText}>{phoneError}</Text>
+                    ) : null}
+                  </View>
+                  <Text style={styles.label}>Name</Text>
+                  <View style={styles.inputView}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Alternate name"
+                      value={alternateName}
+                      onChangeText={setAlternateName}
+                    />
+                    {nameError ? (
+                      <Text style={styles.errorText}>{nameError}</Text>
+                    ) : null}
+                  </View>
+                  <TouchableOpacity
+                    style={styles.bookButton}
+                    onPress={handleBookCommander}>
+                    <Text style={styles.bookButtonText}>Book Commander</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={() => setShowMessageBox(false)}>
+                    <Text style={styles.closeButtonText}>×</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </View>
         </Modal>
@@ -598,7 +574,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-  }, 
+  },
   page: {
     flex: 1,
   },
@@ -613,8 +589,8 @@ const styles = StyleSheet.create({
     color: '#212121',
     width: 90,
     fontFamily: 'RobotoSlab-Regular',
-    flex: 1, // Ensures the service name takes remaining space
-    textAlign: 'left', // Aligns the service name to the left
+    flex: 1,
+    textAlign: 'left',
   },
   quantityContainer: {
     backgroundColor: '#EFDCCB',
@@ -625,7 +601,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     width: 70,
     alignItems: 'center',
-    marginHorizontal: 10, // Add some margin between the items
+    marginHorizontal: 10,
   },
   quantity: {
     fontSize: 14,
@@ -673,21 +649,20 @@ const styles = StyleSheet.create({
     zIndex: 1,
     alignItems: 'center',
   },
-    // The inner row that holds icons + TextInput
-    searchInnerContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: 'white',
-      borderRadius: 9,
-      width: '90%',              // or you can keep a fixed width if you prefer
-      elevation: 10,            // For Android shadow
-      shadowColor: '#000',      // For iOS shadow
-      shadowOffset: {width: 0, height: 2},
-      shadowOpacity: 0.8,
-      shadowRadius: 2,
-      paddingHorizontal: 10,
-      height: 55,
-    },
+  searchInnerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 9,
+    width: '90%',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.8,
+    shadowRadius: 2,
+    paddingHorizontal: 10,
+    height: 55,
+  },
   iconContainer: {
     position: 'absolute',
     right: 40,
@@ -705,7 +680,7 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   searchBox: {
-    flex: 1,                  // This ensures TextInput stretches across remaining space
+    flex: 1,
     color: '#1D2951',
     fontSize: 14,
     fontFamily: 'RobotoSlab-Regular',
@@ -807,5 +782,22 @@ const styles = StyleSheet.create({
   closeButtonText: {
     color: 'white',
     fontSize: 20,
+  },
+  loadingContainer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#FF5722',
+    fontFamily: 'RobotoSlab-Regular',
   },
 });

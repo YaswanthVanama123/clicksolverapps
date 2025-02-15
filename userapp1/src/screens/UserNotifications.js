@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Dimensions,
   TouchableOpacity,
+  ActivityIndicator, // Import ActivityIndicator
 } from 'react-native';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import moment from 'moment';
@@ -16,15 +17,15 @@ import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 
 const UserNotifications = () => {
   const [notificationsArray, setNotificationsArray] = useState([]);
+  const [loading, setLoading] = useState(true); // New loading state
   const navigation = useNavigation();
   const screenHeight = Dimensions.get('window').height;
   const screenWidth = Dimensions.get('window').width;
 
   const fetchNotifications = async () => {
     try {
-      const storedNotifications = await EncryptedStorage.getItem(
-        'notifications',
-      );
+      setLoading(true);
+      const storedNotifications = await EncryptedStorage.getItem('notifications');
       const parsedNotifications = storedNotifications
         ? JSON.parse(storedNotifications)
         : [];
@@ -37,6 +38,8 @@ const UserNotifications = () => {
     } catch (error) {
       console.error('Error fetching notifications:', error);
       setNotificationsArray([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -97,7 +100,9 @@ const UserNotifications = () => {
         <Text style={styles.header}>Notifications</Text>
       </View>
       <View style={styles.notificationCards}>
-        {notificationsArray.length > 0 ? (
+        {loading ? (
+          <ActivityIndicator size="large" color="#FF5722" style={styles.loader} />
+        ) : notificationsArray.length > 0 ? (
           <FlatList
             data={notificationsArray}
             renderItem={renderItem}
@@ -203,6 +208,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#9e9e9e',
     marginTop: 20,
+  },
+  loader: {
+    marginTop: 20,
+    alignSelf: 'center',
   },
 });
 

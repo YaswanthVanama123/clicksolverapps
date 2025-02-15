@@ -8,6 +8,7 @@ import {
   StyleSheet,
   SafeAreaView,
   BackHandler,
+  ActivityIndicator, // Import ActivityIndicator
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
@@ -24,6 +25,7 @@ const placesClient = new Places('iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT'); // 
 const LocationSearch = () => {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false); // Loading state for suggestions
   const [serviceArray, setServiceArray] = useState([]);
   const route = useRoute();
   const navigation = useNavigation();
@@ -33,6 +35,7 @@ const LocationSearch = () => {
   // Fetch and set place details using ola-maps Places client
   const fetchAndSetPlaceDetails = useCallback(async query => {
     try {
+      setLoadingSuggestions(true);
       // Use the ola-maps Places client to get autocomplete results
       const response = await placesClient.autocomplete(query);
 
@@ -48,6 +51,8 @@ const LocationSearch = () => {
       }
     } catch (error) {
       console.error('Failed to fetch place details:', error);
+    } finally {
+      setLoadingSuggestions(false);
     }
   }, []);
 
@@ -135,12 +140,20 @@ const LocationSearch = () => {
         )}
       </View>
 
-      <FlatList
-        data={suggestions}
-        keyExtractor={item => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-      />
+      {loadingSuggestions ? (
+        <ActivityIndicator
+          size="large"
+          color="#FF5722"
+          style={styles.loader}
+        />
+      ) : (
+        <FlatList
+          data={suggestions}
+          keyExtractor={item => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -207,6 +220,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#4a4a4a',
     fontFamily: 'RobotoSlab-Regular',
+  },
+  loader: {
+    marginTop: 20,
+    alignSelf: 'center',
   },
 });
 

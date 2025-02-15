@@ -58,6 +58,9 @@ import TaskCompletionScreen from './Components/TaskConformationScreen';
 import HomeScreen from './Screens/Home';
 import HomeComponent from './Screens/HomeComponent';
 import {NavigationContainerRef} from '@react-navigation/native';
+import axios from 'axios';
+import VerificationScreen from './Components/VerificationScreen';
+import ProfileChange from './Components/ProfileChange';
 // Additional imports...
 
 const Stack = createNativeStackNavigator();
@@ -146,46 +149,203 @@ function App(): React.JSX.Element {
   const [initialRoute, setInitialRoute] = useState<string | null>(null);
 
   useEffect(() => {
-    const requestPermissions = async () => {
+    const handleForceLogout = async () => {
       try {
-        if (Platform.OS === 'android') {
-          const granted = await PermissionsAndroid.requestMultiple([
-            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-            PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
-            PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION,
-            PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-          ]);
-
-          if (
-            granted['android.permission.ACCESS_FINE_LOCATION'] ===
-              PermissionsAndroid.RESULTS.GRANTED &&
-            granted['android.permission.ACCESS_COARSE_LOCATION'] ===
-              PermissionsAndroid.RESULTS.GRANTED &&
-            granted['android.permission.ACCESS_BACKGROUND_LOCATION'] ===
-              PermissionsAndroid.RESULTS.GRANTED
-          ) {
-            console.log('Location permissions granted');
-          } else {
-            console.log('Location permission denied');
-          }
-
-          if (
-            granted['android.permission.POST_NOTIFICATIONS'] ===
-            PermissionsAndroid.RESULTS.GRANTED
-          ) {
-            console.log('Notification permission granted');
-          } else {
-            console.log('Notification permission denied');
-          }
-        }
-      } catch (err) {
-        console.warn(err);
+        console.log("Logging out due to session expiration...");
+        await EncryptedStorage.removeItem("pcs_token");
+        await EncryptedStorage.removeItem("workerSessionToken");
+  
+        navigationRef.current?.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: "Login" }],
+          })
+        );
+      } catch (error) {
+        console.error("Error handling force logout:", error);
       }
     };
+  
+    const checkSessionOnAppStart = async () => {
+      try {
+        const pcsToken = await EncryptedStorage.getItem("pcs_token");
+  
+        if (!pcsToken) {
+          console.warn("No PCS token found, logging out...");
+          handleForceLogout();
+          return;
+        }
+  
 
-    requestPermissions();
-    SplashScreen.hide();
+          const response = await axios.post(
+            "https://backend.clicksolver.com/api/worker/token/verification",
+            { pcsToken }, // Sending pcsToken in the request body
+            {
+              headers: { Authorization: `Bearer ${pcsToken}` },
+            }
+          );
+        
+          console.log(response.status)
+  
+        if (response.status === 205) {
+          console.warn("Session expired, logging out...");
+          handleForceLogout();
+        } else {
+          console.log("Session valid, continuing...");
+        }
+      } catch (error) {
+        console.error("Error checking session validity:", error);
+        // Optional: Handle network errors gracefully, retry logic can be added here
+      }
+    };
+  
+    // ✅ Only run this when the app starts from a terminated state
+    checkSessionOnAppStart();
   }, []);
+
+  // useEffect(() => {
+  //   const requestPermissions = async () => {
+  //     try {
+  //       const authStatus = await messaging().requestPermission();
+  //       const enabled =
+  //         authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+  //         authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+  
+  //       if (enabled) {
+  //         console.log("Notification permissions enabled.");
+  //       } else {
+  //         console.log("Notification permissions denied.");
+  //       }
+  //     } catch (err) {
+  //       console.warn("Error requesting notification permissions:", err);
+  //     }
+  //   };
+  
+  //   const handleForceLogout = async () => {
+  //     try {
+  //       console.log("Logging out due to FORCE_LOGOUT message...");
+  //       await EncryptedStorage.removeItem("pcs_token");
+  //       await EncryptedStorage.removeItem("workerSessionToken");
+  //       navigationRef.current?.dispatch(
+  //         CommonActions.reset({
+  //           index: 0,
+  //           routes: [{ name: "Login" }],
+  //         })
+  //       );
+  //     } catch (error) {
+  //       console.error("Error handling force logout:", error);
+  //     }
+  //   };
+  
+  //   // ✅ Handle Foreground Notifications
+  //   const handleForegroundNotification = () => {
+  //     const unsubscribe = messaging().onMessage(async (remoteMessage) => {
+  //       if (!remoteMessage?.data) return;
+  
+  //       const notificationId = remoteMessage.data?.notification_id;
+  //       const screen = remoteMessage.data?.screen;
+  
+  //       if (!navigationRef.current) {
+  //         console.warn("Navigation reference is not set yet.");
+  //         return;
+  //       }
+  
+  //       if (screen === "Home") {
+  //         navigationRef.current.dispatch(
+  //           CommonActions.reset({
+  //             index: 0,
+  //             routes: [{ name: "Tabs", state: { routes: [{ name: "Home" }] } }],
+  //           })
+  //         );
+  //       } else if (screen === "TaskConfirmation") {
+  //         navigationRef.current.navigate("TaskConfirmation", {
+  //           encodedId: notificationId,
+  //         });
+  //       } else if (remoteMessage.data?.action === "FORCE_LOGOUT") {
+  //         handleForceLogout();
+  //       }
+  //     });
+  
+  //     return unsubscribe; // ✅ Ensure cleanup when component unmounts
+  //   };
+  
+  //   // ✅ Handle Background Notifications
+  //   const handleBackgroundNotification = async () => {
+  //     messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+  //       if (!remoteMessage?.data) return;
+  
+  //       const notificationId = remoteMessage.data?.notification_id;
+  //       const screen = remoteMessage.data?.screen;
+  
+  //       if (!navigationRef.current) {
+  //         console.warn("Navigation reference is not set yet.");
+  //         return;
+  //       }
+  
+  //       if (screen === "Home") {
+  //         navigationRef.current.dispatch(
+  //           CommonActions.reset({
+  //             index: 0,
+  //             routes: [{ name: "Home" }],
+  //           })
+  //         );
+  //       } else if (screen === "TaskConfirmation") {
+  //         navigationRef.current.navigate("TaskConfirmation", {
+  //           encodedId: notificationId,
+  //         });
+  //       } else if (remoteMessage.data?.action === "FORCE_LOGOUT") {
+  //         handleForceLogout();
+  //       }
+  //     });
+  //   };
+  
+  //   // ✅ Handle Notifications when App is Opened from Terminated State
+  //   const handleInitialNotification = async () => {
+  //     const remoteMessage = await messaging().getInitialNotification();
+  //     if (!remoteMessage?.data) return; // ✅ Prevent errors when remoteMessage is null
+  
+  //     const screen = remoteMessage.data?.screen;
+  //     if (!navigationRef.current) {
+  //       console.warn("Navigation reference is not set yet.");
+  //       return;
+  //     }
+  
+  //     if (screen === "Home") {
+  //       navigationRef.current.dispatch(
+  //         CommonActions.reset({
+  //           index: 0,
+  //           routes: [{ name: "Tabs", state: { routes: [{ name: "Home" }] } }],
+  //         })
+  //       );
+  //     } else if (screen === "TaskConfirmation") {
+  //       navigationRef.current.navigate("TaskConfirmation", {
+  //         encodedId: remoteMessage.data?.notification_id,
+  //       });
+  //     } else if (remoteMessage.data?.action === "FORCE_LOGOUT") {
+  //       handleForceLogout();
+  //     }
+  //   };
+  
+  //   // Variable to store the foreground unsubscribe function
+  //   let unsubscribeForeground: () => void = () => {};
+  
+  //   // Call async functions inside an IIFE
+  //   (async () => {
+  //     await requestPermissions();
+  //     unsubscribeForeground = handleForegroundNotification();
+  //     await handleBackgroundNotification();
+  //     await handleInitialNotification();
+  //   })();
+  
+  //   // Return the cleanup function synchronously
+  //   return () => {
+  //     if (unsubscribeForeground) {
+  //       unsubscribeForeground();
+  //     }
+  //   };
+  // }, []);
+  
+  
 
   useEffect(() => {
     const requestPermissions = async () => {
@@ -227,6 +387,9 @@ function App(): React.JSX.Element {
             encodedId: notificationId,
           });
         }
+        else if (remoteMessage.data?.action === "FORCE_LOGOUT") {
+          handleForceLogout();
+        }
       });
     };
 
@@ -252,6 +415,9 @@ function App(): React.JSX.Element {
             encodedId: notificationId,
           });
         }
+        else if (remoteMessage.data?.action === "FORCE_LOGOUT") {
+          handleForceLogout();
+        }
       });
     };
 
@@ -276,6 +442,9 @@ function App(): React.JSX.Element {
           encodedId: remoteMessage?.data?.notification_id,
         });
       }
+      else if (remoteMessage?.data?.action === "FORCE_LOGOUT") {
+        handleForceLogout();
+      }
     };
 
     const setupNotificationHandlers = async () => {
@@ -286,6 +455,7 @@ function App(): React.JSX.Element {
     };
 
     setupNotificationHandlers();
+    SplashScreen.hide();
   }, []);
 
   useEffect(() => {
@@ -410,9 +580,9 @@ function App(): React.JSX.Element {
         />
         <Stack.Screen
           name="Earnings"
-          component={EarningsScreen}
+          component={VerificationScreen}
           options={{headerShown: false}}
-        />
+        /> 
         <Stack.Screen
           name="RatingsScreen"
           component={RatingsScreen}
@@ -460,7 +630,7 @@ function App(): React.JSX.Element {
         />
         <Stack.Screen
           name="WorkerProfile"
-          component={skills}
+          component={ProfileChange}
           options={{title: 'WorkerProfile', headerShown: false}}
         />
         <Stack.Screen
@@ -497,6 +667,11 @@ function App(): React.JSX.Element {
           name="PendingBalanceWorkers"
           component={PendingBalanceWorkers}
           options={{title: 'PendingBalanceWorkers', headerShown: false}}
+        />
+        <Stack.Screen
+          name="ProfileChange"
+          component={ProfileChange}
+          options={{title: 'ProfileChange', headerShown: false}}
         />
         <Stack.Screen
           name="ServiceInProgress"

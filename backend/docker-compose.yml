@@ -42,7 +42,7 @@ services:
     environment:
       - DB_HOST=db
       - DB_USER=postgres
-      - DB_PASSWORD=Yaswanth@123
+      - DB_PASSWORD=Yaswanth123
       - DB_PORT=5432
       - DB_NAME=clicksolver
     depends_on:
@@ -53,7 +53,7 @@ services:
     container_name: my-postgres-db
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Yaswanth@123
+      POSTGRES_PASSWORD: Yaswanth123
       POSTGRES_DB: clicksolver
     ports:
       - "5432:5432"

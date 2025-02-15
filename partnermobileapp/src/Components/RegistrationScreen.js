@@ -181,7 +181,8 @@ const RegistrationScreen = () => {
         },
       );
       console.log('pc', pcsToken);
-      console.log(response.data);
+      // console.log(response.data);
+      console.log("phone",response.data[0].phone_numbers[0])
       setPhoneNumber(response.data[0].phone_numbers[0]);
       const data = response.data;
       const mappedData = data.map(item => ({

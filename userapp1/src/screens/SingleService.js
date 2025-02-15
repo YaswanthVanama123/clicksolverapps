@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useCallback} from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Dimensions,
   Modal,
+  ActivityIndicator, // Import ActivityIndicator here
 } from 'react-native';
 import axios from 'axios';
 import Swiper from 'react-native-swiper';
@@ -26,7 +27,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const SingleService = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const {serviceName} = route.params;
+  const { serviceName } = route.params;
 
   const [services, setServices] = useState([]);
   const [quantities, setQuantities] = useState({});
@@ -36,25 +37,27 @@ const SingleService = () => {
   const [originalTotal, setOriginalAmount] = useState(0);
   const [loginModalVisible, setLoginModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
+  // New state for booking process loading
+  const [bookingLoading, setBookingLoading] = useState(false);
   const insets = useSafeAreaInsets();
 
   const fetchDetails = useCallback(async () => {
     try {
+      console.log("serviceName",serviceName)
       const response = await axios.post(
         `https://backend.clicksolver.com/api/single/service`,
         {
           serviceName,
         },
       );
-      const {relatedServices} = response.data;
+      const { relatedServices } = response.data;
       setServices(relatedServices);
       setQuantities(
         relatedServices.reduce(
-          (acc, service) => ({...acc, [service.main_service_id]: 0}),
+          (acc, service) => ({ ...acc, [service.main_service_id]: 0 }),
           {},
         ),
       );
-      // Done fetching => turn off the loading
       setLoading(false);
       console.log('single', relatedServices);
     } catch (error) {
@@ -63,32 +66,6 @@ const SingleService = () => {
     }
   }, [serviceName]);
 
-  // useEffect(() => {
-  //   const fetchStoredCart = async () => {
-  //     try {
-  //       const storedCart = await EncryptedStorage.getItem(serviceName);
-  //       if (storedCart) {
-  //         const parsedCart = JSON.parse(storedCart);
-  //         if (Array.isArray(parsedCart)) {
-  //           setBookedServices(parsedCart);
-  //           // Update quantities from booked services
-  //           const parsedQuantities = parsedCart.reduce((acc, service) => {
-  //             acc[service.main_service_id] = service.quantity;
-  //             return acc;
-  //           }, {});
-  //           setQuantities(parsedQuantities);
-  //         }
-  //       }
-  //     } catch (error) {
-  //       console.error('Error fetching stored cart:', error);
-  //     }
-  //   };
-  //   // First fetch new services, then fetch old cart
-  //   fetchDetails().then(fetchStoredCart);
-  // }, [fetchDetails, serviceName]);
-
-  // Recalculate total whenever quantities change
-
   const fetchStoredCart = useCallback(async () => {
     try {
       const storedCart = await EncryptedStorage.getItem(serviceName);
@@ -96,7 +73,6 @@ const SingleService = () => {
         const parsedCart = JSON.parse(storedCart);
         if (Array.isArray(parsedCart)) {
           setBookedServices(parsedCart);
-
           // Update quantities from booked services
           const parsedQuantities = parsedCart.reduce((acc, service) => {
             acc[service.main_service_id] = service.quantity;
@@ -110,22 +86,14 @@ const SingleService = () => {
     }
   }, [serviceName]);
 
-  // Runs once when component mounts
   useEffect(() => {
-    // Then call them in sequence
     fetchDetails().then(fetchStoredCart);
   }, [fetchDetails, fetchStoredCart]);
 
-  // Runs every time the screen is focused
   useFocusEffect(
     useCallback(() => {
-      // Re-fetch data or sync cart each time user returns
       fetchDetails().then(fetchStoredCart);
-
-      // Optionally do more stuff here (attach event listeners, etc.)
-      return () => {
-        // Cleanup if necessary
-      };
+      return () => {};
     }, [fetchDetails, fetchStoredCart]),
   );
 
@@ -152,7 +120,6 @@ const SingleService = () => {
           return {
             serviceName: service.service_tag,
             quantity,
-            // cost: calculateDiscount(parseFloat(service.cost), quantity),
             cost: parseFloat(service.cost) * quantity,
             url: service.service_details.urls,
             description: service.service_details.about,
@@ -200,33 +167,24 @@ const SingleService = () => {
     navigation.push('Login');
   };
 
-  // const bookService = async () => {
-  //   try {
-  //     const cs_token = await EncryptedStorage.getItem('cs_token');
-  //     if (cs_token) {
-  //       setModalVisible(false);
-  //       navigation.push('UserLocation', {serviceName: bookedServices});
-  //     } else {
-  //       setLoginModalVisible(true);
-  //     }
-  //   } catch (error) {
-  //     console.error('Error accessing storage:', error);
-  //   }
-  // };
-
   const bookService = async () => {
     try {
+      // Start the booking process; show the ActivityIndicator
+      setBookingLoading(true);
       const cs_token = await EncryptedStorage.getItem('cs_token');
       if (cs_token) {
         setModalVisible(false);
-        navigation.push('OrderScreen', {serviceName: bookedServices});
+        setBookingLoading(false);
+        navigation.push('OrderScreen', { serviceName: bookedServices });
       } else {
-        console.log("login screen");
+        console.log('login screen');
         setModalVisible(false);
+        setBookingLoading(false);
         setLoginModalVisible(true);
       }
     } catch (error) {
       console.error('Error accessing storage:', error);
+      setBookingLoading(false);
     }
   };
 
@@ -236,263 +194,268 @@ const SingleService = () => {
 
   useFocusEffect(
     React.useCallback(() => {
-      // This code will run every time the screen is focused
-      // For example, re-fetch data or reset states:
       fetchDetails().then(fetchStoredCart);
-
-      // If you have any event listeners, attach them here
-      // and clean them up in the return statement.
-
-      return () => {
-        // Clean up any event listeners if necessary
-      };
+      return () => {};
     }, []),
   );
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={["top","left","right"]}>
-    <View style={{ flex: 1 }}>
-    <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}>
-        {/* Top Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.imageIcons} onPress={handleBackPress}>
-            <Icon name="arrow-back" size={24} color="#000" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.imageIcons}
-            onPress={() => navigation.push('SearchItem')}>
-            <Icon name="search" size={24} color="#000" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Carousel or Carousel Loader */}
-        {loading ? (
-          <View style={styles.carouselLoaderContainer}>
-            <LottieView
-              source={require('../assets/singlecard.json')}
-              autoPlay
-              loop
-              style={styles.carouselLoader}
-            />
+    <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
+      <View style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}>
+          {/* Top Header */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.imageIcons} onPress={handleBackPress}>
+              <Icon name="arrow-back" size={24} color="#000" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.imageIcons}
+              onPress={() => navigation.push('SearchItem')}>
+              <Icon name="search" size={24} color="#000" />
+            </TouchableOpacity>
           </View>
-        ) : (
-          <View style={styles.carouselContainer}>
-            <Swiper
-              style={styles.wrapper}
-              autoplay
-              autoplayTimeout={3}
-              showsPagination={false}>
-              {services.map(service => (
-                <View key={service.main_service_id}>
-                  <Image
-                    source={{uri: service.service_urls[0]}}
-                    style={styles.carouselImage}
-                    resizeMode="cover"
-                  />
-                </View>
-              ))}
-            </Swiper>
-          </View>
-        )}
 
-        {/* Title, Price Info */}
-        <View style={styles.serviceHeader}>
-          <View style={styles.serviceDetails}>
-            <Text style={styles.serviceTitle}>{serviceName}</Text>
-            <View style={styles.priceContainer}>
-              <Text style={styles.Sparetext}>
-                Spare parts, if required, will incur additional charges
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.horizantalLine} />
-
-        {/* Recommended Container or Loader */}
-        <View style={styles.recomendedContainer}>
+          {/* Carousel or Carousel Loader */}
           {loading ? (
-            <View style={styles.recommendedLoaderContainer}>
+            <View style={styles.carouselLoaderContainer}>
               <LottieView
-                source={require('../assets/cardsLoading.json')}
+                source={require('../assets/singlecard.json')}
                 autoPlay
                 loop
-                style={styles.recommendedLoader}
+                style={styles.carouselLoader}
               />
             </View>
           ) : (
-            services.map(service => (
-              <TouchableOpacity
-                key={service.main_service_id}
-                style={styles.recomendedCard}>
-                <View style={styles.recomendedCardDetails}>
-                  <Text style={styles.recomendedCardDetailsHead}>
-                    {service.service_tag}
-                  </Text>
-                  <Text
-                    style={styles.recomendedCardDetailsDescription}
-                    numberOfLines={2}>
-                    {service.service_details.about}
-                  </Text>
-                  <Text style={styles.recomendedCardDetailsRating}>
-                    ₹{service.cost}
-                  </Text>
-                  <View style={styles.addButton}>
-                    <TouchableOpacity
-                      onPress={() =>
-                        handleQuantityChange(service.main_service_id, -1)
-                      }>
-                      <Entypo name="minus" size={20} color="#4a4a4a" />
-                    </TouchableOpacity>
-                    <Text style={styles.addButtonText}>
-                      {quantities[service.main_service_id] > 0
-                        ? quantities[service.main_service_id]
-                        : 'Add'}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() =>
-                        handleQuantityChange(service.main_service_id, 1)
-                      }>
-                      <Entypo name="plus" size={20} color="#4a4a4a" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                {service.service_details.urls && (
-                  <Image
-                    source={{uri: service.service_details.urls}}
-                    style={styles.recomendedImage}
-                    resizeMode="stretch"
-                  />
-                )}
-              </TouchableOpacity>
-            ))
-          )}
-        </View>
-      </ScrollView>
-
-{/* Bottom Cart Bar */}
-{totalAmount > 0 && (
-      <View style={[styles.cartContainer]}>
-        <View>
-          {bookedServices.some(
-            service => service.originalCost !== service.cost
-          ) && (
-            <Text style={styles.originalAmount}>
-              <Text style={styles.crossedText}>₹{originalTotal}</Text>
-            </Text>
-          )}
-          <Text style={styles.amount}>Total: ₹{totalAmount}</Text>
-        </View>
-        <TouchableOpacity
-          onPress={handleBookNow}
-          style={styles.buttonContainer}>
-          <Text style={styles.buttonText}>View</Text>
-        </TouchableOpacity>
-      </View>
-    )}
-
-      {/* Modal - Booked Services */}
-      <Modal
-        transparent
-        animationType="slide"
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}>
-        <View style={styles.modalContainer}>
-          <TouchableOpacity
-            style={styles.crossIconContainer}
-            onPress={() => setModalVisible(false)}>
-            <View style={styles.crossIcon}>
-              <Entypo name="cross" size={20} color="#4a4a4a" />
-            </View>
-          </TouchableOpacity>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Booked Services</Text>
-            <ScrollView contentContainerStyle={{paddingBottom: 20}}>
-              <View style={styles.itemContainers}>
-                {bookedServices.map((service, index) => (
-                  <View key={index} style={styles.itemContainer}>
-                    {service.url ? (
-                      <Image
-                        source={{uri: service.url}}
-                        style={styles.recomendedModalImage}
-                        resizeMode="stretch"
-                      />
-                    ) : (
-                      <Image
-                        source={{uri: 'https://postimage.png'}}
-                        style={styles.recomendedModalImage}
-                        resizeMode="stretch"
-                      />
-                    )}
-                    <View style={styles.descriptionContainer}>
-                      <Text
-                        style={styles.recomendedCardDetailsHead}
-                        numberOfLines={3}>
-                        {service.serviceName}
-                      </Text>
-                      <Text
-                        style={styles.recomendedCardDetailsDescription}
-                        numberOfLines={2}>
-                        {service.description}
-                      </Text>
-                      <View style={styles.addButton}>
-                        <TouchableOpacity
-                          onPress={() =>
-                            handleQuantityChange(service.main_service_id, -1)
-                          }>
-                          <Entypo name="minus" size={20} color="#4a4a4a" />
-                        </TouchableOpacity>
-                        <Text style={styles.addButtonText}>
-                          {quantities[service.main_service_id]}
-                        </Text>
-                        <TouchableOpacity
-                          onPress={() =>
-                            handleQuantityChange(service.main_service_id, 1)
-                          }>
-                          <Entypo name="plus" size={20} color="#4a4a4a" />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
+            <View style={styles.carouselContainer}>
+              <Swiper
+                style={styles.wrapper}
+                autoplay
+                autoplayTimeout={3}
+                showsPagination={false}>
+                {services.map(service => (
+                  <View key={service.main_service_id}>
+                    <Image
+                      source={{ uri: service.service_urls[0] }}
+                      style={styles.carouselImage}
+                      resizeMode="cover"
+                    />
                   </View>
                 ))}
-              </View>
-            </ScrollView>
-            <Text style={styles.modalTotal}>Total Amount: ₹{totalAmount}</Text>
-            <TouchableOpacity style={styles.bookButton} onPress={bookService}>
-              <Text style={styles.modalButtonText}>Book Now</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+              </Swiper>
+            </View>
+          )}
 
-      {/* Login Prompt Modal */}
-      <Modal
-        transparent
-        animationType="fade"
-        visible={loginModalVisible}
-        onRequestClose={() => setLoginModalVisible(false)}>
-        <View style={styles.loginModalOverlay}>
-          <View style={styles.loginModalContent}>
-            <Text style={styles.loginModalTitle}>Login Required</Text>
-            <Text style={styles.loginModalMessage}>
-              You need to log in to book services. Would you like to log in now?
-            </Text>
-            <View style={styles.loginModalButtons}>
-              <TouchableOpacity
-                style={styles.loginCancelButton}
-                onPress={() => setLoginModalVisible(false)}>
-                <Text style={styles.loginCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.loginProceedButton}
-                onPress={navigateToLogin}>
-                <Text style={styles.loginProceedText}>Login</Text>
-              </TouchableOpacity>
+          {/* Title, Price Info */}
+          <View style={styles.serviceHeader}>
+            <View style={styles.serviceDetails}>
+              <Text style={styles.serviceTitle}>{serviceName}</Text>
+              <View style={styles.priceContainer}>
+                <Text style={styles.Sparetext}>
+                  Spare parts, if required, will incur additional charges
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+
+          <View style={styles.horizantalLine} />
+
+          {/* Recommended Container or Loader */}
+          <View style={styles.recomendedContainer}>
+            {loading ? (
+              <View style={styles.recommendedLoaderContainer}>
+                <LottieView
+                  source={require('../assets/cardsLoading.json')}
+                  autoPlay
+                  loop
+                  style={styles.recommendedLoader}
+                />
+              </View>
+            ) : (
+              services.map(service => (
+                <TouchableOpacity
+                  key={service.main_service_id}
+                  style={styles.recomendedCard}>
+                  <View style={styles.recomendedCardDetails}>
+                    <Text style={styles.recomendedCardDetailsHead}>
+                      {service.service_tag}
+                    </Text>
+                    <Text
+                      style={styles.recomendedCardDetailsDescription}
+                      numberOfLines={2}>
+                      {service.service_details.about}
+                    </Text>
+                    <Text style={styles.recomendedCardDetailsRating}>
+                      ₹{service.cost}
+                    </Text>
+                    <View style={styles.addButton}>
+                      <TouchableOpacity
+                        onPress={() =>
+                          handleQuantityChange(service.main_service_id, -1)
+                        }>
+                        <Entypo name="minus" size={20} color="#4a4a4a" />
+                      </TouchableOpacity>
+                      <Text style={styles.addButtonText}>
+                        {quantities[service.main_service_id] > 0
+                          ? quantities[service.main_service_id]
+                          : 'Add'}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() =>
+                          handleQuantityChange(service.main_service_id, 1)
+                        }>
+                        <Entypo name="plus" size={20} color="#4a4a4a" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  {service.service_details.urls && (
+                    <Image
+                      source={{ uri: service.service_details.urls }}
+                      style={styles.recomendedImage}
+                      resizeMode="stretch"
+                    />
+                  )}
+                </TouchableOpacity>
+              ))
+            )}
+          </View>
+        </ScrollView>
+
+        {/* Bottom Cart Bar */}
+        {totalAmount > 0 && (
+          <View style={[styles.cartContainer]}>
+            <View>
+              {bookedServices.some(
+                service => service.originalCost !== service.cost,
+              ) && (
+                <Text style={styles.originalAmount}>
+                  {/* <Text style={styles.crossedText}>Total: ₹{originalTotal}</Text> */}
+                  <Text style={styles.amount}>Total: ₹{originalTotal}</Text>
+                </Text>
+              )}
+              {/* <Text style={styles.amount}>Total: ₹{totalAmount}</Text> */}
+            </View>
+            <TouchableOpacity
+              onPress={handleBookNow}
+              style={styles.buttonContainer}>
+              <Text style={styles.buttonText}>View</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Modal - Booked Services */}
+        <Modal
+          transparent
+          animationType="slide"
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}>
+          <View style={styles.modalContainer}>
+            <TouchableOpacity
+              style={styles.crossIconContainer}
+              onPress={() => setModalVisible(false)}>
+              <View style={styles.crossIcon}>
+                <Entypo name="cross" size={20} color="#4a4a4a" />
+              </View>
+            </TouchableOpacity>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Booked Services</Text>
+              <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+                <View style={styles.itemContainers}>
+                  {bookedServices.map((service, index) => (
+                    <View key={index} style={styles.itemContainer}>
+                      {service.url ? (
+                        <Image
+                          source={{ uri: service.url }}
+                          style={styles.recomendedModalImage}
+                          resizeMode="stretch"
+                        />
+                      ) : (
+                        <Image
+                          source={{ uri: 'https://postimage.png' }}
+                          style={styles.recomendedModalImage}
+                          resizeMode="stretch"
+                        />
+                      )}
+                      <View style={styles.descriptionContainer}>
+                        <Text
+                          style={styles.recomendedCardDetailsHead}
+                          numberOfLines={3}>
+                          {service.serviceName}
+                        </Text>
+                        <Text
+                          style={styles.recomendedCardDetailsDescription}
+                          numberOfLines={2}>
+                          {service.description}
+                        </Text>
+                        <View style={styles.addButton}>
+                          <TouchableOpacity
+                            onPress={() =>
+                              handleQuantityChange(service.main_service_id, -1)
+                            }>
+                            <Entypo name="minus" size={20} color="#4a4a4a" />
+                          </TouchableOpacity>
+                          <Text style={styles.addButtonText}>
+                            {quantities[service.main_service_id]}
+                          </Text>
+                          <TouchableOpacity
+                            onPress={() =>
+                              handleQuantityChange(service.main_service_id, 1)
+                            }>
+                            <Entypo name="plus" size={20} color="#4a4a4a" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+              <Text style={styles.modalTotal}>Total Amount: ₹{totalAmount}</Text>
+              {/*
+                Conditionally display the ActivityIndicator during the booking process.
+                When bookingLoading is true, the ActivityIndicator is shown instead of the "Book Now" button.
+              */}
+              {bookingLoading ? (
+                <ActivityIndicator
+                  size="large"
+                  color="#FF5720"
+                  style={{ marginVertical: 20 }}
+                />
+              ) : (
+                <TouchableOpacity style={styles.bookButton} onPress={bookService}>
+                  <Text style={styles.modalButtonText}>Book Now</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </Modal>
+
+        {/* Login Prompt Modal */}
+        <Modal
+          transparent
+          animationType="fade"
+          visible={loginModalVisible}
+          onRequestClose={() => setLoginModalVisible(false)}>
+          <View style={styles.loginModalOverlay}>
+            <View style={styles.loginModalContent}>
+              <Text style={styles.loginModalTitle}>Login Required</Text>
+              <Text style={styles.loginModalMessage}>
+                You need to log in to book services. Would you like to log in now?
+              </Text>
+              <View style={styles.loginModalButtons}>
+                <TouchableOpacity
+                  style={styles.loginCancelButton}
+                  onPress={() => setLoginModalVisible(false)}>
+                  <Text style={styles.loginCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.loginProceedButton}
+                  onPress={navigateToLogin}>
+                  <Text style={styles.loginProceedText}>Login</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </View>
     </SafeAreaView>
   );
 };
@@ -500,14 +463,13 @@ const SingleService = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  },  
+    backgroundColor: '#ffffff',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#ffffff',
   },
   header: {
-    // absolutely positioned over the carousel
     flexDirection: 'row',
     justifyContent: 'space-between',
     padding: 15,
@@ -527,24 +489,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  // ---------------------
-  //  CAROUSEL & LOADER
-  // ---------------------
   carouselContainer: {
     marginTop: 0,
-    // fixed height
+    backgroundColor:'#ffffff',
     width: '100%',
   },
   carouselLoaderContainer: {
-    // same 250 height so it lines up
     height: 250,
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },
   carouselLoader: {
-    // remove '100%' so it doesn't get too big
     height: 250,
     width: '100%',
   },
@@ -556,7 +512,6 @@ const styles = StyleSheet.create({
     height: 240,
     resizeMode: 'cover',
   },
-
   serviceHeader: {
     backgroundColor: '#fff',
   },
@@ -586,17 +541,14 @@ const styles = StyleSheet.create({
     height: 5,
     backgroundColor: '#f5f5f5',
   },
-
-  // ---------------------
-  //  RECOMMENDED SERVICES
-  // ---------------------
   recomendedContainer: {
     padding: 20,
-    marginBottom: 50,
+
     paddingTop: 0,
+    backgroundColor:'#ffffff'
   },
   recommendedLoaderContainer: {
-    height: 200, // or however tall you want the loader space
+    height: 200,
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
@@ -638,8 +590,6 @@ const styles = StyleSheet.create({
     height: 105,
     borderRadius: 10,
   },
-
-  // add/sub quantity button
   addButton: {
     padding: 5,
     borderWidth: 1,
@@ -659,32 +609,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'RobotoSlab-Medium',
   },
-
-  // ---------------------
-  //    BOTTOM CART BAR
-  // ---------------------
   cartContainer: {
-    position: 'absolute', // Stick to the bottom
-    bottom: 0,            // Align at the very bottom
+    position: 'absolute',
+    bottom: 0,
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
-    paddingVertical: 15,  // Adequate padding for content
+    paddingVertical: 15,
     paddingHorizontal: 25,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 }, // Elevation shadow for a nice look
+    shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 10,
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
-    zIndex: 10, // Ensure it's above other components
+    zIndex: 10,
   },
-  
-  
   buttonContainer: {
     backgroundColor: '#ff4500',
     padding: 10,
@@ -711,13 +655,9 @@ const styles = StyleSheet.create({
     color: 'red',
     marginRight: 5,
   },
-
-  // ---------------------
-  //       MODALS
-  // ---------------------
   modalContainer: {
     flex: 1,
-    marginTop:70,
+    marginTop: 70,
     justifyContent: 'flex-end',
     alignItems: 'flex-end',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -766,8 +706,6 @@ const styles = StyleSheet.create({
     fontFamily: 'RobotoSlab-Medium',
     fontSize: 15,
   },
-
-  // Booked Items inside modal
   itemContainers: {
     flexDirection: 'column',
     width: '100%',
@@ -788,10 +726,6 @@ const styles = StyleSheet.create({
     height: 105,
     borderRadius: 10,
   },
-
-  // ---------------------
-  //   LOGIN PROMPT MODAL
-  // ---------------------
   loginModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',

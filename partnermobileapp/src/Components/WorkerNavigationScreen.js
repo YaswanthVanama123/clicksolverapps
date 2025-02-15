@@ -575,8 +575,9 @@ const WorkerNavigationScreen = () => {
               style={styles.locationPinImage}
             />
             <View style={styles.locationDetails}>
-              {/* <Text style={styles.locationTitle}>{addressDetails.city}</Text> */}
-              <Text style={styles.locationAddress}>{addressDetails.area}</Text>
+              <Text style={styles.locationAddress} numberOfLines={3}>
+                {addressDetails.area}
+              </Text>
             </View>
           </View>
 
@@ -698,6 +699,7 @@ const styles = StyleSheet.create({
   serviceDetails: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems:'center'
   },
   minimumChargesContainer: {
     height: 46,
@@ -789,7 +791,7 @@ const styles = StyleSheet.create({
     color: '#212121',
   },
   locationAddress: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#212121',
     fontWeight: '450',
   },

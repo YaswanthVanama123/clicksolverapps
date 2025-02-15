@@ -136,7 +136,9 @@ const {
   balanceHistory ,
   workerScreenChange,
   getPendingWorkersNotStarted,
-  administratorDetails
+  administratorDetails,
+  workerTokenVerification,
+  adminLogin
 } = require("./controller.js");
 
 const router = express.Router();
@@ -144,6 +146,7 @@ const { authenticateToken } = require("./src/middlewares/authMiddleware.js");
 const {
   authenticateWorkerToken,
 } = require("./src/middlewares/authworkerMiddleware.js");
+const { authAdminMiddleware } = require("./src/middlewares/authAdminMiddleware.js");
 
 // Define the route for getting service details
 router.post("/single/service", getServiceByName);
@@ -603,13 +606,15 @@ router.post("/worker/screen/change",workerScreenChange)
 
 router.post("/worker/pending/cashback", getWorkerCashbackDetails);
 
-router.post("/worker/pending/balance", getWorkerBalanceDetails);
+router.post("/worker/pending/balance", getWorkerBalanceDetails); 
+
+router.post("/worker/token/verification",authenticateWorkerToken,workerTokenVerification)
 
 router.get("/worker/service/history", getWorkerServiceHistory);
 
 router.get("/worker/current/service", currentService);
 
-
+router.get("/admin/login",adminLogin)
 
 router.post("/worker/message", workerMessage);
 

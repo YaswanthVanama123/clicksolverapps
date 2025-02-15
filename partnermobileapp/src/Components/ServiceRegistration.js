@@ -120,6 +120,15 @@ const ServiceRegistration = () => {
     fetchServices();
   }, []);
 
+  const groupedSubServices = subServices.reduce((acc, item) => {
+    // item.category is "commodes fitting and reparing", "Pipe fitting and reparing", etc.
+    if (!acc[item.category]) {
+      acc[item.category] = [];
+    }
+    acc[item.category].push(item);
+    return acc;
+  }, {});
+
   const handleSubmit = async () => {
     const errors = {};
     for (const key in formData) {
@@ -180,7 +189,8 @@ const ServiceRegistration = () => {
           },
         },
       );
-      console.log('pc', pcsToken);
+      console.log('pc', pcsToken); 
+      setPhoneNumber(response.data[0].phone_numbers[0]);
       console.log(response.data);
       //   setPhoneNumber(response.data[0].phone_numbers[0]);
       const data = response.data;
@@ -226,17 +236,20 @@ const ServiceRegistration = () => {
 
     if (field === 'skillCategory') {
       try {
-        const response = await axios.post(
+        const subserviceResponse = await axios.post(
           `https://backend.clicksolver.com/api/subservice/checkboxes`,
           {
             selectedService: value,
           },
         );
-        const data = response.data;
-        const mappedData = data.map(item => ({
+        const subserviceData = subserviceResponse.data; // e.g. an array
+        const mappedData = subserviceData.map(item => ({
           id: item.service_id,
           label: item.service_tag,
+          category: item.service_category,
         }));
+  
+        // Save them for rendering checkboxes
         setSubServices(mappedData);
       } catch (error) {
         console.error('Error fetching subservices:', error);
@@ -487,49 +500,70 @@ const ServiceRegistration = () => {
           <Text style={styles.sectionTitle}>Skill Details</Text>
 
           <Text style={styles.label}>Select Service Category</Text>
-          <View>
-            <Dropdown
-              style={[
-                styles.dropdown,
-                errorFields.skillCategory && styles.errorInput,
-              ]}
-              containerStyle={styles.dropdownContainer}
-              data={skillCategoryItems}
-              placeholderStyle={styles.placeholderStyle}
-              labelField="label"
-              selectedTextStyle={styles.selectedTextStyle}
-              iconStyle={styles.iconStyle}
-              valueField="value"
-              placeholder="Select Service Category"
-              value={formData.skillCategory}
-              onChange={item => handleInputChange('skillCategory', item.value)}
-              renderRightIcon={() => (
-                <FontAwesome name="chevron-down" size={14} color="#9e9e9e" />
-              )}
-              renderItem={item => (
-                <View style={styles.dropdownItem}>
-                  <Text style={styles.dropdownItemText}>{item.label}</Text>
-                </View>
-              )}
-            />
-            {errorFields.skillCategory && (
-              <Text style={styles.errorText}>This field is required.</Text>
+          <Dropdown
+            style={[
+              styles.dropdown,
+              errorFields.skillCategory && styles.Service,
+            ]}
+            containerStyle={styles.dropdownContainer}
+            data={skillCategoryItems}
+            // disable={!isEditing}
+            placeholderStyle={styles.placeholderStyle}
+            labelField="label"
+            selectedTextStyle={styles.selectedTextStyle}
+            iconStyle={styles.iconStyle}
+            inputSearchStyle={styles.inputSearchStyle}
+            valueField="value"
+            placeholder="Select Service Category"
+            value={formData.skillCategory}
+            onChange={item => handleInputChange('skillCategory', item.value)}
+            renderRightIcon={() => (
+              <FontAwesome name="chevron-down" size={14} color="#9e9e9e" />
             )}
-          </View>
+            renderItem={item => (
+              <View style={styles.dropdownItem}>
+                <Text style={styles.dropdownItemText}>{item.label}</Text>
+              </View>
+            )}
+          />
+          {errorFields.skillCategory && (
+            <Text style={styles.errorText}>This field is required.</Text>
+          )}
 
-          <View style={styles.checkboxGrid}>
-            {subServices.map(item => (
-              <View key={item.id} style={styles.checkboxContainer}>
-                <Checkbox
-                  status={
-                    formData.subSkills.includes(item.label)
-                      ? 'checked'
-                      : 'unchecked'
-                  }
-                  onPress={() => handleCheckboxChange(item.label)}
-                  color="#FF5722"
-                />
-                <Text style={styles.label}>{item.label}</Text>
+          <View
+            style={[
+              styles.checkboxGrid,
+              formData.subSkills.length > 0 && styles.checked,
+            ]}>
+            {/* Loop over the category names */}
+            {Object.keys(groupedSubServices).map(categoryName => (
+              <View key={categoryName} style={{marginBottom: 16}}>
+                {/* Category heading */}
+                <Text
+                  style={{
+                    fontWeight: 'bold',
+                    fontSize: 16,
+                    marginVertical: 8,
+                    color: '#000',
+                  }}>
+                  {categoryName}
+                </Text>
+
+                {/* Now loop through all the subServices in this category */}
+                {groupedSubServices[categoryName].map(item => (
+                  <View key={item.id} style={styles.checkboxContainer}>
+                    <Checkbox
+                      status={
+                        formData.subSkills.includes(item.label)
+                          ? 'checked'
+                          : 'unchecked'
+                      }
+                      onPress={() => handleCheckboxChange(item.label)}
+                      color="#FF5722"
+                    />
+                    <Text style={styles.label}>{item.label}</Text>
+                  </View>
+                ))}
               </View>
             ))}
           </View>

@@ -876,23 +876,23 @@ const HomeScreen = () => {
               )}
             </View>
             <View>
-              <Text style={styles.textContainerText}>
+              {/* <Text style={styles.textContainerText}>
                 Switch board & Socket repairing
-              </Text>
+              </Text> */}
               {screenName === 'PaymentScreen' ? (
-                <Text style={styles.textContainerTextCommander}>
+                <Text style={styles.textContainerText}>
                   Payment in progress
                 </Text>
               ) : screenName === 'WorkerNavigation' ? (
-                <Text style={styles.textContainerTextCommander}>
+                <Text style={styles.textContainerText}>
                   User is waiting for your help
                 </Text>
               ) : screenName === 'OtpVerification' ? (
-                <Text style={styles.textContainerTextCommander}>
+                <Text style={styles.textContainerText}>
                   User is waiting for your help
                 </Text>
               ) : screenName === 'TimingScreen' ? (
-                <Text style={styles.textContainerTextCommander}>
+                <Text style={styles.textContainerText}>
                   Work in progress
                 </Text>
               ) : (
@@ -952,7 +952,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   textContainerText: {
-    fontSize: 13,
+    fontSize: 15,
     paddingBottom: 5,
     fontWeight: 'bold',
     color: '#212121',

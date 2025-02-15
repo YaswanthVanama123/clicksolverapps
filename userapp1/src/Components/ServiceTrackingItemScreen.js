@@ -8,12 +8,12 @@ import {
   ScrollView,
   Linking,
   Animated,
+  ActivityIndicator, // Import ActivityIndicator
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome6';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Feather from 'react-native-vector-icons/Feather';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
-// import Config from 'react-native-config';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Entypo from 'react-native-vector-icons/Entypo';
 import {useRoute} from '@react-navigation/native';
@@ -22,13 +22,14 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 
 const ServiceTrackingItemScreen = () => {
   const [titleColor, setTitleColor] = useState('#FFFFFF');
-
   const [details, setDetails] = useState({});
   const [paymentDetails, setPaymentDetails] = useState({});
   const [serviceArray, setServiceArray] = useState([]);
   const {tracking_id} = useRoute().params;
   const [pin, setPin] = useState('4567');
   const [paymentExpanded, setPaymentExpanded] = useState(false);
+  const [loading, setLoading] = useState(true); // New loading state
+
   const togglePaymentDetails = () => {
     setPaymentExpanded(!paymentExpanded);
   };
@@ -48,6 +49,7 @@ const ServiceTrackingItemScreen = () => {
       lineColor: index <= currentStatusIndex ? '#ff4500' : '#a1a1a1',
     }));
   }, [details.service_status]);
+
   const rotateAnimation = useMemo(() => new Animated.Value(0), []);
 
   useEffect(() => {
@@ -66,18 +68,19 @@ const ServiceTrackingItemScreen = () => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
+        setLoading(true);
         const response = await axios.post(
           `https://backend.clicksolver.com/api/service/tracking/user/item/details`,
           {tracking_id},
         );
         const {data} = response.data;
-     
         setPin(data.tracking_pin);
         setDetails(data);
-      
         setServiceArray(data.service_booked);
       } catch (error) {
         console.error('Error fetching bookings data:', error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchBookings();
@@ -97,6 +100,16 @@ const ServiceTrackingItemScreen = () => {
       });
   }, []);
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#FF5722" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -112,11 +125,6 @@ const ServiceTrackingItemScreen = () => {
         <ScrollView>
           {/* User Profile */}
           <View style={styles.profileContainer}>
-            {/* <Image
-          source={{ uri: details.profile }}
-          style={styles.profileImage}
-          resizeMode="cover"
-        /> */}
             <View style={styles.profileImage}>
               <Text style={styles.profileInitial}>
                 {details.name ? details.name.charAt(0).toUpperCase() : ''}
@@ -127,7 +135,6 @@ const ServiceTrackingItemScreen = () => {
                 <Text style={styles.userName}>{details.name}</Text>
                 <Text style={styles.userDesignation}>{details.service}</Text>
               </View>
-
               <TouchableOpacity style={styles.callIconContainer}>
                 <MaterialIcons name="call" size={22} color="#FF5722" />
               </TouchableOpacity>
@@ -137,7 +144,6 @@ const ServiceTrackingItemScreen = () => {
           {/* PIN */}
           <View style={styles.pinContainer}>
             <Text style={styles.pinText}>PIN</Text>
-
             {/* Display each pin digit in its own box */}
             <View style={styles.pinBoxesContainer}>
               {pin.split('').map((digit, index) => (
@@ -230,8 +236,6 @@ const ServiceTrackingItemScreen = () => {
           </View>
           <View style={styles.sectionContainer}>
             {/* Payment Summary with Toggle */}
-
-            {/* Conditionally Render Payment Details */}
             {paymentExpanded && (
               <>
                 <View style={styles.PaymentItemContainer}>
@@ -245,31 +249,18 @@ const ServiceTrackingItemScreen = () => {
                       </Text>
                     </View>
                   ))}
-                  {/* <View style={styles.paymentRow}>
-                    <Text style={styles.paymentLabel}>SGST (5%)</Text>
-                    <Text style={styles.paymentValue}>
-                      ₹{paymentDetails.cgstAmount.toFixed(2)}
-                    </Text>
-                  </View>
-                  <View style={styles.paymentRow}>
-                    <Text style={styles.paymentLabel}>CGST (5%)</Text>
-                    <Text style={styles.paymentValue}>
-                      ₹{paymentDetails.gstAmount.toFixed(2)}
-                    </Text>
-                  </View> */}
-                  {details.discount > 0 &&
-                  <View style={styles.paymentRow}>
-                    <Text style={styles.paymentLabel}>Discount</Text>
-                    <Text style={styles.paymentValue}>
-                      {/* ₹{paymentDetails.discountAmount.toFixed(2)} */}
-                      ₹{details.discount}
-                    </Text>
-                  </View> }
+                  {details.discount > 0 && (
+                    <View style={styles.paymentRow}>
+                      <Text style={styles.paymentLabel}>Discount</Text>
+                      <Text style={styles.paymentValue}>
+                        ₹{details.discount}
+                      </Text>
+                    </View>
+                  )}
                   <View style={styles.paymentRow}>
                     <Text style={styles.paymentLabel}>Grand Total</Text>
                     <Text style={styles.paymentValue}>
                       ₹{details.total_cost}
-                      {/* {paymentDetails.fetchedFinalTotalAmount.toFixed(2)} */}
                     </Text>
                   </View>
                 </View>
@@ -314,7 +305,6 @@ const styles = StyleSheet.create({
   },
   profileCallContainer: {
     flexDirection: 'row',
-
     justifyContent: 'space-between',
   },
   profileImage: {
@@ -425,12 +415,16 @@ const styles = StyleSheet.create({
   innerContainerLine: {
     paddingLeft: 16,
   },
-
+  serviceDetail: {
+    fontSize: 14,
+    color: '#212121',
+    fontFamily: 'RobotoSlab-Regular',
+    marginBottom: 4,
+  },
   timelineItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
-
   timelineTextContainer: {
     flex: 1,
     marginLeft: 10,
@@ -450,7 +444,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontSize: 16,
-    fontFamily: 'RobotoSlab-SemiBold',
+    fontFamily: 'RobotoSlab-Medium',
     color: '#212121',
   },
   profileContainer: {
@@ -459,13 +453,6 @@ const styles = StyleSheet.create({
     marginVertical: 15,
     paddingLeft: 16,
   },
-  // profileImage: {
-  //   width: 70,
-  //   height: 70,
-  //   backgroundColor:'#ccc',
-  //   borderRadius: 35,
-  //   marginRight: 16,
-  // },
   userName: {
     fontSize: 20,
     fontFamily: 'RobotoSlab-Medium',
@@ -476,7 +463,6 @@ const styles = StyleSheet.create({
     color: '#4a4a4a',
     fontFamily: 'RobotoSlab-Regular',
   },
-
   pinContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -507,16 +493,6 @@ const styles = StyleSheet.create({
     color: '#212121',
     fontFamily: 'RobotoSlab-Regular',
     fontSize: 14,
-  },
-  innerContainerLine: {
-    position: 'relative', // To contain the absolute positioned vertical line
-    paddingLeft: 30, // Adjust to provide space for the line and icons
-  },
-  serviceDetail: {
-    fontSize: 14,
-    color: '#212121',
-    fontFamily: 'RobotoSlab-Regular',
-    marginBottom: 4,
   },
   addressContainer: {
     flexDirection: 'row',
@@ -576,6 +552,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'RobotoSlab-Medium',
     color: '#fff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

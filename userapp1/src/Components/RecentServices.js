@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   Modal,
   TouchableWithoutFeedback,
+  ActivityIndicator, // Import ActivityIndicator
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons'; // for check, cross, sort icons
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'; // for wallet and bank icons
@@ -18,49 +19,8 @@ import axios from 'axios';
 import {useNavigation} from '@react-navigation/native';
 // import Config from 'react-native-config';
 
-// const ServiceItem = ({item, formatDate}) => {
-//   const navigation = useNavigation();
-
-//   return (
-//     <TouchableOpacity
-//       style={styles.itemContainer}
-//       onPress={() => {
-//         navigation.push('serviceBookingItem', {
-//           tracking_id: item.notification_id,
-//         });
-//       }}>
-//       <View style={styles.itemMainContainer}>
-//         <View style={styles.iconContainer}>
-//           {item.payment_type === 'cash' ? (
-//             <Entypo name="wallet" size={20} color="white" />
-//           ) : (
-//             <MaterialCommunityIcons name="bank" size={20} color="white" />
-//           )}
-//         </View>
-//         <View style={styles.itemDetails}>
-//           <Text style={styles.title} numberOfLines={2}>
-//             {item.service_booked
-//               ? item.service_booked[0].serviceName
-//               : item.service}
-//           </Text>
-//           <Text style={styles.schedule}>{formatDate(item.created_at)}</Text>
-//         </View>
-//         <View>
-//           <Text style={styles.price}>₹{item.payment}</Text>
-//           <Text style={styles.paymentDetails}>
-//             {item.payment_type === 'cash'
-//               ? 'Paid to you'
-//               : 'Paid to click solver'}
-//           </Text>
-//         </View>
-//       </View>
-//     </TouchableOpacity>
-//   );
-// };
-
 const ServiceItem = ({item, formatDate}) => {
   const navigation = useNavigation();
-  console.log(item);
   // Determine if the service is cancelled
   const isCancelled = item.payment === null;
 
@@ -133,6 +93,7 @@ const RecentServices = () => {
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState([]); // No default filter to apply all initially
   const [filteredData, setFilteredData] = useState([]);
+  const [loading, setLoading] = useState(true); // New loading state
 
   const filterOptions = ['Completed', 'Cancelled'];
 
@@ -154,6 +115,8 @@ const RecentServices = () => {
         setFilteredData(response.data); // Initially display all data
       } catch (error) {
         console.error('Error fetching bookings data:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -250,13 +213,21 @@ const RecentServices = () => {
           )}
 
           <View style={styles.serviceContainer}>
-            <FlatList
-              data={filteredData}
-              renderItem={({item}) => (
-                <ServiceItem item={item} formatDate={formatDate} />
-              )}
-              keyExtractor={(item, index) => index.toString()}
-            />
+            {loading ? (
+              <ActivityIndicator
+                size="large"
+                color="#FF5722"
+                style={styles.loadingIndicator}
+              />
+            ) : (
+              <FlatList
+                data={filteredData}
+                renderItem={({item}) => (
+                  <ServiceItem item={item} formatDate={formatDate} />
+                )}
+                keyExtractor={(item, index) => index.toString()}
+              />
+            )}
           </View>
         </SafeAreaView>
       </TouchableWithoutFeedback>
@@ -268,7 +239,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-  }, 
+  },
   screenContainer: {
     flex: 1,
     backgroundColor: '#f5f5f5',
@@ -285,7 +256,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     backgroundColor: '#ffffff',
-    zIndex: 1, // Ensure header is above other components
+    zIndex: 1,
   },
   sortContainerLeft: {
     flexDirection: 'row',
@@ -309,7 +280,7 @@ const styles = StyleSheet.create({
   },
   dropdownContainer: {
     position: 'absolute',
-    top: 70, // Adjust based on header height
+    top: 70,
     right: 16,
     width: 200,
     backgroundColor: '#ffffff',
@@ -320,7 +291,7 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.3,
     shadowRadius: 4,
-    zIndex: 10, // Ensure dropdown is above other items
+    zIndex: 10,
   },
   dropdownTitle: {
     fontSize: 14,
@@ -389,6 +360,10 @@ const styles = StyleSheet.create({
     fontFamily: 'RobotoSlab-Medium',
     color: '#212121',
     textAlign: 'right',
+  },
+  loadingIndicator: {
+    marginTop: 20,
+    alignSelf: 'center',
   },
 });
 

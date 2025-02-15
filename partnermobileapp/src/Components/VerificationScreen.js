@@ -5,7 +5,8 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
   Image,
 } from 'react-native';
 import Entypo from 'react-native-vector-icons/Entypo';
@@ -34,63 +35,66 @@ const VerificationScreen = () => {
   };
 
   return (
-    <ImageBackground
-      source={{
-        uri: 'https://i.postimg.cc/zB1C8frj/Picsart-24-10-01-15-26-57-512-1.jpg',
-      }} // Add your background image here
-      style={styles.background}
-      resizeMode="stretch">
-      <View style={styles.container}>
-        <Text style={styles.title}>Verification Code</Text>
-        <Text style={styles.instruction}>
-          Please enter the 4-digit code sent on
-        </Text>
-        <Text style={styles.number}>+91 9392365494</Text>
-        <View style={styles.codeContainer}>
-          {code.map((digit, index) => (
-            <TextInput
-              key={index}
-              style={styles.codeInput}
-              keyboardType="numeric"
-              maxLength={1}
-              value={digit}
-              onChangeText={value => handleCodeChange(index, value)}
-            />
-          ))}
-        </View>
-        <Text style={styles.timer}>{formattedTime()}</Text>
-        <TouchableOpacity style={styles.submitButton}>
-          <Text style={styles.submitButtonText}>Submit</Text>
-        </TouchableOpacity>
+    <KeyboardAvoidingView
+      style={{flex: 1}}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      {/* A parent View to hold the absolute background image and the content */}
+      <View style={{flex: 1}}>
+        {/* Absolutely positioned background image */}
+        <Image
+          source={{
+            uri: 'https://i.postimg.cc/zB1C8frj/Picsart-24-10-01-15-26-57-512-1.jpg',
+          }}
+          style={StyleSheet.absoluteFillObject}
+          resizeMode="stretch"
+        />
 
-        <View style={styles.contactContainer}>
-          <Text style={styles.contactText}>Contact us:</Text>
-          <View style={styles.socialIcons}>
-            <Entypo name="mail" size={15} color="#9e9e9e" />
-            <Entypo name="facebook" size={15} color="#9e9e9e" />
-            <Entypo name="instagram" size={15} color="#9e9e9e" />
+        {/* Foreground content */}
+        <View style={styles.container}>
+          <Text style={styles.title}>Verification Code</Text>
+          <Text style={styles.instruction}>
+            Please enter the 4-digit code sent on
+          </Text>
+          <Text style={styles.number}>+91 9392365494</Text>
+
+          <View style={styles.codeContainer}>
+            {code.map((digit, index) => (
+              <TextInput
+                key={index}
+                style={styles.codeInput}
+                keyboardType="numeric"
+                maxLength={1}
+                value={digit}
+                onChangeText={value => handleCodeChange(index, value)}
+              />
+            ))}
           </View>
-          <Text style={styles.email}>Clicksolver@yahoo.com</Text>
+
+          <Text style={styles.timer}>{formattedTime()}</Text>
+
+          <TouchableOpacity style={styles.submitButton}>
+            <Text style={styles.submitButtonText}>Submit</Text>
+          </TouchableOpacity>
+
+          <View style={styles.contactContainer}>
+            <Text style={styles.contactText}>Contact us:</Text>
+            <View style={styles.socialIcons}>
+              <Entypo name="mail" size={15} color="#9e9e9e" />
+              <Entypo name="facebook" size={15} color="#9e9e9e" />
+              <Entypo name="instagram" size={15} color="#9e9e9e" />
+            </View>
+            <Text style={styles.email}>Clicksolver@yahoo.com</Text>
+          </View>
         </View>
       </View>
-    </ImageBackground>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-    resizeMode: 'cover',
-  },
-  number: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 30,
-    color: '#212121',
-    fontWeight: 'bold',
-  },
   container: {
-    flex: 1,
+    flex: 1, 
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
@@ -105,6 +109,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     color: '#9e9e9e',
+  },
+  number: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 30,
+    color: '#212121',
+    fontWeight: 'bold',
   },
   codeContainer: {
     flexDirection: 'row',
@@ -125,14 +136,14 @@ const styles = StyleSheet.create({
   },
   timer: {
     fontSize: 18,
-    fontWeight: '#800',
+    fontWeight: '800', // ensure it's a valid fontWeight
     marginBottom: 20,
     color: '#212121',
   },
   submitButton: {
     backgroundColor: '#ff6c37',
-    justifyContent: 'center', // Ensures vertical centering
-    alignItems: 'center', // Ensures horizontal centering
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingVertical: 15,
     paddingHorizontal: 40,
     borderRadius: 10,
@@ -144,7 +155,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-
   contactContainer: {
     alignItems: 'center',
   },
@@ -157,11 +167,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 5,
     marginBottom: 10,
-  },
-  icon: {
-    width: 30,
-    height: 30,
-    marginHorizontal: 10,
   },
   email: {
     fontSize: 12,

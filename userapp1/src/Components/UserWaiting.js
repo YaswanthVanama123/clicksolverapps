@@ -9,6 +9,7 @@ import {
   Dimensions,
   Image,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import axios from 'axios';
 import {
@@ -55,6 +56,8 @@ const WaitingUser = () => {
     useState(false);
   const [selectedReason, setSelectedReason] = useState('');
   const [discount, setDiscount] = useState(0);
+  // New state to handle backend operations loading
+  const [backendLoading, setBackendLoading] = useState(false);
 
   useEffect(() => {
     if (
@@ -116,6 +119,7 @@ const WaitingUser = () => {
     setLocation(location);
     setDiscount(discount);
 
+    setBackendLoading(true);
     try {
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       if (!jwtToken) {
@@ -172,6 +176,8 @@ const WaitingUser = () => {
     } catch (error) {
       console.error('Error fetching nearby workers:', error);
       // Alert.alert('Error', 'Failed to fetch nearby workers');
+    } finally {
+      setBackendLoading(false);
     }
   };
 
@@ -196,43 +202,6 @@ const WaitingUser = () => {
     }
   }, [route.params]);
 
-  // const handleManualCancel = async () => {
-  //   try {
-  //     if (decodedId) {
-  //       await axios.post(
-  //         `https://backend.clicksolver.com/api/user/cancellation`,
-  //         {
-  //           user_notification_id: decodedId,
-  //         },
-  //       );
-
-  //       const cs_token = await EncryptedStorage.getItem('cs_token');
-  //       await axios.post(
-  //         `https://backend.clicksolver.com/api/user/action/cancel`,
-  //         {encodedId: encodedData, screen: 'userwaiting'},
-  //         {headers: {Authorization: `Bearer ${cs_token}`}},
-  //       );
-  //     }
-
-  //     navigation.dispatch(
-  //       CommonActions.reset({
-  //         index: 0,
-  //         routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
-  //       }),
-  //     );
-  //   } catch (error) {
-  //     console.error('Error calling cancellation API:', error);
-  //     setCancelMessage('Cancel timed out');
-  //     setTimeout(() => setCancelMessage(''), 3000);
-  //     navigation.dispatch(
-  //       CommonActions.reset({
-  //         index: 0,
-  //         routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
-  //       }),
-  //     );
-  //   }
-  // };
-
   // Updated handleManualCancel to open the first modal
   const handleManualCancel = () => {
     setModalVisible(true);
@@ -241,6 +210,7 @@ const WaitingUser = () => {
   // New handler to perform cancellation after confirmation
   const handleCancelBooking = async () => {
     setConfirmationModalVisible(false);
+    setBackendLoading(true);
     try {
       if (decodedId) {
         await axios.post(
@@ -275,6 +245,8 @@ const WaitingUser = () => {
           routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
         }),
       );
+    } finally {
+      setBackendLoading(false);
     }
   };
 
@@ -286,19 +258,50 @@ const WaitingUser = () => {
   };
 
   const handleCancelAndRetry = async () => {
-    attemptCountRef.current += 1;
+    setBackendLoading(true);
+    try {
+      attemptCountRef.current += 1;
 
-    if (attemptCountRef.current > 3) {
-      // Alert.alert(
-      //   'No workers found',
-      //   'Unable to find workers after 3 attempts. Please try again later.',
-      // );
-      await axios.post(
-        `https://backend.clicksolver.com/api/user/cancellation`,
-        {
-          user_notification_id: decodedId,
-        },
-      );
+      if (attemptCountRef.current > 3) {
+        // Alert.alert(
+        //   'No workers found',
+        //   'Unable to find workers after 3 attempts. Please try again later.',
+        // );
+        await axios.post(
+          `https://backend.clicksolver.com/api/user/cancellation`,
+          {
+            user_notification_id: decodedId,
+          },
+        );
+        const cs_token = await EncryptedStorage.getItem('cs_token');
+        await axios.post(
+          `https://backend.clicksolver.com/api/user/action/cancel`,
+          {encodedId: encodedData, screen: 'userwaiting'},
+          {headers: {Authorization: `Bearer ${cs_token}`}},
+        );
+
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
+        );
+        return;
+      }
+
+      if (decodedId) {
+        try {
+          await axios.post(
+            `https://backend.clicksolver.com/api/user/cancellation`,
+            {
+              user_notification_id: decodedId,
+            },
+          );
+        } catch (error) {
+          console.error('Error cancelling previous request:', error);
+        }
+      }
+
       const cs_token = await EncryptedStorage.getItem('cs_token');
       await axios.post(
         `https://backend.clicksolver.com/api/user/action/cancel`,
@@ -306,36 +309,12 @@ const WaitingUser = () => {
         {headers: {Authorization: `Bearer ${cs_token}`}},
       );
 
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
-        }),
-      );
-      return;
+      await fetchData();
+    } catch (error) {
+      console.error('Error in cancel and retry:', error);
+    } finally {
+      setBackendLoading(false);
     }
-
-    if (decodedId) {
-      try {
-        await axios.post(
-          `https://backend.clicksolver.com/api/user/cancellation`,
-          {
-            user_notification_id: decodedId,
-          },
-        );
-      } catch (error) {
-        console.error('Error cancelling previous request:', error);
-      }
-    }
-
-    const cs_token = await EncryptedStorage.getItem('cs_token');
-    await axios.post(
-      `https://backend.clicksolver.com/api/user/action/cancel`,
-      {encodedId: encodedData, screen: 'userwaiting'},
-      {headers: {Authorization: `Bearer ${cs_token}`}},
-    );
-
-    await fetchData();
   };
 
   useEffect(() => {
@@ -357,6 +336,7 @@ const WaitingUser = () => {
 
   useEffect(() => {
     const checkStatus = async () => {
+      setBackendLoading(true);
       try {
         const response = await axios.get(
           `https://backend.clicksolver.com/api/checking/status`,
@@ -413,6 +393,8 @@ const WaitingUser = () => {
         }
       } catch (error) {
         console.error('Error checking status:', error);
+      } finally {
+        setBackendLoading(false);
       }
     };
 
@@ -582,6 +564,14 @@ const WaitingUser = () => {
           )}
         </View>
       </View>
+
+      {/* ActivityIndicator Overlay */}
+      {backendLoading && (
+        <View style={styles.activityIndicatorOverlay}>
+          <ActivityIndicator size="large" color="#0000ff" />
+        </View>
+      )}
+
       {/* Modal for Cancellation Reasons */}
       <Modal
         animationType="slide"
@@ -710,7 +700,6 @@ const styles = StyleSheet.create({
     width: Dimensions.get('window').width,
     height: 1, // Height of the line
     backgroundColor: '#E5E7EB', // Color of the line,
-
     height: 5,
   },
   locationDetails: {
@@ -993,6 +982,17 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontFamily: 'RobotoSlab-Medium',
+  },
+  activityIndicatorOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   },
 });
 

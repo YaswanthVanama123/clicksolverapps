@@ -8,25 +8,28 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
+  ActivityIndicator, // Import ActivityIndicator
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Entypo from 'react-native-vector-icons/Entypo';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import {useNavigation} from '@react-navigation/native';
 import axios from 'axios';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 // import Config from 'react-native-config';
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
   const [account, setAccount] = useState({});
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loading, setLoading] = useState(true); // New loading state
 
   const fetchProfileDetails = async () => {
     try {
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       if (!jwtToken) {
         setIsLoggedIn(false);
+        setLoading(false);
         return;
       }
       setIsLoggedIn(true);
@@ -47,6 +50,8 @@ const ProfileScreen = () => {
       });
     } catch (error) {
       console.error('Error fetching profile details:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -60,7 +65,6 @@ const ProfileScreen = () => {
       await EncryptedStorage.removeItem('fcm_token');
       await EncryptedStorage.removeItem('notifications');
       await EncryptedStorage.removeItem('messageBox');
-
       setIsLoggedIn(false);
     } catch (error) {
       console.error('Error logging out:', error);
@@ -75,6 +79,7 @@ const ProfileScreen = () => {
     </TouchableOpacity>
   );
 
+  // If the user is not logged in, show the login container.
   if (!isLoggedIn) {
     return (
       <View
@@ -108,6 +113,17 @@ const ProfileScreen = () => {
           </View>
         </View>
       </View>
+    );
+  }
+
+  // If the user is logged in but profile details are still loading, show an ActivityIndicator.
+  if (isLoggedIn && loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#FF5722" />
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -189,13 +205,14 @@ const ProfileScreen = () => {
     </SafeAreaView>
   );
 };
+
 const screenWidth = Dimensions.get('window').width;
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-  }, 
+  },
   container: {
     flexGrow: 1,
     backgroundColor: '#FFFFFF',
@@ -341,8 +358,8 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'column',
     backgroundColor: '#FFFFFF',
-    alignItems: 'flex-start', // Dynamically align based on login state
-    justifyContent: 'flex-start', // Keep items aligned to the top
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
   },
   loginPrompt: {
     fontSize: 16,
@@ -362,9 +379,14 @@ const styles = StyleSheet.create({
   },
   horizontalLine: {
     height: 10,
-    width: screenWidth, // Use the screen width
+    width: screenWidth,
     backgroundColor: '#E6E6E6',
     marginVertical: 10,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

@@ -8,6 +8,7 @@ import {
   ScrollView,
   Image,
   Alert,
+  ActivityIndicator, // <--- 1) Import ActivityIndicator
 } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
@@ -64,6 +65,9 @@ const RegistrationScreen = () => {
     subSkills: [],
   });
   const [isEditing, setIsEditing] = useState(false);
+
+  // 2) Introduce `loading` state
+  const [loading, setLoading] = useState(false);
 
   const handleCheckboxChange = serviceName => {
     const isChecked = formData.subSkills.includes(serviceName);
@@ -125,6 +129,9 @@ const RegistrationScreen = () => {
   };
 
   const handleSubmit = async () => {
+    // 3) Show loader when submit starts
+    setLoading(true);
+
     const errors = {};
     for (const key in formData) {
       if (
@@ -138,6 +145,7 @@ const RegistrationScreen = () => {
     if (Object.keys(errors).length > 0) {
       setErrorFields(errors);
       Alert.alert('Error', 'Please fill all the required fields.');
+      setLoading(false); // Stop loader if validation fails
       return;
     }
     try {
@@ -156,10 +164,14 @@ const RegistrationScreen = () => {
         },
       );
       if (response.status === 200) {
-        navigation.replace('PartnerSteps');
+        setIsEditing(false);
+        // navigation.replace('PartnerSteps');
       }
     } catch (error) {
       console.error('Error fetching services:', error);
+    } finally {
+      // 4) Hide loader in the finally block
+      setLoading(false);
     }
   };
 
@@ -178,6 +190,7 @@ const RegistrationScreen = () => {
           },
         },
       );
+      
       if (response.data[0].phone_numbers) {
         setPhoneNumber(response.data[0].phone_numbers);
       }
@@ -221,7 +234,6 @@ const RegistrationScreen = () => {
       console.error('Error logging out:', error);
     }
   };
-  
 
   const handleImagePick = async fieldName => {
     const options = {
@@ -262,11 +274,10 @@ const RegistrationScreen = () => {
         const data = response.data;
         console.log('selected service', data);
 
-        // We now include 'category' to keep track of the service_category
         const mappedData = data.map(item => ({
           id: item.service_id,
           label: item.service_tag,
-          category: item.service_category, // <-- new line
+          category: item.service_category,
         }));
 
         setSubServices(mappedData);
@@ -298,11 +309,6 @@ const RegistrationScreen = () => {
 
       const data = response.data;
 
-      // Example: data.service = "Electrician Services"
-      //          data.subservices = ["AC Repairing", "TV Installation", ...]
-
-      // Store subservices array (strings) in formData.subSkills
-      // so checkboxes can be 'checked' if they appear in this array
       setFormData(prev => ({
         ...prev,
         lastName: data.personaldetails.lastName,
@@ -317,12 +323,9 @@ const RegistrationScreen = () => {
         district: data.address.district,
         state: data.address.state,
         pincode: data.address.pincode,
-        skillCategory: data.service, // e.g. "Electrician Services"
+        skillCategory: data.service,
         profileImageUri: data.profile,
         proofImageUri: data.proof,
-
-        // ADDED: subSkills is the array of subservices from profile
-        // This is how we know which ones to check
         subSkills: data.subservices || [],
       }));
 
@@ -331,7 +334,7 @@ const RegistrationScreen = () => {
       // 2) POST to /api/subservice/checkboxes with the service
       const subserviceResponse = await axios.post(
         `https://backend.clicksolver.com/api/subservice/checkboxes`,
-        {selectedService: data.service}, // e.g. "Electrician Services"
+        {selectedService: data.service},
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
@@ -339,15 +342,13 @@ const RegistrationScreen = () => {
         },
       );
 
-      // This returns an array of objects. We map each to { id, label, category }
-      const subserviceData = subserviceResponse.data; // e.g. an array
+      const subserviceData = subserviceResponse.data;
       const mappedData = subserviceData.map(item => ({
         id: item.service_id,
         label: item.service_tag,
         category: item.service_category,
       }));
 
-      // Save them for rendering checkboxes
       setSubServices(mappedData);
     } catch (error) {
       console.error('Error fetching services:', error);
@@ -365,7 +366,6 @@ const RegistrationScreen = () => {
 
   // Group subServices by category
   const groupedSubServices = subServices.reduce((acc, item) => {
-    // item.category is "commodes fitting and reparing", "Pipe fitting and reparing", etc.
     if (!acc[item.category]) {
       acc[item.category] = [];
     }
@@ -381,10 +381,10 @@ const RegistrationScreen = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Profile</Text>
       </View>
+
       <ScrollView style={styles.scrollContainer}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Details</Text>
-
           <Text style={styles.label}>First Name</Text>
           <TextInput
             style={[styles.input, errorFields.firstName && styles.errorInput]}
@@ -395,6 +395,7 @@ const RegistrationScreen = () => {
           {errorFields.firstName && (
             <Text style={styles.errorText}>This field is required.</Text>
           )}
+
           <Text style={styles.label}>Last Name</Text>
           <TextInput
             style={[styles.input, errorFields.lastName && styles.errorInput]}
@@ -405,6 +406,7 @@ const RegistrationScreen = () => {
           {errorFields.lastName && (
             <Text style={styles.errorText}>This field is required.</Text>
           )}
+
           <Text style={styles.label}>Gender</Text>
           <View style={styles.row}>
             <View>
@@ -417,7 +419,7 @@ const RegistrationScreen = () => {
                   value="male"
                   status={formData.gender === 'male' ? 'checked' : 'unchecked'}
                   onPress={() => {
-                    handleInputChange('gender', 'male');
+                    if (isEditing) handleInputChange('gender', 'male');
                   }}
                   color="#FF5722"
                 />
@@ -435,7 +437,7 @@ const RegistrationScreen = () => {
                     formData.gender === 'female' ? 'checked' : 'unchecked'
                   }
                   onPress={() => {
-                    handleInputChange('gender', 'female');
+                    if (isEditing) handleInputChange('gender', 'female');
                   }}
                   color="#FF5722"
                 />
@@ -465,7 +467,6 @@ const RegistrationScreen = () => {
             renderRightIcon={() => (
               <FontAwesome name="chevron-down" size={14} color="#9e9e9e" />
             )}
-            disabled={isEditing}
             renderItem={item => (
               <View style={styles.dropdownItem}>
                 <Text style={styles.dropdownItemText}>{item.label}</Text>
@@ -475,6 +476,7 @@ const RegistrationScreen = () => {
           {errorFields.workExperience && (
             <Text style={styles.errorText}>This field is required.</Text>
           )}
+
           <Text style={styles.label}>Age</Text>
           <TextInput
             style={[styles.input, errorFields.dob && styles.errorInput]}
@@ -485,6 +487,7 @@ const RegistrationScreen = () => {
           {errorFields.dob && (
             <Text style={styles.errorText}>This field is required.</Text>
           )}
+
           <Text style={styles.label}>Education</Text>
           <Dropdown
             style={[
@@ -537,6 +540,7 @@ const RegistrationScreen = () => {
             )}
           </View>
         </View>
+
         <View style={styles.horizantalLine} />
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Address / Residential Details</Text>
@@ -551,6 +555,7 @@ const RegistrationScreen = () => {
           {errorFields.doorNo && (
             <Text style={styles.errorText}>This field is required.</Text>
           )}
+
           <Text style={styles.label}>Landmark</Text>
           <TextInput
             style={[styles.input, errorFields.landmark && styles.errorInput]}
@@ -606,6 +611,7 @@ const RegistrationScreen = () => {
             <Text style={styles.errorText}>This field is required.</Text>
           )}
         </View>
+
         <View style={styles.horizantalLine} />
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Skill Details</Text>
@@ -646,10 +652,8 @@ const RegistrationScreen = () => {
               styles.checkboxGrid,
               formData.subSkills.length > 0 && styles.checked,
             ]}>
-            {/* Loop over the category names */}
             {Object.keys(groupedSubServices).map(categoryName => (
               <View key={categoryName} style={{marginBottom: 16}}>
-                {/* Category heading */}
                 <Text
                   style={{
                     fontWeight: 'bold',
@@ -659,8 +663,6 @@ const RegistrationScreen = () => {
                   }}>
                   {categoryName}
                 </Text>
-
-                {/* Now loop through all the subServices in this category */}
                 {groupedSubServices[categoryName].map(item => (
                   <View key={item.id} style={styles.checkboxContainer}>
                     <Checkbox
@@ -669,7 +671,11 @@ const RegistrationScreen = () => {
                           ? 'checked'
                           : 'unchecked'
                       }
-                      onPress={() => handleCheckboxChange(item.label)}
+                      onPress={() => {
+                        if (isEditing) {
+                          handleCheckboxChange(item.label);
+                        }
+                      }}
                       color="#FF5722"
                     />
                     <Text style={styles.label}>{item.label}</Text>
@@ -679,73 +685,22 @@ const RegistrationScreen = () => {
             ))}
           </View>
         </View>
+
         <View style={styles.horizantalLine} />
-        {/* <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Upload Details</Text>
 
-          <View style={styles.uploadContainer}>
-            <View style={styles.imageUpload}>
-              <View style={styles.text1}>
-                <Text style={styles.label}>Upload Profile</Text>
-              </View>
-              <View style={styles.text2}>
-                <Text style={styles.label}>Upload Proof</Text>
-              </View>
-            </View>
-            <View style={styles.imageUpload}>
-              <View style={styles.image1}>
-                {formData.profileImageUri && (
-                  <Image
-                    source={{ uri: formData.profileImageUri }}
-                    style={styles.imagePreview}
-                  />
-                )}
-              </View>
-              <View style={styles.image2}>
-                {formData.proofImageUri && (
-                  <Image
-                    source={{ uri: formData.proofImageUri }}
-                    style={styles.imagePreview}
-                  />
-                )}
-              </View>
-            </View>
-
-            <View style={styles.imageUpload}>
-              <View>
-                <TouchableOpacity
-                  style={styles.uploadButton}
-                  disabled={!isEditing}
-                  onPress={() => handleImagePick('profileImageUri')}
-                >
-                  <Icon name="image" size={24} color="#9e9e9e" />
-                  <Text style={styles.fileText}>Choose File</Text>
-                </TouchableOpacity>
-                {errorFields.profileImageUri && (
-                  <Text style={styles.errorText}>This field is required.</Text>
-                )}
-              </View>
-              <View>
-                <TouchableOpacity
-                  disabled={!isEditing}
-                  style={styles.uploadButton}
-                  onPress={() => handleImagePick('proofImageUri')}
-                >
-                  <Icon name="file-upload" size={24} color="#9e9e9e" />
-                  <Text style={styles.fileText}>Choose File</Text>
-                </TouchableOpacity>
-                {errorFields.proofImageUri && (
-                  <Text style={styles.errorText}>This field is required.</Text>
-                )}
-              </View>
-            </View>
-          </View>
-        </View> */}
-        <View>
-          {isEditing ? (
+        {/* If not editing, show logout. If editing, show the SwipeButton or loader */}
+        <View style={{marginBottom: 30}}>
+          {loading ? (
+            // 5) Show loader if `loading` is true
+            <ActivityIndicator
+              size="large"
+              color="#FF5722"
+              style={{marginVertical: 20}}
+            />
+          ) : isEditing ? (
             <SwipeButton
               forceReset={reset => {
-                forceResetButton = reset;
+                // Optional: capture this reset if you want to reset swipe on error
               }}
               title="Submit to Commander"
               titleStyles={{color: titleColor, fontSize: 16}}
@@ -764,6 +719,7 @@ const RegistrationScreen = () => {
               thumbIconHeight={50}
               onSwipeStart={() => setTitleColor('#802300')}
               onSwipeSuccess={() => {
+                // When the user successfully swipes:
                 handleSubmit();
                 setTitleColor('#FF5722');
                 setSwiped(true);
@@ -772,9 +728,7 @@ const RegistrationScreen = () => {
             />
           ) : (
             <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={styles.doneButton}
-                onPress={handleLogout}>
+              <TouchableOpacity style={styles.doneButton} onPress={handleLogout}>
                 <Text style={styles.doneText}>Logout</Text>
               </TouchableOpacity>
             </View>

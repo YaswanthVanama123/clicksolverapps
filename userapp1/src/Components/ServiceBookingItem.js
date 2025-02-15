@@ -8,6 +8,7 @@ import {
   ScrollView,
   Linking,
   Animated,
+  ActivityIndicator, // Import ActivityIndicator
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome6';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -17,20 +18,21 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-// import Config from 'react-native-config';
-
 const ServiceBookingItem = () => {
   const [details, setDetails] = useState({});
   const [paymentDetails, setPaymentDetails] = useState({});
   const [serviceArray, setServiceArray] = useState([]);
   const {tracking_id} = useRoute().params;
   const [paymentExpanded, setPaymentExpanded] = useState(false);
-  const togglePaymentDetails = () => {
-    setPaymentExpanded(!paymentExpanded);
-  };
+  const [loading, setLoading] = useState(true); // New loading state
+  const [status, setStatus] = useState({}); // Status object with timestamps
 
   const navigation = useNavigation();
   const rotateAnimation = useMemo(() => new Animated.Value(0), []);
+
+  const togglePaymentDetails = () => {
+    setPaymentExpanded(!paymentExpanded);
+  };
 
   useEffect(() => {
     Animated.timing(rotateAnimation, {
@@ -45,10 +47,7 @@ const ServiceBookingItem = () => {
     outputRange: ['0deg', '180deg'],
   });
 
-  // Status object with timestamps
-  const [status, setStatus] = useState({});
-
-  // Status display names mapping
+  // Mapping for status display names
   const statusDisplayNames = {
     accept: 'Commander Accepted',
     arrived: 'Commander Arrived',
@@ -78,8 +77,9 @@ const ServiceBookingItem = () => {
   }, [status]);
 
   useEffect(() => {
-    const fetchBookings = async () => {
+    const fetchBookingDetails = async () => {
       try {
+        setLoading(true);
         const response = await axios.post(
           `https://backend.clicksolver.com/api/service/booking/item/details`,
           {tracking_id},
@@ -91,24 +91,23 @@ const ServiceBookingItem = () => {
         setServiceArray(data.service_booked);
       } catch (error) {
         console.error('Error fetching bookings data:', error);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchBookings();
+    fetchBookingDetails();
   }, [tracking_id]);
 
-  const openPhonePeScanner = useCallback(() => {
-    const url = 'phonepe://scan';
-    Linking.openURL(url)
-      .then(() => {
-        console.log('PhonePe scanner opened successfully');
-      })
-      .catch(err => {
-        console.error('Failed to open PhonePe scanner:', err);
-        Linking.openURL(
-          'https://play.google.com/store/apps/details?id=com.phonepe.app',
-        );
-      });
-  }, []);
+  // If loading, show a full screen ActivityIndicator
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#FF5722" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -224,9 +223,6 @@ const ServiceBookingItem = () => {
             </TouchableOpacity>
           </View>
           <View style={styles.sectionContainer}>
-            {/* Payment Summary with Toggle */}
-
-            {/* Conditionally Render Payment Details */}
             {paymentExpanded && (
               <>
                 <View style={styles.PaymentItemContainer}>
@@ -240,24 +236,11 @@ const ServiceBookingItem = () => {
                       </Text>
                     </View>
                   ))}
-                  {/* <View style={styles.paymentRow}>
-                    <Text style={styles.paymentLabel}>SGST (5%)</Text>
-                    <Text style={styles.paymentValue}>
-                       ₹{paymentDetails.cgstAmount.toFixed(2)} 
-                    </Text>
-                  </View>
-                  <View style={styles.paymentRow}>
-                    <Text style={styles.paymentLabel}>CGST (5%)</Text>
-                    <Text style={styles.paymentValue}>
-                      ₹{paymentDetails.gstAmount.toFixed(2)}
-                    </Text>
-                  </View> */}
                   {details.discount > 0 && (
                     <View style={styles.paymentRow}>
                       <Text style={styles.paymentLabel}>Cashback (5%)</Text>
                       <Text style={styles.paymentValue}>
-                        {/* ₹{paymentDetails.discountAmount.toFixed(2)} */}₹
-                        {details.discount}
+                        ₹{details.discount}
                       </Text>
                     </View>
                   )}
@@ -265,7 +248,6 @@ const ServiceBookingItem = () => {
                     <Text style={styles.paymentValue}> Grand Total</Text>
                     <Text style={styles.paymentValue}>
                       ₹ {details.total_cost}
-                      {/* {paymentDetails.fetchedFinalTotalAmount.toFixed(2)} */}
                     </Text>
                   </View>
                 </View>
@@ -313,9 +295,11 @@ const styles = StyleSheet.create({
     color: '#1D2951',
     paddingLeft: 30,
   },
-  profileCallContainer: {
+  profileContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 15,
+    paddingLeft: 16,
   },
   profileImage: {
     width: 60,
@@ -339,37 +323,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingRight: 16,
   },
-  lineSegment: {
-    width: 2,
-    height: 40, // Adjust the height as needed
+  userName: {
+    fontSize: 20,
+    fontFamily: 'RobotoSlab-Medium',
+    color: '#1D2951',
   },
-  swipeButton: {
-    marginHorizontal: 20,
-    marginBottom: 10,
-  },
-  locationPinImage: {
-    width: 20,
-    height: 20,
-    marginRight: 10,
+  userDesignation: {
+    fontSize: 14,
+    color: '#4a4a4a',
+    fontFamily: 'RobotoSlab-Regular',
   },
   horizantalLine: {
     height: 2,
     backgroundColor: '#F5F5F5',
     marginBottom: 12,
-  },
-  innerContainer: {
-    paddingLeft: 16,
-  },
-  paymentInnerContainer: {
-    padding: 10,
-    backgroundColor: '#f5f5f5',
-    marginTop: 10,
-    marginBottom: 10,
-  },
-  PaymentItemContainer: {
-    paddingLeft: 16,
-    flexDirection: 'column',
-    gap: 5,
   },
   sectionContainer: {
     marginBottom: 16,
@@ -378,6 +345,15 @@ const styles = StyleSheet.create({
     paddingTop: 5,
     width: '95%',
   },
+  sectionBookedTitle: {
+    fontSize: 16,
+    fontFamily: 'RobotoSlab-SemiBold',
+    color: '#212121',
+    marginBottom: 8,
+  },
+  innerContainer: {
+    paddingLeft: 16,
+  },
   sectionTitle: {
     fontSize: 16,
     fontFamily: 'RobotoSlab-SemiBold',
@@ -385,36 +361,18 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingBottom: 15,
   },
-  sectionBookedTitle: {
-    fontSize: 16,
-    fontFamily: 'RobotoSlab-SemiBold',
+  serviceDetail: {
+    fontSize: 14,
     color: '#212121',
-    marginBottom: 8,
-  },
-  editText: {
-    color: '#ff5700',
-    fontSize: 15,
-    fontWeight: '500',
+    fontFamily: 'RobotoSlab-Regular',
+    marginBottom: 4,
   },
   serviceTimeLineContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  sectionPaymentTitle: {
-    fontSize: 16,
-    fontFamily: 'RobotoSlab-SemiBold',
-    color: '#212121',
-    marginBottom: 8,
-    paddingLeft: 10,
-  },
   innerContainerLine: {
     paddingLeft: 16,
-  },
-  serviceDetail: {
-    fontSize: 14,
-    color: '#212121',
-    fontWeight: '500',
-    marginBottom: 4,
   },
   timelineItem: {
     flexDirection: 'row',
@@ -434,101 +392,14 @@ const styles = StyleSheet.create({
     color: '#4a4a4a',
     fontFamily: 'RobotoSlab-Regular',
   },
-  backIcon: {
-    marginRight: 10,
+  lineSegment: {
+    width: 2,
+    height: 40,
   },
-  summaryTitle: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    color: '#4a4a4a',
-    paddingBottom: 10,
-    paddingLeft: 5,
-  },
-  profileContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 15,
+  PaymentItemContainer: {
     paddingLeft: 16,
-  },
-  // profileImage: {
-  //   width: 70,
-  //   height: 70,
-  //   backgroundColor:'#ccc',
-  //   borderRadius: 35,
-  //   marginRight: 16,
-  // },
-  paymentSummaryContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  userName: {
-    fontSize: 20,
-    fontFamily: 'RobotoSlab-Medium',
-    color: '#1D2951',
-  },
-  userDesignation: {
-    fontSize: 14,
-    color: '#4a4a4a',
-    fontFamily: 'RobotoSlab-Regular',
-  },
-
-  pinContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 10,
-    paddingBottom: 10,
-    paddingLeft: 16,
-  },
-  pinText: {
-    color: '#1D2951',
-    fontSize: 16,
-    paddingTop: 10,
-  },
-  pinBoxesContainer: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     gap: 5,
-  },
-  pinBox: {
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#212121',
-    borderRadius: 5,
-  },
-  pinNumber: {
-    color: '#212121',
-    fontSize: 14,
-  },
-  innerContainerLine: {
-    position: 'relative', // To contain the absolute positioned vertical line
-    paddingLeft: 30, // Adjust to provide space for the line and icons
-  },
-  serviceDetail: {
-    fontSize: 14,
-    color: '#212121',
-    fontFamily: 'RobotoSlab-Regular',
-    marginBottom: 4,
-  },
-  addressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: 10,
-  },
-  addressTextContainer: {
-    marginLeft: 10,
-  },
-  addressTitle: {
-    fontSize: 16,
-    fontFamily: 'RobotoSlab-Medium',
-    color: '#212121',
-  },
-  address: {
-    fontSize: 12,
-    fontFamily: 'RobotoSlab-Regular',
-    color: '#212121',
   },
   paymentRow: {
     flexDirection: 'row',
@@ -551,16 +422,41 @@ const styles = StyleSheet.create({
     fontFamily: 'RobotoSlab-SemiBold',
     color: '#212121',
   },
-  paymentOptionContainer: {
+  addressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    paddingLeft: 16,
+    paddingLeft: 10,
   },
-  paymentOptionText: {
-    fontSize: 14,
-    color: '#000',
-    marginLeft: 8,
+  locationPinImage: {
+    width: 20,
+    height: 20,
+    marginRight: 10,
+  },
+  addressTextContainer: {
+    marginLeft: 10,
+  },
+  address: {
+    fontSize: 12,
+    fontFamily: 'RobotoSlab-Regular',
+    color: '#212121',
+  },
+  paymentInnerContainer: {
+    padding: 10,
+    backgroundColor: '#f5f5f5',
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  paymentSummaryContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sectionPaymentTitle: {
+    fontSize: 16,
+    fontFamily: 'RobotoSlab-SemiBold',
+    color: '#212121',
+    marginBottom: 8,
+    paddingLeft: 10,
   },
   payButton: {
     backgroundColor: '#ff4500',
@@ -575,6 +471,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'RobotoSlab-Regular',
     color: '#fff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

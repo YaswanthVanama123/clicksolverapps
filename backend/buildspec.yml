@@ -4,7 +4,7 @@
 #   pre_build:
 #     commands:
 #       - echo Logging in to Amazon ECR...
-#       - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 307946681823.dkr.ecr.ap-south-1.amazonaws.com
+#       - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 851725476048.dkr.ecr.ap-south-1.amazonaws.com
 
 #   build:
 #     commands:
@@ -12,12 +12,12 @@
 #       - cd backend
 #       - docker-compose build backend
 #       - echo Tagging the Docker image...
-#       - docker tag my-backend:latest 307946681823.dkr.ecr.ap-south-1.amazonaws.com/my-backend:latest
+#       - docker tag my-backend:latest 851725476048.dkr.ecr.ap-south-1.amazonaws.com/my-backend:latest
 
 #   post_build:
 #     commands:
 #       - echo Pushing the Docker image to Amazon ECR...
-#       - docker push 307946681823.dkr.ecr.ap-south-1.amazonaws.com/my-backend:latest
+#       - docker push 851725476048.dkr.ecr.ap-south-1.amazonaws.com/my-backend:latest
 #       - echo Build complete.
 
 # artifacts:
@@ -29,7 +29,7 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 307946681823.dkr.ecr.ap-south-1.amazonaws.com
+      - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 851725476048.dkr.ecr.ap-south-1.amazonaws.com
 
   build:
     commands:
@@ -37,16 +37,16 @@ phases:
       - cd backend
       - docker-compose build backend
       - echo Tagging the Docker image...
-      - docker tag my-backend:latest 307946681823.dkr.ecr.ap-south-1.amazonaws.com/my-backend:latest
+      - docker tag my-backend:latest 851725476048.dkr.ecr.ap-south-1.amazonaws.com/my-backend:latest
 
   post_build:
     commands:
       - echo Pushing the Docker image to Amazon ECR...
-      - docker push 307946681823.dkr.ecr.ap-south-1.amazonaws.com/my-backend:latest
+      - docker push 851725476048.dkr.ecr.ap-south-1.amazonaws.com/my-backend:latest
       - echo Returning to root directory...
       - cd ..
       - echo Generating imagedefinitions.json at root...
-      - printf '[{"name":"clicksolver-backend","imageUri":"307946681823.dkr.ecr.ap-south-1.amazonaws.com/my-backend:latest"}]' > imagedefinitions.json
+      - printf '[{"name":"clicksolver-backend","imageUri":"851725476048.dkr.ecr.ap-south-1.amazonaws.com/my-backend:latest"}]' > imagedefinitions.json
       - echo Build complete.
 
 artifacts:

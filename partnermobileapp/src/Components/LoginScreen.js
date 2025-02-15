@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -7,10 +7,10 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
-  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   BackHandler,
+  ActivityIndicator
 } from 'react-native';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
@@ -20,24 +20,20 @@ import {
   useFocusEffect,
 } from '@react-navigation/native';
 
-// Image URLs
-const BG_IMAGE_URL =
-  'https://i.postimg.cc/rFFQLGRh/Picsart-24-10-01-15-38-43-205.jpg';
+const BG_IMAGE_URL = 'https://i.postimg.cc/rFFQLGRh/Picsart-24-10-01-15-38-43-205.jpg';
 const LOGO_URL = 'https://i.postimg.cc/hjjpy2SW/Button-1.png';
 const FLAG_ICON_URL = 'https://i.postimg.cc/C1hkm5sR/india-flag-icon-29.png';
 
 const LoginScreen = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
-  // Destructuring for cleaner code
 
-  // Function to call the backend API for login
-  const loginBackend = async phoneNumber => {
-    console.log("backend",process.env.BackendAPI17)
+  const loginBackend = async (phoneNumber) => {
     try {
       const response = await axios.post(
         `https://backend.clicksolver.com/api/worker/login`,
-        {phone_number: phoneNumber},
+        { phone_number: phoneNumber }
       );
       return response;
     } catch (error) {
@@ -52,8 +48,8 @@ const LoginScreen = () => {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
-          }),
+            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }]
+          })
         );
         return true;
       };
@@ -61,11 +57,13 @@ const LoginScreen = () => {
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () =>
         BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-    }, [navigation]),
+    }, [navigation])
   );
 
   const login = async () => {
-    if (!phoneNumber) return; // Early return if phone number is empty
+    if (!phoneNumber) return;
+
+    setLoading(true); // Start loading indicator
 
     try {
       const response = await loginBackend(phoneNumber);
@@ -75,28 +73,27 @@ const LoginScreen = () => {
         return;
       }
 
-      const {status, data} = response;
+      const { status, data } = response;
 
       if (status === 200) {
-        const {token, workerId} = data;
+        const { token, workerId } = data;
         if (token && workerId) {
           await EncryptedStorage.setItem('pcs_token', token);
           await EncryptedStorage.setItem('partnerSteps', 'completed');
-          await EncryptedStorage.setItem('unique', String(workerId)); // Ensure string
+          await EncryptedStorage.setItem('unique', String(workerId)); 
           await EncryptedStorage.setItem('verification', 'true');
           navigation.dispatch(
             CommonActions.reset({
               index: 0,
-              routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
-            }),
+              routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }]
+            })
           );
         }
       } else if (status === 201) {
-        // Updated to 201
-        const {token, workerId, stepsCompleted} = data;
+        const { token, workerId, stepsCompleted } = data;
         if (workerId && token) {
           await EncryptedStorage.setItem('pcs_token', token);
-          await EncryptedStorage.setItem('unique', String(workerId)); // Ensure string
+          await EncryptedStorage.setItem('unique', String(workerId));
 
           if (stepsCompleted) {
             await EncryptedStorage.setItem('partnerSteps', 'completed');
@@ -104,91 +101,83 @@ const LoginScreen = () => {
           } else {
             navigation.replace('PartnerSteps');
           }
-        } else {
-          console.error(
-            'Missing workerId or token in response data for status 201',
-          );
         }
       } else if (status === 202) {
         navigation.replace('AdministratorDashboard');
       } else {
-        // Phone number not registered
-        const {phone_number} = data;
+        const { phone_number } = data;
         if (phone_number) {
-          navigation.push('SignupDetails', {phone_number}); // Changed to replace for consistency
-        } else {
-          console.error(
-            'Missing phone_number in response data for error status',
-          );
+          navigation.push('SignupDetails', { phone_number });
         }
       }
     } catch (error) {
       console.error('Error during login:', error);
+    } finally {
+      setLoading(false); // Stop loading indicator
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ImageBackground
-          source={{uri: BG_IMAGE_URL}}
-          style={styles.backgroundImage}
-          resizeMode="stretch">
-          <View style={styles.contentOverlay}>
-            {/* Logo and Heading */}
-            <View style={styles.description}>
-              <View style={styles.logoContainer}>
-                <Image source={{uri: LOGO_URL}} style={styles.logo} />
-                <Text style={styles.heading}>
-                  Click <Text style={styles.solverText}>Solver</Text>
-                </Text>
-              </View>
-              <Text style={styles.subheading}>ALL HOME Service Expert</Text>
-              <Text style={styles.tagline}>Instant Affordable Trusted</Text>
-            </View>
+      <Image source={{ uri: BG_IMAGE_URL }} style={StyleSheet.absoluteFillObject} resizeMode="stretch" />
 
-            {/* Mobile Input */}
-            <View style={styles.inputContainer}>
-              <View style={styles.countryCodeContainer}>
-                <Image source={{uri: FLAG_ICON_URL}} style={styles.flagIcon} />
-                <Text style={styles.picker}>91</Text>
-              </View>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter Mobile Number"
-                placeholderTextColor="#9e9e9e"
-                keyboardType="phone-pad"
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-              />
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoidingView} 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.contentOverlay}>
+          <View style={styles.description}>
+            <View style={styles.logoContainer}>
+              <Image source={{ uri: LOGO_URL }} style={styles.logo} />
+              <Text style={styles.heading}>
+                Click <Text style={styles.solverText}>Solver</Text>
+              </Text>
             </View>
+            <Text style={styles.subheading}>ALL HOME Service Expert</Text>
+            <Text style={styles.tagline}>Instant Affordable Trusted</Text>
+          </View>
 
-            {/* Get Verification Code Button */}
+          <View style={styles.inputContainer}>
+            <View style={styles.countryCodeContainer}>
+              <Image source={{ uri: FLAG_ICON_URL }} style={styles.flagIcon} />
+              <Text style={styles.picker}>+91</Text>
+            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter Mobile Number"
+              placeholderTextColor="#9e9e9e"
+              keyboardType="phone-pad"
+              value={phoneNumber}
+              onChangeText={setPhoneNumber}
+            />
+          </View>
+
+          {loading ? (
+            <ActivityIndicator size="large" color="#FF5720" style={styles.loader} />
+          ) : (
             <TouchableOpacity style={styles.button} onPress={login}>
               <Text style={styles.buttonText}>Get Verification Code</Text>
             </TouchableOpacity>
-          </View>
-        </ImageBackground>
+          )}
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {flex: 1},
-  keyboardAvoidingView: {flex: 1},
-  backgroundImage: {flex: 1, justifyContent: 'center', alignItems: 'center'},
-  solverText: {color: '#212121', fontWeight: 'bold'},
-  description: {flexDirection: 'column', marginLeft: 10},
+  container: { flex: 1 },
+  keyboardAvoidingView: { flex: 1 },
+  solverText: { color: '#212121', fontWeight: 'bold' },
+  description: { flexDirection: 'column', marginLeft: 10 },
   contentOverlay: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
-  logoContainer: {flexDirection: 'row', gap: 10, alignItems: 'center'},
-  logo: {width: 60, height: 60, marginBottom: 10},
+  logoContainer: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  logo: { width: 60, height: 60, marginBottom: 10 },
   heading: {
     fontSize: 26,
     lineHeight: 26,
@@ -196,7 +185,7 @@ const styles = StyleSheet.create({
     color: '#212121',
     width: 100,
   },
-  subheading: {fontSize: 16, fontWeight: 'bold', color: '#333'},
+  subheading: { fontSize: 16, fontWeight: 'bold', color: '#333' },
   tagline: {
     fontSize: 14,
     color: '#666',
@@ -222,8 +211,8 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     width: 80,
   },
-  flagIcon: {width: 24, height: 24},
-  picker: {fontSize: 17, color: '#212121', padding: 10, fontWeight: 'bold'},
+  flagIcon: { width: 24, height: 24 },
+  picker: { fontSize: 17, color: '#212121', padding: 10, fontWeight: 'bold' },
   input: {
     flex: 1,
     height: 56,
@@ -242,7 +231,8 @@ const styles = StyleSheet.create({
     elevation: 5,
     marginTop: 25,
   },
-  buttonText: {color: '#ffffff', fontSize: 16, fontWeight: 'bold'},
+  buttonText: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
+  loader: { marginVertical: 20 },
 });
 
 export default LoginScreen;

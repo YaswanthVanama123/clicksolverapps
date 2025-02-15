@@ -144,7 +144,7 @@ function ServiceApp({navigation, route}) {
 
       const response = await axios.get(
         'https://backend.clicksolver.com/api/servicecategories',
-        {timeout: 10000},
+
       );
 
       crashlytics().log('Services fetched successfully');
@@ -361,85 +361,101 @@ function ServiceApp({navigation, route}) {
             - Renders below the ScrollView automatically, 
               so no extra padding is needed.
         */}
-        {messageBoxDisplay && (
-          <ScrollView
-            horizontal
-            ref={scrollViewRef}
-            contentContainerStyle={styles.scrollViewHorizontal}
-            showsHorizontalScrollIndicator={false}
-            style={styles.messageBoxWrapper}>
-            {trackScreen.map((item, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[styles.messageBoxContainer, {width: messageBoxWidth}]}
-                onPress={() =>
-                  navigation.replace(item.screen, {
-                    encodedId: item.encodedId,
-                    area: item.area,
-                    city: item.city,
-                    pincode: item.pincode,
-                    alternateName: item.alternateName,
-                    alternatePhoneNumber: item.alternatePhoneNumber,
-                    serviceBooked: item.serviceBooked,
-                    location: item.location,
-                  })
-                }>
-                <View style={styles.messageBox1}>
-                  <View style={styles.startingContainer}>
-                    <View style={styles.timeContainer}>
-                      {item.screen === 'Paymentscreen' ? (
-                        <Foundation name="paypal" size={24} color="#ffffff" />
-                      ) : item.screen === 'UserNavigation' ? (
-                        <MaterialCommunityIcons
-                          name="truck"
-                          size={24}
-                          color="#ffffff"
-                        />
-                      ) : item.screen === 'userwaiting' ? (
-                        <Feather name="search" size={24} color="#ffffff" />
-                      ) : item.screen === 'OtpVerification' ? (
-                        <Feather name="shield" size={24} color="#ffffff" />
-                      ) : item.screen === 'worktimescreen' ? (
-                        <MaterialCommunityIcons
-                          name="hammer"
-                          size={24}
-                          color="#ffffff"
-                        />
-                      ) : (
-                        <Feather name="alert-circle" size={24} color="#000" />
-                      )}
+          {messageBoxDisplay && (
+            <ScrollView
+              horizontal
+              ref={scrollViewRef}
+              style={styles.messageBoxWrapper}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{
+                // Padding so the rightmost card is partially visible
+                // paddingLeft: 10,
+                // paddingRight: 40,
+              }}
+            >
+              {trackScreen.map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.messageBoxContainer,
+                    {
+                      width:
+                        trackScreen.length > 1
+                          ? Dimensions.get('window').width * 0.8
+                          : Dimensions.get('window').width * 0.9,
+                      marginRight: trackScreen.length > 1 ? 10 : 0,
+                    },
+                  ]}
+                  onPress={() =>
+                    navigation.replace(item.screen, {
+                      encodedId: item.encodedId,
+                      area: item.area,
+                      city: item.city,
+                      pincode: item.pincode,
+                      alternateName: item.alternateName,
+                      alternatePhoneNumber: item.alternatePhoneNumber,
+                      serviceBooked: item.serviceBooked,
+                      location: item.location,
+                    })
+                  }
+                >
+                  <View style={styles.messageBox1}>
+                    <View style={styles.startingContainer}>
+                      <View style={styles.timeContainer}>
+                        {item.screen === 'Paymentscreen' ? (
+                          <Foundation name="paypal" size={24} color="#ffffff" />
+                        ) : item.screen === 'UserNavigation' ? (
+                          <MaterialCommunityIcons
+                            name="truck"
+                            size={24}
+                            color="#ffffff"
+                          />
+                        ) : item.screen === 'userwaiting' ? (
+                          <Feather name="search" size={24} color="#ffffff" />
+                        ) : item.screen === 'OtpVerification' ? (
+                          <Feather name="shield" size={24} color="#ffffff" />
+                        ) : item.screen === 'worktimescreen' ? (
+                          <MaterialCommunityIcons
+                            name="hammer"
+                            size={24}
+                            color="#ffffff"
+                          />
+                        ) : (
+                          <Feather name="alert-circle" size={24} color="#000" />
+                        )}
+                      </View>
+                      <View>
+                        <Text style={styles.textContainerText} numberOfLines={1}>
+                          {item.serviceBooked && item.serviceBooked.length > 0
+                            ? item.serviceBooked
+                                .slice(0, 2)
+                                .map(service => service.serviceName)
+                                .join(', ') +
+                              (item.serviceBooked.length > 2 ? '...' : '')
+                            : 'Service Booked'}
+                        </Text>
+                        <Text style={styles.textContainerTextCommander}>
+                          {item.screen === 'Paymentscreen'
+                            ? 'Payment in progress'
+                            : item.screen === 'UserNavigation'
+                            ? 'Commander is on the way'
+                            : item.screen === 'OtpVerification'
+                            ? 'User is waiting for your help'
+                            : item.screen === 'worktimescreen'
+                            ? 'Work in progress'
+                            : 'Nothing'}
+                        </Text>
+                      </View>
                     </View>
-                    <View>
-                      <Text style={styles.textContainerText}>
-                        {item.serviceBooked && item.serviceBooked.length > 0
-                          ? item.serviceBooked
-                              .slice(0, 2)
-                              .map(service => service.serviceName)
-                              .join(', ') +
-                            (item.serviceBooked.length > 2 ? '...' : '')
-                          : 'Switch board & Socket repairing'}
-                      </Text>
-                      <Text style={styles.textContainerTextCommander}>
-                        {item.screen === 'Paymentscreen'
-                          ? 'Payment in progress'
-                          : item.screen === 'UserNavigation'
-                          ? 'Commander is on the way'
-                          : item.screen === 'OtpVerification'
-                          ? 'User is waiting for your help'
-                          : item.screen === 'worktimescreen'
-                          ? 'Work in progress'
-                          : 'Nothing'}
-                      </Text>
+                    <View style={styles.rightIcon}>
+                      <Feather name="chevrons-right" size={18} color="#9e9e9e" />
                     </View>
                   </View>
-                  <View style={styles.rightIcon}>
-                    <Feather name="chevrons-right" size={18} color="#9e9e9e" />
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+
 
         {/* Rating Modal */}
         <Modal visible={isModalVisible} transparent animationType="slide">
@@ -690,13 +706,13 @@ const styles = StyleSheet.create({
   },
   messageBoxContainer: {
     backgroundColor: '#ffffff',
-    borderRadius: 20,
+    borderRadius: 10,
     flexDirection: 'row',
     padding: 15,
 
     justifyContent: 'space-between',
     alignItems: 'center',
-    elevation: 3,
+    elevation: 1,
   },
   messageBox1: {
     flexDirection: 'row',
@@ -719,11 +735,10 @@ const styles = StyleSheet.create({
   },
   textContainerText: {
     fontSize: 13,
-    paddingBottom: 5,
     fontFamily: 'RobotoSlab-Bold',
     color: '#212121',
     marginLeft: 10,
-    width: '90%',
+    width: '80%',
   },
   textContainerTextCommander: {
     fontSize: 12,

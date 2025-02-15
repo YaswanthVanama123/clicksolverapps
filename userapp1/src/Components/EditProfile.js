@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   SafeAreaView,
   Image,
+  ActivityIndicator, // Import ActivityIndicator
 } from 'react-native';
 import {useRoute, useNavigation, CommonActions} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -15,12 +16,13 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 // import Config from 'react-native-config';
 
 const EditProfile = () => {
+  const navigation = useNavigation();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [updateLoading, setUpdateLoading] = useState(false); // New loading state for update
 
   const route = useRoute();
-  const navigation = useNavigation();
 
   const fetchProfileDetails = async () => {
     const {details} = route.params;
@@ -32,6 +34,7 @@ const EditProfile = () => {
 
   const updateProfile = async () => {
     try {
+      setUpdateLoading(true);
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       console.log('JWT Token: ', jwtToken); // Log the JWT token for debugging
 
@@ -45,7 +48,7 @@ const EditProfile = () => {
         fullName,
         email,
         phone,
-      ); // Debug log
+      );
       const response = await axios.post(
         `https://backend.clicksolver.com/api/user/details/update`,
         {name: fullName, email, phone},
@@ -68,6 +71,8 @@ const EditProfile = () => {
       }
     } catch (error) {
       console.error('Error response: ', error.response?.data || error.message);
+    } finally {
+      setUpdateLoading(false);
     }
   };
 
@@ -126,14 +131,21 @@ const EditProfile = () => {
               value={phone}
               onChangeText={setPhone}
               keyboardType="phone-pad"
-              editable={false} // Disables editing
-              selectTextOnFocus={false} // Prevents text selection
+              editable={false}
+              selectTextOnFocus={false}
             />
           </View>
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={updateProfile}>
-          <Text style={styles.buttonText}>Update Profile</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={updateProfile}
+          disabled={updateLoading}>
+          {updateLoading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Update Profile</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>

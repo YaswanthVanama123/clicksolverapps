@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   Keyboard,
+  ActivityIndicator, // Import ActivityIndicator
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -15,13 +16,13 @@ import axios from 'axios';
 import uuid from 'react-native-uuid';
 import {useNavigation} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-// import Config from 'react-native-config';
 
 const ServiceTrackingListScreen = () => {
   const [serviceData, setServiceData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState([]);
+  const [loading, setLoading] = useState(true); // New loading state
   const navigation = useNavigation();
 
   const filterOptions = ['Collected Item', 'Work started', 'Work Completed'];
@@ -29,6 +30,7 @@ const ServiceTrackingListScreen = () => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
+        setLoading(true);
         const token = await EncryptedStorage.getItem('cs_token');
         if (!token) throw new Error('Token not found');
 
@@ -44,6 +46,8 @@ const ServiceTrackingListScreen = () => {
         setFilteredData(response.data); // Initially display all data
       } catch (error) {
         console.error('Error fetching bookings data:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -184,12 +188,20 @@ const ServiceTrackingListScreen = () => {
 
           {/* Service List */}
           <View style={styles.trackingItems}>
-            <FlatList
-              data={filteredData}
-              renderItem={renderItem}
-              keyExtractor={() => uuid.v4()}
-              contentContainerStyle={styles.listContainer}
-            />
+            {loading ? (
+              <ActivityIndicator
+                size="large"
+                color="#FF5722"
+                style={styles.loadingIndicator}
+              />
+            ) : (
+              <FlatList
+                data={filteredData}
+                renderItem={renderItem}
+                keyExtractor={() => uuid.v4()}
+                contentContainerStyle={styles.listContainer}
+              />
+            )}
           </View>
         </View>
       </TouchableWithoutFeedback>
@@ -257,6 +269,10 @@ const styles = StyleSheet.create({
     color: '#4a4a4a',
     fontFamily: 'RobotoSlab-Regular',
   },
+  trackingItems: {
+    flex: 1,
+    paddingTop: 16, // Add space between the header and list items
+  },
   listContainer: {
     paddingHorizontal: 16,
   },
@@ -273,10 +289,6 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
     shadowRadius: 4,
-  },
-  trackingItems: {
-    flex: 1,
-    paddingTop: 16, // Add space between the header and list items
   },
   serviceIconContainer: {
     width: 40, // Adjust width and height for compact design
@@ -308,14 +320,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // statusLabel: {
-  //   flex: 1, // Allow it to fit in one line with other elements
-  //   borderRadius: 20, // Rounded button-like appearance
-  //   paddingVertical: 6, // Compact padding
-  //   paddingHorizontal: 10,
-  //   justifyContent: 'center',
-  //   alignItems: 'center',
-  // },
   inProgress: {
     backgroundColor: '#ffecb3',
   },
@@ -329,6 +333,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'RobotoSlab-Medium',
     color: '#212121',
+  },
+  loadingIndicator: {
+    marginTop: 20,
+    alignSelf: 'center',
   },
 });
 

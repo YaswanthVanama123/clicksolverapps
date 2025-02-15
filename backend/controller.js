@@ -9,6 +9,7 @@ var cron = require("node-cron");
 const {
   generateToken,
   generateWorkerToken,
+  generateAdminToken
 } = require("./src/utils/generateToken.js");
 const { response } = require("express");
 const request = require("request");
@@ -53,8 +54,79 @@ const smsEndpoint = `https://rest-api.telesign.com/v1/messaging`;
 // };
 
 
+const sendLogoutNotificationAndDeleteTokens = async (workerId) => {
+  try {
+    // Fetch all FCM tokens for the worker
+    const fcmQuery = "SELECT fcm_token FROM fcm WHERE worker_id = $1";
+    const fcmResult = await client.query(fcmQuery, [workerId]);
+
+    if (fcmResult.rows.length === 0) return; // No active devices
+
+    const tokens = fcmResult.rows.map(row => row.fcm_token);
+
+    // Send FCM logout notification
+    const message = {
+      tokens,
+      notification: {
+        title: "Logged Out",
+        body: "You have been logged out due to a login on another device.",
+      },
+      data: { action: "FORCE_LOGOUT" },
+    };
+
+    await admin.messaging().sendEachForMulticast(message);
+    console.log("Logout notification sent to all previous devices.");
+
+    // Delete all FCM tokens from the fcm table for this worker
+    await client.query("DELETE FROM fcm WHERE worker_id = $1", [workerId]);
+    console.log(`Deleted all FCM tokens for worker_id: ${workerId}`);
+
+  } catch (error) {
+    console.error("Error sending logout notification or deleting FCM tokens:", error);
+  }
+};
+
+const workerTokenVerification = async (req, res) => {
+  try {
+    const { pcsToken } = req.body;
+    const worker_id = req.worker.id; // Ensure worker_id is being extracted correctly
+
+
+
+    // Validate input
+    if (!pcsToken || !worker_id) {
+      return res.status(400).json({ message: "Missing pcsToken or worker_id" });
+    }
+
+    // Corrected SQL query with PostgreSQL syntax
+    const query = "SELECT session_token FROM workersverified WHERE worker_id = $1";
+    const result = await client.query(query, [worker_id]);
+
+    // If worker_id is found in the table
+    if (result.rows.length > 0) {
+      const { session_token } = result.rows[0];
+   
+
+      // Check if the session token matches the provided pcsToken
+      if (session_token !== pcsToken) {
+        return res.status(205).json({ message: "Session token mismatch" });
+      } else {
+        
+        return res.status(200).json({ message: "Token verified" });
+      }
+    } else {
+      return res.status(200).json({ message: "Worker not verified, proceeding with verification" });
+    }
+  } catch (error) {
+    console.error("Error in workerTokenVerification:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
 const Partnerlogin = async (req, res) => {
   const { phone_number } = req.body;
+
   if (!phone_number) {
     return res.status(400).json({ message: "Phone number is required" });
   } else if (phone_number === "my name is veerappa") {
@@ -88,28 +160,41 @@ const Partnerlogin = async (req, res) => {
     const stepsCompleted =
       result.rows[0].step1 && result.rows[0].step2 && result.rows[0].step3;
 
-    if (statusCode === 200) {
+    if (workerId) {
+      // Generate a new session token
       const token = generateWorkerToken({ worker_id: workerId });
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
-      });
-      return res.status(200).json({ token, workerId });
-    } else if (statusCode === 201) {
-      const token = generateWorkerToken({ worker_id: workerId });
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
-      });
 
-      return res.status(201).json({
-        message: "Phone number found in workers, please complete sign up",
+      // Update session token in database
+      await client.query("UPDATE workersverified SET session_token = $1 WHERE worker_id = $2", [
         token,
         workerId,
-        stepsCompleted,
-      });
+      ]);
+
+      // Send logout notification and delete FCM tokens
+      await sendLogoutNotificationAndDeleteTokens(workerId);
+
+      // Send response based on worker status
+      if (statusCode === 200) {
+        res.cookie("token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "Strict",
+        });
+        return res.status(200).json({ token, workerId });
+      } else if (statusCode === 201) {
+        res.cookie("token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "Strict",
+        });
+
+        return res.status(201).json({
+          message: "Phone number found in workers, please complete sign up",
+          token,
+          workerId,
+          stepsCompleted,
+        });
+      }
     } else {
       return res.status(203).json({ message: "Phone number not registered", phone_number });
     }
@@ -125,73 +210,37 @@ const Partnerlogin = async (req, res) => {
 //   if (!phone_number) {
 //     return res.status(400).json({ message: "Phone number is required" });
 //   } else if (phone_number === "my name is veerappa") {
-//     res.status(202).json({ message: "Internal server error" });
+//     return res.status(202).json({ message: "Internal server error" }); // FIXED!
 //   }
 
 //   try {
-//     // Query to check the existence of phone_number in both tables and get signup step details
-//     // const query = `
-//     //   WITH workersverified_check AS (
-//     //     SELECT worker_id
-//     //     FROM workersverified
-//     //     WHERE phone_number = $1
-//     //     LIMIT 1
-//     //   ),
-//     //   workers_check AS (
-//     //     SELECT worker_id
-//     //     FROM workers
-//     //     WHERE phone_number = $1
-//     //     LIMIT 1
-//     //   )
-//     //   SELECT
-//     //     CASE
-//     //       WHEN EXISTS (SELECT 1 FROM workersverified_check) THEN 200
-//     //       WHEN EXISTS (SELECT 1 FROM workers_check) THEN 201
-//     //       ELSE 400
-//     //     END AS status_code,
-//     //     (SELECT worker_id FROM workersverified_check) AS verified_worker_id,
-//     //     (SELECT worker_id FROM workers_check) AS worker_id,
-//     //     EXISTS (SELECT 1 FROM workers_check) AS step1,
-//     //     EXISTS (SELECT 1 FROM workerskills WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step2,
-//     //     EXISTS (SELECT 1 FROM bankaccounts WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step3
-//     // `;
-
 //     const query = `
-//     WITH workersverified_check AS (
-//     SELECT worker_id
-//     FROM workersverified
-//     WHERE phone_number = $1
-//     LIMIT 1
-// ),
-// workers_check AS (
-//     SELECT worker_id
-//     FROM workers
-//     WHERE phone_number = $1
-//     LIMIT 1
-// )
-// SELECT 
-//     CASE 
-//         WHEN EXISTS (SELECT 1 FROM workersverified_check) THEN 200
-//         WHEN EXISTS (SELECT 1 FROM workers_check) THEN 201
-//         ELSE 400
-//     END AS status_code,
-//     COALESCE((SELECT worker_id FROM workersverified_check), 
-//              (SELECT worker_id FROM workers_check)) AS worker_id,
-//     EXISTS (SELECT 1 FROM workers_check) AS step1,
-//     EXISTS (SELECT 1 FROM workerskills WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step2,
-//     EXISTS (SELECT 1 FROM bankaccounts WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step3;
-
+//       WITH workersverified_check AS (
+//         SELECT worker_id FROM workersverified WHERE phone_number = $1 LIMIT 1
+//       ),
+//       workers_check AS (
+//         SELECT worker_id FROM workers WHERE phone_number = $1 LIMIT 1
+//       )
+//       SELECT 
+//         CASE 
+//           WHEN EXISTS (SELECT 1 FROM workersverified_check) THEN 200
+//           WHEN EXISTS (SELECT 1 FROM workers_check) THEN 201
+//           ELSE 400
+//         END AS status_code,
+//         COALESCE((SELECT worker_id FROM workersverified_check), 
+//                  (SELECT worker_id FROM workers_check)) AS worker_id,
+//         EXISTS (SELECT 1 FROM workers_check) AS step1,
+//         EXISTS (SELECT 1 FROM workerskills WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step2,
+//         EXISTS (SELECT 1 FROM bankaccounts WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step3;
 //     `;
 
 //     const result = await client.query(query, [phone_number]);
 //     const statusCode = result.rows[0].status_code;
-//     const workerId =
-//       result.rows[0].verified_worker_id || result.rows[0].worker_id;
+//     const workerId = result.rows[0].worker_id;
 //     const stepsCompleted =
 //       result.rows[0].step1 && result.rows[0].step2 && result.rows[0].step3;
 
 //     if (statusCode === 200) {
-//       // Worker found in workersverified table
 //       const token = generateWorkerToken({ worker_id: workerId });
 //       res.cookie("token", token, {
 //         httpOnly: true,
@@ -214,16 +263,32 @@ const Partnerlogin = async (req, res) => {
 //         stepsCompleted,
 //       });
 //     } else {
-//       // Phone number not found in both tables
-//       return res
-//         .status(203)
-//         .json({ message: "Phone number not registered", phone_number });
+//       return res.status(203).json({ message: "Phone number not registered", phone_number });
 //     }
 //   } catch (error) {
 //     console.error("Error logging in worker:", error);
 //     return res.status(500).json({ message: "Internal server error" });
 //   }
 // };
+
+const adminLogin = async (req, res) => {
+  const { phone_number } = req.query;
+
+  if (!phone_number) {
+    return res.status(400).json({ message: "Phone number is required" });
+  }
+
+  if (phone_number === "9392365494") {
+    // Generate admin token
+    const token = generateAdminToken();
+
+    // Send the token in the response
+    return res.status(200).json({ token });
+  } else {
+    return res.status(205).json({ message: "Invalid credentials" });
+  }
+};
+
 
 const accountDetailsUpdate = async (req, res) => {
   const userId = req.user.id; // Get user ID from the request
@@ -2699,20 +2764,26 @@ const getServiceByName = async (req, res) => {
 
   try {
     const query = `
-      SELECT 
-        a.main_service_id, 
-        a.cost, 
-        a.service_tag, 
-        a.service_details, 
-        r.service_urls
-      FROM allservices a
-      JOIN (
-          SELECT r.related_services, r.service_urls
-          FROM relatedservices r
-          WHERE r.service_category = $1
-      ) AS r ON a.service_tag = ANY(r.related_services)
-      ORDER BY array_position(r.related_services, a.service_tag);
-    `;
+    SELECT 
+      a.main_service_id, 
+      a.cost, 
+      a.service_tag, 
+      a.service_details, 
+      r.service_urls
+    FROM allservices a
+    JOIN (
+        SELECT 
+          r.related_services, 
+          r.service_urls,
+          ARRAY(SELECT jsonb_array_elements_text(r.related_services)) AS related_services_arr
+        FROM relatedservices r
+        WHERE r.service_category = $1
+    ) AS r 
+      ON a.service_tag = ANY(r.related_services_arr)
+    ORDER BY array_position(r.related_services_arr, a.service_tag);
+  `;
+  
+  
 
     const result = await client.query(query, [serviceName]);
 
@@ -11170,6 +11241,91 @@ const currentService = async (req, res) => {
   }
 };
 
+// const workerScreenChange = async (req, res) => {
+//   try {
+//     let { worker_id, params, screen } = req.body;
+//     console.log("req.body is", req.body);
+
+//     // If params is a string, parse it into JSON.
+//     if (typeof params === "string") {
+//       try {
+//         params = JSON.parse(params);
+//       } catch (parseError) {
+//         console.warn("Failed to parse params string:", params);
+//         return res.status(400).json({
+//           success: false,
+//           message:
+//             "Params should be a valid JSON object or a stringified JSON object.",
+//         });
+//       }
+//     }
+
+//     // Validate params and check for encodedId.
+//     if (!params || typeof params !== "object" || !params.encodedId) {
+//       console.warn("Invalid params structure:", params);
+//       return res.status(400).json({
+//         success: false,
+//         message:
+//           "Invalid params format. Expected { encodedId: <Base64String> }",
+//       });
+//     }
+
+//     // Use the provided encodedId (assuming it matches the stored value).
+//     const encodedId = params.encodedId;
+
+//     // Single query combining both updates using CTEs.
+//     const query = `
+//       WITH updated_worker AS (
+//         UPDATE workeraction
+//         SET screen_name = CASE WHEN $2 = '' THEN '' ELSE $2 END
+//         WHERE worker_id = $1
+//         RETURNING worker_id
+//       ),
+//       updated_useraction AS (
+//         UPDATE useraction
+//         SET track = (
+//           SELECT jsonb_agg(new_elem)
+//           FROM (
+//             SELECT 
+//               CASE 
+//                 WHEN elem->>'encodedId' = $3 THEN 
+//                   CASE 
+//                     WHEN $2 = '' THEN NULL
+//                     ELSE elem || jsonb_build_object('screen', $2)
+//                   END
+//                 ELSE elem
+//               END AS new_elem
+//             FROM jsonb_array_elements(track) AS elem
+//           ) AS sub
+//           WHERE new_elem IS NOT NULL
+//         )
+//         WHERE user_id IN (
+//           SELECT user_id FROM accepted WHERE worker_id = $1
+//         )
+//         RETURNING user_id, track
+//       )
+//       SELECT * FROM updated_useraction;
+//     `;
+
+//     // Execute the query with parameters:
+//     // $1: worker_id, $2: screen, $3: encodedId
+//     const result = await client.query(query, [worker_id, screen, encodedId]);
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Worker screen updated successfully",
+//       data: result.rows,
+//     });
+//   } catch (error) {
+//     console.error("Error updating worker screen:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
+
 const workerScreenChange = async (req, res) => {
   try {
     let { worker_id, params, screen } = req.body;
@@ -11199,10 +11355,10 @@ const workerScreenChange = async (req, res) => {
       });
     }
 
-    // Use the provided encodedId (assuming it matches the stored value).
+    // Use the provided encodedId.
     const encodedId = params.encodedId;
 
-    // Single query combining both updates using CTEs.
+    // SQL Query with CTEs
     const query = `
       WITH updated_worker AS (
         UPDATE workeraction
@@ -11212,22 +11368,22 @@ const workerScreenChange = async (req, res) => {
       ),
       updated_useraction AS (
         UPDATE useraction
-        SET track = (
+        SET track = COALESCE((
           SELECT jsonb_agg(new_elem)
           FROM (
             SELECT 
               CASE 
                 WHEN elem->>'encodedId' = $3 THEN 
                   CASE 
-                    WHEN $2 = '' THEN NULL
-                    ELSE elem || jsonb_build_object('screen', $2)
+                    WHEN $2 = '' THEN NULL  -- Mark for deletion
+                    ELSE jsonb_set(elem, '{screen}', to_jsonb($2)) -- Update screen
                   END
                 ELSE elem
               END AS new_elem
             FROM jsonb_array_elements(track) AS elem
           ) AS sub
           WHERE new_elem IS NOT NULL
-        )
+        ), '[]'::jsonb) -- Ensure empty array instead of NULL
         WHERE user_id IN (
           SELECT user_id FROM accepted WHERE worker_id = $1
         )
@@ -11236,8 +11392,7 @@ const workerScreenChange = async (req, res) => {
       SELECT * FROM updated_useraction;
     `;
 
-    // Execute the query with parameters:
-    // $1: worker_id, $2: screen, $3: encodedId
+    // Execute the query
     const result = await client.query(query, [worker_id, screen, encodedId]);
 
     return res.status(200).json({
@@ -11513,5 +11668,7 @@ module.exports = {
   currentService,
   workerScreenChange ,
   getPendingWorkersNotStarted,
-  administratorDetails
+  administratorDetails,
+  workerTokenVerification,
+  adminLogin
 };
