@@ -217,6 +217,8 @@ const HomeScreen = () => {
           {headers: {Authorization: `Bearer ${pcs_token}`}},
         );
 
+        await EncryptedStorage.setItem('workerInAction', 'true');
+
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
@@ -343,7 +345,7 @@ const HomeScreen = () => {
   };
 
   useEffect(() => {
-    fetchTrackDetails();
+    // fetchTrackDetails();
     fetchTrackingState();
     fetchNotifications();
     setGreetingBasedOnTime();
@@ -352,6 +354,12 @@ const HomeScreen = () => {
 
     // Other initialization code...
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchTrackDetails();
+    }, [])
+  );
 
   useEffect(() => {
     PushNotification.createChannel(

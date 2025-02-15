@@ -65,6 +65,7 @@ const ServiceBookingItem = () => {
           {tracking_id},
         );
         const {data, paymentDetails} = response.data;
+        console.log("pay",data.total_cost)
         setStatus(data.time || {});
         setDetails(data);
         setPaymentDetails(paymentDetails);
@@ -192,13 +193,17 @@ const ServiceBookingItem = () => {
         </View>
         <View style={styles.sectionContainer}>
           <View style={styles.PaymentItemContainer}>
-            {serviceArray.map((service, index) => (
-              <View key={index} style={styles.paymentRow}>
-                <Text style={styles.paymentLabel}>{service.serviceName}</Text>
-                <Text style={styles.paymentValue}>₹{service.cost}.00</Text>
-              </View>
-            ))}
-            <View style={styles.paymentRow}>
+          {/* {serviceArray.map((service, index) => (
+                    <View key={index} style={styles.paymentRow}>
+                      <Text style={styles.paymentLabelHead}>
+                        {service.serviceName}
+                      </Text>
+                      <Text style={styles.paymentValue}>
+                        ₹{service.cost.toFixed(2)}
+                      </Text> 
+                    </View>
+                  ))} */}
+            {/* <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>SGST (5%)</Text>
               <Text style={styles.paymentValue}>
                 ₹{paymentDetails.cgstAmount}.00
@@ -209,20 +214,28 @@ const ServiceBookingItem = () => {
               <Text style={styles.paymentValue}>
                 ₹{paymentDetails.gstAmount}.00
               </Text>
-            </View>
-            <View style={styles.paymentRow}>
+            </View> */}
+            {/* <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>Cashback (5%)</Text>
               <Text style={styles.paymentValue}>
                 ₹{paymentDetails.discountAmount}.00
               </Text>
-            </View>
-            <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>Pay Via Scan</Text>
-              <Text style={styles.paymentValue}>
-                Grand Total ₹{paymentDetails.fetchedFinalTotalAmount}.00
-              </Text>
-            </View>
-          </View>
+            </View> */}
+                  {details.discount > 0 && (
+                    <View style={styles.paymentRow}>
+                      <Text style={styles.paymentLabel}>Cashback (5%)</Text>
+                      <Text style={styles.paymentValue}>
+                        ₹{details.discount}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.paymentRow}>
+                    <Text style={styles.paymentValue}> Grand Total</Text>
+                    <Text style={styles.paymentValue}>
+                      ₹ {details.total_cost}
+                    </Text>
+                  </View>
+                </View>
         </View>
 
         <TouchableOpacity style={styles.payButton} onPress={openPhonePeScanner}>
@@ -469,6 +482,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 4,
+  },
+  paymentLabelHead: {
+    width: '75%',
+    fontSize: 13,
+  
+    color: '#212121',
   },
   paymentLabel: {
     fontSize: 14,

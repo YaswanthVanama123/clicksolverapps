@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   Modal,
   TouchableWithoutFeedback,
+  ActivityIndicator, // Added ActivityIndicator
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons'; // for check, cross, sort icons
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'; // for wallet and bank icons
@@ -62,12 +63,14 @@ const RecentServices = () => {
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState([]); // No default filter to apply all initially
   const [filteredData, setFilteredData] = useState([]);
+  const [loading, setLoading] = useState(true); // Added loading state
 
   const filterOptions = ['Completed', 'Cancelled'];
 
   useEffect(() => {
     const fetchBookings = async () => {
       try {
+        setLoading(true);
         const token = await EncryptedStorage.getItem('pcs_token');
         if (!token) throw new Error('Token not found');
 
@@ -83,6 +86,8 @@ const RecentServices = () => {
         setFilteredData(response.data); // Initially display all data
       } catch (error) {
         console.error('Error fetching bookings data:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -122,8 +127,7 @@ const RecentServices = () => {
     const filtered =
       updatedFilters.length > 0
         ? bookingsData.filter(item => {
-            const itemStatus =
-              item.payment !== null ? 'Completed' : 'Cancelled';
+            const itemStatus = item.payment !== null ? 'Completed' : 'Cancelled';
             return updatedFilters.includes(itemStatus);
           })
         : bookingsData;
@@ -178,13 +182,25 @@ const RecentServices = () => {
         )}
 
         <View style={styles.serviceContainer}>
-          <FlatList
-            data={filteredData}
-            renderItem={({item}) => (
-              <ServiceItem item={item} formatDate={formatDate} />
-            )}
-            keyExtractor={(item, index) => index.toString()}
-          />
+          {loading ? (
+            <ActivityIndicator
+              size="large"
+              color="#FF5722"
+              style={styles.loadingIndicator}
+            />
+          ) : filteredData.length === 0 ? (
+            <View style={styles.noDataContainer}>
+              <Text style={styles.noDataText}>No data available</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={filteredData}
+              renderItem={({item}) => (
+                <ServiceItem item={item} formatDate={formatDate} />
+              )}
+              keyExtractor={(item, index) => index.toString()}
+            />
+          )}
         </View>
       </SafeAreaView>
     </TouchableWithoutFeedback>
@@ -309,6 +325,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#212121',
     textAlign: 'right',
+  },
+  loadingIndicator: {
+    marginTop: 20,
+    alignSelf: 'center',
+  },
+  noDataContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  noDataText: {
+    fontSize: 16,
+    color: '#212121',
   },
 });
 

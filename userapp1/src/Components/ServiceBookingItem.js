@@ -233,7 +233,7 @@ const ServiceBookingItem = () => {
                       </Text>
                       <Text style={styles.paymentValue}>
                         ₹{service.cost.toFixed(2)}
-                      </Text>
+                      </Text> 
                     </View>
                   ))}
                   {details.discount > 0 && (

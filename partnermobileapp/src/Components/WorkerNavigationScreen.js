@@ -16,6 +16,7 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
+
 import Mapbox from '@rnmapbox/maps';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
@@ -26,49 +27,92 @@ import {
   useFocusEffect,
 } from '@react-navigation/native';
 import Geolocation from '@react-native-community/geolocation';
+
+// ICONS
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
-import SwipeButton from 'rn-swipe-button';
 import Entypo from 'react-native-vector-icons/Entypo';
 
-// Set your Mapbox access token here
+// SWIPE
+import SwipeButton from 'rn-swipe-button';
+
+// For decoding the Ola Maps `overview_polyline`
+import polyline from '@mapbox/polyline';
+
+/** 
+ * 1) Ola Maps API key 
+ *    (replace "iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT" with your actual API key)
+ */
+const OLA_MAPS_API_KEY = 'iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT';
+
+/**
+ * 2) OPTIONAL: Mapbox access token (used ONLY to render the map background).
+ *    You won't call Mapbox directions endpoints since you're using Ola Maps for routing.ola
+ */
 Mapbox.setAccessToken(
-  'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw',
+  'pk.eyJ1IjoiZnJlZWNvZGV4IiwiYSI6ImNra3FmMDkwcjBjeWYycHAxYnN6eDFneDcifQ.2T_8bDb2FzY1E7GiC0WrBg',
 );
-const startMarker = require('./assets/start-marker.png');
-const endMarker = require('./assets/end-marker.png');
 
 const WorkerNavigationScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
+
+  // ------------------ (A) LOADING & ROTATION STATES FOR REFRESH ICON ------------------
+  const [isLoading, setIsLoading] = useState(false);
+  const rotationValue = useRef(new Animated.Value(0)).current;
+
+  const spin = rotationValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  useEffect(() => {
+    let animation;
+    if (isLoading) {
+      rotationValue.setValue(0);
+      animation = Animated.loop(
+        Animated.timing(rotationValue, {
+          toValue: 1,
+          duration: 800,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      );
+      animation.start();
+    } else if (animation) {
+      animation.stop();
+    }
+
+    return () => {
+      if (animation) {
+        animation.stop();
+      }
+    };
+  }, [isLoading, rotationValue]);
+
+  // ------------------ (B) OTHER STATES ------------------
   const [cameraBounds, setCameraBounds] = useState(null);
-  const [routeData, setRouteData] = useState(null);
+  const [routeData, setRouteData] = useState(null); // Will hold the decoded route as GeoJSON
   const [locationDetails, setLocationDetails] = useState({
-    startPoint: [80.519353, 16.987142],
-    endPoint: [80.6093701, 17.1098751],
+    startPoint: [80.519353, 16.987142], // [lng, lat]
+    endPoint: [80.6093701, 17.1098751], // [lng, lat]
   });
   const [decodedId, setDecodedId] = useState(null);
   const [addressDetails, setAddressDetails] = useState(null);
   const [titleColor, setTitleColor] = useState('#FFFFFF');
   const [swiped, setSwiped] = useState(false);
+
   const [reasonModalVisible, setReasonModalVisible] = useState(false);
-  const [confirmationModalVisible, setConfirmationModalVisible] =
-    useState(false);
+  const [confirmationModalVisible, setConfirmationModalVisible] = useState(false);
   const [showUpArrowService, setShowUpArrowService] = useState(false);
   const [showDownArrowService, setShowDownArrowService] = useState(false);
   const [serviceArray, setServiceArray] = useState([]);
 
-  const handleServiceScroll = event => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    const containerHeight = event.nativeEvent.layoutMeasurement.height;
-    const contentHeight = event.nativeEvent.contentSize.height;
-
-    setShowUpArrowService(offsetY > 0);
-    setShowDownArrowService(offsetY + containerHeight < contentHeight);
-  };
-
+  // ---------------------------------------------------------------------
+  // 1) DECODE THE ID FROM route.params
+  // ---------------------------------------------------------------------
   useEffect(() => {
     const {encodedId} = route.params;
     if (encodedId) {
@@ -80,6 +124,9 @@ const WorkerNavigationScreen = () => {
     }
   }, [route.params]);
 
+  // ---------------------------------------------------------------------
+  // 2) REQUEST LOCATION PERMISSION
+  // ---------------------------------------------------------------------
   useEffect(() => {
     const requestLocationPermission = async () => {
       if (Platform.OS === 'android') {
@@ -102,10 +149,12 @@ const WorkerNavigationScreen = () => {
         }
       }
     };
-
     requestLocationPermission();
   }, []);
 
+  // ---------------------------------------------------------------------
+  // 3) ONCE WE HAVE decodedId, DO INITIAL FETCHES
+  // ---------------------------------------------------------------------
   useEffect(() => {
     if (decodedId) {
       checkCancellationStatus();
@@ -114,26 +163,60 @@ const WorkerNavigationScreen = () => {
     }
   }, [decodedId]);
 
+  // ---------------------------------------------------------------------
+  // 4) ANDROID BACK BUTTON OVERRIDE
+  // ---------------------------------------------------------------------
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
+        );
+        return true;
+      };
+
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => {
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      };
+    }, [navigation]),
+  );
+
+  // ---------------------------------------------------------------------
+  // 5) REFRESH HANDLER (TRIGGERS RE-FETCH)
+  // ---------------------------------------------------------------------
+  const handleRefresh = async () => {
+    if (isLoading) return;
+    try {
+      setIsLoading(true);
+      await checkCancellationStatus();
+      await fetchAddressDetails();
+      await fetchLocationDetails();
+    } catch (err) {
+      console.error('Refresh Error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ---------------------------------------------------------------------
+  // A) CHECK CANCELLATION STATUS
+  // ---------------------------------------------------------------------
   const checkCancellationStatus = async () => {
     try {
       const response = await axios.get(
         `https://backend.clicksolver.com/api/worker/cancelled/status`,
-        {
-          params: {notification_id: decodedId},
-        },
+        {params: {notification_id: decodedId}},
       );
-
       if (response.data.notificationStatus === 'usercanceled') {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         await axios.post(
           `https://backend.clicksolver.com/api/worker/action`,
-          {
-            encodedId: '',
-            screen: '',
-          },
-          {
-            headers: {Authorization: `Bearer ${pcs_token}`},
-          },
+          {encodedId: '', screen: ''},
+          {headers: {Authorization: `Bearer ${pcs_token}`}},
         );
 
         navigation.dispatch(
@@ -148,32 +231,14 @@ const WorkerNavigationScreen = () => {
     }
   };
 
-  const ThumbIcon = () => {
-    return (
-      <View style={styles.thumbContainer}>
-        <Text>
-          {swiped ? (
-            <Entypo
-              name="check"
-              size={20}
-              color="#ff4500"
-              style={styles.checkIcon}
-            />
-          ) : (
-            <FontAwesome6 name="arrow-right-long" size={18} color="#ff4500" />
-          )}
-        </Text>
-      </View>
-    );
-  };
-
+  // ---------------------------------------------------------------------
+  // B) FETCH ADDRESS DETAILS
+  // ---------------------------------------------------------------------
   const fetchAddressDetails = useCallback(async () => {
     try {
       const response = await axios.get(
         `https://backend.clicksolver.com/api/user/address/details`,
-        {
-          params: {notification_id: decodedId},
-        },
+        {params: {notification_id: decodedId}},
       );
       setAddressDetails(response.data);
       setServiceArray(response.data.service_booked);
@@ -182,17 +247,18 @@ const WorkerNavigationScreen = () => {
     }
   }, [decodedId]);
 
+  // ---------------------------------------------------------------------
+  // C) FETCH LOCATION DETAILS
+  // ---------------------------------------------------------------------
   const fetchLocationDetails = async () => {
     try {
       const response = await axios.post(
         `https://backend.clicksolver.com/api/service/location/navigation`,
-        {
-          notification_id: decodedId,
-        },
+        {notification_id: decodedId},
       );
-
       const {startPoint, endPoint} = response.data;
       setLocationDetails({
+        // Convert each to float but keep them in [lng, lat] format
         startPoint: startPoint.map(coord => parseFloat(coord)),
         endPoint: endPoint.map(coord => parseFloat(coord)),
       });
@@ -201,37 +267,29 @@ const WorkerNavigationScreen = () => {
     }
   };
 
+  // ---------------------------------------------------------------------
+  // D) CANCEL BOOKING
+  // ---------------------------------------------------------------------
   const handleCancelBooking = async () => {
     setConfirmationModalVisible(false);
     setReasonModalVisible(false);
-
     try {
+      setIsLoading(true);
       const response = await axios.post(
         `https://backend.clicksolver.com/api/worker/work/cancel`,
         {notification_id: decodedId},
       );
-
-      console.log(response);
       if (response.status === 200) {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
-
         if (!pcs_token) {
           Alert.alert('Error', 'User token not found.');
           return;
         }
 
-        // Send data to the backend
         await axios.post(
           `https://backend.clicksolver.com/api/worker/action`,
-          {
-            encodedId: '',
-            screen: '',
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${pcs_token}`,
-            },
-          },
+          {encodedId: '', screen: ''},
+          {headers: {Authorization: `Bearer ${pcs_token}`}},
         );
 
         navigation.dispatch(
@@ -249,73 +307,102 @@ const WorkerNavigationScreen = () => {
     } catch (error) {
       console.error('Error cancelling booking:', error);
       Alert.alert('Error', 'There was an error processing your cancellation.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  // ---------------------------------------------------------------------
+  // E) FETCH ROUTE DATA FROM OLA MAPS (instead of Mapbox)
+  // ---------------------------------------------------------------------
   useEffect(() => {
     if (locationDetails.startPoint && locationDetails.endPoint) {
-      const fetchRoute = async () => {
+      const fetchOlaRoute = async () => {
         try {
-          const response = await axios.get(
-            `https://api.mapbox.com/directions/v5/mapbox/driving/${locationDetails.startPoint.join(
-              ',',
-            )};${locationDetails.endPoint.join(
-              ',',
-            )}?alternatives=true&steps=true&geometries=geojson&access_token=pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw`,
-          );
+          // Because Ola wants lat,lng, but we currently store [lng, lat].
+          const [lng1, lat1] = locationDetails.startPoint;
+          const [lng2, lat2] = locationDetails.endPoint;
 
-          if (response.data.routes.length > 0) {
-            setRouteData(response.data.routes[0].geometry);
-          } else {
-            console.error('No routes found in the response.');
+          // Construct Ola Maps URL
+          let url = `https://api.olamaps.io/routing/v1/directions?origin=${lat1},${lng1}&destination=${lat2},${lng2}&api_key=${OLA_MAPS_API_KEY}`;
+
+          // POST with an empty body
+          const response = await axios.post(url, {}, {});
+
+          // The overview_polyline typically at response.data.routes[0].overview_polyline
+          const olaEncoded = response.data?.routes?.[0]?.overview_polyline;
+          if (!olaEncoded) {
+            console.error('No overview_polyline found in Ola Maps response');
+            return;
           }
+
+          // Decode with "polyline" => array of [lat, lng] so swap to [lng, lat]
+          const decodedCoords = polyline
+            .decode(olaEncoded)
+            .map(([lati, lngi]) => [lngi, lati]);
+
+          // Convert to GeoJSON
+          const geoJSON = {
+            type: 'Feature',
+            geometry: {
+              type: 'LineString',
+              coordinates: decodedCoords,
+            },
+          };
+          setRouteData(geoJSON);
         } catch (error) {
-          console.error('Error fetching route:', error);
+          console.error('Error fetching route from Ola Maps:', error);
         }
       };
-      fetchRoute();
+      fetchOlaRoute();
     }
   }, [locationDetails]);
 
+  // ---------------------------------------------------------------------
+  // F) WHENEVER routeData CHANGES, FIT THE MAP BOUNDS
+  // ---------------------------------------------------------------------
+  useEffect(() => {
+    if (locationDetails && routeData && routeData.geometry?.coordinates) {
+      const allCoordinates = [
+        locationDetails.startPoint,
+        locationDetails.endPoint,
+        ...routeData.geometry.coordinates,
+      ];
+      const bounds = computeBoundingBox(allCoordinates);
+      setCameraBounds(bounds);
+    }
+  }, [locationDetails, routeData]);
+
+  const computeBoundingBox = coords => {
+    let minX, minY, maxX, maxY;
+    for (let [lng, lat] of coords) {
+      if (minX === undefined || lng < minX) minX = lng;
+      if (maxX === undefined || lng > maxX) maxX = lng;
+      if (minY === undefined || lat < minY) minY = lat;
+      if (maxY === undefined || lat > maxY) maxY = lat;
+    }
+    return {ne: [maxX, maxY], sw: [minX, minY]};
+  };
+
+  // ---------------------------------------------------------------------
+  // G) SWIPE BUTTON ACTION
+  // ---------------------------------------------------------------------
   const handleLocationReached = () => {
     const encodedNotificationId = btoa(decodedId);
     navigation.push('OtpVerification', {encodedId: encodedNotificationId});
   };
 
-  const handleCancelModal = () => {
-    setReasonModalVisible(true);
-  };
+  // ---------------------------------------------------------------------
+  // H) CANCEL / CONFIRM MODAL
+  // ---------------------------------------------------------------------
+  const handleCancelModal = () => setReasonModalVisible(true);
+  const closeReasonModal = () => setReasonModalVisible(false);
+  const openConfirmationModal = () => setConfirmationModalVisible(true);
+  const closeConfirmationModal = () => setConfirmationModalVisible(false);
 
-  const closeReasonModal = () => {
-    setReasonModalVisible(false);
-  };
-
-  const openConfirmationModal = () => {
-    setConfirmationModalVisible(true);
-  };
-
-  const closeConfirmationModal = () => {
-    setConfirmationModalVisible(false);
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
-          }),
-        );
-        return true;
-      };
-
-      BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () =>
-        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-    }, [navigation]),
-  );
-
+  // ---------------------------------------------------------------------
+  // I) OPEN GOOGLE MAPS
+  // ---------------------------------------------------------------------
   const openGoogleMaps = () => {
     Geolocation.getCurrentPosition(
       position => {
@@ -331,6 +418,9 @@ const WorkerNavigationScreen = () => {
     );
   };
 
+  // ---------------------------------------------------------------------
+  // J) RENDER MARKERS
+  // ---------------------------------------------------------------------
   let markers = null;
   if (locationDetails) {
     markers = {
@@ -340,7 +430,7 @@ const WorkerNavigationScreen = () => {
           type: 'Feature',
           properties: {
             icon: 'start-point-icon',
-            iconSize: 0.2, // Adjust size as needed
+            iconSize: 0.2,
           },
           geometry: {
             type: 'Point',
@@ -351,7 +441,7 @@ const WorkerNavigationScreen = () => {
           type: 'Feature',
           properties: {
             icon: 'end-point-icon',
-            iconSize: 0.13, // Adjust size as needed
+            iconSize: 0.13,
           },
           geometry: {
             type: 'Point',
@@ -362,124 +452,128 @@ const WorkerNavigationScreen = () => {
     };
   }
 
-  // Compute bounding box
-  useEffect(() => {
-    if (locationDetails && routeData && routeData.coordinates) {
-      const allCoordinates = [
-        locationDetails.startPoint,
-        locationDetails.endPoint,
-        ...routeData.coordinates,
-      ];
-
-      const bounds = computeBoundingBox(allCoordinates);
-      setCameraBounds(bounds);
-    }
-  }, [locationDetails, routeData]);
-
-  const computeBoundingBox = coordinates => {
-    let minX, minY, maxX, maxY;
-
-    for (let coord of coordinates) {
-      const [x, y] = coord;
-      if (minX === undefined || x < minX) {
-        minX = x;
-      }
-      if (maxX === undefined || x > maxX) {
-        maxX = x;
-      }
-      if (minY === undefined || y < minY) {
-        minY = y;
-      }
-      if (maxY === undefined || y > maxY) {
-        maxY = y;
-      }
-    }
-
-    return {
-      ne: [maxX, maxY], // North East coordinate
-      sw: [minX, minY], // South West coordinate
-    };
+  // ---------------------------------------------------------------------
+  // K) SCROLL ARROWS FOR SERVICES
+  // ---------------------------------------------------------------------
+  const handleServiceScroll = event => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    const containerHeight = event.nativeEvent.layoutMeasurement.height;
+    const contentHeight = event.nativeEvent.contentSize.height;
+    setShowUpArrowService(offsetY > 0);
+    setShowDownArrowService(offsetY + containerHeight < contentHeight);
   };
 
+  // ---------------------------------------------------------------------
+  // L) SWIPE BUTTON THUMB ICON
+  // ---------------------------------------------------------------------
+  const ThumbIcon = () => (
+    <View style={styles.thumbContainer}>
+      {swiped ? (
+        <Entypo name="check" size={20} color="#ff4500" />
+      ) : (
+        <FontAwesome6 name="arrow-right-long" size={18} color="#ff4500" />
+      )}
+    </View>
+  );
+
+  // ---------------------------------------------------------------------
+  // RENDER
+  // ---------------------------------------------------------------------
   return (
     <View style={styles.container}>
-     <View style={styles.mapContainer}>
-      <Mapbox.MapView style={styles.map}>
-        <Mapbox.Camera
-          bounds={
-            cameraBounds
-              ? {
-                  ne: cameraBounds.ne,
-                  sw: cameraBounds.sw,
-                  paddingLeft: 50,
-                  paddingRight: 50,
-                  paddingTop: 50,
-                  paddingBottom: 50,
-                }
-              : null
-          }
-        />
+      {/* MAP BOX VIEW */}
+      <View style={styles.mapContainer}>
+        <Mapbox.MapView style={styles.map}>
+          <Mapbox.Camera
+            bounds={
+              cameraBounds
+                ? {
+                    ne: cameraBounds.ne,
+                    sw: cameraBounds.sw,
+                    paddingLeft: 50,
+                    paddingRight: 50,
+                    paddingTop: 50,
+                    paddingBottom: 50,
+                  }
+                : null
+            }
+          />
 
-        {/* Add Images to Map */}
-        <Mapbox.Images
-          images={{
-            'start-point-icon': require('../../assets/start-marker.png'),
-            'end-point-icon': require('../../assets/end-marker.png'),
-          }}
-        />
+          {/* Markers from local images */}
+          <Mapbox.Images
+            images={{
+              'start-point-icon': require('../../assets/start-marker.png'),
+              'end-point-icon': require('../../assets/end-marker.png'),
+            }}
+          />
 
-        {/* Render Markers */}
-        {markers && (
-          <Mapbox.ShapeSource id="markerSource" shape={markers}>
-            <Mapbox.SymbolLayer
-              id="markerLayer"
-              style={{
-                iconImage: ['get', 'icon'],
-                iconSize: ['get', 'iconSize'], // Use iconSize from properties
-                iconAllowOverlap: true,
-                iconAnchor: 'bottom',
-                iconOffset: [0, -10], // Adjust if needed
-              }}
-            />
-          </Mapbox.ShapeSource>
-        )}
+          {/* Display Markers */}
+          {markers && (
+            <Mapbox.ShapeSource id="markerSource" shape={markers}>
+              <Mapbox.SymbolLayer
+                id="markerLayer"
+                style={{
+                  iconImage: ['get', 'icon'],
+                  iconSize: ['get', 'iconSize'],
+                  iconAllowOverlap: true,
+                  iconAnchor: 'bottom',
+                  iconOffset: [0, -10],
+                }}
+              />
+            </Mapbox.ShapeSource>
+          )}
 
-        {/* Render Route Line */}
-        {routeData && (
-          <Mapbox.ShapeSource
-            id="routeSource"
-            shape={{
-              type: 'Feature',
-              geometry: routeData,
-            }}>
-            <Mapbox.LineLayer id="routeLine" style={styles.routeLine} />
-          </Mapbox.ShapeSource>
-        )}
-      </Mapbox.MapView>
+          {/* Display Route from Ola */}
+          {routeData && (
+            <Mapbox.ShapeSource
+              id="routeSource"
+              shape={routeData}
+            >
+              <Mapbox.LineLayer id="routeLine" style={styles.routeLine} />
+            </Mapbox.ShapeSource>
+          )}
+        </Mapbox.MapView>
+
+        {/* ABSOLUTE REFRESH ICON (ROTATION) */}
+        <TouchableOpacity
+          style={styles.refreshContainer}
+          onPress={handleRefresh}
+          disabled={isLoading}
+        >
+          <Animated.View style={{transform: [{rotate: spin}]}}>
+            <MaterialIcons name="refresh" size={25} color="#000" />
+          </Animated.View>
+        </TouchableOpacity>
       </View>
+
+      {/* CANCEL BUTTON */}
       <TouchableOpacity style={styles.cancelButton} onPress={handleCancelModal}>
         <Text style={styles.cancelText}>Cancel</Text>
       </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.googleMapsButton}
-        onPress={openGoogleMaps}>
+
+      {/* GOOGLE MAPS BUTTON */}
+      <TouchableOpacity style={styles.googleMapsButton} onPress={openGoogleMaps}>
         <Text style={styles.googleMapsText}>Google Maps</Text>
         <MaterialCommunityIcons
           name="navigation-variant"
           size={20}
           color="#C1C1C1"
+          style={{marginLeft: 5}}
         />
       </TouchableOpacity>
-      {/* Reason Selection Modal */}
+
+      {/* REASON MODAL */}
       <Modal
         animationType="slide"
         transparent={true}
         visible={reasonModalVisible}
-        onRequestClose={closeReasonModal}>
+        onRequestClose={closeReasonModal}
+      >
         <View style={styles.modalOverlay}>
           <TouchableOpacity
             onPress={closeReasonModal}
-            style={styles.backButtonContainer}>
+            style={styles.backButtonContainer}
+          >
             <AntDesign name="arrowleft" size={20} color="black" />
           </TouchableOpacity>
 
@@ -493,31 +587,36 @@ const WorkerNavigationScreen = () => {
 
             <TouchableOpacity
               style={styles.reasonButton}
-              onPress={openConfirmationModal}>
+              onPress={openConfirmationModal}
+            >
               <Text style={styles.reasonText}>Accidentally clicked</Text>
               <AntDesign name="right" size={16} color="#4a4a4a" />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.reasonButton}
-              onPress={openConfirmationModal}>
+              onPress={openConfirmationModal}
+            >
               <Text style={styles.reasonText}>Health Issue</Text>
               <AntDesign name="right" size={16} color="#4a4a4a" />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.reasonButton}
-              onPress={openConfirmationModal}>
+              onPress={openConfirmationModal}
+            >
               <Text style={styles.reasonText}>Another Work get</Text>
               <AntDesign name="right" size={16} color="#4a4a4a" />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.reasonButton}
-              onPress={openConfirmationModal}>
+              onPress={openConfirmationModal}
+            >
               <Text style={styles.reasonText}>Problem to my vehicle</Text>
               <AntDesign name="right" size={16} color="#4a4a4a" />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.reasonButton}
-              onPress={openConfirmationModal}>
+              onPress={openConfirmationModal}
+            >
               <Text style={styles.reasonText}>Others</Text>
               <AntDesign name="right" size={16} color="#4a4a4a" />
             </TouchableOpacity>
@@ -525,17 +624,19 @@ const WorkerNavigationScreen = () => {
         </View>
       </Modal>
 
-      {/* Confirmation Modal */}
+      {/* CONFIRMATION MODAL */}
       <Modal
         animationType="slide"
         transparent={true}
         visible={confirmationModalVisible}
-        onRequestClose={closeConfirmationModal}>
+        onRequestClose={closeConfirmationModal}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.crossContainer}>
             <TouchableOpacity
               onPress={closeConfirmationModal}
-              style={styles.backButtonContainer}>
+              style={styles.backButtonContainer}
+            >
               <Entypo name="cross" size={20} color="black" />
             </TouchableOpacity>
           </View>
@@ -551,22 +652,25 @@ const WorkerNavigationScreen = () => {
 
             <TouchableOpacity
               style={styles.confirmButton}
-              onPress={handleCancelBooking}>
+              onPress={handleCancelBooking}
+            >
               <Text style={styles.confirmButtonText}>Cancel my service</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
+      {/* BOTTOM DETAILS CARD */}
       {addressDetails && (
         <View style={styles.detailsContainer}>
           <View style={styles.minimumChargesContainer}>
             <Text style={styles.serviceFare}>
-            Safety: <Text style={styles.amount}>Be quick, stay safe!</Text>
+              Safety:{' '}
+              <Text style={styles.amount}>Be quick, stay safe!</Text>
             </Text>
           </View>
 
-          {/* Service Location */}
+          {/* SERVICE LOCATION */}
           <View style={styles.locationContainer}>
             <Image
               source={{
@@ -581,7 +685,7 @@ const WorkerNavigationScreen = () => {
             </View>
           </View>
 
-          {/* Service Type */}
+          {/* SERVICE TYPE & CALL/CHAT BUTTONS */}
           <View style={styles.serviceDetails}>
             <View>
               <Text style={styles.serviceType}>Service</Text>
@@ -595,6 +699,7 @@ const WorkerNavigationScreen = () => {
               </TouchableOpacity>
             </View>
           </View>
+
           <View style={{position: 'relative'}}>
             {showUpArrowService && (
               <View style={styles.arrowUpContainer}>
@@ -605,7 +710,8 @@ const WorkerNavigationScreen = () => {
               style={styles.servicesNamesContainer}
               contentContainerStyle={styles.servicesNamesContent}
               onScroll={handleServiceScroll}
-              scrollEventThrottle={16}>
+              scrollEventThrottle={16}
+            >
               {serviceArray.map((serviceItem, index) => (
                 <View key={index} style={styles.serviceItem}>
                   <Text style={styles.serviceText}>
@@ -620,9 +726,10 @@ const WorkerNavigationScreen = () => {
               </View>
             )}
           </View>
+
           <Text style={styles.pickupText}>You are at pickup location</Text>
 
-          {/* Arrival Button */}
+          {/* SWIPE BUTTON */}
           <View style={{paddingTop: 10}}>
             <SwipeButton
               title="I've Arrived"
@@ -654,73 +761,32 @@ const WorkerNavigationScreen = () => {
     </View>
   );
 };
+
+// -------------------------------- STYLES --------------------------------
 const bottomCardHeight = 330;
 const screenHeight = Dimensions.get('window').height;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  mapContainer: {
-    flex: 1, // Ensures it takes up the remaining height
-  },
-  markerImage: {
-    width: 25, // Adjust size as needed
-    height: 50, // Adjust size as needed
-    resizeMode: 'contain',
-  },
-  serviceText: {
-    color: '#212121',
-    fontWeight: 'bold',
-    fontSize: 16,
-    marginTop: 5,
-  },
-  thumbContainer: {
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-  },
-  iconsContainer: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  locationPinImage: {
-    width: 20,
-    height: 20,
-    marginRight: 10,
-  },
-  amount: {
-    color: '#212121',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  serviceDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems:'center'
-  },
-  minimumChargesContainer: {
-    height: 46,
-    backgroundColor: '#f6f6f6',
-    borderRadius: 32,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 5,
-  },
-  map: {
-    flex: 1,
-    
-  },
+  container: {flex: 1},
+  mapContainer: {flex: 1},
+  map: {flex: 1},
   routeLine: {
     lineColor: '#212121',
     lineWidth: 3,
   },
+  refreshContainer: {
+    position: 'absolute',
+    top: 30,
+    right: 20,
+    backgroundColor: '#ffffff',
+    borderRadius: 50,
+    padding: 7,
+    elevation: 3,
+    zIndex: 999,
+  },
   cancelButton: {
     position: 'absolute',
-    bottom: 335, // 250px from the bottom
+    bottom: bottomCardHeight + 5,
     left: 5,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -731,7 +797,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 35,
   },
-  
   cancelText: {
     fontSize: 13,
     color: '#4a4a4a',
@@ -739,7 +804,7 @@ const styles = StyleSheet.create({
   },
   googleMapsButton: {
     position: 'absolute',
-    bottom: 335,
+    bottom: bottomCardHeight + 5,
     right: 10,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -749,6 +814,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     width: 140,
     height: 40,
+    paddingHorizontal: 5,
   },
   googleMapsText: {
     fontSize: 14,
@@ -756,17 +822,26 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   detailsContainer: {
-    height: bottomCardHeight, // Fixed height for the details card
+    height: bottomCardHeight,
     backgroundColor: '#ffffff',
     padding: 15,
     paddingHorizontal: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -5 },
+    shadowOffset: {width: 0, height: -5},
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 10,
+  },
+  minimumChargesContainer: {
+    height: 46,
+    backgroundColor: '#f6f6f6',
+    borderRadius: 32,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 5,
   },
   serviceFare: {
     fontWeight: 'bold',
@@ -775,6 +850,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#9e9e9e',
   },
+  amount: {
+    color: '#212121',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   locationContainer: {
     flexDirection: 'row',
     width: '90%',
@@ -782,47 +862,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 10,
   },
+  locationPinImage: {
+    width: 20,
+    height: 20,
+    marginRight: 10,
+  },
   locationDetails: {
     marginLeft: 10,
-  },
-  locationTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#212121',
   },
   locationAddress: {
     fontSize: 12,
     color: '#212121',
-    fontWeight: '450',
+    fontWeight: '500',
+  },
+  serviceDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   serviceType: {
     fontSize: 16,
     marginTop: 10,
     color: '#9e9e9e',
   },
-  pickupText: {
-    fontSize: 16,
-    color: '#212121',
-    marginTop: 10,
-  },
-  actionButton: {
-    backgroundColor: '#EFDCCB',
-    height: 35,
-    width: 35,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
+  iconsContainer: {
+    flexDirection: 'row',
+    gap: 10,
   },
   servicesNamesContainer: {
     width: '70%',
-    maxHeight: 65, // Adjust height as needed (increasing this value allows more items to be visible before scrolling)
-    // DO NOT include layout properties like flexDirection or alignItems here!
+    maxHeight: 65,
   },
   servicesNamesContent: {
-    flexDirection: 'column', // Ensures items are stacked vertically
+    flexDirection: 'column',
   },
   serviceItem: {
-    marginBottom: 5, // Add spacing between items, adjust as needed
+    marginBottom: 5,
   },
   serviceText: {
     color: '#212121',
@@ -847,29 +922,47 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     zIndex: 1,
   },
-
-  backButtonContainer: {
-    width: 40,
-    height: 40,
-    flexDirection: 'column',
+  pickupText: {
+    fontSize: 16,
+    color: '#212121',
+    marginTop: 10,
+  },
+  actionButton: {
+    backgroundColor: '#EFDCCB',
+    height: 35,
+    width: 35,
+    borderRadius: 50,
+    justifyContent: 'center',
     alignItems: 'center',
-    justifyContent: 'center', // Distance from the left side of the screen
-    backgroundColor: 'white', // Background color for the circular container
-    borderRadius: 50, // Rounds the container to make it circular
-    // Padding to make the icon container larger
-    elevation: 5, // Elevation for shadow effect (Android)
-    shadowColor: '#000', // Shadow color (iOS)
-    shadowOffset: {width: 0, height: 2}, // Shadow offset (iOS)
-    shadowOpacity: 0.2, // Shadow opacity (iOS)
-    shadowRadius: 4, // Shadow radius (iOS)
-    zIndex: 1,
-    marginHorizontal: 10, // Ensures the icon is above other elements,
-    marginBottom: 5,
+  },
+  thumbContainer: {
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+  },
+  backButtonContainer: {
+    width: 40,
+    height: 40,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+    borderRadius: 50,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    zIndex: 1,
+    marginHorizontal: 10,
+    marginBottom: 5,
   },
   modalContainer: {
     backgroundColor: 'white',
@@ -877,10 +970,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     padding: 20,
     paddingBottom: 30,
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 10,
   },
   modalTitle: {
     fontSize: 18,
@@ -910,17 +999,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  closeButton: {
-    marginTop: 15,
-    padding: 10,
-    backgroundColor: '#ddd',
-    borderRadius: 5,
-  },
-  closeText: {
-    fontSize: 16,
-    color: '#555',
-  },
-
   crossContainer: {
     flexDirection: 'row',
     justifyContent: 'flex-end',

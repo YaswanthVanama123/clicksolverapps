@@ -8,7 +8,7 @@ import {
   SafeAreaView,
   Modal,
   TouchableWithoutFeedback,
-  ActivityIndicator, // Import ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons'; // for check, cross, sort icons
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'; // for wallet and bank icons
@@ -17,7 +17,6 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import Entypo from 'react-native-vector-icons/Entypo';
 import axios from 'axios';
 import {useNavigation} from '@react-navigation/native';
-// import Config from 'react-native-config';
 
 const ServiceItem = ({item, formatDate}) => {
   const navigation = useNavigation();
@@ -156,8 +155,7 @@ const RecentServices = () => {
     const filtered =
       updatedFilters.length > 0
         ? bookingsData.filter(item => {
-            const itemStatus =
-              item.payment !== null ? 'Completed' : 'Cancelled';
+            const itemStatus = item.payment !== null ? 'Completed' : 'Cancelled';
             return updatedFilters.includes(itemStatus);
           })
         : bookingsData;
@@ -219,6 +217,10 @@ const RecentServices = () => {
                 color="#FF5722"
                 style={styles.loadingIndicator}
               />
+            ) : filteredData.length === 0 ? (
+              <View style={styles.noDataContainer}>
+                <Text style={styles.noDataText}>No data available</Text>
+              </View>
             ) : (
               <FlatList
                 data={filteredData}
@@ -364,6 +366,38 @@ const styles = StyleSheet.create({
   loadingIndicator: {
     marginTop: 20,
     alignSelf: 'center',
+  },
+  noDataContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  noDataText: {
+    fontSize: 16,
+    color: '#212121',
+  },
+  // Optional: styles for cancelled services (if you want distinct styles)
+  cancelledItemContainer: {
+    backgroundColor: '#f8d7da',
+  },
+  cancelledTitle: {
+    textDecorationLine: 'line-through',
+    color: '#a94442',
+  },
+  cancelledSchedule: {
+    color: '#a94442',
+  },
+  cancelledPrice: {
+    textDecorationLine: 'line-through',
+    color: '#a94442',
+  },
+  cancelledPaymentDetails: {
+    color: '#a94442',
+  },
+  cancelledMessage: {
+    marginTop: 8,
+    color: '#a94442',
+    fontSize: 12,
+    textAlign: 'center',
   },
 });
 

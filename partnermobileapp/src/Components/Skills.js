@@ -8,7 +8,7 @@ import {
   ScrollView,
   Image,
   Alert,
-  ActivityIndicator, // <--- 1) Import ActivityIndicator
+  ActivityIndicator, // <--- Import ActivityIndicator
 } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
@@ -66,7 +66,7 @@ const RegistrationScreen = () => {
   });
   const [isEditing, setIsEditing] = useState(false);
 
-  // 2) Introduce `loading` state
+  // Introduce `loading` state
   const [loading, setLoading] = useState(false);
 
   const handleCheckboxChange = serviceName => {
@@ -129,7 +129,7 @@ const RegistrationScreen = () => {
   };
 
   const handleSubmit = async () => {
-    // 3) Show loader when submit starts
+    // Show loader when submit starts
     setLoading(true);
 
     const errors = {};
@@ -170,7 +170,7 @@ const RegistrationScreen = () => {
     } catch (error) {
       console.error('Error fetching services:', error);
     } finally {
-      // 4) Hide loader in the finally block
+      // Hide loader in the finally block
       setLoading(false);
     }
   };
@@ -297,7 +297,7 @@ const RegistrationScreen = () => {
         return;
       }
 
-      // 1) GET the profile details:
+      // GET the profile details:
       const response = await axios.get(
         `https://backend.clicksolver.com/api/profile/detsils`,
         {
@@ -331,7 +331,7 @@ const RegistrationScreen = () => {
 
       setPhoneNumber(data.phone_number);
 
-      // 2) POST to /api/subservice/checkboxes with the service
+      // POST to /api/subservice/checkboxes with the service
       const subserviceResponse = await axios.post(
         `https://backend.clicksolver.com/api/subservice/checkboxes`,
         {selectedService: data.service},
@@ -375,6 +375,13 @@ const RegistrationScreen = () => {
 
   return (
     <View style={styles.container}>
+      {/* Activity Indicator Overlay */}
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#FF5722" />
+        </View>
+      )}
+
       <View style={styles.header}>
         <TouchableOpacity onPress={handleEdit} style={styles.editContainer}>
           <Feather name="edit" size={24} color="#333" />
@@ -691,7 +698,6 @@ const RegistrationScreen = () => {
         {/* If not editing, show logout. If editing, show the SwipeButton or loader */}
         <View style={{marginBottom: 30}}>
           {loading ? (
-            // 5) Show loader if `loading` is true
             <ActivityIndicator
               size="large"
               color="#FF5722"
@@ -977,6 +983,18 @@ const styles = StyleSheet.create({
   fileText: {
     color: '#212121',
     fontWeight: 'bold',
+  },
+  // Loading overlay style
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
   },
 });
 

@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator, // <--- 1) Import ActivityIndicator
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import Feather from 'react-native-vector-icons/Feather';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
@@ -19,6 +20,7 @@ import {launchImageLibrary} from 'react-native-image-picker';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import SwipeButton from 'rn-swipe-button';
 import Entypo from 'react-native-vector-icons/Entypo';
+
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import {useNavigation} from '@react-navigation/native';
@@ -64,7 +66,7 @@ const ProfileChange = () => {
     proofImageUri: '',
     subSkills: [],
   });
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(true);
 
   // 2) Introduce `loading` state
   const [loading, setLoading] = useState(false);
@@ -164,8 +166,9 @@ const ProfileChange = () => {
         },
       );
       if (response.status === 200) {
-        setIsEditing(false);
-        // navigation.replace('PartnerSteps');
+        // setIsEditing(false);
+        navigation.goBack();
+
       }
     } catch (error) {
       console.error('Error fetching services:', error);
@@ -308,7 +311,7 @@ const ProfileChange = () => {
       );
 
       const data = response.data;
-
+      console.log("data phone",data.phone_number)
       setFormData(prev => ({
         ...prev,
         lastName: data.personaldetails.lastName,
@@ -326,6 +329,7 @@ const ProfileChange = () => {
         skillCategory: data.service,
         profileImageUri: data.profile,
         proofImageUri: data.proof,
+        phone_number: data.phone_number,
         subSkills: data.subservices || [],
       }));
 
@@ -530,10 +534,10 @@ const ProfileChange = () => {
               />
               <Text style={styles.label}>+91</Text>
             </View>
-            {phoneNumber && (
+            {formData.phone_number && (
               <TextInput
                 style={styles.inputPhone}
-                value={phoneNumber}
+                value={formData.phone_number}
                 editable={false}
                 keyboardType="phone-pad"
               />

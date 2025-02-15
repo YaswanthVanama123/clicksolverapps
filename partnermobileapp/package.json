@@ -11,6 +11,7 @@
     "clean": "rimraf ./node_modules/.cache && cd android && ./gradlew clean"
   },
   "dependencies": {
+    "@mapbox/polyline": "^1.2.1",
     "@react-native-community/checkbox": "^0.5.17",
     "@react-native-community/geolocation": "^3.3.0",
     "@react-native-firebase/app": "^20.5.0",

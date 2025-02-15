@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   Keyboard,
-  ActivityIndicator, // Import ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -22,7 +22,7 @@ const ServiceTrackingListScreen = () => {
   const [filteredData, setFilteredData] = useState([]);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState([]);
-  const [loading, setLoading] = useState(true); // New loading state
+  const [loading, setLoading] = useState(true); // Loading state
   const navigation = useNavigation();
 
   const filterOptions = ['Collected Item', 'Work started', 'Work Completed'];
@@ -194,6 +194,10 @@ const ServiceTrackingListScreen = () => {
                 color="#FF5722"
                 style={styles.loadingIndicator}
               />
+            ) : filteredData.length === 0 ? (
+              <View style={styles.noDataContainer}>
+                <Text style={styles.noDataText}>No data available</Text>
+              </View>
             ) : (
               <FlatList
                 data={filteredData}
@@ -230,7 +234,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     backgroundColor: '#ffffff',
-    zIndex: 1, // Ensure header is above other components
+    zIndex: 1,
   },
   headerTitle: {
     fontSize: 18,
@@ -239,7 +243,7 @@ const styles = StyleSheet.create({
   },
   dropdownContainer: {
     position: 'absolute',
-    top: 70, // Adjust based on header height
+    top: 70,
     right: 16,
     width: 200,
     backgroundColor: '#ffffff',
@@ -250,7 +254,7 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.3,
     shadowRadius: 4,
-    zIndex: 10, // Ensure dropdown is above other items
+    zIndex: 10,
   },
   dropdownTitle: {
     fontSize: 14,
@@ -271,7 +275,7 @@ const styles = StyleSheet.create({
   },
   trackingItems: {
     flex: 1,
-    paddingTop: 16, // Add space between the header and list items
+    paddingTop: 16,
   },
   listContainer: {
     paddingHorizontal: 16,
@@ -279,10 +283,10 @@ const styles = StyleSheet.create({
   itemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between', // Space out items evenly
+    justifyContent: 'space-between',
     backgroundColor: '#fff',
     borderRadius: 10,
-    padding: 16, // Reduce padding slightly for compact layout
+    padding: 16,
     marginBottom: 16,
     elevation: 2,
     shadowColor: '#000',
@@ -291,17 +295,17 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   serviceIconContainer: {
-    width: 40, // Adjust width and height for compact design
+    width: 40,
     height: 40,
     backgroundColor: '#ff5722',
-    borderRadius: 20, // Keep it circular
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8, // Reduce margin for better spacing
+    marginRight: 8,
   },
   itemTextContainer: {
-    flex: 2, // Allow the text to take more space
-    marginRight: 8, // Provide some spacing before the status label
+    flex: 2,
+    marginRight: 8,
   },
   itemTitle: {
     fontSize: 14,
@@ -337,6 +341,14 @@ const styles = StyleSheet.create({
   loadingIndicator: {
     marginTop: 20,
     alignSelf: 'center',
+  },
+  noDataContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  noDataText: {
+    fontSize: 16,
+    color: '#212121',
   },
 });
 

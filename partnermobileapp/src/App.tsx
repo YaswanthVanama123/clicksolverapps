@@ -580,7 +580,7 @@ function App(): React.JSX.Element {
         />
         <Stack.Screen
           name="Earnings"
-          component={VerificationScreen}
+          component={EarningsScreen}
           options={{headerShown: false}}
         /> 
         <Stack.Screen

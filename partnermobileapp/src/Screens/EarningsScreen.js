@@ -9,6 +9,7 @@ import {
   TouchableWithoutFeedback,
   BackHandler,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import {Calendar} from 'react-native-calendars';
@@ -37,6 +38,7 @@ const EarningsScreen = () => {
     cashback_gain: 0,
     cashback: 0,
   });
+  const [loading, setLoading] = useState(false); // Loading state for API call
   const navigation = useNavigation();
 
   // State variables for date range
@@ -49,6 +51,7 @@ const EarningsScreen = () => {
 
   const partnerEarnings = async (date, endDate = null) => {
     try {
+      setLoading(true); // Start loading
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       console.log(pcs_token);
       if (!pcs_token) throw new Error('pcs_token not found');
@@ -104,6 +107,8 @@ const EarningsScreen = () => {
     } catch (error) {
       console.error('Error fetching payment details:', error);
       // Optionally, handle error state
+    } finally {
+      setLoading(false); // End loading
     }
   };
 
@@ -207,6 +212,13 @@ const EarningsScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Loading Indicator Overlay */}
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#FF5722" />
+        </View>
+      )}
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={backToHome} style={styles.leftIcon}>
@@ -358,6 +370,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     padding: 16,
   },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
   cashBackAmount: {
     color: '#FF5722',
     textAlign: 'right',
@@ -410,6 +433,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#212121',
     textAlign: 'center',
+  },
+  cashCollectedText: {
+    fontSize: 15,
+    color: '#4a4a4a',
+    fontWeight: 'bold',
+    marginTop: 5,
   },
   cashContainer: {
     flexDirection: 'row',
@@ -478,13 +507,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#212121',
     textAlign: 'center',
-  },
-
-  cashCollectedText: {
-    fontSize: 15,
-    color: '#4a4a4a',
-    fontWeight: 'bold',
-    marginTop: 5,
   },
   statsContainer: {
     marginTop: 20,

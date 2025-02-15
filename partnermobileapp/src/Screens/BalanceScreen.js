@@ -16,6 +16,9 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import Feather from 'react-native-vector-icons/Feather';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 
+/* ------------------------------------
+   Transaction Item (Service Charge)
+------------------------------------ */
 const TransactionItem = ({item}) => (
   <View style={styles.transactionContainer}>
     <View style={styles.paymentContainer}>
@@ -45,6 +48,9 @@ const TransactionItem = ({item}) => (
   </View>
 );
 
+/* ------------------------------------
+   Payment History Card
+------------------------------------ */
 const PaymentHistoryCard = ({item}) => (
   <View style={styles.cardPaymentContainer}>
     <View style={styles.iconWrapper}>
@@ -80,47 +86,19 @@ const PaymentHistoryCard = ({item}) => (
 
 const BalanceScreen = () => {
   const navigation = useNavigation();
+
+  // ---- State ----
   const [balance, setBalance] = useState(null);
-  const [transactions, setTransactions] = useState([]);
+  const [transactions, setTransactions] = useState([]); // For "ServiceHistory"
   const [activeCard, setActiveCard] = useState('ServiceHistory');
   const [isMessageVisible, setIsMessageVisible] = useState(false);
   const [balanceHistory, setBalanceHistory] = useState([]);
-  const [loading, setLoading] = useState(true); // New loading state
-  const [dummyTransactions, setDummyTransactions] = useState([
-    {
-      id: '1',
-      type: 'Paid',
-      name: 'Click Solver',
-      amount: '20',
-      date: '30 Oct 2024',
-      status: 'Debited from you',
-    },
-    {
-      id: '2',
-      type: 'Received',
-      name: 'Click Solver',
-      amount: '100',
-      date: '30 Oct 2024',
-      status: 'Credited to you',
-    },
-    {
-      id: '3',
-      type: 'Paid',
-      name: 'Click Solver',
-      amount: '200',
-      date: '30 Oct 2024',
-      status: 'Debited from you',
-    },
-    {
-      id: '4',
-      type: 'Received',
-      name: 'Click Solver',
-      amount: '100',
-      date: '30 Oct 2024',
-      status: 'Credited to you',
-    },
-  ]);
+  const [loading, setLoading] = useState(true);
 
+  // Payment history
+  const [dummyTransactions, setDummyTransactions] = useState([]);
+
+  // Go back to home
   const backToHome = () => {
     navigation.dispatch(
       CommonActions.reset({
@@ -130,8 +108,9 @@ const BalanceScreen = () => {
     );
   };
 
+  // Fetch Service & Payment info
   const fetchServiceBalanceHistory = useCallback(async () => {
-    setLoading(true); // Start loading
+    setLoading(true); // Start loader
     try {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       if (!pcs_token) throw new Error('pcs_token not found');
@@ -141,48 +120,56 @@ const BalanceScreen = () => {
         {},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
-      console.log('ba;lan', response.data[0].balance_payment_history);
-      setDummyTransactions(response.data[0].balance_payment_history);
+
+      // Payment History (second card)
+      setDummyTransactions(response.data[0].balance_payment_history || []);
+
       let totalBalance = 0;
+      // Build array of service charges (transactions)
       const serviceBalanceHistory = response.data.map((transaction, index) => {
         let amount;
         const paymentType = transaction.payment_type.toLowerCase();
         const paymentValue = Number(transaction.payment);
+
+        // If "cash" or "online" do different calculations
         const deduction =
           paymentType === 'cash' ? paymentValue * 0.12 : paymentValue * 0.88;
-        amount = `${paymentType === 'cash' ? '-' : '+'} ₹${deduction.toFixed(
-          2,
-        )}`;
+        amount = `${paymentType === 'cash' ? '-' : '+'} ₹${deduction.toFixed(2)}`;
+
         totalBalance += paymentType === 'cash' ? -deduction : deduction;
 
-        const date = new Date(transaction.end_time);
-        const formattedTime = `${date.toLocaleDateString([], {
+        // Parse & store actual Date object
+        const dateObject = new Date(transaction.end_time);
+        const formattedTime = dateObject.toLocaleDateString([], {
           day: 'numeric',
           month: 'short',
           year: 'numeric',
-        })}`;
+        });
 
         return {
           id: index.toString(),
+          rawDate: dateObject, // keep actual Date for sorting
           amount,
           time: formattedTime,
           service: 'Electrician',
-          payment:
-            paymentType === 'cash' ? 'Paid by Cash' : `Paid to Click Solver`,
+          payment: paymentType === 'cash' ? 'Paid by Cash' : 'Paid to Click Solver',
           name: transaction.name,
         };
       });
 
-      const balance = response.data[0].balance_amount;
-      const balanceHistory = response.data[0].balance_payment_history;
+      // ---- SORT by descending date ----
+      serviceBalanceHistory.sort((a, b) => b.rawDate - a.rawDate);
 
-      setBalance(balance);
-      setBalanceHistory(balanceHistory);
-      setTransactions(serviceBalanceHistory.reverse());
+      const currentBalance = response.data[0].balance_amount;
+      const currentBalanceHistory = response.data[0].balance_payment_history;
+
+      setBalance(currentBalance);
+      setBalanceHistory(currentBalanceHistory);
+      setTransactions(serviceBalanceHistory);
     } catch (error) {
       console.error('Error fetching service balance history:', error);
     } finally {
-      setLoading(false); // Stop loading
+      setLoading(false); // Stop loader
     }
   }, []);
 
@@ -190,21 +177,28 @@ const BalanceScreen = () => {
     fetchServiceBalanceHistory();
   }, [fetchServiceBalanceHistory]);
 
+  // Check if negative
   const isBalanceNegative = balance && Number(balance) < 0;
 
+  // Decide data array based on active card
+  const currentData =
+    activeCard === 'ServiceHistory' ? transactions : dummyTransactions;
+
+  // Render
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header + Balance + Tabs */}
       <View style={styles.headContainer}>
         <View style={styles.header}>
           <TouchableOpacity onPress={backToHome} style={styles.leftIcon}>
             <FontAwesome6 name="arrow-left-long" size={24} color="#9e9e9e" />
           </TouchableOpacity>
         </View>
+
         <View style={styles.balanceContainer}>
           <View style={styles.balanceTitleContainer}>
             <Text style={styles.balanceTitle}>Balance </Text>
-            <TouchableOpacity
-              onPress={() => setIsMessageVisible(!isMessageVisible)}>
+            <TouchableOpacity onPress={() => setIsMessageVisible(!isMessageVisible)}>
               <Feather
                 name={isMessageVisible ? 'eye-off' : 'eye'}
                 size={20}
@@ -212,13 +206,16 @@ const BalanceScreen = () => {
               />
             </TouchableOpacity>
           </View>
+
           <Text
             style={[
               styles.balanceAmount,
               isBalanceNegative && styles.negativeBalance,
-            ]}>
-            ₹{balance ?? -200}
+            ]}
+          >
+            ₹{balance ?? 0}
           </Text>
+
           {isMessageVisible && (
             <View style={styles.messageBox}>
               <Text style={styles.messageText}>
@@ -227,50 +224,58 @@ const BalanceScreen = () => {
             </View>
           )}
         </View>
+
+        {/* Tabs */}
         <View style={styles.cardContainer}>
           <TouchableOpacity
-            style={[
-              styles.card,
-              activeCard === 'ServiceHistory' && styles.activeCard,
-            ]}
-            onPress={() => setActiveCard('ServiceHistory')}>
+            style={[styles.card, activeCard === 'ServiceHistory' && styles.activeCard]}
+            onPress={() => setActiveCard('ServiceHistory')}
+          >
             <Text
               style={[
                 styles.cardText,
                 activeCard === 'ServiceHistory' && styles.activeCardText,
-              ]}>
+              ]}
+            >
               Service Charge
             </Text>
           </TouchableOpacity>
+
           <TouchableOpacity
-            style={[
-              styles.card,
-              activeCard === 'TransactionHistory' && styles.activeCard,
-            ]}
-            onPress={() => setActiveCard('TransactionHistory')}>
+            style={[styles.card, activeCard === 'TransactionHistory' && styles.activeCard]}
+            onPress={() => setActiveCard('TransactionHistory')}
+          >
             <Text
               style={[
                 styles.cardText,
                 activeCard === 'TransactionHistory' && styles.activeCardText,
-              ]}>
+              ]}
+            >
               Payment history
             </Text>
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Main Content */}
       <View style={styles.scrollContainer}>
-        {loading ? ( // Show loading indicator
+        {loading ? (
+          // Display Lottie while loading
           <LottieView
             source={require('../assets/success.json')}
             autoPlay
             loop
             style={styles.loadingAnimation}
           />
+        ) : currentData.length === 0 ? (
+          // If there's no data for the active card
+          <View style={styles.noDataContainer}>
+            <Text style={styles.noDataText}>No data</Text>
+          </View>
         ) : (
+          // Otherwise, display FlatList
           <FlatList
-            data={
-              activeCard === 'ServiceHistory' ? transactions : dummyTransactions
-            }
+            data={currentData}
             renderItem={({item}) =>
               activeCard === 'ServiceHistory' ? (
                 <TransactionItem item={item} />
@@ -283,10 +288,13 @@ const BalanceScreen = () => {
           />
         )}
       </View>
+
+      {/* If negative balance, show Pay Now button */}
       {isBalanceNegative && (
         <TouchableOpacity
           style={styles.payNowButton}
-          onPress={() => console.log('Pay Now pressed')}>
+          onPress={() => console.log('Pay Now pressed')}
+        >
           <Text style={styles.payNowButtonText}>Pay Now</Text>
         </TouchableOpacity>
       )}
@@ -294,6 +302,7 @@ const BalanceScreen = () => {
   );
 };
 
+/* ----------------- Styles ----------------- */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -383,6 +392,15 @@ const styles = StyleSheet.create({
   loadingAnimation: {
     width: '100%',
     height: 200,
+  },
+  noDataContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noDataText: {
+    fontSize: 16,
+    color: '#999',
   },
   flatlistContainer: {
     paddingBottom: 20,

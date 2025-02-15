@@ -8,6 +8,8 @@ import {
   ScrollView,
   Alert,
   TextInput,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -41,6 +43,10 @@ const IndividualWorkerPending = () => {
   ];
   const navigation = useNavigation();
   const [text, setText] = useState('');
+  
+  // New state variables for loading and modal
+  const [isSubmittingIssues, setIsSubmittingIssues] = useState(false);
+  const [isIssuesModalVisible, setIsIssuesModalVisible] = useState(false);
 
   // Define ThumbIcon as a separate component
   const ThumbIcon = useCallback(
@@ -111,20 +117,26 @@ const IndividualWorkerPending = () => {
       },
     );
     if (response.status === 200) {
-      Alert.alert('worker approved');
+      Alert.alert('Worker approved');
     }
   };
 
+  // Modified submitAllIssues to show ActivityIndicator and then a modal
   const submitAllIssues = async () => {
+    setIsSubmittingIssues(true);
     try {
       await axios.post(`https://backend.clicksolver.com/api/update/worker/issues`, {
         workerId,
         issues,
       });
+      // Show success modal if issues submitted successfully
+      setIsIssuesModalVisible(true);
     } catch (error) {
       console.error('Failed to update status:', error);
+      Alert.alert('Error', 'Failed to update issues.');
+    } finally {
+      setIsSubmittingIssues(false);
     }
-
     console.log(issues);
   };
 
@@ -378,7 +390,9 @@ const IndividualWorkerPending = () => {
 
         {/* Address Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Address / Residential Details</Text>
+          <Text style={styles.sectionTitle}>
+            Address / Residential Details
+          </Text>
 
           <Text style={styles.label}>Door-No/Street</Text>
           <TextInput
@@ -524,11 +538,15 @@ const IndividualWorkerPending = () => {
 
           {/* Submit All Issues Button */}
           <View style={styles.submitButtonContainer}>
-            <TouchableOpacity
-              style={styles.submitButton}
-              onPress={submitAllIssues}>
-              <Text style={styles.submitText}>Submit Issues</Text>
-            </TouchableOpacity>
+            {isSubmittingIssues ? (
+              <ActivityIndicator size="small" color="#FF5722" />
+            ) : (
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={submitAllIssues}>
+                <Text style={styles.submitText}>Submit Issues</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -563,11 +581,31 @@ const IndividualWorkerPending = () => {
           />
         </View>
       </ScrollView>
+
+      {/* Success Modal for Submitted Issues */}
+      <Modal
+        transparent
+        animationType="fade"
+        visible={isIssuesModalVisible}
+        onRequestClose={() => setIsIssuesModalVisible(false)}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Success</Text>
+            <Text style={styles.modalMessage}>
+              Issues have been successfully submitted!
+            </Text>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setIsIssuesModalVisible(false)}>
+              <Text style={styles.modalButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
 
-// Consolidated and corrected styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -692,10 +730,9 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#4a4a4a',
   },
-  //   statusEditContainer:{
-  //     flexDirection:'row',
-  //     alignItems:'flex-start',
-  //   },
+  statusEditContainer: {
+    // Add any extra styling if needed
+  },
   genderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -938,6 +975,40 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: '#666',
+  },
+  // Modal styles for success message
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  modalMessage: {
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  modalButton: {
+    backgroundColor: '#FF5722',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
 

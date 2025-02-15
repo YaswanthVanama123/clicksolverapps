@@ -11,11 +11,14 @@ import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
+import {useNavigation, CommonActions} from '@react-navigation/native';
+
 
 const UPIIdDetailsScreen = () => {
   const [upiId, setUpiId] = useState('');
   const [error, setError] = useState('');
-
+  const navigation = useNavigation();
+  
   const handleAddUPIId = async () => {
     if (!upiId || !upiId.includes('@')) {
       return setError('UPI ID cannot be empty and must include "@"');
@@ -34,8 +37,9 @@ const UPIIdDetailsScreen = () => {
         {upi_id: upiId},
         {headers: {Authorization: `Bearer ${pcsToken}`}},
       );
+      console.log(response.status)
 
-      if (response.status === 200) {
+      if (response.status === 201) {
         navigation.replace('PartnerSteps');
       }
     } catch (error) {

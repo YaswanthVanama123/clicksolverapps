@@ -99,6 +99,7 @@ const OTPVerification = ({route}) => {
         );
 
         Alert.alert('Success', 'OTP is correct');
+        await EncryptedStorage.removeItem("workerInAction")
         navigation.navigate('TimingScreen', {encodedId});
       } else if (status === 205) {
         Alert.alert('User Cancelled the service');

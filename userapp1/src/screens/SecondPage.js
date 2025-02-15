@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState, useMemo} from 'react';
+import React, {useEffect, useRef, useState, useMemo, useCallback} from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import crashlytics from '@react-native-firebase/crashlytics';
 import EncryptedStorage from 'react-native-encrypted-storage';
 
 import QuickSearch from '../Components/QuickSearch';
+import { useFocusEffect } from '@react-navigation/native';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -107,9 +108,15 @@ function ServiceApp({navigation, route}) {
 
   useEffect(() => {
     fetchServices();
-    fetchTrackDetails();
+    // fetchTrackDetails();
     setGreetingBasedOnTime();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchTrackDetails();
+    }, [])
+  );
 
   // --------------------------------
   //           API CALLS
@@ -117,6 +124,7 @@ function ServiceApp({navigation, route}) {
   const fetchTrackDetails = async () => {
     try {
       const cs_token = await EncryptedStorage.getItem('cs_token');
+      console.log("called")
       if (cs_token) {
         const response = await axios.get(
           'https://backend.clicksolver.com/api/user/track/details',

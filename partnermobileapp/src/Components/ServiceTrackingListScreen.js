@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   TouchableWithoutFeedback,
+  ActivityIndicator, // Import ActivityIndicator
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -19,6 +20,7 @@ const ServiceTrackingListScreen = () => {
   const [filteredData, setFilteredData] = useState([]);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState([]);
+  const [loading, setLoading] = useState(true); // Loading state
   const navigation = useNavigation();
 
   const filterOptions = ['Collected Item', 'Work started', 'Work Completed'];
@@ -26,6 +28,7 @@ const ServiceTrackingListScreen = () => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
+        setLoading(true);
         const token = await EncryptedStorage.getItem('pcs_token');
         if (!token) throw new Error('Token not found');
 
@@ -42,6 +45,8 @@ const ServiceTrackingListScreen = () => {
         setFilteredData(response.data); // Initially display all data
       } catch (error) {
         console.error('Error fetching bookings data:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -181,12 +186,24 @@ const ServiceTrackingListScreen = () => {
 
         {/* Service List */}
         <View style={styles.trackingItems}>
-          <FlatList
-            data={filteredData}
-            renderItem={renderItem}
-            keyExtractor={() => uuid.v4()}
-            contentContainerStyle={styles.listContainer}
-          />
+          {loading ? (
+            <ActivityIndicator
+              size="large"
+              color="#FF5722"
+              style={styles.loadingIndicator}
+            />
+          ) : filteredData.length === 0 ? (
+            <View style={styles.noDataContainer}>
+              <Text style={styles.noDataText}>No data available</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={filteredData}
+              renderItem={renderItem}
+              keyExtractor={() => uuid.v4()}
+              contentContainerStyle={styles.listContainer}
+            />
+          )}
         </View>
       </View>
     </TouchableWithoutFeedback>
@@ -309,6 +326,18 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontWeight: 'bold',
+    color: '#212121',
+  },
+  loadingIndicator: {
+    marginTop: 20,
+    alignSelf: 'center',
+  },
+  noDataContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  noDataText: {
+    fontSize: 16,
     color: '#212121',
   },
 });

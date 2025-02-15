@@ -223,44 +223,35 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
       onLocationSubscription = BackgroundGeolocation.onLocation(
         async location => {
           const {latitude, longitude} = location.coords;
-
+      
           // Pass coords to parent
           onLocationUpdate(latitude, longitude);
-
-          // Are we inside any polygon?
-          const insideGeofence = isLocationInGeofence(
-            latitude,
-            longitude,
-            geofences,
-          );
-
+      
+          // Check if inside any polygon
+          const insideGeofence = isLocationInGeofence(latitude, longitude, geofences);
+      
+          // Retrieve the workerInAction flag from EncryptedStorage
+          const workerInActionVal = await EncryptedStorage.getItem('workerInAction');
+          // Set threshold to 0.15 km (150m) if worker is in action, otherwise 1 km
+          const thresholdDistance = workerInActionVal === 'true' ? 0.15 : 1;
+      
           // Get previousLocation
-          const prevLocStr = await EncryptedStorage.getItem(
-            'workerPreviousLocation',
-          );
+          const prevLocStr = await EncryptedStorage.getItem('workerPreviousLocation');
           const previousLocation = prevLocStr ? JSON.parse(prevLocStr) : null;
-
-          // CASE 1: No previousLocation => first location event
+      
+          // CASE 1: First-time location event
           if (!previousLocation) {
             if (insideGeofence) {
-              console.log(
-                'First-time location is INSIDE geofence => sending real coords',
-              );
+              console.log('First-time location is INSIDE geofence => sending real coords');
               await updateFirestoreLocation(latitude, longitude);
-
-              // Store real location
               await EncryptedStorage.setItem(
                 'workerPreviousLocation',
                 JSON.stringify({latitude, longitude}),
               );
               await EncryptedStorage.setItem('nullCoordinates', 'false');
             } else {
-              console.log(
-                'First-time location is OUTSIDE geofence => sending (0,0)',
-              );
+              console.log('First-time location is OUTSIDE geofence => sending (0,0)');
               await updateFirestoreLocation(0, 0);
-
-              // Store (0,0) to avoid repeating "first-time outside" logs
               await EncryptedStorage.setItem(
                 'workerPreviousLocation',
                 JSON.stringify({latitude: 0, longitude: 0}),
@@ -269,27 +260,17 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
             }
             return;
           }
-
-          // CASE 2: We DO have a previousLocation, check if inside or outside
+      
+          // CASE 2: Already outside the geofence
           if (!insideGeofence) {
-            // Already outside => skip sending (0,0) again
-            console.log(
-              'Already outside geofence => skipping repeated (0,0) update',
-            );
+            console.log('Already outside geofence => skipping repeated (0,0) update');
             return;
           }
-
-          // CASE 3: INSIDE geofence & we have a previousLocation
-          // Check if previousLocation was (0,0) => means we just came from outside
-          if (
-            previousLocation.latitude === 0 &&
-            previousLocation.longitude === 0
-          ) {
-            console.log(
-              'Re-entered geofence from outside => sending immediate real coords',
-            );
+      
+          // CASE 3: INSIDE geofence with a previousLocation
+          if (previousLocation.latitude === 0 && previousLocation.longitude === 0) {
+            console.log('Re-entered geofence from outside => sending immediate real coords');
             await updateFirestoreLocation(latitude, longitude);
-
             setCumulativeDistance(0);
             await EncryptedStorage.setItem(
               'workerPreviousLocation',
@@ -298,24 +279,19 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
             await EncryptedStorage.setItem('nullCoordinates', 'false');
             return;
           }
-
-          // Normal inside scenario => check distance
-          const prevCoords = {
-            latitude: previousLocation.latitude,
-            longitude: previousLocation.longitude,
-          };
+      
+          // Calculate distance moved since last location
+          const prevCoords = {latitude: previousLocation.latitude, longitude: previousLocation.longitude};
           const currentCoords = {latitude, longitude};
-          const distanceMoved = haversine(prevCoords, currentCoords, {
-            unit: 'km',
-          });
-
+          const distanceMoved = haversine(prevCoords, currentCoords, {unit: 'km'});
           const updatedCumulative = cumulativeDistance + distanceMoved;
-          if (updatedCumulative >= 1) {
+      
+          // Use the dynamic threshold based on workerInAction state
+          if (updatedCumulative >= thresholdDistance) {
             console.log(
-              `Inside geofence => traveled >=1 km => sending real coords (${latitude}, ${longitude})`,
+              `Inside geofence => traveled >=${thresholdDistance * 1000} m => sending real coords (${latitude}, ${longitude})`,
             );
             await updateFirestoreLocation(latitude, longitude);
-
             setCumulativeDistance(0);
             await EncryptedStorage.setItem(
               'workerPreviousLocation',
@@ -324,13 +300,9 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
             await EncryptedStorage.setItem('nullCoordinates', 'false');
           } else {
             console.log(
-              `Inside geofence => traveled <1 km => accumulating (total now ~${updatedCumulative.toFixed(
-                3,
-              )} km)`,
+              `Inside geofence => traveled <${thresholdDistance * 1000} m => accumulating (total now ~${updatedCumulative.toFixed(3)} km)`,
             );
             setCumulativeDistance(updatedCumulative);
-
-            // Still update previousLocation so next distance calc is correct
             await EncryptedStorage.setItem(
               'workerPreviousLocation',
               JSON.stringify({latitude, longitude}),
@@ -338,6 +310,7 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
           }
         },
       );
+      
 
       // Subscribe to geofence events
       onGeofenceSubscription = BackgroundGeolocation.onGeofence(
