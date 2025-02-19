@@ -50,7 +50,7 @@ const EditProfile = () => {
         phone,
       );
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/user/details/update`,
+        `http://192.168.55.103:5000/api/user/details/update`,
         {name: fullName, email, phone},
         {
           headers: {Authorization: `Bearer ${jwtToken}`},

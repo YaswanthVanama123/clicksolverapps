@@ -152,6 +152,7 @@ const port = 5000; // Use port 5000 for the backend server
 
 // Enable CORS for all routes
 app.use(cors());
+app.use(cors({ origin: '*' }));
 
 // Middleware setup
 app.use(express.json());
@@ -167,6 +168,11 @@ app.get("/api/test", (req, res) => {
 app.use("/api", router);
 
 // Start the server
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+// app.listen(port, () => {
+//   console.log(`Server is running on port ${port}`);
+// });
+
+app.listen(5000, '0.0.0.0', () => {
+  console.log('Server running on port 5000');
 });
+

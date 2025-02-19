@@ -83,7 +83,7 @@ const WorkerAcceptance = () => {
           `${process.env.BackendAPI}/api/worker/action`,
           {
             encodedId: encodedNotificationId,
-            screen: 'WorkerNavigation',
+            screen: 'UserNavigation',
           },
           {
             headers: {
@@ -97,7 +97,7 @@ const WorkerAcceptance = () => {
             index: 0,
             routes: [
               {
-                name: 'WorkerNavigation',
+                name: 'UserNavigation',
                 params: {encodedId: encodedNotificationId},
               },
             ],

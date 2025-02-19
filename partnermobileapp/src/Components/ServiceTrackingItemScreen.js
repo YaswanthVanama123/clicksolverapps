@@ -82,7 +82,7 @@ const ServiceTrackingItemScreen = () => {
   const applyStatusChange = async newStatus => {
     try {
       await axios.post(
-        `https://backend.clicksolver.com/api/service/tracking/update/status`,
+        `http://192.168.55.103:5000/api/service/tracking/update/status`,
         {
           tracking_id,
           newStatus,
@@ -128,7 +128,7 @@ const ServiceTrackingItemScreen = () => {
         const {
           data: {data, paymentDetails}, 
         } = await axios.post(
-          `https://backend.clicksolver.com/api/service/tracking/worker/item/details`,
+          `http://192.168.55.103:5000/api/service/tracking/worker/item/details`,
           {tracking_id},
         );
         setDetails(data);

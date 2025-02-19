@@ -41,7 +41,7 @@ const ApprovalStatusScreen = () => {
         }
 
         const response = await axios.post(
-          `https://backend.clicksolver.com/api/check/approval/verification/status`,
+          `http://192.168.55.103:5000/api/check/approval/verification/status`,
           {},
           {
             headers: {
@@ -121,8 +121,8 @@ const ApprovalStatusScreen = () => {
       await EncryptedStorage.removeItem('Requestnotifications');
       await EncryptedStorage.removeItem('verification');
       await EncryptedStorage.removeItem('sign_up');
-      await EncryptedStorage.removeItem('fcm_token');
       await EncryptedStorage.removeItem('start_work_time');
+      await EncryptedStorage.removeItem('fcm_token');
       navigation.replace('Login');
     } catch (error) {
       console.error('Error during logout:', error);

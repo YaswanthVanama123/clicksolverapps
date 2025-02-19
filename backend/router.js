@@ -138,7 +138,15 @@ const {
   getPendingWorkersNotStarted,
   administratorDetails,
   workerTokenVerification,
-  adminLogin
+  adminLogin,
+  WorkerValidateOtp,
+  WorkerSendOtp,
+  createOrder,
+  verifyPayment,
+  createFundAccount,
+  validateAndSaveUPI ,
+  userLogout,
+  workerLogout
 } = require("./controller.js");
 
 const router = express.Router();
@@ -151,7 +159,15 @@ const { authAdminMiddleware } = require("./src/middlewares/authAdminMiddleware.j
 // Define the route for getting service details
 router.post("/single/service", getServiceByName);
 
+router.post('/workerLogout', workerLogout);
+
 router.post("/individual/worker/pending/verification", getPendingWorkerDetails);
+
+router.post("/create-order",authenticateWorkerToken, createOrder);
+
+// Route to verify payment
+router.post("/verify-payment",authenticateWorkerToken, verifyPayment);
+
 
 router.get("/workers/pending/verification", getPendingWorkers);
 
@@ -338,10 +354,10 @@ router.post("/worker/earnings", authenticateWorkerToken, getWorkerEarnings);
 router.post("/payment/details", async (req, res) => {
   const { notification_id } = req.body;
   console.log(notification_id);
-  const { start_time, end_time } = await paymentDetails(notification_id);
-  console.log(start_time);
-  const { time_worked } = getTimeDifferenceInIST(start_time, end_time);
-  const totalAmount = calculatePayment(time_worked);
+  // const { start_time, end_time } = await paymentDetails(notification_id);
+  // console.log(start_time);
+  // const { time_worked } = getTimeDifferenceInIST(start_time, end_time);
+  // const totalAmount = calculatePayment(time_worked);
 
   const workerDetails = await getWorkerDetails(notification_id);
   console.log(workerDetails);
@@ -356,32 +372,49 @@ router.post("/payment/details", async (req, res) => {
     city,
     pincode,
     service_booked,
-    gstAmount,
-    cgstAmount,
-    discountAmount,
-    fetchedFinalTotalAmount,
+    discount,
+    // gstAmount,
+    // cgstAmount,
+    // discountAmount,
+    // fetchedFinalTotalAmount,
     profile,
     total_cost
-  } = workerDetails;
+  } = workerDetails; 
 
   res.json({
-    start_time,
-    end_time,
-    time_worked,
-    totalAmount,
-    total_cost,
-    service_booked,
+    // start_time,
+    // end_time,
+    // time_worked,
+    // totalAmount,
+    // total_cost,
+    // service_booked,
+    // name,
+    // area,
+    // city,
+    // pincode,
+    // gstAmount,
+    // cgstAmount,
+    // discountAmount,
+    // fetchedFinalTotalAmount,
+    // profile,
+
     name,
     area,
     city,
     pincode,
-    gstAmount,
-    cgstAmount,
-    discountAmount,
-    fetchedFinalTotalAmount,
+    service_booked,
+    discount,
+    // gstAmount,
+    // cgstAmount,
+    // discountAmount,
+    // fetchedFinalTotalAmount,
     profile,
+    total_cost
+
   });
 });
+
+router.post('/userLogout', userLogout);
 
 router.post("/worker/details/rating", async (req, res) => {
   const { notification_id } = req.body;
@@ -552,10 +585,12 @@ router.post(
 
 router.post("/account/submit", authenticateWorkerToken, addBankAccount);
 
-router.post("/upi/submit", authenticateWorkerToken, addUpiId);
+router.post("/account/fund_account",authenticateWorkerToken,createFundAccount)
+
+router.post("/upi/submit", authenticateWorkerToken, validateAndSaveUPI );
 
 router.post(
-  "/onboarding/step-status",
+  "/onboarding/step-status", 
   authenticateWorkerToken,
   onboardingSteps
 );
@@ -565,6 +600,10 @@ router.post(
 
 // POST request to send OTP
 router.post("/otp/send", sendOtp);
+
+router.post("/worker/sendOtp",WorkerSendOtp)
+
+router.get("/worker/validateOtp",WorkerValidateOtp)
 
 // GET request to validate OTP
 router.get("/validate", validateOtp);

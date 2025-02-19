@@ -59,7 +59,7 @@ import HomeScreen from './Screens/Home';
 import HomeComponent from './Screens/HomeComponent';
 import {NavigationContainerRef} from '@react-navigation/native';
 import axios from 'axios';
-import VerificationScreen from './Components/VerificationScreen';
+import WorkerOtpVerificationScreen from './Components/WorkerOtpVerificationScreen';
 import ProfileChange from './Components/ProfileChange';
 // Additional imports...
 
@@ -147,25 +147,33 @@ function App(): React.JSX.Element {
   // const navigationRef = useRef(null);
   const navigationRef = useRef<NavigationContainerRef>(null);
   const [initialRoute, setInitialRoute] = useState<string | null>(null);
+  const handleForceLogout = async () => {
+    try {
+        console.log("Logging out due to session expiration...");
+        
+        const fcm_token = await EncryptedStorage.getItem('fcm_token');
+
+        if (fcm_token) {
+            await axios.post('http://192.168.55.103:5000/api/workerLogout', { fcm_token });
+        }
+
+        await EncryptedStorage.removeItem("pcs_token");
+        await EncryptedStorage.removeItem("fcm_token");
+        await EncryptedStorage.removeItem("workerSessionToken");
+
+        navigationRef.current?.dispatch(
+            CommonActions.reset({
+                index: 0,
+                routes: [{ name: "Login" }],
+            })
+        );
+    } catch (error) {
+        console.error("Error handling force logout:", error);
+    }
+};
 
   useEffect(() => {
-    const handleForceLogout = async () => {
-      try {
-        console.log("Logging out due to session expiration...");
-        await EncryptedStorage.removeItem("pcs_token");
-        await EncryptedStorage.removeItem("workerSessionToken");
-  
-        navigationRef.current?.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: "Login" }],
-          })
-        );
-      } catch (error) {
-        console.error("Error handling force logout:", error);
-      }
-    };
-  
+
     const checkSessionOnAppStart = async () => {
       try {
         const pcsToken = await EncryptedStorage.getItem("pcs_token");
@@ -178,7 +186,7 @@ function App(): React.JSX.Element {
   
 
           const response = await axios.post(
-            "https://backend.clicksolver.com/api/worker/token/verification",
+            "http://192.168.55.103:5000/api/worker/token/verification",
             { pcsToken }, // Sending pcsToken in the request body
             {
               headers: { Authorization: `Bearer ${pcsToken}` },
@@ -544,14 +552,14 @@ function App(): React.JSX.Element {
           options={{title: 'ServiceRegistration', headerShown: false}}
         />
         <Stack.Screen
-          name="WorkerNavigation"
+          name="UserNavigation"
           component={WorkerNavigationScreen}
-          options={{title: 'WorkerNavigation', headerShown: false}}
+          options={{title: 'UserNavigation', headerShown: false}}
         />
         <Stack.Screen
-          name="TimingScreen"
+          name="worktimescreen"
           component={ServiceInProgress}
-          options={{title: 'TimingScreen', headerShown: false}}
+          options={{title: 'worktimescreen', headerShown: false}}
         />
         <Stack.Screen
           name="OtpVerification"
@@ -559,9 +567,9 @@ function App(): React.JSX.Element {
           options={{title: 'OtpVerification', headerShown: false}}
         />
         <Stack.Screen
-          name="PaymentScreen"
+          name="Paymentscreen"
           component={PaymentScanner}
-          options={{title: 'PaymentScreen', headerShown: false}}
+          options={{title: 'Paymentscreen', headerShown: false}}
         />
         <Stack.Screen
           name="ServiceCompleted"
@@ -598,6 +606,12 @@ function App(): React.JSX.Element {
           component={BankAccountScreen}
           options={{title: 'BankAccountScreen', headerShown: false}}
         />
+        <Stack.Screen
+          name="WorkerOtpVerificationScreen"
+          component={WorkerOtpVerificationScreen}
+          options={{title: 'WorkerOtpVerificationScreen', headerShown: false}}
+        />
+
         <Stack.Screen
           name="SignupDetails"
           component={SignUpScreen}

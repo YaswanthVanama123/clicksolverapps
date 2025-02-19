@@ -98,12 +98,12 @@ const RecentServices = () => {
 
   useEffect(() => {
     const fetchBookings = async () => {
-      try {
+      try { 
         const token = await EncryptedStorage.getItem('cs_token');
         if (!token) throw new Error('Token not found');
 
         const response = await axios.get(
-          `https://backend.clicksolver.com/api/user/bookings`,
+          `http://192.168.55.103:5000/api/user/bookings`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

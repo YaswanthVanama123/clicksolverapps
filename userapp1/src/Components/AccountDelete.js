@@ -47,7 +47,7 @@ const AccountDelete = () => {
         phone,
       ); // Debug log
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/user/account/delete`,
+        `http://192.168.55.103:5000/api/user/account/delete`,
         {name: fullName, email, phone},
         {
           headers: {Authorization: `Bearer ${jwtToken}`},

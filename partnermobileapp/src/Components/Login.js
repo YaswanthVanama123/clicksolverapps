@@ -15,7 +15,7 @@ const Login = () => {
         const pcsToken = await EncryptedStorage.getItem('pcs_token');
         if (pcsToken) {
           const response = await axios.post(
-            `https://backend.clicksolver.com/api/worker/authenticate`,
+            `http://192.168.55.103:5000/api/worker/authenticate`,
             {},
             {
               headers: {
@@ -42,7 +42,7 @@ const Login = () => {
   const loginBackend = async phoneNumber => {
     try {
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/worker/login`,
+        `http://192.168.55.103:5000/api/worker/login`,
         {phone_number: phoneNumber},
       );
       console.log('gncm0', response.data);

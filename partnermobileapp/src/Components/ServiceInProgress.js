@@ -74,7 +74,7 @@ const ServiceInProgressScreen = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.post(
-          `https://backend.clicksolver.com/api/worker/work/progress/details`,
+          `http://192.168.55.103:5000/api/worker/work/progress/details`,
           {
             decodedId,
           },
@@ -162,7 +162,7 @@ const ServiceInProgressScreen = () => {
 
     try {
       // Send update to the server
-      await axios.post(`https://backend.clicksolver.com/api/worker/update/status`, {
+      await axios.post(`http://192.168.55.103:5000/api/worker/update/status`, {
         decodedId,
         statusKey: 'workCompleted',
         newStatusValue: statusDisplayNames['workCompleted'],
@@ -233,7 +233,7 @@ const ServiceInProgressScreen = () => {
 
     try {
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/worker/working/status/updated`,
+        `http://192.168.55.103:5000/api/worker/working/status/updated`,
         {
           serviceName,
           statusKey,
@@ -385,7 +385,7 @@ const ServiceInProgressScreen = () => {
       try {
         // Send the details and notification_id in the request body
         const response = await axios.post(
-          `https://backend.clicksolver.com/api/add/tracking`,
+          `http://192.168.55.103:5000/api/add/tracking`,
           {
             notification_id: decodedId,
             details: details, // Add details here

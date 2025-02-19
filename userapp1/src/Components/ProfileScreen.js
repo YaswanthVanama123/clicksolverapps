@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,21 +8,20 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
-  ActivityIndicator, // Import ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Entypo from 'react-native-vector-icons/Entypo';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import {useNavigation} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
-import {SafeAreaView} from 'react-native-safe-area-context';
-// import Config from 'react-native-config';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
   const [account, setAccount] = useState({});
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loading, setLoading] = useState(true); // New loading state
+  const [loading, setLoading] = useState(true);
 
   const fetchProfileDetails = async () => {
     try {
@@ -35,14 +34,14 @@ const ProfileScreen = () => {
       setIsLoggedIn(true);
 
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/user/profile`,
+        `http://192.168.55.103:5000/api/user/profile`,
         {},
         {
-          headers: {Authorization: `Bearer ${jwtToken}`},
+          headers: { Authorization: `Bearer ${jwtToken}` },
         },
       );
 
-      const {name, email, phone_number} = response.data;
+      const { name, email, phone_number } = response.data;
       setAccount({
         name,
         email,
@@ -61,17 +60,24 @@ const ProfileScreen = () => {
 
   const handleLogout = async () => {
     try {
-      await EncryptedStorage.removeItem('cs_token');
-      await EncryptedStorage.removeItem('fcm_token');
-      await EncryptedStorage.removeItem('notifications');
-      await EncryptedStorage.removeItem('messageBox');
-      setIsLoggedIn(false);
-    } catch (error) {
-      console.error('Error logging out:', error);
-    }
-  };
+        const fcm_token = await EncryptedStorage.getItem('fcm_token');
 
-  const MenuItem = ({icon, text, onPress}) => (
+        if (fcm_token) {
+            await axios.post('http://192.168.55.103:5000/api/userLogout', { fcm_token });
+        }
+
+        await EncryptedStorage.removeItem('cs_token');
+        await EncryptedStorage.removeItem('fcm_token');
+        await EncryptedStorage.removeItem('notifications');
+        await EncryptedStorage.removeItem('messageBox');
+        setIsLoggedIn(false);
+    } catch (error) {
+        console.error('Error logging out:', error);
+    }
+};
+
+
+  const MenuItem = ({ icon, text, onPress }) => (
     <TouchableOpacity style={styles.menuItem} onPress={onPress}>
       <MaterialIcons name={icon} size={22} color="#4a4a4a" />
       <Text style={styles.menuText}>{text}</Text>
@@ -79,26 +85,22 @@ const ProfileScreen = () => {
     </TouchableOpacity>
   );
 
-  // If the user is not logged in, show the login container.
+  // Not logged in UI
   if (!isLoggedIn) {
     return (
-      <View
-        style={[
-          styles.loginContainer,
-          {alignItems: 'flex-start', justifyContent: 'flex-start'},
-        ]}>
+      <View style={styles.loginContainer}>
         <View style={styles.head}>
           <Text style={styles.profileTitle}>Profile</Text>
         </View>
-        <View>
-          <View style={styles.headerContainer}>
+        <View style={styles.loginInnerContainer}>
+          <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={styles.loginButton}
               onPress={() => navigation.push('Login')}>
               <Text style={styles.loginButtonText}>Login or Sign up</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.horizontalLine} />
+          <View style={styles.separator} />
           <View style={styles.optionsContainer}>
             <MenuItem
               icon="help"
@@ -116,7 +118,7 @@ const ProfileScreen = () => {
     );
   }
 
-  // If the user is logged in but profile details are still loading, show an ActivityIndicator.
+  // Loading state UI
   if (isLoggedIn && loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -150,7 +152,7 @@ const ProfileScreen = () => {
           <View style={styles.phoneContainer}>
             <View style={styles.flagAndCode}>
               <Image
-                source={{uri: 'https://flagcdn.com/w40/in.png'}}
+                source={{ uri: 'https://flagcdn.com/w40/in.png' }}
                 style={styles.flagIcon}
               />
               <Text style={styles.countryCode}>+91</Text>
@@ -179,12 +181,12 @@ const ProfileScreen = () => {
           <MenuItem
             icon="star"
             text="Account Delete"
-            onPress={() => navigation.push('DeleteAccount', {details: account})}
+            onPress={() => navigation.push('DeleteAccount', { details: account })}
           />
           <MenuItem
             icon="mode-edit-outline"
             text="Edit Profile"
-            onPress={() => navigation.push('EditProfile', {details: account})}
+            onPress={() => navigation.push('EditProfile', { details: account })}
           />
           <MenuItem
             icon="mode-edit-outline"
@@ -211,29 +213,27 @@ const screenWidth = Dimensions.get('window').width;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#fff',
   },
   container: {
-    flexGrow: 1,
-    backgroundColor: '#FFFFFF',
-  },
+    paddingBottom: 20,
+    backgroundColor: '#fff',
+  }, 
   head: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+
   },
   profileTitle: {
-    fontSize: 18,
+    fontSize: 20,
     color: '#212121',
     fontFamily: 'RobotoSlab-SemiBold',
-    paddingVertical: 10,
-    paddingLeft: 15,
+    textAlign:'center'
   },
   detailsContainer: {
     padding: 20,
   },
   profileContainer: {
     alignItems: 'center',
-    marginBottom: 25,
+    marginBottom: 30,
   },
   profileImage: {
     width: 80,
@@ -244,10 +244,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 4,
   },
   profileName: {
     fontSize: 22,
@@ -257,22 +257,22 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
-    borderColor: '#EDEDF0',
-    height: 45,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    backgroundColor: '#F7F7F7',
+    borderColor: '#E0E0E0',
+    height: 50,
+    paddingHorizontal: 15,
+    borderRadius: 12,
     marginVertical: 8,
     borderWidth: 1,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
     elevation: 1,
   },
   input: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: 'RobotoSlab-Regular',
     marginLeft: 10,
     color: '#333',
@@ -280,17 +280,17 @@ const styles = StyleSheet.create({
   phoneContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
-    borderColor: '#EDEDF0',
-    height: 45,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    backgroundColor: '#F7F7F7',
+    borderColor: '#E0E0E0',
+    height: 50,
+    paddingHorizontal: 15,
+    borderRadius: 12,
     marginVertical: 8,
     borderWidth: 1,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
     elevation: 1,
   },
   flagAndCode: {
@@ -303,20 +303,21 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   countryCode: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: 'RobotoSlab-Regular',
     color: '#333',
   },
   phoneInput: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: 'RobotoSlab-Regular',
     color: '#333',
-    width: '100%',
+    flex: 1,
+    marginLeft: 10,
   },
   divider: {
     height: 3,
-    backgroundColor: '#E0E0E0',
-    marginVertical: 15,
+    backgroundColor: '#EDEDED',
+
   },
   optionsContainer: {
     paddingHorizontal: 20,
@@ -324,64 +325,61 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomColor: '#E0E0E0',
+    paddingVertical: 14,
+    borderBottomColor: '#EDEDED',
     borderBottomWidth: 1,
   },
   menuText: {
     flex: 1,
-    fontSize: 15,
-    marginLeft: 10,
+    fontSize: 16,
+    marginLeft: 12,
     color: '#333',
     fontFamily: 'RobotoSlab-Regular',
   },
   logoutButton: {
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 10,
-    borderRadius: 10,
+    backgroundColor: '#fff',
+    paddingVertical: 12,
+    borderRadius: 12,
     alignItems: 'center',
     marginTop: 30,
-    marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#9e9e9e',
+    borderColor: '#ccc',
   },
   logoutText: {
     color: '#212121',
     fontFamily: 'RobotoSlab-Medium',
     fontSize: 16,
   },
-  headerContainer: {
-    flexDirection: 'column',
-    alignItems: 'center',
-  },
   loginContainer: {
     flex: 1,
-    flexDirection: 'column',
-    backgroundColor: '#FFFFFF',
-    alignItems: 'flex-start',
-    justifyContent: 'flex-start',
+    backgroundColor: '#fff',
+    paddingTop: 40,
+    paddingHorizontal: 20,
   },
-  loginPrompt: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 20,
+  loginInnerContainer: {
+    marginTop: 40,
+    width: '100%',
+  },
+  buttonContainer:{
+    flexDirection:'row',
+    justifyContent:'center'
   },
   loginButton: {
-    backgroundColor: '#ff4500',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    backgroundColor: '#FF4500',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    width:180
   },
   loginButtonText: {
     color: '#fff',
-    fontSize: 13,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontFamily: 'RobotoSlab-Medium',
   },
-  horizontalLine: {
-    height: 10,
-    width: screenWidth,
-    backgroundColor: '#E6E6E6',
-    marginVertical: 10,
+  separator: {
+    height: 12,
+    backgroundColor: '#F0F0F0',
+    marginVertical: 20,
   },
   loadingContainer: {
     flex: 1,

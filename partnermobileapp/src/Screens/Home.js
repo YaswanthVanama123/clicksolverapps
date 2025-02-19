@@ -116,7 +116,7 @@ const HomeScreen = () => {
 
       if (pcs_token) {
         const response = await axios.get(
-          `https://backend.clicksolver.com/api/worker/track/details`,
+          `http://192.168.55.103:5000/api/worker/track/details`,
           {
             headers: {Authorization: `Bearer ${pcs_token}`},
           },
@@ -182,7 +182,7 @@ const HomeScreen = () => {
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/accept/request`,
+        `http://192.168.55.103:5000/api/accept/request`,
         {user_notification_id: decodedId},
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
@@ -209,10 +209,10 @@ const HomeScreen = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `https://backend.clicksolver.com/api/worker/action`,
+          `http://192.168.55.103:5000/api/worker/action`,
           {
             encodedId: encodedNotificationId,
-            screen: 'WorkerNavigation',
+            screen: 'UserNavigation',
           },
           {headers: {Authorization: `Bearer ${pcs_token}`}},
         );
@@ -224,7 +224,7 @@ const HomeScreen = () => {
             index: 0,
             routes: [
               {
-                name: 'WorkerNavigation',
+                name: 'UserNavigation',
                 params: {encodedId: encodedNotificationId},
               },
             ],
@@ -235,7 +235,7 @@ const HomeScreen = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `https://backend.clicksolver.com/api/worker/action`,
+          `http://192.168.55.103:5000/api/worker/action`,
           {
             encodedId: '',
             screen: '',
@@ -328,25 +328,49 @@ const HomeScreen = () => {
   // Get FCM tokens
   const getTokens = async () => {
     try {
-      const token = await messaging().getToken();
-
-      await EncryptedStorage.setItem('fcm_token', token);
-
+      // Check if FCM token already exists in EncryptedStorage
+      const storedToken = await EncryptedStorage.getItem('fcm_token');
+  
+      if (storedToken) {
+        console.log('FCM token already exists, skipping backend update.');
+        return; // Skip sending to the backend
+      }
+  
+      // Fetch new FCM token
+      const newToken = await messaging().getToken();
+  
+      if (!newToken) {
+        console.error('Failed to retrieve FCM token.');
+        return;
+      }
+  
+      // Store the new token in EncryptedStorage
+      await EncryptedStorage.setItem('fcm_token', newToken);
+  
+      // Get PCS token for authorization
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
-
+      if (!pcs_token) {
+        console.error('No PCS token found, skipping FCM update.');
+        return;
+      }
+  
+      // Send the new token to the backend
       await axios.post(
-        `https://backend.clicksolver.com/api/worker/store-fcm-token`,
-        {fcmToken: token},
-        {headers: {Authorization: `Bearer ${pcs_token}`}},
+        `http://192.168.55.103:5000/api/worker/store-fcm-token`,
+        { fcmToken: newToken },
+        { headers: { Authorization: `Bearer ${pcs_token}` } }
       );
+  
+      console.log('New FCM token stored and sent to backend.');
     } catch (error) {
-      console.error('Error storing FCM token in the backend:', error);
+      console.error('Error handling FCM token:', error);
     }
   };
+  
 
   useEffect(() => {
     // fetchTrackDetails();
-    fetchTrackingState();
+    fetchTrackingState(); 
     fetchNotifications();
     setGreetingBasedOnTime();
     requestUserPermission();
@@ -863,9 +887,9 @@ const HomeScreen = () => {
           onPress={() => navigation.replace(screenName, params)}>
           <View style={styles.messageBox1}>
             <View style={styles.timeContainer}>
-              {screenName === 'PaymentScreen' ? (
+              {screenName === 'Paymentscreen' ? (
                 <Foundation name="paypal" size={24} color="#ffffff" />
-              ) : screenName === 'WorkerNavigation' ? (
+              ) : screenName === 'UserNavigation' ? (
                 <MaterialCommunityIcons
                   name="truck"
                   size={24}
@@ -873,7 +897,7 @@ const HomeScreen = () => {
                 />
               ) : screenName === 'OtpVerification' ? (
                 <Feather name="shield" size={24} color="#ffffff" />
-              ) : screenName === 'TimingScreen' ? (
+              ) : screenName === 'worktimescreen' ? (
                 <MaterialCommunityIcons
                   name="hammer"
                   size={24}
@@ -887,11 +911,11 @@ const HomeScreen = () => {
               {/* <Text style={styles.textContainerText}>
                 Switch board & Socket repairing
               </Text> */}
-              {screenName === 'PaymentScreen' ? (
+              {screenName === 'Paymentscreen' ? (
                 <Text style={styles.textContainerText}>
                   Payment in progress
                 </Text>
-              ) : screenName === 'WorkerNavigation' ? (
+              ) : screenName === 'UserNavigation' ? (
                 <Text style={styles.textContainerText}>
                   User is waiting for your help
                 </Text>
@@ -899,7 +923,7 @@ const HomeScreen = () => {
                 <Text style={styles.textContainerText}>
                   User is waiting for your help
                 </Text>
-              ) : screenName === 'TimingScreen' ? (
+              ) : screenName === 'worktimescreen' ? (
                 <Text style={styles.textContainerText}>
                   Work in progress
                 </Text>

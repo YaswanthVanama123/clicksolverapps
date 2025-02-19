@@ -35,7 +35,7 @@ const ServiceTrackingListScreen = () => {
         if (!token) throw new Error('Token not found');
 
         const response = await axios.get(
-          `https://backend.clicksolver.com/api/user/tracking/services`,
+          `http://192.168.55.103:5000/api/user/tracking/services`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

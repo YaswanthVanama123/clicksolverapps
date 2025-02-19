@@ -22,7 +22,7 @@ import Config from 'react-native-config';
 import UserLocation from './Components/userLocation';
 import WaitingUser from './Components/UserWaiting';
 import Navigation from './Components/Navigation';
-import TimingScreen from './Components/TimingScreen';
+import worktimescreen from './Components/worktimescreen';
 import Payment from './Components/Paymentscreen';
 import Rating from './Components/RatingScreen';
 import ServiceApp from './screens/SecondPage';
@@ -48,6 +48,8 @@ import OnboardingScreen from './Components/OnboardingScreen';
 import OrderScreen from './Components/OrderScreen';
 import Myrefferals from './Components/Myrefferals';
 import Help from './Components/Help';
+import VerificationScreen from './Components/VerificationScreen';
+import PaymentScreenRazor from './Components/PaymentScreenRazor';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -199,7 +201,7 @@ function App() {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         if (cs_token) {
           await axios.post(
-            `https://backend.clicksolver.com/api/user/store-fcm-token`,
+            `http://192.168.55.103:5000/api/user/store-fcm-token`,
             {fcmToken: token},
             {headers: {Authorization: `Bearer ${cs_token}`}},
           );
@@ -216,7 +218,7 @@ function App() {
       const pcs_token = await EncryptedStorage.getItem('cs_token');
       const fcmToken = await EncryptedStorage.getItem('fcm_token');
       await axios.post(
-        `https://backend.clicksolver.com/api/user/store-notification`,
+        `http://192.168.55.103:5000/api/user/store-notification`,
         {notification, fcmToken},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
@@ -525,6 +527,12 @@ function App() {
         />
 
         <Stack.Screen
+          name="VerificationScreen"
+          component={VerificationScreen}
+          options={{headerShown: false}}
+        />
+
+        <Stack.Screen
           name="OrderScreen"
           component={OrderScreen}
           options={{headerShown: false}}
@@ -623,7 +631,7 @@ function App() {
         />
         <Stack.Screen
           name="Help"
-          component={HelpScreen}
+          component={PaymentScreenRazor}
           options={{headerShown: false}}
         />
         <Stack.Screen

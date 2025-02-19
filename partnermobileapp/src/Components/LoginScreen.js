@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -13,107 +13,66 @@ import {
   ActivityIndicator
 } from 'react-native';
 import axios from 'axios';
-import EncryptedStorage from 'react-native-encrypted-storage';
-import {
-  useNavigation,
-  CommonActions,
-  useFocusEffect,
-} from '@react-navigation/native';
+import { useNavigation, CommonActions, useFocusEffect } from '@react-navigation/native';
+import Entypo from 'react-native-vector-icons/Entypo';
 
 const BG_IMAGE_URL = 'https://i.postimg.cc/rFFQLGRh/Picsart-24-10-01-15-38-43-205.jpg';
 const LOGO_URL = 'https://i.postimg.cc/hjjpy2SW/Button-1.png';
 const FLAG_ICON_URL = 'https://i.postimg.cc/C1hkm5sR/india-flag-icon-29.png';
 
-const LoginScreen = () => {
+const WorkerLoginScreen = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const navigation = useNavigation();
-
-  const loginBackend = async (phoneNumber) => {
-    try {
-      const response = await axios.post(
-        `https://backend.clicksolver.com/api/worker/login`,
-        { phone_number: phoneNumber }
-      );
-      return response;
-    } catch (error) {
-      console.error('Error during backend login:', error);
-      throw error;
-    }
-  };
 
   useFocusEffect(
     React.useCallback(() => {
       const onBackPress = () => {
+        // Reset to home if back is pressed
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }]
+            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
           })
         );
         return true;
       };
 
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () =>
-        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
     }, [navigation])
   );
 
-  const login = async () => {
+  // Automatically hide error message after 5 seconds
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => setErrorMessage(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
+
+  // Call backend to send OTP to worker's phone number
+  const sendOtp = async () => {
     if (!phoneNumber) return;
-
-    setLoading(true); // Start loading indicator
-
+    setLoading(true);
     try {
-      const response = await loginBackend(phoneNumber);
-
-      if (!response) {
-        console.error('No response received from backend');
-        return;
-      }
-
-      const { status, data } = response;
-
-      if (status === 200) {
-        const { token, workerId } = data;
-        if (token && workerId) {
-          await EncryptedStorage.setItem('pcs_token', token);
-          await EncryptedStorage.setItem('partnerSteps', 'completed');
-          await EncryptedStorage.setItem('unique', String(workerId)); 
-          await EncryptedStorage.setItem('verification', 'true');
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }]
-            })
-          );
-        }
-      } else if (status === 201) {
-        const { token, workerId, stepsCompleted } = data;
-        if (workerId && token) {
-          await EncryptedStorage.setItem('pcs_token', token);
-          await EncryptedStorage.setItem('unique', String(workerId));
-
-          if (stepsCompleted) {
-            await EncryptedStorage.setItem('partnerSteps', 'completed');
-            navigation.replace('ApprovalScreen');
-          } else {
-            navigation.replace('PartnerSteps');
-          }
-        }
-      } else if (status === 202) {
-        navigation.replace('AdministratorDashboard');
+      const response = await axios.post(
+        `http://192.168.55.103:5000/api/worker/sendOtp`,
+        { mobileNumber: phoneNumber }
+      );
+      if (response.status === 200) {
+        const { verificationId } = response.data;
+        // Navigate to the OTP verification screen, passing phone number and verificationId
+        navigation.navigate('WorkerOtpVerificationScreen', { phoneNumber, verificationId });
       } else {
-        const { phone_number } = data;
-        if (phone_number) {
-          navigation.push('SignupDetails', { phone_number });
-        }
+        setErrorMessage('Failed to send OTP. Please try again.');
       }
     } catch (error) {
-      console.error('Error during login:', error);
+      console.error('Error sending OTP:', error);
+      setErrorMessage('Error sending OTP. Please try again.');
     } finally {
-      setLoading(false); // Stop loading indicator
+      setLoading(false);
     }
   };
 
@@ -121,8 +80,17 @@ const LoginScreen = () => {
     <SafeAreaView style={styles.container}>
       <Image source={{ uri: BG_IMAGE_URL }} style={StyleSheet.absoluteFillObject} resizeMode="stretch" />
 
-      <KeyboardAvoidingView 
-        style={styles.keyboardAvoidingView} 
+      {errorMessage !== '' && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{errorMessage}</Text>
+          <TouchableOpacity onPress={() => setErrorMessage('')}>
+            <Entypo name="cross" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.contentOverlay}>
@@ -152,15 +120,17 @@ const LoginScreen = () => {
             />
           </View>
 
-          {loading ? (
-            <ActivityIndicator size="large" color="#FF5720" style={styles.loader} />
-          ) : (
-            <TouchableOpacity style={styles.button} onPress={login}>
-              <Text style={styles.buttonText}>Get Verification Code</Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity style={styles.button} onPress={sendOtp} disabled={loading}>
+            <Text style={styles.buttonText}>Send OTP</Text>
+          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {loading && (
+        <View style={styles.overlay}>
+          <ActivityIndicator size="large" color="#FF5720" />
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -178,20 +148,9 @@ const styles = StyleSheet.create({
   },
   logoContainer: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   logo: { width: 60, height: 60, marginBottom: 10 },
-  heading: {
-    fontSize: 26,
-    lineHeight: 26,
-    fontWeight: 'bold',
-    color: '#212121',
-    width: 100,
-  },
+  heading: { fontSize: 26, lineHeight: 26, fontWeight: 'bold', color: '#212121', width: 100 },
   subheading: { fontSize: 16, fontWeight: 'bold', color: '#333' },
-  tagline: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    paddingBottom: 70,
-  },
+  tagline: { fontSize: 14, color: '#666', textAlign: 'center', paddingBottom: 70 },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -213,14 +172,7 @@ const styles = StyleSheet.create({
   },
   flagIcon: { width: 24, height: 24 },
   picker: { fontSize: 17, color: '#212121', padding: 10, fontWeight: 'bold' },
-  input: {
-    flex: 1,
-    height: 56,
-    paddingLeft: 10,
-    color: '#212121',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  input: { flex: 1, height: 56, paddingLeft: 10, color: '#212121', fontSize: 16, fontWeight: 'bold' },
   button: {
     backgroundColor: '#FF5722',
     paddingVertical: 15,
@@ -232,7 +184,27 @@ const styles = StyleSheet.create({
     marginTop: 25,
   },
   buttonText: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
-  loader: { marginVertical: 20 },
+  errorContainer: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
+    right: 20,
+    backgroundColor: 'red',
+    padding: 10,
+    borderRadius: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    zIndex: 1000,
+  },
+  errorText: { color: '#fff', fontSize: 14, flex: 1 },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)', // semi-transparent background (optional)
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2000,
+  },
 });
 
-export default LoginScreen;
+export default WorkerLoginScreen;

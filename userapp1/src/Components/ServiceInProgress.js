@@ -46,7 +46,7 @@ const ServiceInProgressScreen = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.post(
-          `https://backend.clicksolver.com/api/user/work/progress/details`,
+          `http://192.168.55.103:5000/api/user/work/progress/details`,
           {
             decodedId,
           },
@@ -111,7 +111,7 @@ const ServiceInProgressScreen = () => {
   const handleConfirmComplete = async () => {
     try {
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/work/time/completed/request`,
+        `http://192.168.55.103:5000/api/work/time/completed/request`,
         {
           notification_id: decodedId,
         },
@@ -152,7 +152,7 @@ const ServiceInProgressScreen = () => {
   //   if (decodedId) {
   //     try {
   //       const response = await axios.post(
-  //         `https://backend.clicksolver.com/api/work/time/completed/request`,
+  //         `http://192.168.55.103:5000/api/work/time/completed/request`,
   //         {
   //           notification_id: decodedId,
   //         },

@@ -70,7 +70,7 @@ const ServiceTrackingItemScreen = () => {
       try {
         setLoading(true);
         const response = await axios.post(
-          `https://backend.clicksolver.com/api/service/tracking/user/item/details`,
+          `http://192.168.55.103:5000/api/service/tracking/user/item/details`,
           {tracking_id},
         );
         const {data} = response.data;

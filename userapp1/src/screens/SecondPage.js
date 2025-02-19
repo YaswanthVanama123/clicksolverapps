@@ -94,7 +94,9 @@ function ServiceApp({navigation, route}) {
 
   useEffect(() => {
     // If route.params has an encodedId for rating
+
     const {encodedId} = route.params || {};
+    console.log("params chudu macha",route.params)
     if (encodedId) {
       try {
         const decoded = atob(encodedId);
@@ -127,7 +129,7 @@ function ServiceApp({navigation, route}) {
       console.log("called")
       if (cs_token) {
         const response = await axios.get(
-          'https://backend.clicksolver.com/api/user/track/details',
+          'http://192.168.55.103:5000/api/user/track/details',
           {
             headers: {Authorization: `Bearer ${cs_token}`},
           },
@@ -151,7 +153,7 @@ function ServiceApp({navigation, route}) {
       crashlytics().log('Attempting to fetch services from API');
 
       const response = await axios.get(
-        'https://backend.clicksolver.com/api/servicecategories',
+        'http://192.168.55.103:5000/api/servicecategories',
 
       );
 
@@ -272,7 +274,7 @@ function ServiceApp({navigation, route}) {
   const submitFeedback = async () => {
     try {
       const response = await axios.post(
-        'https://backend.clicksolver.com/api/user/feedback',
+        'http://192.168.55.103:5000/api/user/feedback',
         {
           rating,
           comment,

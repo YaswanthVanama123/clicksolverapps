@@ -10,29 +10,13 @@ import moment from 'moment-timezone';
 /**
  * Helper function: Ray-casting algorithm for point-in-polygon.
  */
-// function pointInPolygon(lat, lng, polygon) {
-//   let inside = false;
-//   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-//     const lat_i = polygon[i][0];
-//     const lng_i = polygon[i][1];
-//     const lat_j = polygon[j][0];
-//     const lng_j = polygon[j][1];
-
-//     const intersect =
-//       lng_i > lng !== lng_j > lng &&
-//       lat < ((lat_j - lat_i) * (lng - lng_i)) / (lng_j - lng_i) + lat_i;
-//     if (intersect) inside = !inside;
-//   }
-//   return inside;
-// }
-
 function pointInPolygon(lat, lng, polygon) {
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const lat_i = polygon[i][1]; // Use index 1 for latitude
-    const lng_i = polygon[i][0]; // Use index 0 for longitude
-    const lat_j = polygon[j][1];
-    const lng_j = polygon[j][0];
+    const lat_i = polygon[i][0];
+    const lng_i = polygon[i][1];
+    const lat_j = polygon[j][0];
+    const lng_j = polygon[j][1];
 
     const intersect =
       lng_i > lng !== lng_j > lng &&
@@ -42,29 +26,14 @@ function pointInPolygon(lat, lng, polygon) {
   return inside;
 }
 
-
 /**
  * Returns true if (latitude, longitude) is inside at least one polygon in `geofences`.
  */
-// function isLocationInGeofence(latitude, longitude, geofences) {
-//   return geofences.some(geofence =>
-//     pointInPolygon(latitude, longitude, geofence.vertices),
-//   );
-// }
-
 function isLocationInGeofence(latitude, longitude, geofences) {
-  return geofences.some(geofence => {
-    // console.log(
-    //   `Checking location (${latitude}, ${longitude}) inside geofence: ${geofence.identifier}`
-    // );
-    // console.log('Geofence vertices:', JSON.stringify(geofence.vertices, null, 2));
-
-    // Ensure geofences are being checked in the correct format
-    return pointInPolygon(latitude, longitude, geofence.vertices);
-  });
+  return geofences.some(geofence =>
+    pointInPolygon(latitude, longitude, geofence.vertices),
+  );
 }
-
-
 
 const LocationTracker = ({isEnabled, onLocationUpdate}) => {
   // Keep track of distance traveled inside the geofence since last update
@@ -207,14 +176,18 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
           notifyOnDwell: false,
           loiteringDelay: 30000,
           vertices: [
-            [80.64383938669391, 17.423755538674854],
-            [80.6315471762353, 17.389371713719086],
-            [80.65814202706389, 17.3705781492812],
-            [80.65868367559256, 17.35589044663952],
-            [80.67539867010885, 17.352953626975193],
-            [80.68080578992158, 17.42039248928549],
-            [80.64316436757031, 17.423369978622517],
-            [80.64383938669391, 17.423755538674854],
+            [80.63369145143679, 17.390042404120663],
+            [80.63464400354599, 17.393299672168467],
+            [80.63975074124545, 17.39213817238675],
+            [80.64162938568472, 17.395471151975457],
+            [80.6424231791093, 17.395647899197584],
+            [80.64168230524632, 17.391759420863266],
+            [80.66549013578845, 17.38398742015015],
+            [80.66695273406538, 17.371101579573804],
+            [80.64701080411146, 17.37945102139436],
+            [80.63979862457018, 17.385593101328965],
+            [80.63369949884378, 17.390250991288397],
+            [80.63369145143679, 17.390042404120663],
           ],
         },
       ];
@@ -223,35 +196,44 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
       onLocationSubscription = BackgroundGeolocation.onLocation(
         async location => {
           const {latitude, longitude} = location.coords;
-      
+
           // Pass coords to parent
           onLocationUpdate(latitude, longitude);
-      
-          // Check if inside any polygon
-          const insideGeofence = isLocationInGeofence(latitude, longitude, geofences);
-      
-          // Retrieve the workerInAction flag from EncryptedStorage
-          const workerInActionVal = await EncryptedStorage.getItem('workerInAction');
-          // Set threshold to 0.15 km (150m) if worker is in action, otherwise 1 km
-          const thresholdDistance = workerInActionVal === 'true' ? 0.15 : 1;
-      
+
+          // Are we inside any polygon?
+          const insideGeofence = isLocationInGeofence(
+            latitude,
+            longitude,
+            geofences,
+          );
+
           // Get previousLocation
-          const prevLocStr = await EncryptedStorage.getItem('workerPreviousLocation');
+          const prevLocStr = await EncryptedStorage.getItem(
+            'workerPreviousLocation',
+          );
           const previousLocation = prevLocStr ? JSON.parse(prevLocStr) : null;
-      
-          // CASE 1: First-time location event
+
+          // CASE 1: No previousLocation => first location event
           if (!previousLocation) {
             if (insideGeofence) {
-              console.log('First-time location is INSIDE geofence => sending real coords');
+              console.log(
+                'First-time location is INSIDE geofence => sending real coords',
+              );
               await updateFirestoreLocation(latitude, longitude);
+
+              // Store real location
               await EncryptedStorage.setItem(
                 'workerPreviousLocation',
                 JSON.stringify({latitude, longitude}),
               );
               await EncryptedStorage.setItem('nullCoordinates', 'false');
             } else {
-              console.log('First-time location is OUTSIDE geofence => sending (0,0)');
+              console.log(
+                'First-time location is OUTSIDE geofence => sending (0,0)',
+              );
               await updateFirestoreLocation(0, 0);
+
+              // Store (0,0) to avoid repeating "first-time outside" logs
               await EncryptedStorage.setItem(
                 'workerPreviousLocation',
                 JSON.stringify({latitude: 0, longitude: 0}),
@@ -260,17 +242,27 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
             }
             return;
           }
-      
-          // CASE 2: Already outside the geofence
+
+          // CASE 2: We DO have a previousLocation, check if inside or outside
           if (!insideGeofence) {
-            console.log('Already outside geofence => skipping repeated (0,0) update');
+            // Already outside => skip sending (0,0) again
+            console.log(
+              'Already outside geofence => skipping repeated (0,0) update',
+            );
             return;
           }
-      
-          // CASE 3: INSIDE geofence with a previousLocation
-          if (previousLocation.latitude === 0 && previousLocation.longitude === 0) {
-            console.log('Re-entered geofence from outside => sending immediate real coords');
+
+          // CASE 3: INSIDE geofence & we have a previousLocation
+          // Check if previousLocation was (0,0) => means we just came from outside
+          if (
+            previousLocation.latitude === 0 &&
+            previousLocation.longitude === 0
+          ) {
+            console.log(
+              'Re-entered geofence from outside => sending immediate real coords',
+            );
             await updateFirestoreLocation(latitude, longitude);
+
             setCumulativeDistance(0);
             await EncryptedStorage.setItem(
               'workerPreviousLocation',
@@ -279,19 +271,24 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
             await EncryptedStorage.setItem('nullCoordinates', 'false');
             return;
           }
-      
-          // Calculate distance moved since last location
-          const prevCoords = {latitude: previousLocation.latitude, longitude: previousLocation.longitude};
+
+          // Normal inside scenario => check distance
+          const prevCoords = {
+            latitude: previousLocation.latitude,
+            longitude: previousLocation.longitude,
+          };
           const currentCoords = {latitude, longitude};
-          const distanceMoved = haversine(prevCoords, currentCoords, {unit: 'km'});
+          const distanceMoved = haversine(prevCoords, currentCoords, {
+            unit: 'km',
+          });
+
           const updatedCumulative = cumulativeDistance + distanceMoved;
-      
-          // Use the dynamic threshold based on workerInAction state
-          if (updatedCumulative >= thresholdDistance) {
+          if (updatedCumulative >= 1) {
             console.log(
-              `Inside geofence => traveled >=${thresholdDistance * 1000} m => sending real coords (${latitude}, ${longitude})`,
+              `Inside geofence => traveled >=1 km => sending real coords (${latitude}, ${longitude})`,
             );
             await updateFirestoreLocation(latitude, longitude);
+
             setCumulativeDistance(0);
             await EncryptedStorage.setItem(
               'workerPreviousLocation',
@@ -300,9 +297,13 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
             await EncryptedStorage.setItem('nullCoordinates', 'false');
           } else {
             console.log(
-              `Inside geofence => traveled <${thresholdDistance * 1000} m => accumulating (total now ~${updatedCumulative.toFixed(3)} km)`,
+              `Inside geofence => traveled <1 km => accumulating (total now ~${updatedCumulative.toFixed(
+                3,
+              )} km)`,
             );
             setCumulativeDistance(updatedCumulative);
+
+            // Still update previousLocation so next distance calc is correct
             await EncryptedStorage.setItem(
               'workerPreviousLocation',
               JSON.stringify({latitude, longitude}),
@@ -310,7 +311,6 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
           }
         },
       );
-      
 
       // Subscribe to geofence events
       onGeofenceSubscription = BackgroundGeolocation.onGeofence(

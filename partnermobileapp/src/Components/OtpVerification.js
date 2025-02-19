@@ -43,7 +43,7 @@ const OTPVerification = ({route}) => {
   const checkCancellationStatus = async () => {
     try {
       const {data} = await axios.get(
-        `https://backend.clicksolver.com/api/worker/cancelled/status`,
+        `http://192.168.55.103:5000/api/worker/cancelled/status`,
         {
           params: {notification_id: decodedId},
         },
@@ -52,7 +52,7 @@ const OTPVerification = ({route}) => {
       if (data.notificationStatus === 'usercanceled') {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         await axios.post(
-          `https://backend.clicksolver.com/api/worker/action`,
+          `http://192.168.55.103:5000/api/worker/action`,
           {encodedId: '', screen: ''},
           {headers: {Authorization: `Bearer ${pcs_token}`}},
         );
@@ -83,7 +83,7 @@ const OTPVerification = ({route}) => {
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const {data, status} = await axios.post(
-        `https://backend.clicksolver.com/api/pin/verification`,
+        `http://192.168.55.103:5000/api/pin/verification`,
         {notification_id: decodedId, otp: enteredOtp},
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
@@ -93,14 +93,14 @@ const OTPVerification = ({route}) => {
         await EncryptedStorage.setItem('start_time', data.timeResult);
 
         await axios.post(
-          `https://backend.clicksolver.com/api/worker/action`,
-          {encodedId, screen: 'TimingScreen'},
+          `http://192.168.55.103:5000/api/worker/action`,
+          {encodedId, screen: 'worktimescreen'},
           {headers: {Authorization: `Bearer ${pcs_token}`}},
         );
 
         Alert.alert('Success', 'OTP is correct');
         await EncryptedStorage.removeItem("workerInAction")
-        navigation.navigate('TimingScreen', {encodedId});
+        navigation.navigate('worktimescreen', {encodedId});
       } else if (status === 205) {
         Alert.alert('User Cancelled the service');
         navigation.dispatch(

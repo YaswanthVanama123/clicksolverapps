@@ -33,22 +33,19 @@ const SingleService = () => {
   const [quantities, setQuantities] = useState({});
   const [modalVisible, setModalVisible] = useState(false);
   const [bookedServices, setBookedServices] = useState([]);
-  const [totalAmount, setTotalAmount] = useState(10);
-  const [originalTotal, setOriginalAmount] = useState(0);
+  const [totalAmount, setTotalAmount] = useState(0);
   const [loginModalVisible, setLoginModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
-  // New state for booking process loading
   const [bookingLoading, setBookingLoading] = useState(false);
+
   const insets = useSafeAreaInsets();
 
   const fetchDetails = useCallback(async () => {
     try {
-      console.log("serviceName",serviceName)
+      console.log('serviceName', serviceName);
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/single/service`,
-        {
-          serviceName,
-        },
+        'http://192.168.55.103:5000/api/single/service',
+        { serviceName },
       );
       const { relatedServices } = response.data;
       setServices(relatedServices);
@@ -98,23 +95,18 @@ const SingleService = () => {
   );
 
   useEffect(() => {
+    // Calculate total amount based on cost * quantity (no discounts)
     const total = services.reduce((acc, service) => {
-      const quantity = quantities[service.main_service_id] || 0;
-      const cost = parseFloat(service.cost) || 0;
-      return acc + calculateDiscount(cost, quantity);
-    }, 0);
-
-    const originalTotal = services.reduce((acc, service) => {
       const quantity = quantities[service.main_service_id] || 0;
       const cost = parseFloat(service.cost) || 0;
       return acc + cost * quantity;
     }, 0);
 
     setTotalAmount(total);
-    setOriginalAmount(originalTotal);
 
+    // Build the booked services array
     const booked = services
-      .map(service => {
+      .map((service) => {
         const quantity = quantities[service.main_service_id];
         if (quantity > 0) {
           return {
@@ -132,6 +124,7 @@ const SingleService = () => {
 
     setBookedServices(booked);
 
+    // Store the current cart in EncryptedStorage
     if (booked.length > 0) {
       const storeCart = async () => {
         try {
@@ -144,15 +137,8 @@ const SingleService = () => {
     }
   }, [quantities, services, serviceName]);
 
-  const calculateDiscount = (cost, quantity) => {
-    if (quantity === 1) return cost;
-    if (quantity === 2) return cost * quantity * 0.85;
-    if (quantity === 3) return cost * quantity * 0.8;
-    return cost * quantity * 0.7;
-  };
-
   const handleQuantityChange = (id, delta) => {
-    setQuantities(prev => ({
+    setQuantities((prev) => ({
       ...prev,
       [id]: Math.max(0, (prev[id] || 0) + delta),
     }));
@@ -169,7 +155,6 @@ const SingleService = () => {
 
   const bookService = async () => {
     try {
-      // Start the booking process; show the ActivityIndicator
       setBookingLoading(true);
       const cs_token = await EncryptedStorage.getItem('cs_token');
       if (cs_token) {
@@ -201,7 +186,7 @@ const SingleService = () => {
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
-      <View style={{ flex: 1 }}>
+      <View style={styles.container}>
         <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}>
           {/* Top Header */}
           <View style={styles.header}>
@@ -232,7 +217,7 @@ const SingleService = () => {
                 autoplay
                 autoplayTimeout={3}
                 showsPagination={false}>
-                {services.map(service => (
+                {services.map((service) => (
                   <View key={service.main_service_id}>
                     <Image
                       source={{ uri: service.service_urls[0] }}
@@ -271,7 +256,7 @@ const SingleService = () => {
                 />
               </View>
             ) : (
-              services.map(service => (
+              services.map((service) => (
                 <TouchableOpacity
                   key={service.main_service_id}
                   style={styles.recomendedCard}>
@@ -323,17 +308,7 @@ const SingleService = () => {
         {/* Bottom Cart Bar */}
         {totalAmount > 0 && (
           <View style={[styles.cartContainer]}>
-            <View>
-              {bookedServices.some(
-                service => service.originalCost !== service.cost,
-              ) && (
-                <Text style={styles.originalAmount}>
-                  {/* <Text style={styles.crossedText}>Total: ₹{originalTotal}</Text> */}
-                  <Text style={styles.amount}>Total: ₹{originalTotal}</Text>
-                </Text>
-              )}
-              {/* <Text style={styles.amount}>Total: ₹{totalAmount}</Text> */}
-            </View>
+            <Text style={styles.amount}>Total: ₹{totalAmount}</Text>
             <TouchableOpacity
               onPress={handleBookNow}
               style={styles.buttonContainer}>
@@ -409,10 +384,8 @@ const SingleService = () => {
                 </View>
               </ScrollView>
               <Text style={styles.modalTotal}>Total Amount: ₹{totalAmount}</Text>
-              {/*
-                Conditionally display the ActivityIndicator during the booking process.
-                When bookingLoading is true, the ActivityIndicator is shown instead of the "Book Now" button.
-              */}
+
+              {/* Show ActivityIndicator if booking is in progress */}
               {bookingLoading ? (
                 <ActivityIndicator
                   size="large"
@@ -478,7 +451,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
-    right: 0,
+    right: 0, 
     zIndex: 1,
   },
   imageIcons: {
@@ -491,7 +464,7 @@ const styles = StyleSheet.create({
   },
   carouselContainer: {
     marginTop: 0,
-    backgroundColor:'#ffffff',
+    backgroundColor: '#ffffff',
     width: '100%',
   },
   carouselLoaderContainer: {
@@ -543,9 +516,8 @@ const styles = StyleSheet.create({
   },
   recomendedContainer: {
     padding: 20,
-
     paddingTop: 0,
-    backgroundColor:'#ffffff'
+    backgroundColor: '#ffffff',
   },
   recommendedLoaderContainer: {
     height: 200,
@@ -640,20 +612,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontFamily: 'RobotoSlab-Medium',
   },
-  ammount: {
+  amount: {
     fontSize: 15,
     color: '#212121',
-    fontFamily: 'RobotoSlab-Regular',
-  },
-  originalAmount: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: 'black',
-  },
-  crossedText: {
-    textDecorationLine: 'line-through',
-    color: 'red',
-    marginRight: 5,
+    fontFamily: 'RobotoSlab-Medium',
   },
   modalContainer: {
     flex: 1,

@@ -38,12 +38,12 @@ const TrackingConfirmation = ({route}) => {
     const enteredOtp = otp.join('');
     try {
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/service/tracking/delivery/verification`,
+        `http://192.168.55.103:5000/api/service/tracking/delivery/verification`,
         {trackingId, enteredOtp},
       );
       const {encodedId} = response.data;
       if (response.status === 200) {
-        navigation.replace('PaymentScreen', {encodedId});
+        navigation.replace('Paymentscreen', {encodedId});
       }
     } catch (error) {
       console.error('Error fetching bookings data:', error);

@@ -1,5 +1,6 @@
 const admin = require("./firebaseAdmin.js");
 const crypto = require("crypto");
+const Razorpay = require("razorpay");
 const { encrypt, decrypt } = require("./src/utils/encrytion.js");
 const { getMessaging } = require("firebase-admin/messaging"); // Import Firebase Admin SDK
 const db = admin.firestore();
@@ -19,6 +20,320 @@ const customerId = "1D0C4D6D-48D8-40A2-BD9D-CE2160F6B3E9";
 const apiKey =
   "BQXK2DGbESmYMvO0JC2sNAd9AtOTh48AwaPZIWL7bd8o8mB63TjwAJ/BhNxO3/YD6pjjZFQR5j6Ke1wEA1TCew==";
 const smsEndpoint = `https://rest-api.telesign.com/v1/messaging`;
+
+
+// Initialize Razorpay
+// Initialize Razorpay instance
+const razorpayInstance = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY,
+  key_secret: process.env.RAZORPAY_SECRET,
+});
+
+// Create Order API
+// const createOrder = async (req, res) => {
+//   try {
+//     const { amount, currency = "INR" } = req.body;
+
+//     const options = {
+//       amount: amount * 100, // Convert to paise
+//       currency,
+//       receipt: `receipt_${Date.now()}`,
+//       payment_capture: 1, // Auto capture
+//     };
+
+//     console.log("Creating order with options:", options);
+
+//     console.log("razar",razorpayInstance)
+
+//     const order = await razorpayInstance.orders.create(options);
+
+//     res.status(200).json({
+//       success: true,
+//       order_id: order.id,
+//       amount: order.amount,
+//       currency: order.currency,
+//     });
+//   } catch (error) {
+//     console.error("Error creating order:", error.message);
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+const createOrder = async (req, res) => {
+  try {
+    const { amount, currency = 'INR' } = req.body;
+    const worker_id = req.worker.id; // from authenticateWorkerToken
+    console.log("wo",worker_id)
+    // Convert amount from rupees to paise for Razorpay
+    const rupeesAmount = parseFloat(amount).toFixed(2);
+    const paiseAmount = Math.round(parseFloat(amount) * 100);
+
+    // Set options for Razorpay order creation
+    const options = {
+      amount: paiseAmount,       // Amount in paise
+      currency,
+      receipt: `receipt_${Date.now()}`,
+      payment_capture: 1,        // Auto-capture payment
+    };
+
+    // Create the order with Razorpay
+    const order = await razorpayInstance.orders.create(options);
+    console.log('Razorpay Order:', order); // Debug log
+
+    if (!order || !order.id) {
+      throw new Error('Order creation failed: No valid order returned from Razorpay.');
+    }
+
+    // Insert the pending order into the orders table
+    const insertOrderQuery = `
+      INSERT INTO orders (worker_id, order_id, amount, currency, status, created_at)
+      VALUES ($1, $2, $3, $4, 'pending', NOW())
+    `;
+    await client.query(insertOrderQuery, [worker_id, order.id, rupeesAmount, currency]);
+
+    res.status(200).json({
+      success: true,
+      order_id: order.id,
+      amount: rupeesAmount,
+      currency,
+    });
+  } catch (error) {
+    console.error('Error in createOrder:', error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+const verifyPayment = async (req, res) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const worker_id = req.worker.id; // from authenticateWorkerToken
+    console.log("worker_id", worker_id);
+
+    // Generate expected signature using HMAC with SHA256
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest('hex');
+
+    const paymentStatus = expectedSignature === razorpay_signature ? 'success' : 'failed';
+    console.log("status", paymentStatus);
+    const payment_method = req.body.method || 'unknown';
+    const error_message = paymentStatus === 'failed' ? 'Invalid payment signature' : null;
+
+    // Begin transaction
+    await client.query('BEGIN');
+
+    // Update orders and insert payment using chained CTEs:
+    const cteQuery = `
+      WITH updated_order AS (
+        UPDATE orders
+        SET status = $3::text, updated_at = NOW()
+        WHERE order_id = $1::text AND worker_id = $2::int
+        RETURNING amount
+      ),
+      insert_payment AS (
+        INSERT INTO payments (
+          worker_id, order_id, payment_id, amount_paid, status, payment_method, transaction_date, error_message
+        )
+        VALUES (
+          $2::int,
+          $1::text,
+          $4,
+          (SELECT amount FROM updated_order),
+          $3::text,
+          $5::text,
+          NOW(),
+          $6::text
+        )
+        RETURNING *
+      )
+      SELECT * FROM insert_payment;
+    `;
+    const result = await client.query(cteQuery, [
+      razorpay_order_id,
+      worker_id,
+      paymentStatus,
+      razorpay_payment_id,
+      payment_method,
+      error_message,
+    ]);
+
+    // Compute new balance first and then update workerlife using that computed number:
+    const updateWorkerLifeCombinedQuery = `
+      WITH order_amt AS (
+        SELECT amount::numeric AS amt FROM orders WHERE order_id = $1::text
+      ),
+      current_balance AS (
+        SELECT COALESCE(balance_amount, 0) AS curr_balance
+        FROM workerlife
+        WHERE worker_id = $2::int
+      ),
+      new_balance AS (
+        SELECT curr_balance + order_amt.amt AS computed_balance
+        FROM current_balance, order_amt
+      )
+      UPDATE workerlife
+      SET balance_amount = new_balance.computed_balance,
+          balance_payment_history = COALESCE(balance_payment_history, '[]'::jsonb) ||
+            jsonb_build_array(
+              jsonb_build_object(
+                'order_id', $1::text,
+                'amount', (SELECT amt FROM order_amt),
+                'time', TO_CHAR(NOW(), 'YYYY-MM-DD HH24:MI:SS'),
+                'status', $3::text
+              )
+            )
+      FROM new_balance
+      WHERE workerlife.worker_id = $2::int
+      RETURNING workerlife.*;
+    `;
+    await client.query(updateWorkerLifeCombinedQuery, [
+      razorpay_order_id,
+      worker_id,
+      paymentStatus,
+    ]);
+
+    // Commit the transaction
+    await client.query('COMMIT');
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment verified successfully!',
+      data: result.rows,
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error in verifyPayment:', error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+
+// Function to update `no_due` in `workersverified` only for workers with a record in `workerlife`
+const updateWorkerNoDueStatus = async () => {
+  try {
+    const updateQuery = `
+      UPDATE workersverified wv
+      SET no_due = CASE 
+        WHEN wl.balance_amount < -50 THEN FALSE  -- If balance is less than -50, set no_due to FALSE
+        WHEN wl.balance_amount >= -50 THEN TRUE   -- If balance is -50 or higher, set no_due to TRUE
+      END
+      FROM workerlife wl
+      WHERE wv.worker_id = wl.worker_id;
+    `;
+
+    const result = await client.query(updateQuery);
+    console.log(`Updated ${result.rowCount} workers' no_due status at 10 AM.`);
+  } catch (error) {
+    console.error("Error updating no_due status:", error);
+  }
+};
+
+// Schedule the function to run every day at 10 AM
+cron.schedule("0 10 * * *", () => {
+  console.log("Running daily worker no_due update...");
+  updateWorkerNoDueStatus();
+});
+
+const sendDuePaymentNotifications = async () => {
+  try {
+    // Query to join workerlife and fcm to fetch workers having balance_amount < -50
+    const query = `
+      SELECT wl.worker_id, wl.balance_amount, f.fcm_token
+      FROM workerlife wl
+      INNER JOIN fcm f ON wl.worker_id = f.worker_id
+      WHERE wl.balance_amount < -50;
+    `;
+    const result = await client.query(query);
+
+    if (result.rows.length === 0) {
+      console.log("No workers with due payments found.");
+      return;
+    }
+
+    // Group rows by worker_id so that we can send one notification per worker
+    const workerMap = new Map();
+    for (const row of result.rows) {
+      if (!workerMap.has(row.worker_id)) {
+        workerMap.set(row.worker_id, {
+          balance_amount: row.balance_amount,
+          tokens: [row.fcm_token],
+        });
+      } else {
+        workerMap.get(row.worker_id).tokens.push(row.fcm_token);
+      }
+    }
+
+    // For each worker, build and send the notification message using sendEachForMulticast
+    for (const [worker_id, data] of workerMap.entries()) {
+      // Calculate the due amount (absolute value of negative balance)
+      const dueAmount = Math.abs(data.balance_amount);
+
+      // Build the notification message
+      const message = {
+        tokens: data.tokens,
+        notification: {
+          title: "Payment Due",
+          body: `Hi, Your payment of ${dueAmount} rupees needs to be paid by 10 AM. If not, you will not receive services until you pay.`,
+        },
+        data: {
+          worker_id: worker_id.toString(),
+          dueAmount: dueAmount.toString(),
+        },
+      };
+
+      try {
+        // Send notification using sendEachForMulticast
+        const response = await admin.messaging().sendEachForMulticast(message);
+        console.log(`Notification sent to worker ${worker_id} (Tokens: ${data.tokens.join(", ")})`);
+        response.responses.forEach((resp, index) => {
+          if (!resp.success) {
+            console.error(`Error sending to token ${data.tokens[index]}: `, resp.error);
+          }
+        });
+      } catch (error) {
+        console.error(`Error sending notification to worker ${worker_id}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching due payment workers:", error);
+  }
+};
+
+// Schedule the function to run every day at 9 AM
+cron.schedule("0 9 * * *", () => {
+  console.log("Running due payment notification job at 9 AM...");
+  sendDuePaymentNotifications();
+});
+
+
+
+// Verify Payment API
+// const verifyPayment = (req, res) => {
+//   try {
+//     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+//     if (!process.env.RAZORPAY_SECRET) {
+//       throw new Error("Razorpay Secret Key is missing");
+//     }
+
+//     const generatedSignature = crypto
+//       .createHmac("sha256", process.env.RAZORPAY_SECRET)
+//       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+//       .digest("hex");
+
+//     if (generatedSignature === razorpay_signature) {
+//       res.status(200).json({ success: true, message: "Payment verified successfully!" });
+//     } else {
+//       res.status(400).json({ success: false, message: "Invalid payment signature" });
+//     }
+//   } catch (error) {
+//     console.error("Error verifying payment:", error.message);
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
 
 // newly functions
 
@@ -86,6 +401,56 @@ const sendLogoutNotificationAndDeleteTokens = async (workerId) => {
   }
 };
 
+const workerLogout = async (req, res) => {
+  try {
+      const { fcm_token } = req.body;
+
+      if (!fcm_token) {
+          return res.status(400).json({ success: false, message: 'FCM token is required' });
+      }
+
+      // Delete FCM token from the `fcm` table
+      const result = await client.query(
+          'DELETE FROM fcm WHERE fcm_token = $1',
+          [fcm_token]
+      );
+
+      if (result.rowCount > 0) {
+          return res.status(200).json({ success: true, message: 'Worker logged out and FCM token deleted' });
+      } else {
+          return res.status(404).json({ success: false, message: 'FCM token not found' });
+      }
+  } catch (error) {
+      console.error('Error in workerLogout:', error);
+      res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+const userLogout = async (req, res) => {
+  try {
+      const { fcm_token } = req.body;
+
+      if (!fcm_token) {
+          return res.status(400).json({ success: false, message: 'FCM token is required' });
+      }
+
+      // Delete FCM token from the `userfcm` table
+      const result = await client.query(
+          'DELETE FROM userfcm WHERE fcm_token = $1',
+          [fcm_token]
+      );
+
+      if (result.rowCount > 0) {
+          return res.status(200).json({ success: true, message: 'User logged out and FCM token deleted' });
+      } else {
+          return res.status(404).json({ success: false, message: 'FCM token not found' });
+      }
+  } catch (error) {
+      console.error('Error in userLogout:', error);
+      res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
 const workerTokenVerification = async (req, res) => {
   try {
     const { pcsToken } = req.body;
@@ -124,16 +489,174 @@ const workerTokenVerification = async (req, res) => {
 };
 
 
+// const Partnerlogin = async (req, res) => {
+//   const { phone_number } = req.body;
+
+//   if (!phone_number) {
+//     return res.status(400).json({ message: "Phone number is required" });
+//   } else if (phone_number === "my name is veerappa") {
+//     return res.status(202).json({ message: "Internal server error" }); // FIXED!
+//   }
+
+//   try {
+//     const query = `
+//       WITH workersverified_check AS (
+//         SELECT worker_id FROM workersverified WHERE phone_number = $1 LIMIT 1
+//       ),
+//       workers_check AS (
+//         SELECT worker_id FROM workers WHERE phone_number = $1 LIMIT 1
+//       )
+//       SELECT 
+//         CASE 
+//           WHEN EXISTS (SELECT 1 FROM workersverified_check) THEN 200
+//           WHEN EXISTS (SELECT 1 FROM workers_check) THEN 201
+//           ELSE 400
+//         END AS status_code,
+//         COALESCE((SELECT worker_id FROM workersverified_check), 
+//                  (SELECT worker_id FROM workers_check)) AS worker_id,
+//         EXISTS (SELECT 1 FROM workers_check) AS step1,
+//         EXISTS (SELECT 1 FROM workerskills WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step2,
+//         EXISTS (SELECT 1 FROM bankaccounts WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step3;
+//     `;
+
+//     const result = await client.query(query, [phone_number]);
+//     const statusCode = result.rows[0].status_code;
+//     const workerId = result.rows[0].worker_id;
+//     const stepsCompleted =
+//       result.rows[0].step1 && result.rows[0].step2 && result.rows[0].step3;
+
+//     if (workerId) {
+//       // Generate a new session token
+//       const token = generateWorkerToken({ worker_id: workerId });
+
+//       // Update session token in database
+//       await client.query("UPDATE workersverified SET session_token = $1 WHERE worker_id = $2", [
+//         token,
+//         workerId,
+//       ]);
+
+//       // Send logout notification and delete FCM tokens
+//       await sendLogoutNotificationAndDeleteTokens(workerId);
+
+//       // Send response based on worker status
+//       if (statusCode === 200) {
+//         res.cookie("token", token, {
+//           httpOnly: true,
+//           secure: process.env.NODE_ENV === "production",
+//           sameSite: "Strict",
+//         });
+//         return res.status(200).json({ token, workerId });
+//       } else if (statusCode === 201) {
+//         res.cookie("token", token, {
+//           httpOnly: true,
+//           secure: process.env.NODE_ENV === "production",
+//           sameSite: "Strict",
+//         });
+
+//         return res.status(201).json({
+//           message: "Phone number found in workers, please complete sign up",
+//           token,
+//           workerId,
+//           stepsCompleted,
+//         });
+//       }
+//     } else {
+//       return res.status(203).json({ message: "Phone number not registered", phone_number });
+//     }
+//   } catch (error) {
+//     console.error("Error logging in worker:", error);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// };
+
+
+// WorkerSendOtp function – Sends an OTP to the provided mobile number
+
+const WorkerSendOtp = (req, res) => {
+  const { mobileNumber } = req.body;
+  if (!mobileNumber) {
+    return res.status(400).json({ message: "Mobile number is required" });
+  }
+
+  const options = {
+    method: "POST",
+    url: `https://cpaas.messagecentral.com/verification/v3/send?countryCode=91&customerId=${process.env.CUSTOMER_ID}&flowType=SMS&mobileNumber=${mobileNumber}`,
+    headers: {
+      authToken: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUIzNzUzRUNBNDNCRDQzNSIsImlhdCI6MTcyNjI1OTQwNiwiZXhwIjoxODgzOTM5NDA2fQ.Gme6ijpbtUge-n9NpEgJR7lIsNQTqH4kDWkoe9Wp6Nnd6AE0jaAKCuuGuYtkilkBrcC1wCj8GrlMNQodR-Gelg",
+    },
+  };
+
+  request(options, (error, response, body) => {
+    if (error) {
+      console.error("Error sending OTP:", error);
+      return res.status(500).json({ message: "Error sending OTP", error });
+    }
+    try {
+      const data = JSON.parse(body);
+      if (data && data.data && data.data.verificationId) {
+        return res.status(200).json({
+          message: "OTP sent successfully",
+          verificationId: data.data.verificationId,
+        });
+      } else {
+        return res.status(500).json({
+          message: "Failed to retrieve verificationId",
+          error: data,
+        });
+      }
+    } catch (parseError) {
+      console.error("Error parsing OTP response:", parseError);
+      return res.status(500).json({ message: "Failed to parse response", error: parseError });
+    }
+  });
+};
+
+// WorkerValidateOtp function – Validates the OTP provided by the worker
+const WorkerValidateOtp = (req, res) => {
+  const { mobileNumber, verificationId, otpCode } = req.query;
+  if (!mobileNumber || !verificationId || !otpCode) {
+    return res.status(400).json({ message: "Missing required parameters" });
+  }
+
+  const options = {
+    method: "GET",
+    url: `https://cpaas.messagecentral.com/verification/v3/validateOtp?countryCode=91&mobileNumber=${mobileNumber}&verificationId=${verificationId}&customerId=${process.env.CUSTOMER_ID}&code=${otpCode}`,
+    headers: {
+      authToken: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUIzNzUzRUNBNDNCRDQzNSIsImlhdCI6MTcyNjI1OTQwNiwiZXhwIjoxODgzOTM5NDA2fQ.Gme6ijpbtUge-n9NpEgJR7lIsNQTqH4kDWkoe9Wp6Nnd6AE0jaAKCuuGuYtkilkBrcC1wCj8GrlMNQodR-Gelg",
+   },
+  };
+
+  request(options, (error, response, body) => {
+    if (error) {
+      console.error("Error validating OTP:", error);
+      return res.status(500).json({ message: "Error validating OTP", error });
+    }
+    try {
+      const data = JSON.parse(body);
+      if (data && data.data && data.data.verificationStatus === "VERIFICATION_COMPLETED") {
+        return res.status(200).json({ message: "OTP Verified" });
+      } else {
+        return res.status(200).json({ message: "Invalid OTP" });
+      }
+    } catch (parseError) {
+      console.error("Error parsing OTP validation response:", parseError);
+      return res.status(500).json({ message: "Failed to parse response", error: parseError });
+    }
+  });
+};
+
+
+// Partnerlogin function – Logs in the worker based on database checks
 const Partnerlogin = async (req, res) => {
   const { phone_number } = req.body;
-
   if (!phone_number) {
     return res.status(400).json({ message: "Phone number is required" });
   } else if (phone_number === "my name is veerappa") {
-    return res.status(202).json({ message: "Internal server error" }); // FIXED!
+    return res.status(202).json({ message: "Internal server error" });
   }
 
   try {
+    // Query to check for worker existence in verified and non-verified tables
     const query = `
       WITH workersverified_check AS (
         SELECT worker_id FROM workersverified WHERE phone_number = $1 LIMIT 1
@@ -147,13 +670,14 @@ const Partnerlogin = async (req, res) => {
           WHEN EXISTS (SELECT 1 FROM workers_check) THEN 201
           ELSE 400
         END AS status_code,
-        COALESCE((SELECT worker_id FROM workersverified_check), 
-                 (SELECT worker_id FROM workers_check)) AS worker_id,
+        COALESCE(
+          (SELECT worker_id FROM workersverified_check), 
+          (SELECT worker_id FROM workers_check)
+        ) AS worker_id,
         EXISTS (SELECT 1 FROM workers_check) AS step1,
         EXISTS (SELECT 1 FROM workerskills WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step2,
-        EXISTS (SELECT 1 FROM bankaccounts WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step3;
+        EXISTS (SELECT 1 FROM bank_accounts WHERE worker_id = (SELECT worker_id FROM workers_check)) AS step3;
     `;
-
     const result = await client.query(query, [phone_number]);
     const statusCode = result.rows[0].status_code;
     const workerId = result.rows[0].worker_id;
@@ -161,19 +685,18 @@ const Partnerlogin = async (req, res) => {
       result.rows[0].step1 && result.rows[0].step2 && result.rows[0].step3;
 
     if (workerId) {
-      // Generate a new session token
+      // Generate a new session token for the worker
       const token = generateWorkerToken({ worker_id: workerId });
 
-      // Update session token in database
-      await client.query("UPDATE workersverified SET session_token = $1 WHERE worker_id = $2", [
-        token,
-        workerId,
-      ]);
+      // Update the session token in the database
+      await client.query(
+        "UPDATE workersverified SET session_token = $1 WHERE worker_id = $2",
+        [token, workerId]
+      );
 
-      // Send logout notification and delete FCM tokens
+      // Optionally, send a logout notification and remove any existing FCM tokens
       await sendLogoutNotificationAndDeleteTokens(workerId);
 
-      // Send response based on worker status
       if (statusCode === 200) {
         res.cookie("token", token, {
           httpOnly: true,
@@ -187,7 +710,6 @@ const Partnerlogin = async (req, res) => {
           secure: process.env.NODE_ENV === "production",
           sameSite: "Strict",
         });
-
         return res.status(201).json({
           message: "Phone number found in workers, please complete sign up",
           token,
@@ -203,7 +725,6 @@ const Partnerlogin = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 // const Partnerlogin = async (req, res) => {
 //   const { phone_number } = req.body;
@@ -558,11 +1079,10 @@ const userCompleteSignUp = async (req, res) => {
 //   }
 // };
 
-const workerCompleteSignUp = async (req, res) => {
-  const { fullName, email = null, phoneNumber } = req.body; // Set default value of email to null
-  // console.log(fullName);
 
-  // Check for the presence of the phone number
+const workerCompleteSignUp = async (req, res) => {
+  const { fullName, email = null, phoneNumber } = req.body; // Email defaults to null
+
   if (!phoneNumber) {
     return res.status(400).json({
       message: "No phone number found. Please start the login process again.",
@@ -570,31 +1090,98 @@ const workerCompleteSignUp = async (req, res) => {
   }
 
   try {
-    // Prepare the insert query
+    // Step 1: Create a contact in Razorpay
+    const contactPayload = {
+      name: fullName,
+      email: email || undefined, // Avoid sending null to Razorpay
+      contact: phoneNumber,
+      type: "employee",
+    };
+
+    const razorpayResponse = await axios.post(
+      "https://api.razorpay.com/v1/contacts",
+      contactPayload,
+      {
+        auth: {
+          username: process.env.RAZORPAY_KEY,
+          password: process.env.RAZORPAY_SECRET,
+        },
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
+    // Extract the contact_id from the Razorpay response
+    const contact_id = razorpayResponse.data.id;
+
+    // Step 2: Insert the worker and store the contact_id in the database
     const insertWorkerQuery = `
-      INSERT INTO workers (phone_number, name, email)
-      VALUES ($1, $2, $3)
+      INSERT INTO workers (phone_number, name, email, contact_id)
+      VALUES ($1, $2, $3, $4)
       RETURNING *;
     `;
 
-    // Insert the new worker into the database
     const result = await client.query(insertWorkerQuery, [
       phoneNumber,
       fullName,
       email,
+      contact_id,
     ]);
 
     const worker = result.rows[0];
-
     const token = generateWorkerToken(worker);
 
-    // Return token in response
-    return res.status(200).json({ token, message: "Sign up complete" });
+    return res.status(200).json({
+      token,
+      contact_id,
+      message: "Sign up complete",
+    });
   } catch (error) {
-    console.error("Error completing sign up:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    console.error("Error completing sign up:", error.response?.data || error.message);
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error.response?.data || error.message,
+    });
   }
 };
+
+
+// const workerCompleteSignUp = async (req, res) => {
+//   const { fullName, email = null, phoneNumber } = req.body; // Set default value of email to null
+//   // console.log(fullName);
+
+//   // Check for the presence of the phone number
+//   if (!phoneNumber) {
+//     return res.status(400).json({
+//       message: "No phone number found. Please start the login process again.",
+//     });
+//   }
+
+//   try {
+//     // Prepare the insert query
+//     const insertWorkerQuery = `
+//       INSERT INTO workers (phone_number, name, email)
+//       VALUES ($1, $2, $3)
+//       RETURNING *;
+//     `;
+
+//     // Insert the new worker into the database
+//     const result = await client.query(insertWorkerQuery, [
+//       phoneNumber,
+//       fullName,
+//       email,
+//     ]);
+
+//     const worker = result.rows[0];
+
+//     const token = generateWorkerToken(worker);
+
+//     // Return token in response
+//     return res.status(200).json({ token, message: "Sign up complete" });
+//   } catch (error) {
+//     console.error("Error completing sign up:", error);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// };
 
 const getServicesPhoneNumber = async (req, res) => {
   // Extract serviceTitle from the body of the POST request
@@ -1155,30 +1742,49 @@ const registrationSubmit = async (req, res) => {
   }
 };
 
+
+
 const addBankAccount = async (req, res) => {
   const bankAccountDetails = req.body;
-  // Extract data from formData
   const workerId = req.worker.id;
   const bankName = bankAccountDetails.bank;
   const accountNumber = bankAccountDetails.accountNumber;
   const ifscCode = bankAccountDetails.ifscCode;
   const accountHolderName = bankAccountDetails.accountHolderName;
 
-  // Encrypt sensitive data
-  const encryptedAccountNumber = encrypt(accountNumber);
-  const encryptedIfscCode = encrypt(ifscCode);
+  if (!bankName || !accountNumber || !ifscCode || !accountHolderName) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
 
   try {
-    // SQL query to insert into workerskills table with conflict resolution
+    // Call Razorpay API to verify the bank account details.
+    // Using the assumed correct endpoint: /v1/bank_accounts/validate
+    const razorpayResponse = await axios.post(
+      "https://api.razorpay.com/v1/bank_accounts/validate",
+      { account_number: accountNumber, ifsc: ifscCode },
+      { auth: { username: process.env.RAZORPAY_KEY, password: process.env.RAZORPAY_SECRET } }
+    );
+
+    // If Razorpay returns a valid response, consider it verified.
+    const verificationResult = razorpayResponse.data;
+    console.log("Verification result:", verificationResult);
+
+    // Encrypt sensitive fields
+    const encryptedAccountNumber = encrypt(accountNumber);
+    const encryptedIfscCode = encrypt(ifscCode);
+
+    // Insert or update the bank account details in the database
     const query = `
-      INSERT INTO bankaccounts (worker_id, bank_name, account_number, ifsc_code, account_holder_name)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO bankaccounts (worker_id, bank_name, account_number, ifsc_code, account_holder_name, status)
+      VALUES ($1, $2, $3, $4, $5, 'verified')
       ON CONFLICT (worker_id) DO UPDATE
       SET
         bank_name = EXCLUDED.bank_name,
-        account_number = EXCLUDED.account_number,
+        account_number = EXCLUDED.bank_name,  -- Ensure you update with the encrypted value
         ifsc_code = EXCLUDED.ifsc_code,
-        account_holder_name = EXCLUDED.account_holder_name;
+        account_holder_name = EXCLUDED.account_holder_name,
+        status = 'verified',
+        updated_at = NOW();
     `;
 
     const values = [
@@ -1189,17 +1795,175 @@ const addBankAccount = async (req, res) => {
       accountHolderName,
     ];
 
-    // Execute the query
     await client.query(query, values);
 
-    // Send success response
-    res.status(200).json({ message: "Bank account added successfully" });
+    res.status(200).json({ 
+      message: "Bank account verified and added successfully", 
+      bank_details: verificationResult 
+    });
   } catch (error) {
-    console.error(
-      "Error inserting or updating data in bank account table:",
-      error
+    console.error("Error inserting or updating bank account:", error.response?.data || error.message);
+    res.status(500).json({ 
+      message: "Error adding account", 
+      error: error.response?.data || error.message 
+    });
+  }
+};
+
+// const createFundAccount = async (req, res) => {
+//   try {
+//     const { worker_id } = req.worker; // Get worker ID from authenticated token
+//     const { contact_id, name, ifsc, account_number, bank_name } = req.body;
+
+//     if (!contact_id || !name || !ifsc || !account_number || !bank_name) {
+//       return res.status(400).json({ message: "All fields are required" });
+//     }
+
+//     // Build request payload for Razorpay
+//     const payload = {
+//       contact_id,
+//       account_type: "bank_account",
+//       bank_account: { name, ifsc, account_number },
+//     };
+
+//     // Make request to Razorpay
+//     const response = await axios.post(
+//       "https://api.razorpay.com/v1/fund_accounts",
+//       payload,
+//       {
+//         auth: {
+//           username: process.env.RAZORPAY_KEY,
+//           password: process.env.RAZORPAY_SECRET,
+//         },
+//         headers: { "Content-Type": "application/json" },
+//       }
+//     );
+
+//     // Extract fund account ID
+//     const { id: fund_account_id } = response.data;
+
+//     // Insert fund account details into your database
+//     const query = `
+//       INSERT INTO bank_accounts (worker_id, contact_id, fund_account_id, bank_name, ifsc_code, account_number, status)
+//       VALUES ($1, $2, $3, $4, $5, $6, 'verified')
+//       ON CONFLICT (worker_id) DO UPDATE
+//       SET contact_id = EXCLUDED.contact_id,
+//           fund_account_id = EXCLUDED.fund_account_id,
+//           bank_name = EXCLUDED.bank_name,
+//           ifsc_code = EXCLUDED.ifsc_code,
+//           account_number = EXCLUDED.account_number,
+//           status = 'verified',
+//           updated_at = NOW();
+//     `;
+
+//     await db.query(query, [
+//       worker_id,
+//       contact_id,
+//       fund_account_id,
+//       bank_name,
+//       ifsc,
+//       account_number, // Consider encrypting this
+//     ]);
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Bank account verified and added successfully",
+//       fund_account_id,
+//       contact_id,
+//     });
+//   } catch (error) {
+//     console.error("Error creating fund account:", error.response?.data || error.message);
+//     res.status(500).json({
+//       success: false,
+//       message: "Error adding bank account",
+//       error: error.response?.data || error.message,
+//     });
+//   }
+// };
+
+const createFundAccount = async (req, res) => {
+  try {
+    // Get worker id from authentication middleware (assumed to be set on req.worker)
+    const { id: worker_id } = req.worker;
+    // Get bank account details from the request body
+    const { name, ifsc, account_number, bank_name } = req.body;
+
+    // Validate required fields (you can add further validation as needed)
+    if (!name || !ifsc || !account_number || !bank_name) {
+      return res.status(400).json({ message: "All bank account details are required." });
+    }
+
+    // Fetch the worker's Razorpay contact_id from your workers table.
+    // (Assume that during signup, a contact_id was created and stored.)
+    const contactQuery = "SELECT contact_id FROM workers WHERE worker_id = $1";
+    const contactResult = await client.query(contactQuery, [worker_id]);
+    if (contactResult.rows.length === 0 || !contactResult.rows[0].contact_id) {
+      return res.status(400).json({ message: "Contact ID not found. Create a Razorpay contact first." });
+    }
+    const contact_id = contactResult.rows[0].contact_id;
+
+    // Build the payload as per Razorpay's Create Fund Account API
+    const payload = {
+      contact_id,
+      account_type: "bank_account",
+      bank_account: { name, ifsc, account_number },
+    };
+
+    // Call Razorpay's Fund Account API
+    const razorpayResponse = await axios.post(
+      "https://api.razorpay.com/v1/fund_accounts",
+      payload,
+      {
+        auth: {
+          username: process.env.RAZORPAY_KEY,
+          password: process.env.RAZORPAY_SECRET,
+        },
+        headers: { "Content-Type": "application/json" },
+      }
     );
-    res.status(500).json({ message: "Error adding account", error });
+
+    // Extract the fund_account_id from Razorpay's response
+    const { id: fund_account_id } = razorpayResponse.data;
+
+    // Encrypt sensitive data (e.g. account_number)
+    const encryptedAccountNumber = encrypt(account_number);
+
+    // Insert or update the fund account details in your bank_accounts table
+    const query = `
+      INSERT INTO bank_accounts (worker_id, contact_id, fund_account_id, bank_name, ifsc_code, account_number, status)
+      VALUES ($1, $2, $3, $4, $5, $6, 'verified')
+      ON CONFLICT (worker_id) DO UPDATE
+      SET contact_id = EXCLUDED.contact_id,
+          fund_account_id = EXCLUDED.fund_account_id,
+          bank_name = EXCLUDED.bank_name,
+          ifsc_code = EXCLUDED.ifsc_code,
+          account_number = EXCLUDED.account_number,
+          status = 'verified',
+          updated_at = NOW();
+    `;
+    const values = [
+      worker_id,
+      contact_id,
+      fund_account_id,
+      bank_name,
+      ifsc,
+      encryptedAccountNumber,
+    ];
+    await client.query(query, values);
+
+    res.status(200).json({
+      success: true,
+      message: "Bank account verified and added successfully",
+      fund_account_id,
+      contact_id,
+    });
+  } catch (error) {
+    console.error("Error creating fund account:", error.response?.data || error.message);
+    res.status(500).json({
+      success: false,
+      message: "Error adding bank account",
+      error: error.response?.data || error.message,
+    });
   }
 };
 
@@ -1236,24 +2000,26 @@ const addUpiId = async (req, res) => {
 const onboardingSteps = async (req, res) => {
   const workerId = req.worker.id; // Get the worker ID from the request object
   try {
-    // Combined query to check existence in workersverified, workerskills, and bankaccounts
+    // Query to check existence in workers, workerskills, bank_accounts, and upi_accounts
     const query = `
       SELECT 
         EXISTS (SELECT 1 FROM workers WHERE worker_id = $1) AS step1,
         EXISTS (SELECT 1 FROM workerskills WHERE worker_id = $1) AS step2,
-        EXISTS (SELECT 1 FROM bankaccounts WHERE worker_id = $1) AS step3
+        EXISTS (SELECT 1 FROM bank_accounts WHERE worker_id = $1) AS bankAccount,
+        EXISTS (SELECT 1 FROM upi_accounts WHERE worker_id = $1) AS upiId
     `;
 
     const result = await client.query(query, [workerId]);
 
     // Extracting step results from the query response
-    const { step1, step2, step3 } = result.rows[0];
+    const { step1, step2, bankaccount, upiid } = result.rows[0];
 
     // Construct the response object
     const response = {
       step1,
       step2,
-      step3,
+      bankAccount: bankaccount, // Step 3A: Bank Account
+      upiId: upiid,             // Step 3B: UPI ID
     };
 
     // Send response
@@ -1266,6 +2032,113 @@ const onboardingSteps = async (req, res) => {
     res.status(500).json({ message: "Error checking onboarding steps", error });
   }
 };
+
+// Helper function to safely stringify objects with circular references
+
+// Helper function to safely stringify objects (used when storing the validation response)
+const safeStringify = (obj) => {
+  const seen = new WeakSet();
+  return JSON.stringify(obj, (key, value) => {
+    if (typeof value === 'object' && value !== null) {
+      if (seen.has(value)) {
+        return; // Omit circular reference
+      }
+      seen.add(value);
+    }
+    return value;
+  });
+};
+
+const validateAndSaveUPI = async (req, res) => {
+  const { upi_id } = req.body;
+  const workerId = req.worker.id;
+
+  console.log("Received request with:", { workerId, upi_id });
+
+  if (!upi_id) {
+    return res.status(400).json({
+      success: false,
+      message: "UPI ID is required.",
+    });
+  }
+
+  try {
+    // Call Razorpay API to validate the UPI ID
+    const razorpayResponse = await axios.post(
+      "https://api.razorpay.com/v1/payments/validate/vpa",
+      { vpa: upi_id },
+      {
+        auth: {
+          username: process.env.RAZORPAY_KEY,
+          password: process.env.RAZORPAY_SECRET,
+        },
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
+    console.log("Razorpay Response:", razorpayResponse.data);
+
+    const validationResponse = razorpayResponse.data;
+
+    // Check if Razorpay validated the UPI ID successfully
+    if (validationResponse.success) {
+      // Save valid UPI ID to the database
+      const query = `
+        INSERT INTO upi_accounts (worker_id, upi_id, is_verified, razorpay_response)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (upi_id) DO UPDATE
+        SET is_verified = EXCLUDED.is_verified, 
+            razorpay_response = EXCLUDED.razorpay_response, 
+            updated_at = CURRENT_TIMESTAMP
+        RETURNING *;
+      `;
+
+      const values = [
+        workerId,
+        upi_id,
+        true, // Mark as verified
+        JSON.stringify(validationResponse), // Store Razorpay response as JSON
+      ];
+
+      const result = await client.query(query, values);
+      console.log("UPI ID stored successfully:", result.rows[0]);
+
+      return res.status(200).json({
+        success: true,
+        message: "UPI ID validated and stored successfully",
+        data: result.rows[0],
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "UPI ID validation failed. Please check the UPI ID format.",
+      });
+    }
+  } catch (error) {
+    if (error.response) {
+      console.error("Error response from Razorpay:", error.response.data);
+      return res.status(error.response.status).json({
+        success: false,
+        message: "UPI ID validation failed",
+        error: error.response.data,
+      });
+    } else {
+      console.error("Error message:", error.message);
+      return res.status(500).json({
+        success: false,
+        message: "UPI ID validation or storage failed",
+        error: error.message,
+      });
+    }
+  }
+};
+
+
+
+
+
+
+
 
 const getAllBankAccounts = async (req, res) => {
   try {
@@ -2654,10 +3527,10 @@ const workerApprove = async (req, res) => {
       WITH moved_worker AS (
         DELETE FROM workers
         WHERE worker_id = $1
-        RETURNING worker_id, name, email, phone_number
+        RETURNING worker_id, name, email, phone_number, contact_id
       )
-      INSERT INTO workersverified (worker_id, name, email, phone_number)
-      SELECT worker_id, name, email, phone_number FROM moved_worker;
+      INSERT INTO workersverified (worker_id, name, email, phone_number, contact_id)
+      SELECT worker_id, name, email, phone_number, contact_id FROM moved_worker;
     `;
 
     const result = await client.query(query, [workerId]);
@@ -2672,12 +3545,13 @@ const workerApprove = async (req, res) => {
       .status(200)
       .json({ message: "Worker approved and moved to workerverified table" });
   } catch (error) {
-    console.error(error);
+    console.error("Error in workerApprove:", error.message);
     res
       .status(500)
       .json({ error: "An error occurred while approving the worker" });
   }
 };
+
 
 const getWorkersPendingCashback = async (req, res) => {
   try {
@@ -3799,39 +4673,39 @@ const getWorkerByPhoneNumber = async (phone_number) => {
   }
 };
 
-const login = async (req, res) => {
-  const { phone_number } = req.body;
-  // console.log(phone_number)
-  if (!phone_number) {
-    return res.status(400).json({ message: "Phone number is required" });
-  }
+// const login = async (req, res) => {
+//   const { phone_number } = req.body;
+//   // console.log(phone_number)
+//   if (!phone_number) {
+//     return res.status(400).json({ message: "Phone number is required" });
+//   }
 
-  try {
-    // Find user by phone number
-    const user = await getUserByPhoneNumber(phone_number);
+//   try {
+//     // Find user by phone number
+//     const user = await getUserByPhoneNumber(phone_number);
 
-    if (user) {
-      // Generate a token for the user
-      const token = generateToken(user);
+//     if (user) {
+//       // Generate a token for the user
+//       const token = generateToken(user);
 
-      // Set the token as an HTTP-only cookie
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
-      });
+//       // Set the token as an HTTP-only cookie
+//       res.cookie("token", token, {
+//         httpOnly: true,
+//         secure: process.env.NODE_ENV === "production",
+//         sameSite: "Strict",
+//       });
 
-      // Send the token in the response
-      return res.json({ token });
-    } else {
-      // Return unauthorized if user not found
-      return res.status(205).json({ message: "Invalid credentials" });
-    }
-  } catch (error) {
-    console.error("Error during login:", error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-};
+//       // Send the token in the response
+//       return res.json({ token });
+//     } else {
+//       // Return unauthorized if user not found
+//       return res.status(205).json({ message: "Invalid credentials" });
+//     }
+//   } catch (error) {
+//     console.error("Error during login:", error);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// };
 
 // const getAllServices = async () => {
 //   try {
@@ -3842,6 +4716,37 @@ const login = async (req, res) => {
 //     throw error;
 //   }
 // };
+
+// LOGIN FUNCTION
+const login = async (req, res) => {
+  const { phone_number } = req.body;
+  if (!phone_number) {
+    return res.status(400).json({ message: "Phone number is required" });
+  }
+
+  try {
+    // Find the user by phone number
+    const user = await getUserByPhoneNumber(phone_number);
+    if (user) {
+      // Generate a token for the user
+      const token = generateToken(user);
+      // Set token as an HTTP-only cookie (for web) or return it in the JSON response
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
+      });
+      return res.status(200).json({ token });
+    } else {
+      // Use status 205 (or an alternative status) to indicate that the user does not exist
+      return res.status(205).json({ message: "Invalid credentials" });
+    }
+  } catch (error) {
+    console.error("Error during login:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 const getAllServices = async () => {
   try {
@@ -4010,57 +4915,104 @@ const updateWorkerLocation = async (req, res) => {
 
 const storeUserFcmToken = async (req, res) => {
   const { fcmToken } = req.body;
-  const UserId = req.user.id;
+  const userId = req.user.id;
 
   try {
-    // Use INSERT ON CONFLICT to handle existing FCM tokens
-    const insertQuery = `
+    // Single query using CTE:
+    // 1) Delete any row with the same fcm_token (to avoid duplicates across users)
+    // 2) Insert new row with (user_id, fcm_token).
+    // 3) ON CONFLICT DO NOTHING if the same row (user_id + fcm_token) already exists.
+    // 4) Return the newly inserted row (if any).
+    const upsertQuery = `
+      WITH delete_matched AS (
+        DELETE FROM userfcm
+        WHERE fcm_token = $2
+      )
       INSERT INTO userfcm (user_id, fcm_token)
       VALUES ($1, $2)
       ON CONFLICT (user_id, fcm_token)
-      DO NOTHING;
+      DO NOTHING
+      RETURNING user_id, fcm_token;
     `;
 
-    const result = await client.query(insertQuery, [UserId, fcmToken]);
+    const result = await client.query(upsertQuery, [userId, fcmToken]);
 
     if (result.rowCount > 0) {
-      // Token was inserted
-      res.status(200).json({ message: "FCM token stored successfully" });
+      // Successfully inserted a new row
+      return res.status(200).json({ message: "FCM token stored successfully" });
     } else {
-      // Token already exists
-      res
-        .status(200)
-        .json({ message: "FCM token already exists for this user" });
+      // The row already existed for this user, or ON CONFLICT prevented insert
+      return res.status(200).json({ message: "FCM token already exists for this user" });
     }
   } catch (error) {
     console.error("Error storing FCM token:", error);
-    res.status(500).json({ error: "Failed to store FCM token" });
+    return res.status(500).json({ error: "Failed to store FCM token" });
   }
 };
+
+
+// const storeFcmToken = async (req, res) => {
+//   const { fcmToken } = req.body;
+//   const workerId = req.worker.id;
+
+//   try {
+//     // Use INSERT ON CONFLICT to handle existing FCM tokens
+//     const insertQuery = `
+//       INSERT INTO fcm (worker_id, fcm_token)
+//       VALUES ($1, $2)
+//       ON CONFLICT (worker_id, fcm_token)
+//       DO NOTHING;
+//     `;
+
+//     const result = await client.query(insertQuery, [workerId, fcmToken]);
+
+//     if (result.rowCount > 0) {
+//       // Token was inserted
+//       res.status(200).json({ message: "FCM token stored successfully" });
+//     } else {
+//       // Token already exists
+//       res
+//         .status(200)
+//         .json({ message: "FCM token already exists for this worker" });
+//     }
+//   } catch (error) {
+//     console.error("Error storing FCM token:", error);
+//     res.status(500).json({ error: "Failed to store FCM token" });
+//   }
+// };
+
+// Function to get current date and time formatted as TIMESTAMP WITHOUT TIME ZONE
 
 const storeFcmToken = async (req, res) => {
   const { fcmToken } = req.body;
   const workerId = req.worker.id;
 
   try {
-    // Use INSERT ON CONFLICT to handle existing FCM tokens
-    const insertQuery = `
+    // Single query using CTE:
+    // 1) Delete any row with the same fcm_token (to avoid duplicates across workers)
+    // 2) Insert new row with (worker_id, fcm_token).
+    // 3) ON CONFLICT DO NOTHING if the same row (worker_id + fcm_token) already exists.
+    // 4) Return the newly inserted row (if any).
+    const upsertQuery = `
+      WITH delete_matched AS (
+        DELETE FROM fcm
+        WHERE fcm_token = $2
+      )
       INSERT INTO fcm (worker_id, fcm_token)
       VALUES ($1, $2)
       ON CONFLICT (worker_id, fcm_token)
-      DO NOTHING;
+      DO NOTHING
+      RETURNING worker_id, fcm_token;
     `;
 
-    const result = await client.query(insertQuery, [workerId, fcmToken]);
+    const result = await client.query(upsertQuery, [workerId, fcmToken]);
 
     if (result.rowCount > 0) {
-      // Token was inserted
+      // Successfully inserted a new row
       res.status(200).json({ message: "FCM token stored successfully" });
     } else {
-      // Token already exists
-      res
-        .status(200)
-        .json({ message: "FCM token already exists for this worker" });
+      // The row already existed for this worker, or ON CONFLICT prevented insert
+      res.status(200).json({ message: "FCM token already exists for this worker" });
     }
   } catch (error) {
     console.error("Error storing FCM token:", error);
@@ -4068,7 +5020,7 @@ const storeFcmToken = async (req, res) => {
   }
 };
 
-// Function to get current date and time formatted as TIMESTAMP WITHOUT TIME ZONE
+
 const getCurrentTimestamp = () => {
   const now = new Date();
   const year = now.getFullYear();
@@ -4108,6 +5060,7 @@ const getLocationDetails = async (req, res) => {
 
 // Function to fetch location details from the database
 const fetchLocationDetails = async (notificationId) => {
+  console.log(notificationId)
   try {
     // Query to get the start and endpoint details using a JOIN between accepted and workerlocation tables
     const query = `
@@ -6676,46 +7629,90 @@ const getWorkersNearby = async (req, res) => {
      *  │     matching subservices retrieval via CTEs           │
      *  └───────────────────────────────────────────────────────┘
      */
+    // const query1 = `
+    //   WITH user_loc AS (
+    //     SELECT u.user_id, ul.longitude, ul.latitude
+    //     FROM "user" u
+    //     JOIN userlocation ul ON u.user_id = ul.user_id
+    //     WHERE u.user_id = $1
+    //   ),
+    //   inserted_user_notifications AS (
+    //     INSERT INTO userNotifications (
+    //       user_id, longitude, latitude, created_at,
+    //       area, pincode, city, alternate_name,
+    //       alternate_phone_number, service_booked
+    //     )
+    //     SELECT
+    //       user_loc.user_id,
+    //       user_loc.longitude,
+    //       user_loc.latitude,
+    //       $2,  -- created_at
+    //       $3,  -- area
+    //       $4,  -- pincode
+    //       $5,  -- city
+    //       $6,  -- alternateName
+    //       $7,  -- alternatePhoneNumber
+    //       $8   -- serviceArray
+    //     FROM user_loc
+    //     RETURNING user_notification_id
+    //   ),
+    //   matching_workers AS (
+    //     SELECT worker_id
+    //     FROM workerskills
+    //     WHERE $9::text[] <@ subservices
+    //     GROUP BY worker_id
+    //   )
+    //   SELECT
+    //     (SELECT user_notification_id FROM inserted_user_notifications) AS user_notification_id,
+    //     array_agg(mw.worker_id) AS worker_ids,
+    //     (SELECT latitude FROM user_loc) AS user_lat,
+    //     (SELECT longitude FROM user_loc) AS user_lon
+    //   FROM matching_workers mw;
+    // `;
+
     const query1 = `
-      WITH user_loc AS (
-        SELECT u.user_id, ul.longitude, ul.latitude
-        FROM "user" u
-        JOIN userlocation ul ON u.user_id = ul.user_id
-        WHERE u.user_id = $1
-      ),
-      inserted_user_notifications AS (
-        INSERT INTO userNotifications (
-          user_id, longitude, latitude, created_at,
-          area, pincode, city, alternate_name,
-          alternate_phone_number, service_booked
-        )
-        SELECT
-          user_loc.user_id,
-          user_loc.longitude,
-          user_loc.latitude,
-          $2,  -- created_at
-          $3,  -- area
-          $4,  -- pincode
-          $5,  -- city
-          $6,  -- alternateName
-          $7,  -- alternatePhoneNumber
-          $8   -- serviceArray
-        FROM user_loc
-        RETURNING user_notification_id
-      ),
-      matching_workers AS (
-        SELECT worker_id
-        FROM workerskills
-        WHERE $9::text[] <@ subservices
-        GROUP BY worker_id
+    WITH user_loc AS (
+      SELECT u.user_id, ul.longitude, ul.latitude
+      FROM "user" u
+      JOIN userlocation ul ON u.user_id = ul.user_id
+      WHERE u.user_id = $1
+    ),
+    inserted_user_notifications AS (
+      INSERT INTO userNotifications (
+        user_id, longitude, latitude, created_at,
+        area, pincode, city, alternate_name,
+        alternate_phone_number, service_booked
       )
       SELECT
-        (SELECT user_notification_id FROM inserted_user_notifications) AS user_notification_id,
-        array_agg(mw.worker_id) AS worker_ids,
-        (SELECT latitude FROM user_loc) AS user_lat,
-        (SELECT longitude FROM user_loc) AS user_lon
-      FROM matching_workers mw;
-    `;
+        user_loc.user_id,
+        user_loc.longitude,
+        user_loc.latitude,
+        $2,  -- created_at
+        $3,  -- area
+        $4,  -- pincode
+        $5,  -- city
+        $6,  -- alternateName
+        $7,  -- alternatePhoneNumber
+        $8   -- serviceArray
+      FROM user_loc
+      RETURNING user_notification_id
+    ),
+    matching_workers AS (
+      SELECT ws.worker_id
+      FROM workerskills ws
+      JOIN workersverified wv ON ws.worker_id = wv.worker_id
+      WHERE $9::text[] <@ ws.subservices
+        AND wv.no_due = TRUE  -- Ensure workers have no due payments
+      GROUP BY ws.worker_id
+    )
+    SELECT
+      (SELECT user_notification_id FROM inserted_user_notifications) AS user_notification_id,
+      array_agg(mw.worker_id) AS worker_ids,
+      (SELECT latitude FROM user_loc) AS user_lat,
+      (SELECT longitude FROM user_loc) AS user_lon
+    FROM matching_workers mw;
+  `;
+  
 
     const query1Params = [
       user_id, // $1
@@ -6736,6 +7733,7 @@ const getWorkersNearby = async (req, res) => {
         .json("No user found or no worker matches subservices");
     }
 
+    // console.log("data",result1.rows[0])
     const { user_notification_id, worker_ids, user_lat, user_lon } =
       result1.rows[0];
 
@@ -7626,77 +8624,162 @@ const getVehicleServices = async () => {
   }
 };
 
+// const sendOtp = (req, res) => {
+//   const { mobileNumber } = req.body;
+//   // console.log(mobileNumber)
+//   const options = {
+//     method: "POST",
+//     url: `https://cpaas.messagecentral.com/verification/v3/send?countryCode=91&customerId=C-B3753ECA43BD435&flowType=SMS&mobileNumber=${mobileNumber}`,
+//     headers: {
+//       authToken:
+//         "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUIzNzUzRUNBNDNCRDQzNSIsImlhdCI6MTcyNjI1OTQwNiwiZXhwIjoxODgzOTM5NDA2fQ.Gme6ijpbtUge-n9NpEgJR7lIsNQTqH4kDWkoe9Wp6Nnd6AE0jaAKCuuGuYtkilkBrcC1wCj8GrlMNQodR-Gelg",
+//     },
+//   };
+
+//   request(options, function (error, response) {
+//     if (error) {
+//       return res.status(500).json({ message: "Error sending OTP", error });
+//     }
+
+//     // Log the response body to see what you are getting
+//     // console.log('Response body:', response.body);
+
+//     try {
+//       const data = JSON.parse(response.body);
+
+//       // Check if data contains the expected structure
+//       if (data && data.data && data.data.verificationId) {
+//         res.status(200).json({
+//           message: "OTP sent successfully",
+//           verificationId: data.data.verificationId,
+//         });
+//       } else {
+//         // Handle case where verificationId is not present
+//         res.status(500).json({
+//           message: "Failed to retrieve verificationId",
+//           error: data,
+//         });
+//       }
+//     } catch (parseError) {
+//       // Handle JSON parsing errors
+//       res
+//         .status(500)
+//         .json({ message: "Failed to parse response", error: parseError });
+//     }
+//   });
+// };
+
+
+// SEND OTP FUNCTION
+
+
 const sendOtp = (req, res) => {
   const { mobileNumber } = req.body;
-  // console.log(mobileNumber)
+  if (!mobileNumber) {
+    return res.status(400).json({ message: "Mobile number is required" });
+  }
+
   const options = {
     method: "POST",
-    url: `https://cpaas.messagecentral.com/verification/v3/send?countryCode=91&customerId=C-B3753ECA43BD435&flowType=SMS&mobileNumber=${mobileNumber}`,
+    url: `https://cpaas.messagecentral.com/verification/v3/send?countryCode=91&customerId=${process.env.CUSTOMER_ID}&flowType=SMS&mobileNumber=${mobileNumber}`,
     headers: {
-      authToken:
-        "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUIzNzUzRUNBNDNCRDQzNSIsImlhdCI6MTcyNjI1OTQwNiwiZXhwIjoxODgzOTM5NDA2fQ.Gme6ijpbtUge-n9NpEgJR7lIsNQTqH4kDWkoe9Wp6Nnd6AE0jaAKCuuGuYtkilkBrcC1wCj8GrlMNQodR-Gelg",
+      authToken: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUIzNzUzRUNBNDNCRDQzNSIsImlhdCI6MTcyNjI1OTQwNiwiZXhwIjoxODgzOTM5NDA2fQ.Gme6ijpbtUge-n9NpEgJR7lIsNQTqH4kDWkoe9Wp6Nnd6AE0jaAKCuuGuYtkilkBrcC1wCj8GrlMNQodR-Gelg",
     },
   };
 
-  request(options, function (error, response) {
+  request(options, (error, response, body) => {
     if (error) {
+      console.error("Error sending OTP:", error);
       return res.status(500).json({ message: "Error sending OTP", error });
     }
-
-    // Log the response body to see what you are getting
-    // console.log('Response body:', response.body);
-
     try {
-      const data = JSON.parse(response.body);
-
-      // Check if data contains the expected structure
+      const data = JSON.parse(body);
       if (data && data.data && data.data.verificationId) {
-        res.status(200).json({
+        return res.status(200).json({
           message: "OTP sent successfully",
           verificationId: data.data.verificationId,
         });
       } else {
-        // Handle case where verificationId is not present
-        res.status(500).json({
+        return res.status(500).json({
           message: "Failed to retrieve verificationId",
           error: data,
         });
       }
     } catch (parseError) {
-      // Handle JSON parsing errors
-      res
-        .status(500)
-        .json({ message: "Failed to parse response", error: parseError });
+      console.error("Error parsing OTP response:", parseError);
+      return res.status(500).json({ message: "Failed to parse response", error: parseError });
     }
   });
 };
 
+
+
+// VALIDATE OTP FUNCTION
 const validateOtp = (req, res) => {
+  // Expecting mobileNumber, verificationId, and otpCode as query parameters
   const { mobileNumber, verificationId, otpCode } = req.query;
+  if (!mobileNumber || !verificationId || !otpCode) {
+    return res.status(400).json({ message: "Missing required parameters" });
+  }
 
   const options = {
     method: "GET",
-    url: `https://cpaas.messagecentral.com/verification/v3/validateOtp?countryCode=91&mobileNumber=${mobileNumber}&verificationId=${verificationId}&customerId=C-B3753ECA43BD435&code=${otpCode}`,
+    url: `https://cpaas.messagecentral.com/verification/v3/validateOtp?countryCode=91&mobileNumber=${mobileNumber}&verificationId=${verificationId}&customerId=${process.env.CUSTOMER_ID}&code=${otpCode}`,
     headers: {
-      authToken:
-        "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUIzNzUzRUNBNDNCRDQzNSIsImlhdCI6MTcyNjI1OTQwNiwiZXhwIjoxODgzOTM5NDA2fQ.Gme6ijpbtUge-n9NpEgJR7lIsNQTqH4kDWkoe9Wp6Nnd6AE0jaAKCuuGuYtkilkBrcC1wCj8GrlMNQodR-Gelg",
+      authToken: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUIzNzUzRUNBNDNCRDQzNSIsImlhdCI6MTcyNjI1OTQwNiwiZXhwIjoxODgzOTM5NDA2fQ.Gme6ijpbtUge-n9NpEgJR7lIsNQTqH4kDWkoe9Wp6Nnd6AE0jaAKCuuGuYtkilkBrcC1wCj8GrlMNQodR-Gelg",
     },
   };
 
-  request(options, function (error, response) {
+  request(options, (error, response, body) => {
     if (error) {
+      console.error("Error validating OTP:", error);
       return res.status(500).json({ message: "Error validating OTP", error });
     }
-    const data = JSON.parse(response.body);
-    // console.log(data)
-    res.status(200).json({
-      message:
+    try {
+      const data = JSON.parse(body);
+      if (
+        data &&
+        data.data &&
         data.data.verificationStatus === "VERIFICATION_COMPLETED"
-          ? "OTP Verified"
-          : "Invalid OTP",
-    });
+      ) {
+        return res.status(200).json({ message: "OTP Verified" });
+      } else {
+        return res.status(200).json({ message: "Invalid OTP" });
+      }
+    } catch (parseError) {
+      console.error("Error parsing OTP validation response:", parseError);
+      return res.status(500).json({ message: "Failed to parse response", error: parseError });
+    }
   });
 };
+
+
+// const validateOtp = (req, res) => {
+//   const { mobileNumber, verificationId, otpCode } = req.query;
+
+//   const options = {
+//     method: "GET",
+//     url: `https://cpaas.messagecentral.com/verification/v3/validateOtp?countryCode=91&mobileNumber=${mobileNumber}&verificationId=${verificationId}&customerId=C-B3753ECA43BD435&code=${otpCode}`,
+//     headers: {
+//       authToken:
+//         "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUIzNzUzRUNBNDNCRDQzNSIsImlhdCI6MTcyNjI1OTQwNiwiZXhwIjoxODgzOTM5NDA2fQ.Gme6ijpbtUge-n9NpEgJR7lIsNQTqH4kDWkoe9Wp6Nnd6AE0jaAKCuuGuYtkilkBrcC1wCj8GrlMNQodR-Gelg",
+//     },
+//   };
+
+//   request(options, function (error, response) {
+//     if (error) {
+//       return res.status(500).json({ message: "Error validating OTP", error });
+//     }
+//     const data = JSON.parse(response.body);
+//     // console.log(data)
+//     res.status(200).json({
+//       message:
+//         data.data.verificationStatus === "VERIFICATION_COMPLETED"
+//           ? "OTP Verified"
+//           : "Invalid OTP",
+//     });
+//   });
+// };
 
 // ***
 // const CheckStartTime = async (req,res) => {
@@ -9559,7 +10642,6 @@ const getPaymentDetails = async (notification_id) => {
 // };
 
 
-
 const processPayment = async (req, res) => {
   const { totalAmount, paymentMethod, decodedId } = req.body;
 
@@ -9569,142 +10651,175 @@ const processPayment = async (req, res) => {
 
   if (!totalAmount || !paymentMethod || !decodedId) {
     return res.status(402).json({
-      error:
-        "Missing required fields: totalAmount, paymentMethod, and decodedId.",
+      error: "Missing required fields: totalAmount, paymentMethod, and decodedId.",
     });
   }
 
   try {
     const end_time = new Date();
 
+    /**
+     * Multi-CTE query steps:
+     * 1) update_servicecall
+     * 2) update_accepted
+     * 3) upsert_workerlife
+     * 4) insert_completenotifications
+     * 5) mark_service_completed
+     * 6) manage_referral_rewards
+     * 7) update_user_referred_by
+     * 8) delete_servicetracking
+     * 9) get_user_fcms       <-- New CTE to fetch user’s tokens
+     * 10) final SELECT
+     */
     const combinedQuery = `
-WITH update_servicecall AS (
-  UPDATE servicecall
-  SET
-    payment = $1,
-    payment_type = $2
-  WHERE notification_id = $3
-  RETURNING notification_id
-),
-update_accepted AS (
-  UPDATE accepted a
-  SET
-    time = jsonb_set(
-      COALESCE(a.time, '{}'::jsonb),
-      '{paymentCompleted}',
-      to_jsonb(to_char($4::timestamp, 'YYYY-MM-DD HH24:MI:SS'))
-    )
-  FROM update_servicecall us
-  WHERE a.notification_id = us.notification_id
-  RETURNING
-    a.accepted_id,
-    a.notification_id,
-    a.user_id,
-    a.user_notification_id,
-    a.service_booked,
-    a.longitude,
-    a.latitude,
-    a.worker_id,
-    a.time,
-    a.discount,
-    a.total_cost
-),
-update_workerlife AS (
-  UPDATE workerlife wl
-  SET
-    service_counts = wl.service_counts + 1,
-    money_earned = wl.money_earned + $6,
-    balance_amount = CASE
-      WHEN $5 = 'cash' THEN wl.balance_amount - ($6 * 0.12)
-      ELSE wl.balance_amount + ($6 * 0.88)
-    END,
-    cashback_approved_times = COALESCE((wl.service_counts + 1) / 6, 0)
-  FROM update_accepted ua
-  WHERE wl.worker_id = ua.worker_id
-  RETURNING wl.worker_id, wl.balance_amount, wl.cashback_approved_times, wl.service_counts
-),
-insert_completenotifications AS (
-  INSERT INTO completenotifications (
-    accepted_id,
-    notification_id,
-    user_id,
-    user_notification_id,
-    service_booked,
-    longitude,
-    latitude,
-    worker_id,
-    time,
-    discount,
-    total_cost
-  )
-  SELECT
-    ua.accepted_id,
-    ua.notification_id,
-    ua.user_id,
-    ua.user_notification_id,
-    ua.service_booked,
-    ua.longitude,
-    ua.latitude,
-    ua.worker_id,
-    ua.time,
-    ua.discount,
-    ua.total_cost
-  FROM update_accepted ua
-  RETURNING *
-),
-mark_service_completed AS (
-  UPDATE "user"
-  SET service_completed = TRUE
-  WHERE user_id IN (
-    SELECT user_id FROM update_accepted
-  )
-    AND service_completed = FALSE
-  RETURNING user_id, referred_by
-),
-manage_referral_rewards AS (
-  INSERT INTO referral_rewards (referral_code, coupons, total_referrals)
-  SELECT
-    referred_by AS referral_code,
-    1 AS coupons,
-    1 AS total_referrals
-  FROM mark_service_completed
-  WHERE referred_by IS NOT NULL
-  ON CONFLICT (referral_code)
-  DO UPDATE
-  SET
-    coupons = referral_rewards.coupons + 1,
-    total_referrals = referral_rewards.total_referrals + 1
-  RETURNING referral_code
-),
-update_user_referred_by AS (
-  UPDATE "user"
-  SET referred_by = (SELECT referred_by FROM mark_service_completed LIMIT 1)
-  WHERE user_id = (SELECT user_id FROM mark_service_completed LIMIT 1)
-  RETURNING user_id
-),
-delete_servicetracking AS (
-  DELETE FROM servicetracking
-  WHERE notification_id = $3
-  RETURNING *
-)
-SELECT
-  ua.user_id,
-  ua.service_booked,
-  ua.worker_id,
-  COUNT(ds.*) AS deleted_servicetracking
-FROM update_accepted ua
-LEFT JOIN delete_servicetracking ds ON TRUE
-GROUP BY ua.user_id, ua.service_booked, ua.worker_id;
+      WITH update_servicecall AS (
+        UPDATE servicecall
+        SET payment = $1, payment_type = $2
+        WHERE notification_id = $3
+        RETURNING notification_id
+      ),
+      update_accepted AS (
+        UPDATE accepted a
+        SET
+          time = jsonb_set(
+            COALESCE(a.time, '{}'::jsonb),
+            '{paymentCompleted}',
+            to_jsonb(to_char($4::timestamp, 'YYYY-MM-DD HH24:MI:SS'))
+          )
+        FROM update_servicecall us
+        WHERE a.notification_id = us.notification_id
+        RETURNING
+          a.accepted_id,
+          a.notification_id,
+          a.user_id,
+          a.user_notification_id,
+          a.service_booked,
+          a.longitude,
+          a.latitude,
+          a.worker_id,
+          a.time,
+          a.discount,
+          a.total_cost
+      ),
+      upsert_workerlife AS (
+        INSERT INTO workerlife (
+          worker_id,
+          service_counts,
+          money_earned,
+          balance_amount,
+          cashback_approved_times
+        )
+        SELECT
+          ua.worker_id,
+          1,
+          $6,
+          CASE WHEN $5 = 'cash' THEN -($6 * 0.12) ELSE ($6 * 0.88) END,
+          0
+        FROM update_accepted ua
+        ON CONFLICT (worker_id)
+        DO UPDATE
+          SET service_counts = workerlife.service_counts + 1,
+              money_earned = workerlife.money_earned + EXCLUDED.money_earned,
+              balance_amount = CASE
+                WHEN $5 = 'cash'
+                  THEN workerlife.balance_amount - ($6 * 0.12)
+                ELSE workerlife.balance_amount + ($6 * 0.88)
+              END,
+              cashback_approved_times = floor((workerlife.service_counts + 1) / 6)
+        RETURNING worker_id, balance_amount, cashback_approved_times, service_counts
+      ),
+      insert_completenotifications AS (
+        INSERT INTO completenotifications (
+          accepted_id,
+          notification_id,
+          user_id,
+          user_notification_id,
+          service_booked,
+          longitude,
+          latitude,
+          worker_id,
+          time,
+          discount,
+          total_cost
+        )
+        SELECT
+          ua.accepted_id,
+          ua.notification_id,
+          ua.user_id,
+          ua.user_notification_id,
+          ua.service_booked,
+          ua.longitude,
+          ua.latitude,
+          ua.worker_id,
+          ua.time,
+          ua.discount,
+          ua.total_cost
+        FROM update_accepted ua
+        RETURNING *
+      ),
+      mark_service_completed AS (
+        UPDATE "user"
+        SET service_completed = TRUE
+        WHERE user_id IN (
+          SELECT user_id FROM update_accepted
+        )
+          AND service_completed = FALSE
+        RETURNING user_id, referred_by
+      ),
+      manage_referral_rewards AS (
+        INSERT INTO referral_rewards (referral_code, coupons, total_referrals)
+        SELECT
+          referred_by AS referral_code,
+          1 AS coupons,
+          1 AS total_referrals
+        FROM mark_service_completed
+        WHERE referred_by IS NOT NULL
+        ON CONFLICT (referral_code)
+        DO UPDATE
+          SET coupons = referral_rewards.coupons + 1,
+              total_referrals = referral_rewards.total_referrals + 1
+        RETURNING referral_code
+      ),
+      update_user_referred_by AS (
+        UPDATE "user"
+        SET referred_by = (SELECT referred_by FROM mark_service_completed LIMIT 1)
+        WHERE user_id = (SELECT user_id FROM mark_service_completed LIMIT 1)
+        RETURNING user_id
+      ),
+      delete_servicetracking AS (
+        DELETE FROM servicetracking
+        WHERE notification_id = $3
+        RETURNING *
+      ),
+      /* New CTE to fetch all user FCM tokens in one query */
+      get_user_fcms AS (
+        SELECT
+          ua.user_id,
+          array_agg(uf.fcm_token) AS user_fcm_tokens
+        FROM update_accepted ua
+        JOIN userfcm uf ON uf.user_id = ua.user_id
+        GROUP BY ua.user_id
+      )
+      /* Final SELECT */
+      SELECT
+        ua.user_id,
+        ua.service_booked,
+        ua.worker_id,
+        (SELECT balance_amount FROM upsert_workerlife LIMIT 1) AS final_balance,
+        gf.user_fcm_tokens
+      FROM update_accepted ua
+      LEFT JOIN get_user_fcms gf ON gf.user_id = ua.user_id
+      LEFT JOIN delete_servicetracking ds ON TRUE
     `;
 
-    // Updated values array to include $5 and $6 for update_workerlife
+    // Values for placeholders $5, $6 in upsert_workerlife
     const values = [
-      totalAmount,    // $1: Payment amount for servicecall
-      paymentMethod,  // $2: Payment method for servicecall
-      decodedId,      // $3: Notification ID
-      end_time,       // $4: End time for accepted time update
-      paymentMethod,  // $5: Payment method for workerlife update ('cash' check)
-      totalAmount,    // $6: Total amount for workerlife calculations
+      totalAmount,     // $1: Payment amount (for servicecall)
+      paymentMethod,   // $2: Payment method (for servicecall)
+      decodedId,       // $3: Notification ID
+      end_time,        // $4: End time
+      paymentMethod,   // $5: Payment method used in upsert_workerlife logic
+      totalAmount,     // $6: Payment amount used for workerlife
     ];
 
     const combinedResult = await client.query(combinedQuery, values);
@@ -9713,15 +10828,13 @@ GROUP BY ua.user_id, ua.service_booked, ua.worker_id;
       return res.status(404).json({ error: "Notification not found." });
     }
 
-    // Now delete from `accepted` separately
+    // Delete from `accepted` after finalizing
     const deleteQuery = `
       DELETE FROM accepted
       WHERE notification_id = $1
       RETURNING *;
     `;
-
     const deleteResult = await client.query(deleteQuery, [decodedId]);
-
     console.log("Deleted rows from accepted:", deleteResult.rowCount);
 
     if (deleteResult.rowCount === 0) {
@@ -9730,18 +10843,54 @@ GROUP BY ua.user_id, ua.service_booked, ua.worker_id;
 
     // Extract needed columns from final SELECT
     const row = combinedResult.rows[0];
-    const { user_id, service_booked, worker_id } = row;
+    const {
+      user_id,
+      service_booked,
+      worker_id,
+      final_balance,
+      user_fcm_tokens
+    } = row;
+    console.log("Final row from combined query =>", row);
 
-    // Continue with notifications, etc.
+    // 1) Call your background actions
     const screen = "";
     const encodedNotificationId = Buffer.from(decodedId.toString()).toString("base64");
-    await createUserBackgroundAction(
-      user_id,
-      encodedNotificationId,
-      screen,
-      service_booked
-    );
+
+    await createUserBackgroundAction(user_id, encodedNotificationId, screen, service_booked);
     await updateWorkerAction(worker_id, encodedNotificationId, screen);
+
+    // 2) Use the user_fcm_tokens (array from CTE) to send notifications
+    if (user_fcm_tokens && user_fcm_tokens.length > 0) {
+      const message = {
+        tokens: user_fcm_tokens,
+        notification: {
+          title: "Payment Confirmation",
+          body: `Payment of ${totalAmount} completed! Your final balance is now ${
+            final_balance ?? "unknown"
+          }.`,
+        },
+        data: {
+          notification_id: decodedId.toString(),
+          type: "PAYMENT_CONFIRMATION",
+          screen: "Home",
+        },
+      };
+
+      try {
+        // If using Firebase Admin SDK's sendEachForMulticast:
+        const response = await admin.messaging().sendEachForMulticast(message);
+        response.responses.forEach((resp, index) => {
+          if (!resp.success) {
+            console.error(`Error sending to token ${user_fcm_tokens[index]}: `, resp.error);
+          }
+        });
+        console.log(`Notifications sent to user_id: ${user_id}`);
+      } catch (err) {
+        console.error("Error sending user payment notification:", err);
+      }
+    } else {
+      console.log(`No FCM tokens for user_id: ${user_id}`);
+    }
 
     return res.status(200).json({ message: "Payment processed successfully" });
   } catch (error) {
@@ -9751,6 +10900,202 @@ GROUP BY ua.user_id, ua.service_booked, ua.worker_id;
       .json({ error: "An error occurred while processing the payment" });
   }
 };
+
+
+
+
+
+// const processPayment = async (req, res) => {
+//   const { totalAmount, paymentMethod, decodedId } = req.body;
+
+//   console.log("Total Amount:", totalAmount);
+//   console.log("Payment Method:", paymentMethod);
+//   console.log("Decoded ID:", decodedId);
+
+//   if (!totalAmount || !paymentMethod || !decodedId) {
+//     return res.status(402).json({
+//       error:
+//         "Missing required fields: totalAmount, paymentMethod, and decodedId.",
+//     });
+//   }
+
+//   try {
+//     const end_time = new Date();
+
+//     const combinedQuery = `
+// WITH update_servicecall AS (
+//   UPDATE servicecall
+//   SET
+//     payment = $1,
+//     payment_type = $2
+//   WHERE notification_id = $3
+//   RETURNING notification_id
+// ),
+// update_accepted AS (
+//   UPDATE accepted a
+//   SET
+//     time = jsonb_set(
+//       COALESCE(a.time, '{}'::jsonb),
+//       '{paymentCompleted}',
+//       to_jsonb(to_char($4::timestamp, 'YYYY-MM-DD HH24:MI:SS'))
+//     )
+//   FROM update_servicecall us
+//   WHERE a.notification_id = us.notification_id
+//   RETURNING
+//     a.accepted_id,
+//     a.notification_id,
+//     a.user_id,
+//     a.user_notification_id,
+//     a.service_booked,
+//     a.longitude,
+//     a.latitude,
+//     a.worker_id,
+//     a.time,
+//     a.discount,
+//     a.total_cost
+// ),
+// update_workerlife AS (
+//   UPDATE workerlife wl
+//   SET
+//     service_counts = wl.service_counts + 1,
+//     money_earned = wl.money_earned + $6,
+//     balance_amount = CASE
+//       WHEN $5 = 'cash' THEN wl.balance_amount - ($6 * 0.12)
+//       ELSE wl.balance_amount + ($6 * 0.88)
+//     END,
+//     cashback_approved_times = COALESCE((wl.service_counts + 1) / 6, 0)
+//   FROM update_accepted ua
+//   WHERE wl.worker_id = ua.worker_id
+//   RETURNING wl.worker_id, wl.balance_amount, wl.cashback_approved_times, wl.service_counts
+// ),
+// insert_completenotifications AS (
+//   INSERT INTO completenotifications (
+//     accepted_id,
+//     notification_id,
+//     user_id,
+//     user_notification_id,
+//     service_booked,
+//     longitude,
+//     latitude,
+//     worker_id,
+//     time,
+//     discount,
+//     total_cost
+//   )
+//   SELECT
+//     ua.accepted_id,
+//     ua.notification_id,
+//     ua.user_id,
+//     ua.user_notification_id,
+//     ua.service_booked,
+//     ua.longitude,
+//     ua.latitude,
+//     ua.worker_id,
+//     ua.time,
+//     ua.discount,
+//     ua.total_cost
+//   FROM update_accepted ua
+//   RETURNING *
+// ),
+// mark_service_completed AS (
+//   UPDATE "user"
+//   SET service_completed = TRUE
+//   WHERE user_id IN (
+//     SELECT user_id FROM update_accepted
+//   )
+//     AND service_completed = FALSE
+//   RETURNING user_id, referred_by
+// ),
+// manage_referral_rewards AS (
+//   INSERT INTO referral_rewards (referral_code, coupons, total_referrals)
+//   SELECT
+//     referred_by AS referral_code,
+//     1 AS coupons,
+//     1 AS total_referrals
+//   FROM mark_service_completed
+//   WHERE referred_by IS NOT NULL
+//   ON CONFLICT (referral_code)
+//   DO UPDATE
+//   SET
+//     coupons = referral_rewards.coupons + 1,
+//     total_referrals = referral_rewards.total_referrals + 1
+//   RETURNING referral_code
+// ),
+// update_user_referred_by AS (
+//   UPDATE "user"
+//   SET referred_by = (SELECT referred_by FROM mark_service_completed LIMIT 1)
+//   WHERE user_id = (SELECT user_id FROM mark_service_completed LIMIT 1)
+//   RETURNING user_id
+// ),
+// delete_servicetracking AS (
+//   DELETE FROM servicetracking
+//   WHERE notification_id = $3
+//   RETURNING *
+// )
+// SELECT
+//   ua.user_id,
+//   ua.service_booked,
+//   ua.worker_id,
+//   COUNT(ds.*) AS deleted_servicetracking
+// FROM update_accepted ua
+// LEFT JOIN delete_servicetracking ds ON TRUE
+// GROUP BY ua.user_id, ua.service_booked, ua.worker_id;
+//     `;
+
+//     // Updated values array to include $5 and $6 for update_workerlife
+//     const values = [
+//       totalAmount,    // $1: Payment amount for servicecall
+//       paymentMethod,  // $2: Payment method for servicecall
+//       decodedId,      // $3: Notification ID
+//       end_time,       // $4: End time for accepted time update
+//       paymentMethod,  // $5: Payment method for workerlife update ('cash' check)
+//       totalAmount,    // $6: Total amount for workerlife calculations
+//     ];
+
+//     const combinedResult = await client.query(combinedQuery, values);
+
+//     if (combinedResult.rows.length === 0) {
+//       return res.status(404).json({ error: "Notification not found." });
+//     }
+
+//     // Now delete from `accepted` separately
+//     const deleteQuery = `
+//       DELETE FROM accepted
+//       WHERE notification_id = $1
+//       RETURNING *;
+//     `;
+
+//     const deleteResult = await client.query(deleteQuery, [decodedId]);
+
+//     console.log("Deleted rows from accepted:", deleteResult.rowCount);
+
+//     if (deleteResult.rowCount === 0) {
+//       console.warn(`No rows deleted from accepted for notification_id: ${decodedId}`);
+//     }
+
+//     // Extract needed columns from final SELECT
+//     const row = combinedResult.rows[0];
+//     const { user_id, service_booked, worker_id } = row;
+
+//     // Continue with notifications, etc.
+//     const screen = "";
+//     const encodedNotificationId = Buffer.from(decodedId.toString()).toString("base64");
+//     await createUserBackgroundAction(
+//       user_id,
+//       encodedNotificationId,
+//       screen,
+//       service_booked
+//     );
+//     await updateWorkerAction(worker_id, encodedNotificationId, screen);
+
+//     return res.status(200).json({ message: "Payment processed successfully" });
+//   } catch (error) {
+//     console.error("Error processing payment:", error);
+//     return res
+//       .status(500)
+//       .json({ error: "An error occurred while processing the payment" });
+//   }
+// };
 
 
 
@@ -11099,6 +12444,8 @@ const workerSearch = async (req, res) => {
         ws.profile,
         ws.service,
         ws.subservices,
+        ws.personaldetails,
+        ws.address,
         wl.balance_amount,
         wl.service_counts,
         wl.money_earned,
@@ -11395,6 +12742,8 @@ const workerScreenChange = async (req, res) => {
     // Execute the query
     const result = await client.query(query, [worker_id, screen, encodedId]);
 
+    console.log("rows",result.rows)
+
     return res.status(200).json({
       success: true,
       message: "Worker screen updated successfully",
@@ -11670,5 +13019,13 @@ module.exports = {
   getPendingWorkersNotStarted,
   administratorDetails,
   workerTokenVerification,
-  adminLogin
+  adminLogin,
+  WorkerValidateOtp,
+  WorkerSendOtp,
+  createOrder,
+  verifyPayment,
+  createFundAccount,
+  validateAndSaveUPI,
+  userLogout,
+  workerLogout
 };

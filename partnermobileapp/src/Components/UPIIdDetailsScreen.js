@@ -11,20 +11,21 @@ import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import {useNavigation, CommonActions} from '@react-navigation/native';
-
+import {useNavigation} from '@react-navigation/native';
 
 const UPIIdDetailsScreen = () => {
   const [upiId, setUpiId] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
-  
+
   const handleAddUPIId = async () => {
+    // Basic frontend validation
     if (!upiId || !upiId.includes('@')) {
       return setError('UPI ID cannot be empty and must include "@"');
     }
-
     setError('');
+    setLoading(true);
     try {
       const pcsToken = await EncryptedStorage.getItem('pcs_token');
       if (!pcsToken) {
@@ -32,19 +33,27 @@ const UPIIdDetailsScreen = () => {
         return navigation.replace('Login');
       }
 
+      // Call the combined validation and save endpoint
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/upi/submit`,
+        'http://192.168.55.103:5000/api/upi/submit',
         {upi_id: upiId},
         {headers: {Authorization: `Bearer ${pcsToken}`}},
       );
-      console.log(response.status)
 
+      // Assuming the backend returns 201 on success
       if (response.status === 201) {
         navigation.replace('PartnerSteps');
+      } else {
+        setError('Failed to add UPI ID. Please try again.');
       }
-    } catch (error) {
-      console.error('Error fetching services:', error);
+    } catch (err) {
+      console.error(
+        'Error submitting UPI ID:',
+        err.response ? err.response.data : err.message,
+      );
+      setError('Error submitting UPI ID. Please try again.');
     }
+    setLoading(false);
   };
 
   return (
@@ -76,13 +85,19 @@ const UPIIdDetailsScreen = () => {
             placeholder="Enter your UPI ID"
             value={upiId}
             onChangeText={setUpiId}
+            autoCapitalize="none"
+            keyboardType="email-address"
           />
-          <TouchableOpacity style={styles.verifyButton}>
-            <Text style={styles.verifyButtonText}>Verify UpI Id</Text>
+          <TouchableOpacity
+            style={styles.verifyButton}
+            onPress={handleAddUPIId}>
+            <Text style={styles.verifyButtonText}>
+              {loading ? 'Verifying...' : 'Verify UPI ID'}
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {error && <Text style={styles.errorText}>{error}</Text>}
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
         <Text style={styles.linkText}>How to find UPI ID?</Text>
       </View>
 
@@ -171,6 +186,9 @@ const styles = StyleSheet.create({
     color: '#212121',
     fontWeight: 'bold',
     fontSize: 18,
+  },
+  buttonContainer: {
+    marginTop: 20,
   },
   addButton: {
     backgroundColor: '#FF5722',

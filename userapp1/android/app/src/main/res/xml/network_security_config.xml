@@ -1,15 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Allow cleartext traffic for localhost -->
+    <!-- Allow cleartext (HTTP) traffic for specific local domains -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">192.168.0.0</domain>  <!-- Allow all local network -->
+        <domain includeSubdomains="true">192.168.1.0</domain>
+        <domain includeSubdomains="true">192.168.55.103</domain> <!-- Your active IP -->
+        <domain includeSubdomains="true">192.168.222.1</domain>
+        <domain includeSubdomains="true">192.168.184.1</domain>
+    </domain-config>
+
+    <!-- Default configuration for all other (HTTPS) connections -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config> 
+</network-security-config>
+
+
+
+
+
+<!-- main -->
+<!-- <?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">localhost</domain>
     </domain-config>
 
-    <!-- Allow cleartext traffic for your backend IP address -->
+
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">3.110.189.104</domain>
     </domain-config>
-</network-security-config>
+</network-security-config> -->
+
+
+
 
 
 

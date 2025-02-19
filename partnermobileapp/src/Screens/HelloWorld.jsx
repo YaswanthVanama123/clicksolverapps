@@ -103,7 +103,7 @@ const HelloWorld = () => {
 
       if (pcs_token) {
         const response = await axios.get(
-          `https://backend.clicksolver.com/api/worker/track/details`,
+          `http://192.168.55.103:5000/api/worker/track/details`,
           {
             headers: {Authorization: `Bearer ${pcs_token}`},
           },
@@ -418,7 +418,7 @@ const HelloWorld = () => {
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/accept/request`,
+        `http://192.168.55.103:5000/api/accept/request`,
         {user_notification_id: decodedId},
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
@@ -431,10 +431,10 @@ const HelloWorld = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `https://backend.clicksolver.com/api/worker/action`,
+          `http://192.168.55.103:5000/api/worker/action`,
           {
             encodedId: encodedNotificationId,
-            screen: 'WorkerNavigation',
+            screen: 'UserNavigation',
           },
           {
             headers: {
@@ -448,7 +448,7 @@ const HelloWorld = () => {
             index: 0,
             routes: [
               {
-                name: 'WorkerNavigation',
+                name: 'UserNavigation',
                 params: {encodedId: encodedNotificationId},
               },
             ],
@@ -458,7 +458,7 @@ const HelloWorld = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `https://backend.clicksolver.com/api/worker/action`,
+          `http://192.168.55.103:5000/api/worker/action`,
           {
             encodedId: '',
             screen: '',
@@ -549,7 +549,7 @@ const HelloWorld = () => {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
       await axios.post(
-        `https://backend.clicksolver.com/api/worker/store-fcm-token`,
+        `http://192.168.55.103:5000/api/worker/store-fcm-token`,
         {fcmToken: token},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
@@ -597,7 +597,7 @@ const HelloWorld = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         const fcmToken = await EncryptedStorage.getItem('fcm_token');
         await axios.post(
-          `https://backend.clicksolver.com/api/worker/store-notification`,
+          `http://192.168.55.103:5000/api/worker/store-notification`,
           {notification, fcmToken},
           {headers: {Authorization: `Bearer ${pcs_token}`}},
         );
@@ -1115,9 +1115,9 @@ const HelloWorld = () => {
           {console.log('screen params', params)}
           <View style={styles.messageBox1}>
             <View style={styles.timeContainer}>
-              {screenName === 'PaymentScreen' ? (
+              {screenName === 'Paymentscreen' ? (
                 <Foundation name="paypal" size={24} color="#ffffff" />
-              ) : screenName === 'WorkerNavigation' ? (
+              ) : screenName === 'UserNavigation' ? (
                 <MaterialCommunityIcons
                   name="truck"
                   size={24}
@@ -1125,7 +1125,7 @@ const HelloWorld = () => {
                 />
               ) : screenName === 'OtpVerification' ? (
                 <Feather name="shield" size={24} color="#ffffff" />
-              ) : screenName === 'TimingScreen' ? (
+              ) : screenName === 'worktimescreen' ? (
                 <MaterialCommunityIcons
                   name="hammer"
                   size={24}
@@ -1139,11 +1139,11 @@ const HelloWorld = () => {
               <Text style={styles.textContainerText}>
                 Switch board & Socket repairing
               </Text>
-              {screenName === 'PaymentScreen' ? (
+              {screenName === 'Paymentscreen' ? (
                 <Text style={styles.textContainerTextCommander}>
                   Payment in progress
                 </Text>
-              ) : screenName === 'WorkerNavigation' ? (
+              ) : screenName === 'UserNavigation' ? (
                 <Text style={styles.textContainerTextCommander}>
                   User is waiting for your help
                 </Text>
@@ -1151,7 +1151,7 @@ const HelloWorld = () => {
                 <Text style={styles.textContainerTextCommander}>
                   User is waiting for your help
                 </Text>
-              ) : screenName === 'TimingScreen' ? (
+              ) : screenName === 'worktimescreen' ? (
                 <Text style={styles.textContainerTextCommander}>
                   Work in progress
                 </Text>

@@ -1,4 +1,4 @@
-import React, {useState, useCallback, useEffect} from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -13,12 +13,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import axios from 'axios';
-import EncryptedStorage from 'react-native-encrypted-storage';
-import {
-  useNavigation,
-  CommonActions,
-  useFocusEffect,
-} from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 // Image URLs
 const BG_IMAGE_URL =
@@ -28,75 +23,64 @@ const FLAG_ICON_URL = 'https://i.postimg.cc/C1hkm5sR/india-flag-icon-29.png';
 
 const LoginScreen = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [loginLoading, setLoginLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
 
-  useFocusEffect(
-    useCallback(() => {
-      BackHandler.addEventListener('hardwareBackPress', handleBackPress);
-      return () => {
-        BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
-      };
-    }, [handleBackPress]),
-  );
-
-  const loginBackend = useCallback(async phoneNumber => {
+  // This function requests the OTP
+  const requestOtp = useCallback(async () => {
+    if (!phoneNumber) return;
     try {
+      setLoading(true);
+      // Call your backend sendOtp endpoint
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/user/login`,
-        { phone_number: phoneNumber },
+        'http://192.168.55.103:5000/api/otp/send',
+        { mobileNumber: phoneNumber }
       );
-      return response;
+      if (response.status === 200) {
+        const { verificationId } = response.data;
+        // Navigate to VerificationScreen, passing phoneNumber & verificationId
+        navigation.navigate('VerificationScreen', { phoneNumber, verificationId });
+      } else {
+        console.error('Error sending OTP:', response.data);
+      }
     } catch (error) {
-      console.error('Error during backend login:', error);
-      throw error;
+      console.error('Error sending OTP:', error);
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  }, [phoneNumber, navigation]);
 
   const handleBackPress = useCallback(() => {
     navigation.goBack();
     return true;
   }, [navigation]);
 
-  const login = useCallback(async () => {
-    if (!phoneNumber) return;
-    try {
-      setLoginLoading(true);
-      const response = await loginBackend(phoneNumber);
-      const { status, data } = response;
-      if (status === 200) {
-        const { token } = data;
-        await EncryptedStorage.setItem('cs_token', token);
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          }),
-        );
-      } else if (status === 205) {
-        navigation.navigate('SignupDetails', { phone_number: phoneNumber });
-      }
-    } catch (error) {
-      console.error('Error during login:', error);
-    } finally {
-      setLoginLoading(false);
-    }
-  }, [phoneNumber, loginBackend, navigation]);
+  useFocusEffect(
+    useCallback(() => {
+      BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+      return () =>
+        BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
+    }, [handleBackPress])
+  );
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Fixed Background Image */}
-      <Image source={{uri: BG_IMAGE_URL}} style={StyleSheet.absoluteFillObject} resizeMode="stretch" />
+      {/* Background Image */}
+      <Image
+        source={{ uri: BG_IMAGE_URL }}
+        style={StyleSheet.absoluteFillObject}
+        resizeMode="stretch"
+      />
 
-      <KeyboardAvoidingView 
-        style={styles.keyboardAvoidingView} 
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.contentOverlay}>
           {/* Logo and Heading */}
           <View style={styles.description}>
             <View style={styles.logoContainer}>
-              <Image source={{uri: LOGO_URL}} style={styles.logo} />
+              <Image source={{ uri: LOGO_URL }} style={styles.logo} />
               <Text style={styles.heading}>
                 Click <Text style={styles.solverText}>Solver</Text>
               </Text>
@@ -108,11 +92,11 @@ const LoginScreen = () => {
           {/* Mobile Input */}
           <View style={styles.inputContainer}>
             <View style={styles.countryCodeContainer}>
-              <Image source={{uri: FLAG_ICON_URL}} style={styles.flagIcon} />
+              <Image source={{ uri: FLAG_ICON_URL }} style={styles.flagIcon} />
               <Text style={styles.picker}>+91</Text>
             </View>
             <TextInput
-              style={[styles.input, {fontFamily: 'RobotoSlab-Medium'}]}
+              style={[styles.input, { fontFamily: 'RobotoSlab-Medium' }]}
               placeholder="Enter Mobile Number"
               placeholderTextColor="#9e9e9e"
               keyboardType="phone-pad"
@@ -121,12 +105,13 @@ const LoginScreen = () => {
             />
           </View>
 
-          {/* Get Verification Code Button */}
+          {/* Request OTP Button */}
           <TouchableOpacity
             style={styles.button}
-            onPress={login}
-            disabled={loginLoading}>
-            {loginLoading ? (
+            onPress={requestOtp}
+            disabled={loading}
+          >
+            {loading ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <Text style={styles.buttonText}>Get Verification Code</Text>
@@ -135,8 +120,8 @@ const LoginScreen = () => {
         </View>
       </KeyboardAvoidingView>
 
-      {/* Full Screen Loading Indicator */}
-      {loginLoading && (
+      {/* Loading Overlay */}
+      {loading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#FF5720" />
         </View>
@@ -205,7 +190,7 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
     color: '#212121',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily:'RobotoSlab-Medium'
   },
   button: {
     backgroundColor: '#FF5722',
@@ -224,10 +209,12 @@ const styles = StyleSheet.create({
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 999, // Ensures the loader appears on top of everything
   },
 });
 
 export default LoginScreen;
+ 

@@ -1,64 +1,86 @@
 import React, {useEffect, useState, useCallback} from 'react';
-import {View, Text, StyleSheet, Image, TouchableOpacity} from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useNavigation, CommonActions} from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import EncryptedStorage from 'react-native-encrypted-storage';
 
 const PartnerSteps = () => {
-  const [step1Status, setStep1Status] = useState(true);
+  // Step 1 and Step 2 statuses come from your server or local state
+  const [step1Status, setStep1Status] = useState(false);
   const [step2Status, setStep2Status] = useState(false);
-  const [step3Status, setStep3Status] = useState(false);
+
+  // Track each banking detail separately
+  const [bankAccountAdded, setBankAccountAdded] = useState(false);
+  const [upiIdAdded, setUpiIdAdded] = useState(false);
+
+  // UI selections
   const [selectedStep, setSelectedStep] = useState(null);
-  const [bankingOption, setBankingOption] = useState('');
   const [showLogout, setShowLogout] = useState(false);
+
+  // We can also keep track of which option is currently selected
+  // for the user to proceed with adding details.
+  const [selectedBankOption, setSelectedBankOption] = useState(null);
 
   const navigation = useNavigation();
 
+  // Example: fetching steps from server
   const fetchStepStatuses = useCallback(async () => {
     try {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       if (!pcs_token) throw new Error('pcs_token not found');
 
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/onboarding/step-status`,
+        `http://192.168.55.103:5000/api/onboarding/step-status`,
         {},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
 
+      console.log(response.data)
+ 
+      // Suppose your API returns something like:
+      // steps: { step1: boolean, step2: boolean, bankAccount: boolean, upiId: boolean }
       setStep1Status(response.data.steps.step1);
       setStep2Status(response.data.steps.step2);
-      setStep3Status(response.data.steps.step3);
+      setBankAccountAdded(response.data.steps.bankAccount);
+      setUpiIdAdded(response.data.steps.upiId);
     } catch (error) {
       console.error('Error fetching step statuses:', error);
-    }
-  }, []);
+    } 
+  }, []); 
 
   useEffect(() => {
     fetchStepStatuses();
-  }, [fetchStepStatuses]);
+  }, [fetchStepStatuses]); 
 
+  // Toggle logout pop-up
   const toggleLogout = () => setShowLogout(prev => !prev);
-
   const handleLogout = async () => {
     await EncryptedStorage.removeItem('pcs_token');
     navigation.replace('Login');
   };
 
+  // Step 3 is considered complete if the user has added either a bank account or a UPI ID
+  const isStep3Complete = bankAccountAdded || upiIdAdded;
+
+  // Only navigate when all steps are done (1, 2, and 3).
   const navigateToHome = async () => {
-    if (step1Status && step2Status && step3Status) {
+    if (step1Status && step2Status && isStep3Complete) {
       await EncryptedStorage.setItem('partnerSteps', 'completed');
       navigation.replace('ApprovalScreen');
     }
   };
 
-  // useEffect(() => {
-  //   navigateToHome();
-  // }, [step1Status, step2Status, step3Status]);
-
   return (
     <SafeAreaView style={styles.container}>
+      {/* Top bar with Help & Logout */}
       <View style={styles.topBar}>
         <View style={{flex: 1}} />
         <Text style={styles.helpText}>Help</Text>
@@ -72,11 +94,10 @@ const PartnerSteps = () => {
         )}
       </View>
 
+      {/* Header Section */}
       <View style={styles.header}>
         <Image
-          source={{
-            uri: 'https://i.postimg.cc/jSJS7rDH/1727646707169dp7gkvhw.png',
-          }}
+          source={{ uri: 'https://i.postimg.cc/jSJS7rDH/1727646707169dp7gkvhw.png' }}
           style={styles.workerImage}
         />
         <Text style={styles.headerText}>
@@ -84,9 +105,11 @@ const PartnerSteps = () => {
         </Text>
       </View>
 
+      {/* STEP 1 */}
       <TouchableOpacity
         style={[styles.stepBox, selectedStep === 1 && styles.selectedStepBox]}
-        onPress={() => setSelectedStep(1)}>
+        onPress={() => setSelectedStep(1)}
+      >
         <View style={styles.stepRow}>
           <Icon
             name={step1Status ? 'check-circle' : 'radio-button-unchecked'}
@@ -96,8 +119,7 @@ const PartnerSteps = () => {
           <View style={styles.stepContent}>
             <Text style={styles.stepTitle}>STEP 1</Text>
             <Text style={styles.stepName}>Signup</Text>
-            <Text
-              style={[styles.stepStatus, !step1Status && {color: '#ff4500'}]}>
+            <Text style={[styles.stepStatus, !step1Status && {color: '#ff4500'}]}>
               {step1Status ? 'Completed' : 'Incomplete'}
             </Text>
           </View>
@@ -105,9 +127,11 @@ const PartnerSteps = () => {
         </View>
       </TouchableOpacity>
 
+      {/* STEP 2 */}
       <TouchableOpacity
         style={[styles.stepBox, selectedStep === 2 && styles.selectedStepBox]}
-        onPress={() => setSelectedStep(2)}>
+        onPress={() => setSelectedStep(2)}
+      >
         <View style={styles.stepRow}>
           <Icon
             name={step2Status ? 'check-circle' : 'radio-button-unchecked'}
@@ -117,90 +141,140 @@ const PartnerSteps = () => {
           <View style={styles.stepContent}>
             <Text style={styles.stepTitle}>STEP 2</Text>
             <Text style={styles.stepName}>Profile</Text>
-            <Text
-              style={[styles.stepStatus, !step2Status && {color: '#ff4500'}]}>
+            <Text style={[styles.stepStatus, !step2Status && {color: '#ff4500'}]}>
               {step2Status ? 'Completed' : 'Incomplete'}
             </Text>
           </View>
           {step2Status && <Icon name="check" size={24} color="#1DA472" />}
         </View>
+
+        {/* Show "Proceed" if Step 2 is selected but incomplete */}
         {selectedStep === 2 && !step2Status && (
           <TouchableOpacity
             style={styles.proceedButton}
-            onPress={() => navigation.push('ServiceRegistration')}>
+            onPress={() => navigation.push('ServiceRegistration')}
+          >
             <Text style={styles.proceedButtonText}>Proceed</Text>
           </TouchableOpacity>
         )}
       </TouchableOpacity>
 
+      {/* STEP 3 */}
       <TouchableOpacity
         style={[styles.stepBox, selectedStep === 3 && styles.selectedStepBox]}
-        onPress={() => setSelectedStep(3)}>
+        onPress={() => setSelectedStep(3)}
+      >
         <View style={styles.stepRow}>
           <Icon
-            name={step3Status ? 'check-circle' : 'radio-button-unchecked'}
+            name={isStep3Complete ? 'check-circle' : 'radio-button-unchecked'}
             size={24}
-            color={step3Status ? '#1DA472' : '#9e9e9e'}
+            color={isStep3Complete ? '#1DA472' : '#9e9e9e'}
           />
           <View style={styles.stepContent}>
             <Text style={styles.stepTitle}>STEP 3</Text>
             <Text style={styles.stepName}>Adding Banking Details</Text>
             <Text
-              style={[styles.stepStatus, !step3Status && {color: '#ff4500'}]}>
-              {step3Status ? 'Completed' : 'Incomplete'}
+              style={[
+                styles.stepStatus,
+                !isStep3Complete && {color: '#ff4500'},
+              ]}
+            >
+              {isStep3Complete ? 'Completed' : 'Incomplete'}
             </Text>
           </View>
-          {step3Status && <Icon name="check" size={24} color="#1DA472" />}
+          {isStep3Complete && <Icon name="check" size={24} color="#1DA472" />}
         </View>
 
-        <View style={styles.bankDetailsContainer}>
-          <TouchableOpacity
-            style={styles.optionRow}
-            onPress={() => setBankingOption('bankAccount')}>
-            <Icon
-              name={
-                bankingOption === 'bankAccount'
-                  ? 'radio-button-checked'
-                  : 'radio-button-unchecked'
-              }
-              size={20}
-              color="#000"
-            />
-            <Text style={styles.optionText}>Add bank account</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.optionRow}
-            onPress={() => setBankingOption('upiId')}>
-            <Icon
-              name={
-                bankingOption === 'upiId'
-                  ? 'radio-button-checked'
-                  : 'radio-button-unchecked'
-              }
-              size={20}
-              color="#000"
-            />
-            <Text style={styles.optionText}>Add UPI Id</Text>
-          </TouchableOpacity>
-        </View>
-        {selectedStep === 3 && !step3Status && (
-          <>
-            <TouchableOpacity
-              style={styles.proceedButton}
-              onPress={() => {
-                if (bankingOption === 'bankAccount') {
-                  navigation.push('BankAccountScreen');
-                } else if (bankingOption === 'upiId') {
-                  navigation.push('UpiIDScreen');
-                }
-              }}>
-              <Text style={styles.proceedButtonText}>Proceed</Text>
-            </TouchableOpacity>
-          </>
+        {/* Bank details options (bank account + UPI) */}
+        {selectedStep === 3 && (
+          <View style={styles.bankDetailsContainer}>
+            {/* Bank Account Option */}
+            <View style={styles.optionContainer}>
+              <TouchableOpacity
+                style={styles.optionRow}
+                onPress={() => setSelectedBankOption('bankAccount')}
+              >
+                <Icon
+                  name={
+                    selectedBankOption === 'bankAccount'
+                      ? 'radio-button-checked'
+                      : 'radio-button-unchecked'
+                  }
+                  size={20}
+                  color="#000"
+                />
+                <Text style={styles.optionText}>Add bank account</Text>
+                {bankAccountAdded && (
+                  <Icon
+                    name="check"
+                    size={20}
+                    color="#1DA472"
+                    style={{marginLeft: 8}}
+                  />
+                )}
+              </TouchableOpacity>
+
+              {/* Proceed button for bank account */}
+              {selectedBankOption === 'bankAccount' && !bankAccountAdded && (
+                <TouchableOpacity
+                  style={styles.proceedButton}
+                  onPress={() => {
+                    // Navigate to Add Bank Account screen
+                    navigation.push('BankAccountScreen');
+                    // After a successful bank account addition, set bankAccountAdded(true).
+                  }}
+                >
+                  <Text style={styles.proceedButtonText}>Proceed</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* UPI ID Option */}
+            <View style={styles.optionContainer}>
+              <TouchableOpacity
+                style={styles.optionRow}
+                onPress={() => setSelectedBankOption('upiId')}
+              >
+                <Icon
+                  name={
+                    selectedBankOption === 'upiId'
+                      ? 'radio-button-checked'
+                      : 'radio-button-unchecked'
+                  }
+                  size={20}
+                  color="#000"
+                />
+                <Text style={styles.optionText}>Add UPI Id</Text>
+                {upiIdAdded && (
+                  <Icon
+                    name="check"
+                    size={20}
+                    color="#1DA472"
+                    style={{marginLeft: 8}}
+                  />
+                )}
+              </TouchableOpacity>
+
+              {/* Proceed button for UPI ID */}
+              {selectedBankOption === 'upiId' && !upiIdAdded && (
+                <TouchableOpacity
+                  style={styles.proceedButton}
+                  onPress={() => {
+                    // Navigate to Add UPI ID screen
+                    navigation.push('UpiIDScreen');
+                    // After a successful UPI addition, setUpiIdAdded(true).
+                  }}
+                >
+                  <Text style={styles.proceedButtonText}>Proceed</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
         )}
       </TouchableOpacity>
 
-      {step1Status && step2Status && step3Status && (
+      {/* If Step 1, Step 2, and Step 3 are all complete, show "Start now" */}
+      {step1Status && step2Status && isStep3Complete && (
         <TouchableOpacity style={styles.startButton} onPress={navigateToHome}>
           <Text style={styles.startButtonText}>Start now</Text>
         </TouchableOpacity>
@@ -209,16 +283,14 @@ const PartnerSteps = () => {
   );
 };
 
+export default PartnerSteps;
+
+/* ============ Styles ============ */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
     backgroundColor: '#f7f7f7',
-  },
-  circle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12, // Half of the width and height for a perfect circle
   },
   topBar: {
     flexDirection: 'row',
@@ -236,13 +308,13 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   logoutButton: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fff',
     padding: 10,
     width: 70,
     borderRadius: 5,
     position: 'absolute',
-    top: 40, // Adjust as needed
-    right: 10, // Adjust as needed
+    top: 40,
+    right: 10,
   },
   logoutText: {
     color: '#ff4500',
@@ -269,7 +341,6 @@ const styles = StyleSheet.create({
     padding: 12,
     marginVertical: 8,
     borderRadius: 10,
-    flexDirection: 'column',
     elevation: 1,
   },
   selectedStepBox: {
@@ -298,15 +369,17 @@ const styles = StyleSheet.create({
   },
   stepStatus: {
     fontSize: 14,
-    color: '#1DA472', // Default color for completed steps
+    color: '#1DA472', // Green color if completed
   },
   bankDetailsContainer: {
     marginTop: 8,
   },
+  optionContainer: {
+    marginBottom: 16,
+  },
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 4,
   },
   optionText: {
     marginLeft: 8,
@@ -318,7 +391,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     alignItems: 'center',
     borderRadius: 5,
-    marginTop: 16,
+    marginTop: 8,
   },
   proceedButtonText: {
     color: '#fff',
@@ -338,5 +411,3 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
-
-export default PartnerSteps;

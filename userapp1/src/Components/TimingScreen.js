@@ -18,7 +18,7 @@ import Svg, {Circle} from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 // import Config from 'react-native-config';
 
-const TimingScreen = () => {
+const worktimescreen = () => {
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
   const [seconds, setSeconds] = useState(0);
@@ -42,7 +42,7 @@ const TimingScreen = () => {
   const handleCheck = useCallback(async () => {
     try {
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/task/confirm/status`,
+        `http://192.168.55.103:5000/api/task/confirm/status`,
         {
           notification_id: decodedId,
         },
@@ -52,7 +52,7 @@ const TimingScreen = () => {
         const cs_token = await EncryptedStorage.getItem('cs_token');
 
         await axios.post(
-          `https://backend.clicksolver.com/api/user/action`,
+          `http://192.168.55.103:5000/api/user/action`,
           {
             encodedId: encodedId,
             screen: 'Paymentscreen',
@@ -108,7 +108,7 @@ const TimingScreen = () => {
   const handleCancelMessageBox = async () => {
     try {
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/work/completion/cancel`,
+        `http://192.168.55.103:5000/api/work/completion/cancel`,
         {
           notification_id: decodedId,
         },
@@ -205,7 +205,7 @@ const TimingScreen = () => {
           }
 
           const response = await axios.post(
-            `https://backend.clicksolver.com/api/work/time/started`,
+            `http://192.168.55.103:5000/api/work/time/started`,
             {
               notification_id: decodedId,
             },
@@ -249,7 +249,7 @@ const TimingScreen = () => {
     if (decodedId) {
       try {
         const response = await axios.post(
-          `https://backend.clicksolver.com/api/work/time/completed/request`,
+          `http://192.168.55.103:5000/api/work/time/completed/request`,
           {
             notification_id: decodedId,
           },
@@ -510,4 +510,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TimingScreen;
+export default worktimescreen;
