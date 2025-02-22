@@ -75,7 +75,7 @@ const RecentServices = () => {
         if (!token) throw new Error('Token not found');
 
         const response = await axios.get(
-          `http://192.168.55.103:5000/api/worker/bookings`,
+          `http://192.168.55.101:5000/api/worker/bookings`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

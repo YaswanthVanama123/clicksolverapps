@@ -1,5 +1,5 @@
-// HowItWorksScreen.js
-import React from 'react';
+// HelpScreen.js
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -7,68 +7,115 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  Linking,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import axios from 'axios';
 
 const steps = [
   {
     number: '1',
     title: 'Choose Service Category',
     description: 'Browse through our various service categories',
-    // Uncomment and adjust the path if you have an asset for the icon:
-    // icon: require('./assets/icon-category.png'),
   },
   {
     number: '2',
     title: 'Select Specific Service',
     description: 'Choose the exact service you need',
-    // icon: require('./assets/icon-service.png'),
   },
   {
     number: '3',
     title: 'Confirm Location',
     description: 'Share your service location',
-    // icon: require('./assets/icon-location.png'),
   },
   {
     number: '4',
     title: 'Worker Assignment',
     description: 'Wait for nearby worker to accept',
-    // icon: require('./assets/icon-worker.png'),
   },
   {
     number: '5',
     title: 'Worker Arrives',
     description: "Track worker's journey to you",
-    // icon: require('./assets/icon-tracking.png'),
   },
   {
     number: '6',
     title: 'Verify & Begin',
     description: 'Verify worker with OTP and start service',
-    // icon: require('./assets/icon-verify.png'),
   },
 ];
 
 const HelpScreen = () => {
+  const [showSupportMenu, setShowSupportMenu] = useState(false);
+  const [loadingCall, setLoadingCall] = useState(false);
+
+  // Open mail app with predefined recipient.
+  const handleEmailPress = () => {
+    setShowSupportMenu(false);
+    Linking.openURL('mailto:customer.support@clicksolver.com').catch(err =>
+      Alert.alert('Error', 'Unable to open mail app'),
+    );
+  };
+
+  // Call backend API to fetch customer care number then open dialer.
+  const handleCallPress = async () => {
+    setShowSupportMenu(false);
+    setLoadingCall(true);
+    try {
+      // Replace the URL with your backend endpoint.
+      const response = await axios.get('http://192.168.55.101:5000/customer/care');
+      const phoneNumber = response.data.phone; // Expects { phone: '1234567890' }
+      if (phoneNumber) {
+        Linking.openURL(`tel:${phoneNumber}`).catch(err =>
+          Alert.alert('Error', 'Unable to open dialer'),
+        );
+      } else {
+        Alert.alert('Error', 'No phone number received');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to retrieve phone number');
+    } finally {
+      setLoadingCall(false);
+    }
+  };
+
   return (
     <View style={styles.wrapper}>
       {/* Top Header Container */}
       <View style={styles.topHeader}>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => { /* Implement back navigation if needed */ }}>
           <Ionicons name="arrow-back" size={24} color="#212121" />
         </TouchableOpacity>
         <Text style={styles.topHeaderTitle}>Help & Support</Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => setShowSupportMenu(prev => !prev)}>
           <Ionicons name="headset-outline" size={24} color="#212121" />
         </TouchableOpacity>
       </View>
+
+      {/* Enhanced Support Menu Overlay */}
+      {showSupportMenu && (
+        <View style={styles.supportMenu}>
+          <TouchableOpacity style={styles.supportMenuItem} onPress={handleEmailPress}>
+            <Ionicons name="mail-outline" size={20} color="#ff4500" style={styles.menuIcon} />
+            <Text style={styles.supportMenuItemText}>Email</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.supportMenuItem} onPress={handleCallPress}>
+            <Ionicons name="call-outline" size={20} color="#ff4500" style={styles.menuIcon} />
+            {loadingCall ? (
+              <ActivityIndicator color="#ff4500" />
+            ) : (
+              <Text style={styles.supportMenuItemText}>Call</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.container}>
           {/* Internal Header */}
           <View style={styles.header}>
-            {/* <Text style={styles.headerTitle}>How It Works</Text> */}
             <Text style={styles.headerSubtitle}>
               Follow these simple steps to get started
             </Text>
@@ -114,18 +161,47 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     backgroundColor: '#ffffff',
-    // iOS shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
-    // Android shadow
     elevation: 1,
   },
   topHeaderTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#212121',
+  },
+  supportMenu: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    width: 150,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+    borderRadius: 8,
+    paddingVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 1,
+    zIndex: 10,
+  },
+  supportMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  menuIcon: {
+    marginRight: 8,
+  },
+  supportMenuItemText: {
+    fontSize: 16,
+    color: '#ff4500',
+    fontWeight: '500',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -137,22 +213,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 10,
     padding: 20,
-    // iOS shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
-    // Android shadow
-    // elevation: 5,
   },
   header: {
     alignItems: 'center',
     marginBottom: 20,
-  },
-  headerTitle: {
-    fontSize: 22,
-    color: '#212121',
-    fontWeight: '700',
   },
   headerSubtitle: {
     fontSize: 14,
@@ -166,12 +234,10 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     marginBottom: 20,
-    // iOS shadow for step
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 5,
-    // Android shadow
     elevation: 1,
   },
   stepNumberContainer: {
@@ -217,12 +283,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 30,
-    // iOS shadow for button
     shadowColor: '#007bff',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
-    // Android shadow
     elevation: 1,
   },
   ctaButtonText: {

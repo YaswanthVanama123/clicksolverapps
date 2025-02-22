@@ -44,7 +44,7 @@ const SingleService = () => {
     try {
       console.log('serviceName', serviceName);
       const response = await axios.post(
-        'http://192.168.55.103:5000/api/single/service',
+        'http://192.168.55.101:5000/api/single/service',
         { serviceName },
       );
       const { relatedServices } = response.data;

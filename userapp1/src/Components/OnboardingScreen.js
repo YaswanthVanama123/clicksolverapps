@@ -12,16 +12,16 @@ const OnboardingScreen = () => {
   const slides = [
     {
       key: '1',
-      title: 'Welcome to ClickSolver',
-      text: 'Connect with skilled pros in your neighborhood—electricians, salon specialists, plumbers, and more—all in a few taps.',
+      title: 'Instant Help in 15 Minutes!',
+      text: 'Need quick assistance? ClickSolver connects you with skilled professionals within 15 minutes for urgent tasks.',
       image: 'https://i.postimg.cc/BbPghn6t/boarding1-1-removebg-preview.png',
       backgroundColorPrimary: '#FF4500',
       backgroundColorSecondary: '#FF6347',
     },
     {
       key: '2',
-      title: 'Quick & Easy Booking',
-      text: 'Browse our wide range of services, select what you need, and instantly schedule a visit from a verified expert.',
+      title: 'Wide Range of Expert Services',
+      text: 'From electricians to salon specialists, plumbers, and more—find the right professional for every need, all in one place.',
       image:
         'https://i.postimg.cc/3rvmxz2Y/Screenshot-165-removebg-preview.png',
       backgroundColorPrimary: '#FF4500',
@@ -29,14 +29,15 @@ const OnboardingScreen = () => {
     },
     {
       key: '3',
-      title: 'Trusted & Reliable',
-      text: 'Every professional on ClickSolver is thoroughly vetted. Your safety, comfort, and satisfaction are always our top priorities.',
+      title: 'Trusted & Verified Professionals',
+      text: 'Every worker on ClickSolver is background-checked and verified to ensure high-quality service, safety, and reliability.',
       image:
         'https://i.postimg.cc/Y06xGPGn/Screenshot-166-removebg-preview.png',
       backgroundColorPrimary: '#FF4500',
       backgroundColorSecondary: '#E84B00',
     },
   ];
+  
   const handleNextPress = async index => {
     if (index < slides.length - 1) {
       swiperRef.current.scrollBy(1); // Move to the next slide

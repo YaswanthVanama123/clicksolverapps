@@ -128,7 +128,7 @@ const WaitingUser = () => {
       }
 
       const response = await axios.post(
-        `http://192.168.55.103:5000/api/workers-nearby`,
+        `http://192.168.55.101:5000/api/workers-nearby`,
         {
           area,
           city,
@@ -154,7 +154,7 @@ const WaitingUser = () => {
           encode !== 'No workers match the requested subservices'
         ) {
           await axios.post(
-            `http://192.168.55.103:5000/api/user/action`,
+            `http://192.168.55.101:5000/api/user/action`,
             {
               encodedId: encode,
               screen: 'userwaiting',
@@ -214,7 +214,7 @@ const WaitingUser = () => {
     try {
       if (decodedId) {
         await axios.post(
-          `http://192.168.55.103:5000/api/user/cancellation`,
+          `http://192.168.55.101:5000/api/user/cancellation`,
           {
             user_notification_id: decodedId,
             cancellation_reason: selectedReason, // Optionally send the reason
@@ -223,7 +223,7 @@ const WaitingUser = () => {
 
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
-          `http://192.168.55.103:5000/api/user/action/cancel`,
+          `http://192.168.55.101:5000/api/user/action/cancel`,
           {encodedId: encodedData, screen: 'userwaiting'},
           {headers: {Authorization: `Bearer ${cs_token}`}},
         );
@@ -268,14 +268,14 @@ const WaitingUser = () => {
         //   'Unable to find workers after 3 attempts. Please try again later.',
         // );
         await axios.post(
-          `http://192.168.55.103:5000/api/user/cancellation`,
+          `http://192.168.55.101:5000/api/user/cancellation`,
           {
             user_notification_id: decodedId,
           },
         );
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
-          `http://192.168.55.103:5000/api/user/action/cancel`,
+          `http://192.168.55.101:5000/api/user/action/cancel`,
           {encodedId: encodedData, screen: 'userwaiting'},
           {headers: {Authorization: `Bearer ${cs_token}`}},
         );
@@ -292,7 +292,7 @@ const WaitingUser = () => {
       if (decodedId) {
         try {
           await axios.post(
-            `http://192.168.55.103:5000/api/user/cancellation`,
+            `http://192.168.55.101:5000/api/user/cancellation`,
             {
               user_notification_id: decodedId,
             },
@@ -304,7 +304,7 @@ const WaitingUser = () => {
 
       const cs_token = await EncryptedStorage.getItem('cs_token');
       await axios.post(
-        `http://192.168.55.103:5000/api/user/action/cancel`,
+        `http://192.168.55.101:5000/api/user/action/cancel`,
         {encodedId: encodedData, screen: 'userwaiting'},
         {headers: {Authorization: `Bearer ${cs_token}`}},
       );
@@ -339,7 +339,7 @@ const WaitingUser = () => {
       setBackendLoading(true);
       try {
         const response = await axios.get(
-          `http://192.168.55.103:5000/api/checking/status`,
+          `http://192.168.55.101:5000/api/checking/status`,
           {
             params: {user_notification_id: decodedId},
           },
@@ -364,13 +364,13 @@ const WaitingUser = () => {
           const cs_token = await EncryptedStorage.getItem('cs_token');
 
           await axios.post(
-            `http://192.168.55.103:5000/api/user/action/cancel`,
+            `http://192.168.55.101:5000/api/user/action/cancel`,
             {encodedId: encodedData, screen: 'userwaiting'},
             {headers: {Authorization: `Bearer ${cs_token}`}},
           );
 
           await axios.post(
-            `http://192.168.55.103:5000/api/user/action`,
+            `http://192.168.55.101:5000/api/user/action`,
             {
               encodedId: encodedNotificationId,
               screen: 'UserNavigation',

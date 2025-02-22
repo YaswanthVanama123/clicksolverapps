@@ -15,6 +15,7 @@ import {
   ScrollView,
   Animated,
   Easing,
+  Linking
 } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import EncryptedStorage from 'react-native-encrypted-storage';
@@ -25,6 +26,7 @@ import {
   CommonActions,
   useFocusEffect,
 } from '@react-navigation/native';
+
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Entypo from 'react-native-vector-icons/Entypo';
@@ -34,7 +36,6 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 // Local images
 const startMarker = require('../assets/start-marker.png');
 const endMarker = require('../assets/end-marker.png');
-// You can replace this with your own refresh icon
 
 // Mapbox Access Token
 Mapbox.setAccessToken(
@@ -54,25 +55,24 @@ const Navigation = () => {
   const [pin, setPin] = useState('');
   const [serviceArray, setServiceArray] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [confirmationModalVisible, setConfirmationModalVisible] = useState(false);
+  const [confirmationModalVisible, setConfirmationModalVisible] =
+    useState(false);
   const [cameraBounds, setCameraBounds] = useState(null);
   const [appState, setAppState] = useState(AppState.currentState);
   const [showUpArrowService, setShowUpArrowService] = useState(false);
   const [showDownArrowService, setShowDownArrowService] = useState(false);
 
-  // **Loading state**: used to rotate the refresh icon
+  // Loading indicator
   const [isLoading, setIsLoading] = useState(false);
 
   // For rotating refresh icon
   const rotationValue = useRef(new Animated.Value(0)).current;
 
-  // Start/stop rotation when isLoading changes
+  // Animate refresh icon if loading
   useEffect(() => {
     let animation;
     if (isLoading) {
-      // Reset rotation to 0
       rotationValue.setValue(0);
-      // Loop the rotation
       animation = Animated.loop(
         Animated.timing(rotationValue, {
           toValue: 1,
@@ -83,7 +83,6 @@ const Navigation = () => {
       );
       animation.start();
     } else {
-      // Stop rotation
       if (animation) {
         animation.stop();
       }
@@ -96,7 +95,6 @@ const Navigation = () => {
     };
   }, [isLoading, rotationValue]);
 
-  // Interpolate rotation value to degrees
   const spin = rotationValue.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
@@ -129,7 +127,7 @@ const Navigation = () => {
     requestLocationPermission();
   }, []);
 
-  // Decode the Base64-encoded ID from route params
+  // Decode Base64 ID from route params
   useEffect(() => {
     const {encodedId} = route.params;
     setEncodedData(encodedId);
@@ -161,13 +159,71 @@ const Navigation = () => {
     }, [navigation]),
   );
 
-  // Fetch Worker Details
+  /**
+   * Render fractional stars up to 5 stars.
+   * E.g., 3.3 => 3 stars fully filled, 1 star 30% filled, 1 star empty
+   */
+  const renderFractionalStars = (ratingValue = 0) => {
+    const totalStars = 5;
+    const starSize = 16; // icon + ratingNumber size
+
+    const stars = [];
+    for (let i = 1; i <= totalStars; i++) {
+      let fraction = ratingValue - (i - 1);
+      if (fraction < 0) fraction = 0;
+      if (fraction > 1) fraction = 1;
+
+      stars.push(
+        <View
+          key={i}
+          style={{
+            width: starSize,
+            height: starSize, // ensures a fixed height
+            marginRight: 4,
+            justifyContent: 'center',
+            alignItems: 'center',
+            position: 'relative',
+          }}
+        >
+          {/* Gray star behind */}
+          <AntDesign
+            name="star"
+            size={starSize}
+            color="#ccc"
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+            }}
+          />
+          {/* Orange star in front, clipped by fraction */}
+          <View
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              width: starSize * fraction,
+              overflow: 'hidden',
+              height: starSize,
+            }}
+          >
+            <AntDesign name="star" size={starSize} color="#FF5722" />
+          </View>
+        </View>
+      );
+    }
+    return <View style={{flexDirection: 'row'}}>{stars}</View>;
+  };
+
+  /**
+   * Fetch Worker Details
+   */
   const fetchWorkerDetails = useCallback(async () => {
     try {
       setIsLoading(true);
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       const response = await axios.post(
-        'http://192.168.55.103:5000/api/worker/navigation/details',
+        'http://192.168.55.101:5000/api/worker/navigation/details',
         {notificationId: decodedId},
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
@@ -184,7 +240,10 @@ const Navigation = () => {
           area,
           city,
           service_booked,
+          average_rating,
+          service_counts
         } = response.data;
+
         setPin(String(pin));
         setAddressDetails({
           name,
@@ -194,6 +253,8 @@ const Navigation = () => {
           area,
           city,
           service: service_booked,
+          rating:average_rating , // Store the rating
+          serviceCounts:service_counts
         });
         setServiceArray(service_booked);
       }
@@ -216,14 +277,14 @@ const Navigation = () => {
     const checkVerificationStatus = async () => {
       try {
         const response = await axios.get(
-          'http://192.168.55.103:5000/api/worker/verification/status',
+          'http://192.168.55.101:5000/api/worker/verification/status',
           {params: {notification_id: decodedId}},
         );
 
         if (response.data === 'true') {
           const cs_token = await EncryptedStorage.getItem('cs_token');
           await axios.post(
-            'http://192.168.55.103:5000/api/user/action',
+            'http://192.168.55.101:5000/api/user/action',
             {
               encodedId: encodedData,
               screen: 'worktimescreen',
@@ -251,7 +312,7 @@ const Navigation = () => {
   }, [decodedId, encodedData, navigation]);
 
   /**
-   * Fetch Ola route
+   * Fetch route from Ola Maps
    */
   const fetchOlaRoute = useCallback(async (startPoint, endPoint, waypoints = []) => {
     try {
@@ -317,14 +378,14 @@ const Navigation = () => {
   );
 
   /**
-   * Fetch location from backend
+   * Fetch location details from backend
    */
   const fetchLocationDetails = useCallback(async () => {
     try {
       setIsLoading(true);
       console.log('Fetching location details for decodedId:', decodedId);
       const response = await axios.get(
-        'http://192.168.55.103:5000/api/user/location/navigation',
+        'http://192.168.55.101:5000/api/user/location/navigation',
         {params: {notification_id: decodedId}},
       );
       console.log('Location Details Response:', response.data);
@@ -354,7 +415,7 @@ const Navigation = () => {
     };
   }, [decodedId, fetchLocationDetails]);
 
-  // Compute bounding box
+  // Compute bounding box for the route
   useEffect(() => {
     if (
       locationDetails &&
@@ -402,13 +463,13 @@ const Navigation = () => {
     try {
       setIsLoading(true);
       const response = await axios.post(
-        'http://192.168.55.103:5000/api/user/work/cancel',
+        'http://192.168.55.101:5000/api/user/work/cancel',
         {notification_id: decodedId},
       );
       if (response.status === 200) {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
-          'http://192.168.55.103:5000/api/user/action',
+          'http://192.168.55.101:5000/api/user/action',
           {
             encodedId: encodedData,
             screen: '',
@@ -442,6 +503,28 @@ const Navigation = () => {
   const handleCancelModal = () => {
     setModalVisible(true);
   };
+
+  const phoneCall = async () => {
+    try { 
+      const response = await axios.post('http://192.168.55.101:5000/api/worker/call', { decodedId });
+  
+      if (response.status === 200 && response.data.mobile) {
+        const phoneNumber = response.data.mobile;
+        console.log("Call initiated successfully:", phoneNumber);
+  
+        // Open phone dialer with the retrieved number
+        const dialURL = `tel:${phoneNumber}`;
+        Linking.openURL(dialURL).catch(err => 
+          console.error("Error opening dialer:", err)
+        );
+      } else {
+        console.log("Failed to initiate call:", response.data);
+      }
+    } catch (error) {
+      console.error("Error initiating call:", error.response ? error.response.data : error.message);
+    }
+  };
+
   const closeModal = () => {
     setModalVisible(false);
   };
@@ -462,7 +545,7 @@ const Navigation = () => {
     setShowDownArrowService(offsetY + containerHeight < contentHeight);
   };
 
-  // Refresh handler
+  // Refresh button handler
   const handleRefresh = () => {
     if (decodedId) {
       fetchLocationDetails();
@@ -531,6 +614,7 @@ const Navigation = () => {
                 }}
               />
 
+              {/* Marker Layer */}
               {markers && (
                 <Mapbox.ShapeSource id="markerSource" shape={markers}>
                   <Mapbox.SymbolLayer
@@ -546,6 +630,7 @@ const Navigation = () => {
                 </Mapbox.ShapeSource>
               )}
 
+              {/* Route Layer */}
               {routeData && (
                 <Mapbox.ShapeSource id="routeSource" shape={routeData}>
                   <Mapbox.LineLayer id="routeLine" style={styles.routeLine} />
@@ -567,7 +652,7 @@ const Navigation = () => {
           >
             {/* Rotate this view when isLoading is true */}
             <Animated.View style={{transform: [{rotate: spin}]}}>
-            <MaterialIcons name="refresh" size={22} color="#212121" />
+              <MaterialIcons name="refresh" size={22} color="#212121" />
             </Animated.View>
           </TouchableOpacity>
         </View>
@@ -588,7 +673,7 @@ const Navigation = () => {
                 style={styles.locationPinImage}
               />
               <View style={styles.locationDetails}>
-                <Text style={styles.locationAddress}>
+                <Text style={styles.locationAddress} numberOfLines={3}>
                   {addressDetails.area}
                 </Text>
               </View>
@@ -650,125 +735,41 @@ const Navigation = () => {
               >
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-
-              {/* Cancellation Reason Modal */}
-              <Modal
-                animationType="slide"
-                transparent={true}
-                visible={modalVisible}
-                onRequestClose={closeModal}
-              >
-                <View style={styles.modalOverlay}>
-                  <TouchableOpacity
-                    onPress={closeModal}
-                    style={styles.backButtonContainer}
-                  >
-                    <AntDesign name="arrowleft" size={20} color="black" />
-                  </TouchableOpacity>
-
-                  <View style={styles.modalContainer}>
-                    <Text style={styles.modalTitle}>
-                      What is the reason for your cancellation?
-                    </Text>
-                    <Text style={styles.modalSubtitle}>
-                      Could you let us know why you're canceling?
-                    </Text>
-
-                    <TouchableOpacity
-                      style={styles.reasonButton}
-                      onPress={openConfirmationModal}
-                    >
-                      <Text style={styles.reasonText}>Found a better price</Text>
-                      <AntDesign name="right" size={16} color="#4a4a4a" />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.reasonButton}
-                      onPress={openConfirmationModal}
-                    >
-                      <Text style={styles.reasonText}>Wrong work location</Text>
-                      <AntDesign name="right" size={16} color="#4a4a4a" />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.reasonButton}
-                      onPress={openConfirmationModal}
-                    >
-                      <Text style={styles.reasonText}>
-                        Wrong service booked
-                      </Text>
-                      <AntDesign name="right" size={16} color="#4a4a4a" />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.reasonButton}
-                      onPress={openConfirmationModal}
-                    >
-                      <Text style={styles.reasonText}>
-                        More time to assign a commander
-                      </Text>
-                      <AntDesign name="right" size={16} color="#4a4a4a" />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.reasonButton}
-                      onPress={openConfirmationModal}
-                    >
-                      <Text style={styles.reasonText}>Others</Text>
-                      <AntDesign name="right" size={16} color="#4a4a4a" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </Modal>
-
-              {/* Confirmation Modal */}
-              <Modal
-                animationType="slide"
-                transparent={true}
-                visible={confirmationModalVisible}
-                onRequestClose={closeConfirmationModal}
-              >
-                <View style={styles.modalOverlay}>
-                  <View style={styles.crossContainer}>
-                    <TouchableOpacity
-                      onPress={closeConfirmationModal}
-                      style={styles.backButtonContainer}
-                    >
-                      <Entypo name="cross" size={20} color="black" />
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.confirmationModalContainer}>
-                    <Text style={styles.confirmationTitle}>
-                      Are you sure you want to cancel this Service?
-                    </Text>
-                    <Text style={styles.confirmationSubtitle}>
-                      Please avoid canceling – we’re working to connect you with
-                      the best expert to solve your problem.
-                    </Text>
-
-                    <TouchableOpacity
-                      style={styles.confirmButton}
-                      onPress={handleCancelBooking}
-                    >
-                      <Text style={styles.confirmButtonText}>
-                        Cancel my service
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </Modal>
             </View>
 
-            {/* Commander/Worker */}
+            {/* Commander/Worker Details with Rating */}
             <View style={styles.workerDetailsContainer}>
-              <View>
+              <View style={styles.profileImage}>
                 {addressDetails.profile && (
                   <Image
                     source={{uri: addressDetails.profile}}
                     style={styles.image}
                   />
                 )}
-                <Text style={styles.workerName}>{addressDetails.name}</Text>
               </View>
+              <Text style={styles.workerName}>{addressDetails.name}</Text>
+
+              {addressDetails.rating !== undefined && (
+                <View style={styles.ratingContainer}>
+                  {/* Numeric rating (e.g. 4.3) */}
+                  <Text style={styles.ratingNumber}>
+                    {Number(addressDetails.rating).toFixed(1)}
+                  </Text>
+                  {/* Fractional stars */}
+                  {renderFractionalStars(Number(addressDetails.rating))}
+                </View>
+              )}
+
+              {addressDetails.serviceCounts !== undefined && addressDetails.serviceCounts > 0 && (
+                <View style={styles.ServiceContainer}>
+                  {/* Numeric service count */}
+                  <Text style={styles.ServiceNumber}>
+                    No of Services: <Text style={styles.ratingNumber}>{Number(addressDetails.serviceCounts)}</Text>
+                  </Text>
+                </View>
+              )}
               <View style={styles.iconsContainer}>
-                <TouchableOpacity style={styles.actionButton}>
+                <TouchableOpacity style={styles.actionButton} onPress={phoneCall}>
                   <MaterialIcons name="call" size={18} color="#FF5722" />
                 </TouchableOpacity>
 
@@ -779,6 +780,106 @@ const Navigation = () => {
             </View>
           </View>
         </View>
+
+        {/* Cancellation Reason Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={closeModal}
+        >
+          <View style={styles.modalOverlay}>
+            <TouchableOpacity
+              onPress={closeModal}
+              style={styles.backButtonContainer}
+            >
+              <AntDesign name="arrowleft" size={20} color="black" />
+            </TouchableOpacity>
+
+            <View style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>
+                What is the reason for your cancellation?
+              </Text>
+              <Text style={styles.modalSubtitle}>
+                Could you let us know why you're canceling?
+              </Text>
+
+              <TouchableOpacity
+                style={styles.reasonButton}
+                onPress={openConfirmationModal}
+              >
+                <Text style={styles.reasonText}>Found a better price</Text>
+                <AntDesign name="right" size={16} color="#4a4a4a" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.reasonButton}
+                onPress={openConfirmationModal}
+              >
+                <Text style={styles.reasonText}>Wrong work location</Text>
+                <AntDesign name="right" size={16} color="#4a4a4a" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.reasonButton}
+                onPress={openConfirmationModal}
+              >
+                <Text style={styles.reasonText}>Wrong service booked</Text>
+                <AntDesign name="right" size={16} color="#4a4a4a" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.reasonButton}
+                onPress={openConfirmationModal}
+              >
+                <Text style={styles.reasonText}>
+                  More time to assign a commander
+                </Text>
+                <AntDesign name="right" size={16} color="#4a4a4a" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.reasonButton}
+                onPress={openConfirmationModal}
+              >
+                <Text style={styles.reasonText}>Others</Text>
+                <AntDesign name="right" size={16} color="#4a4a4a" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Confirmation Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={confirmationModalVisible}
+          onRequestClose={closeConfirmationModal}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.crossContainer}>
+              <TouchableOpacity
+                onPress={closeConfirmationModal}
+                style={styles.backButtonContainer}
+              >
+                <Entypo name="cross" size={20} color="black" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.confirmationModalContainer}>
+              <Text style={styles.confirmationTitle}>
+                Are you sure you want to cancel this Service?
+              </Text>
+              <Text style={styles.confirmationSubtitle}>
+                Please avoid canceling – we’re working to connect you with
+                the best expert to solve your problem.
+              </Text>
+
+              <TouchableOpacity
+                style={styles.confirmButton}
+                onPress={handleCancelBooking}
+              >
+                <Text style={styles.confirmButtonText}>Cancel my service</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     </SafeAreaView>
   );
@@ -811,24 +912,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  /* ---- REFRESH BUTTON ---- */
+  /* Refresh Button */
   refreshContainer: {
     position: 'absolute',
-    top: 30, // adjust as needed
-    right: 20, 
+    top: 30,
+    right: 20,
     backgroundColor: '#ffffff',
     borderRadius: 25,
     padding: 7,
     zIndex: 999,
     elevation: 3,
   },
-  refreshIcon: {
-    width: 24,
-    height: 24,
-    resizeMode: 'contain',
-  },
 
-  /* ---- BOTTOM CARD ---- */
+  /* Bottom Card */
   detailsContainer: {
     height: bottomCardHeight,
     backgroundColor: '#ffffff',
@@ -852,15 +948,15 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   serviceFare: {
-    fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 10,
     fontSize: 16,
+    fontFamily:'RobotoSlab-Bold',
     color: '#1D2951',
   },
   firstContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between', 
     alignItems: 'flex-end',
   },
   locationContainer: {
@@ -879,10 +975,11 @@ const styles = StyleSheet.create({
   },
   locationAddress: {
     fontSize: 13,
+    fontFamily:'RobotoSlab-Regular',
     color: '#212121',
   },
 
-  /* ---- SERVICE DETAILS ---- */
+  /* Service Details */
   serviceDetails: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -891,6 +988,7 @@ const styles = StyleSheet.create({
   },
   serviceType: {
     fontSize: 16,
+    fontFamily:'RobotoSlab-Medium',
     marginTop: 10,
     color: '#9e9e9e',
   },
@@ -907,7 +1005,7 @@ const styles = StyleSheet.create({
   },
   serviceText: {
     color: '#212121',
-    fontWeight: 'bold',
+    fontFamily: 'RobotoSlab-Medium',
     fontSize: 14,
     marginTop: 5,
   },
@@ -930,7 +1028,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
 
-  /* ---- PIN ---- */
+  /* PIN */
   pinContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -939,6 +1037,7 @@ const styles = StyleSheet.create({
   },
   pinText: {
     color: '#9e9e9e',
+    fontFamily:'RobotoSlab-Regular',
     fontSize: 18,
     paddingTop: 10,
   },
@@ -957,10 +1056,11 @@ const styles = StyleSheet.create({
   },
   pinNumber: {
     color: '#212121',
+    fontFamily:'RobotoSlab-Regular',
     fontSize: 14,
   },
 
-  /* ---- CANCEL ---- */
+  /* Cancel Button */
   cancelButton: {
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
@@ -973,14 +1073,18 @@ const styles = StyleSheet.create({
   cancelText: {
     fontSize: 13,
     color: '#4a4a4a',
-    fontWeight: 'bold',
+    fontFamily:'RobotoSlab-Regular',
   },
 
-  /* ---- WORKER DETAILS ---- */
+  /* Worker (Commander) Details */
   workerDetailsContainer: {
     flexDirection: 'column',
     gap: 5,
     alignItems: 'center',
+  },
+  profileImage: {
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   image: {
     width: 60,
@@ -991,6 +1095,28 @@ const styles = StyleSheet.create({
     color: '#212121',
     textAlign: 'center',
     marginTop: 5,
+  },
+
+  /* Rating Container */
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  ServiceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ratingNumber: {
+    marginRight: 5,
+    fontSize: 16, // match star size
+    color: '#212121',
+    fontFamily:'RobotoSlab-Regular',
+  },
+  ServiceNumber:{
+    fontSize:15,
+    fontFamily:'RobotoSlab-Regular',
+    color:'#212121'
   },
   iconsContainer: {
     flexDirection: 'row',
@@ -1006,7 +1132,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  /* ---- MODALS ---- */
+  /* Modals */
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -1021,13 +1147,14 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily:'RobotoSlab-Medium',
     textAlign: 'center',
     marginBottom: 5,
     color: '#000',
   },
   modalSubtitle: {
     fontSize: 14,
+    fontFamily:'RobotoSlab-Regular',
     color: '#666',
     textAlign: 'center',
     marginBottom: 10,
@@ -1045,6 +1172,7 @@ const styles = StyleSheet.create({
   },
   reasonText: {
     fontSize: 16,
+    fontFamily:'RobotoSlab-Regular',
     color: '#333',
   },
   backButtonContainer: {
@@ -1079,7 +1207,7 @@ const styles = StyleSheet.create({
   },
   confirmationTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily:'RobotoSlab-Medium',
     textAlign: 'center',
     paddingBottom: 10,
     marginBottom: 5,
@@ -1089,6 +1217,7 @@ const styles = StyleSheet.create({
   },
   confirmationSubtitle: {
     fontSize: 14,
+    fontFamily:'RobotoSlab-Regular',
     color: '#666',
     textAlign: 'center',
     marginBottom: 20,
@@ -1105,7 +1234,7 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily:'RobotoSlab-Medium',
   },
 });
 

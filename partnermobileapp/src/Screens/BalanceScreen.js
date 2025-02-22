@@ -35,7 +35,7 @@ const BalanceScreen = () => {
 
       // Call your backend API to fetch balance and history
       const response = await axios.post(
-        'http://192.168.55.103:5000/api/balance/ammount',
+        'http://192.168.55.101:5000/api/balance/ammount',
         {},
         { headers: { Authorization: `Bearer ${pcs_token}` } }
       );
@@ -104,7 +104,7 @@ const BalanceScreen = () => {
 
       // 1. Create an order on the backend (amount returned in paise)
       const createResponse = await axios.post(
-        'http://192.168.55.103:5000/api/create-order',
+        'http://192.168.55.101:5000/api/create-order',
         { amount: amountToPay, currency: 'INR' },
         { headers: { Authorization: `Bearer ${pcs_token}` } }
       );
@@ -131,7 +131,7 @@ const BalanceScreen = () => {
         .then(async (paymentData) => {
           // 3. Payment completed – verify payment on the backend
           const verifyResponse = await axios.post(
-            'http://192.168.55.103:5000/api/verify-payment',
+            'http://192.168.55.101:5000/api/verify-payment',
             paymentData,
             { headers: { Authorization: `Bearer ${pcs_token}` } }
           );

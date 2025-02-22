@@ -36,7 +36,7 @@ function isLocationInGeofence(latitude, longitude, geofences) {
 }
 
 const LocationTracker = ({isEnabled, onLocationUpdate}) => {
-  // Keep track of distance traveled inside the geofence since last update
+  // Keep track of distance traveled since last Firestore update
   const [cumulativeDistance, setCumulativeDistance] = useState(0);
 
   /**
@@ -197,7 +197,7 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
         async location => {
           const {latitude, longitude} = location.coords;
 
-          // Pass coords to parent
+          // Pass coords to parent if needed
           onLocationUpdate(latitude, longitude);
 
           // Are we inside any polygon?
@@ -207,11 +207,22 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
             geofences,
           );
 
-          // Get previousLocation
+          // Get last Firestore-updated location
           const prevLocStr = await EncryptedStorage.getItem(
             'workerPreviousLocation',
           );
           const previousLocation = prevLocStr ? JSON.parse(prevLocStr) : null;
+
+          // Read workerInAction from EncryptedStorage
+          const workerInActionStr = await EncryptedStorage.getItem(
+            'workerInAction',
+          );
+
+          console.log("worker",workerInActionStr)
+          // Default to false if key is absent
+          const isWorkerInAction = workerInActionStr === 'true';
+          // Decide the distance threshold (km)
+          const distanceThreshold = isWorkerInAction ? 0.15 : 1.0;
 
           // CASE 1: No previousLocation => first location event
           if (!previousLocation) {
@@ -221,7 +232,7 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
               );
               await updateFirestoreLocation(latitude, longitude);
 
-              // Store real location
+              // Now store as previousLocation
               await EncryptedStorage.setItem(
                 'workerPreviousLocation',
                 JSON.stringify({latitude, longitude}),
@@ -233,7 +244,7 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
               );
               await updateFirestoreLocation(0, 0);
 
-              // Store (0,0) to avoid repeating "first-time outside" logs
+              // Store (0,0) to avoid repeating "outside" logs
               await EncryptedStorage.setItem(
                 'workerPreviousLocation',
                 JSON.stringify({latitude: 0, longitude: 0}),
@@ -243,17 +254,16 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
             return;
           }
 
-          // CASE 2: We DO have a previousLocation, check if inside or outside
+          // CASE 2: Already outside the geofence?
           if (!insideGeofence) {
-            // Already outside => skip sending (0,0) again
             console.log(
-              'Already outside geofence => skipping repeated (0,0) update',
+              'Location is outside geofence => skipping repeated (0,0) update',
             );
             return;
           }
 
           // CASE 3: INSIDE geofence & we have a previousLocation
-          // Check if previousLocation was (0,0) => means we just came from outside
+          // If previousLocation was (0,0), means re-entering
           if (
             previousLocation.latitude === 0 &&
             previousLocation.longitude === 0
@@ -272,7 +282,7 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
             return;
           }
 
-          // Normal inside scenario => check distance
+          // Normal inside scenario => check distance from last Firestore-updated point
           const prevCoords = {
             latitude: previousLocation.latitude,
             longitude: previousLocation.longitude,
@@ -283,10 +293,14 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
           });
 
           const updatedCumulative = cumulativeDistance + distanceMoved;
-          if (updatedCumulative >= 1) {
+
+          if (updatedCumulative >= distanceThreshold) {
             console.log(
-              `Inside geofence => traveled >=1 km => sending real coords (${latitude}, ${longitude})`,
+              `Inside geofence => traveled >= ${
+                distanceThreshold * 1000
+              }m => sending real coords (${latitude}, ${longitude})`,
             );
+
             await updateFirestoreLocation(latitude, longitude);
 
             setCumulativeDistance(0);
@@ -297,17 +311,14 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
             await EncryptedStorage.setItem('nullCoordinates', 'false');
           } else {
             console.log(
-              `Inside geofence => traveled <1 km => accumulating (total now ~${updatedCumulative.toFixed(
+              `Inside geofence => traveled < ${
+                distanceThreshold * 1000
+              }m => accumulating (total now ~${updatedCumulative.toFixed(
                 3,
               )} km)`,
             );
+            // Accumulate distance; do NOT update Firestore or previousLocation
             setCumulativeDistance(updatedCumulative);
-
-            // Still update previousLocation so next distance calc is correct
-            await EncryptedStorage.setItem(
-              'workerPreviousLocation',
-              JSON.stringify({latitude, longitude}),
-            );
           }
         },
       );
@@ -321,8 +332,6 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
           if (action === 'ENTER') {
             console.log(`ENTER geofence => ${identifier}`);
             await EncryptedStorage.setItem('nullCoordinates', 'false');
-            // Optional: immediate Firestore update on ENTER is possible,
-            // but typically your onLocation callback handles it.
           } else if (action === 'EXIT') {
             console.log(`EXIT geofence => ${identifier}`);
             // Only send (0,0) once
@@ -408,9 +417,7 @@ const LocationTracker = ({isEnabled, onLocationUpdate}) => {
   useEffect(() => {
     (async () => {
       if (isEnabled) {
-        console.log(
-          'Location tracking enabled => BackgroundGeolocation.start()',
-        );
+        console.log('Location tracking enabled => BackgroundGeolocation.start()');
         BackgroundGeolocation.start();
       } else {
         console.log('Location tracking disabled => stopping & sending (0,0)');

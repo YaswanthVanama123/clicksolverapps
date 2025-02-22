@@ -28,7 +28,7 @@ const Profile = () => {
         }
 
         const response = await axios.get(
-          `http://192.168.55.103:5000/api/worker/profile/details`,
+          `http://192.168.55.101:5000/api/worker/profile/details`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

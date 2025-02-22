@@ -154,7 +154,7 @@ function App(): React.JSX.Element {
         const fcm_token = await EncryptedStorage.getItem('fcm_token');
 
         if (fcm_token) {
-            await axios.post('http://192.168.55.103:5000/api/workerLogout', { fcm_token });
+            await axios.post('http://192.168.55.101:5000/api/workerLogout', { fcm_token });
         }
 
         await EncryptedStorage.removeItem("pcs_token");
@@ -186,7 +186,7 @@ function App(): React.JSX.Element {
   
 
           const response = await axios.post(
-            "http://192.168.55.103:5000/api/worker/token/verification",
+            "http://192.168.55.101:5000/api/worker/token/verification",
             { pcsToken }, // Sending pcsToken in the request body
             {
               headers: { Authorization: `Bearer ${pcsToken}` },

@@ -103,7 +103,7 @@ const HelloWorld = () => {
 
       if (pcs_token) {
         const response = await axios.get(
-          `http://192.168.55.103:5000/api/worker/track/details`,
+          `http://192.168.55.101:5000/api/worker/track/details`,
           {
             headers: {Authorization: `Bearer ${pcs_token}`},
           },
@@ -418,7 +418,7 @@ const HelloWorld = () => {
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const response = await axios.post(
-        `http://192.168.55.103:5000/api/accept/request`,
+        `http://192.168.55.101:5000/api/accept/request`,
         {user_notification_id: decodedId},
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
@@ -431,7 +431,7 @@ const HelloWorld = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `http://192.168.55.103:5000/api/worker/action`,
+          `http://192.168.55.101:5000/api/worker/action`,
           {
             encodedId: encodedNotificationId,
             screen: 'UserNavigation',
@@ -458,7 +458,7 @@ const HelloWorld = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `http://192.168.55.103:5000/api/worker/action`,
+          `http://192.168.55.101:5000/api/worker/action`,
           {
             encodedId: '',
             screen: '',
@@ -549,7 +549,7 @@ const HelloWorld = () => {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
       await axios.post(
-        `http://192.168.55.103:5000/api/worker/store-fcm-token`,
+        `http://192.168.55.101:5000/api/worker/store-fcm-token`,
         {fcmToken: token},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
@@ -597,7 +597,7 @@ const HelloWorld = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         const fcmToken = await EncryptedStorage.getItem('fcm_token');
         await axios.post(
-          `http://192.168.55.103:5000/api/worker/store-notification`,
+          `http://192.168.55.101:5000/api/worker/store-notification`,
           {notification, fcmToken},
           {headers: {Authorization: `Bearer ${pcs_token}`}},
         );

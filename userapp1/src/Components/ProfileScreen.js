@@ -34,7 +34,7 @@ const ProfileScreen = () => {
       setIsLoggedIn(true);
 
       const response = await axios.post(
-        `http://192.168.55.103:5000/api/user/profile`,
+        `http://192.168.55.101:5000/api/user/profile`,
         {},
         {
           headers: { Authorization: `Bearer ${jwtToken}` },
@@ -63,7 +63,7 @@ const ProfileScreen = () => {
         const fcm_token = await EncryptedStorage.getItem('fcm_token');
 
         if (fcm_token) {
-            await axios.post('http://192.168.55.103:5000/api/userLogout', { fcm_token });
+            await axios.post('http://192.168.55.101:5000/api/userLogout', { fcm_token });
         }
 
         await EncryptedStorage.removeItem('cs_token');

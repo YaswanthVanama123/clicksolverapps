@@ -1,4 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
+import {Platform, View, ActivityIndicator} from 'react-native';
 import {NavigationContainer, CommonActions} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
@@ -6,10 +7,13 @@ import axios from 'axios';
 import messaging from '@react-native-firebase/messaging';
 import PushNotification from 'react-native-push-notification';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import {ActivityIndicator, Platform, View} from 'react-native';
+import SplashScreen from 'react-native-splash-screen';
 import {
-  requestMultiple,
+  check,
   checkMultiple,
+  request,
+  requestMultiple,
+  requestNotifications,
   PERMISSIONS,
   RESULTS,
 } from 'react-native-permissions';
@@ -18,17 +22,16 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Config from 'react-native-config';
 
-// Import your components and screens
+// Import all screens and components
 import UserLocation from './Components/userLocation';
 import WaitingUser from './Components/UserWaiting';
 import Navigation from './Components/Navigation';
-import worktimescreen from './Components/worktimescreen';
+import ServiceInProgress from './Components/ServiceInProgress';
 import Payment from './Components/Paymentscreen';
 import Rating from './Components/RatingScreen';
 import ServiceApp from './screens/SecondPage';
 import PaintingServices from './screens/Indiv';
 import SearchItem from './Components/SearchItem';
-import SplashScreen from 'react-native-splash-screen';
 import HelpScreen from './Components/HelpScreen';
 import SingleService from './screens/SingleService';
 import RecentServices from './Components/RecentServices';
@@ -41,7 +44,6 @@ import ServiceTrackingItemScreen from './Components/ServiceTrackingItemScreen';
 import ServiceTrackingListScreen from './Components/ServiceTrackingListScreen';
 import ServiceBookingItem from './Components/ServiceBookingItem';
 import UserNotifications from './screens/UserNotifications';
-import ServiceInProgress from './Components/ServiceInProgress';
 import AccountDelete from './Components/AccountDelete';
 import ReferralScreen from './Components/ReferralScreen';
 import OnboardingScreen from './Components/OnboardingScreen';
@@ -61,7 +63,6 @@ function TabNavigator() {
         tabBarIcon: ({focused, color, size}) => {
           size = focused ? 28 : 24;
           let iconName;
-
           if (route.name === 'Home') {
             iconName = 'home';
             return <Feather name={iconName} size={size} color={color} />;
@@ -118,90 +119,67 @@ function App() {
   const navigationRef = useRef(null);
   const [initialRoute, setInitialRoute] = useState<string | null>(null);
 
+  // Request all required permissions
   async function requestAllPermissions() {
-    const permissions = {
-      ios: [
+    if (Platform.OS === 'android') {
+      // Android foreground permissions (location & contacts)
+      const androidPermissions = [
+        PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
+        PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION,
+        PERMISSIONS.ANDROID.ACCESS_BACKGROUND_LOCATION,
+        PERMISSIONS.ANDROID.READ_CONTACTS,
+      ];
+      const currentStatuses = await checkMultiple(androidPermissions);
+      console.log('Current Android Permission Statuses:', currentStatuses);
+      const permissionsToRequest = androidPermissions.filter(
+        perm => currentStatuses[perm] !== RESULTS.GRANTED,
+      );
+      if (permissionsToRequest.length > 0) {
+        const newStatuses = await requestMultiple(permissionsToRequest);
+        console.log('Updated Android Permission Statuses:', newStatuses);
+      } else {
+        console.log('All necessary Android permissions are already granted.');
+      }
+      // Request notification permission on Android 13+ separately
+      if (Platform.Version >= 33) {
+        const {status} = await requestNotifications(['alert', 'sound', 'badge']);
+        console.log('Notification permission status:', status);
+      }
+    } else if (Platform.OS === 'ios') {
+      // iOS permissions (location, notifications, contacts)
+      const iosPermissions = [
         PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
         PERMISSIONS.IOS.LOCATION_ALWAYS,
         PERMISSIONS.IOS.NOTIFICATIONS,
         PERMISSIONS.IOS.CONTACTS,
-      ],
-      android: [
-        PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
-        PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION,
-        PERMISSIONS.ANDROID.ACCESS_BACKGROUND_LOCATION,
-        PERMISSIONS.ANDROID.POST_NOTIFICATIONS,
-        PERMISSIONS.ANDROID.READ_CONTACTS,
-      ],
-    };
-
-    const osPermissions =
-      Platform.OS === 'ios' ? permissions.ios : permissions.android;
-
-    // Check current permission statuses
-    const currentStatuses = await checkMultiple(osPermissions);
-    console.log('Current Permission Statuses:', currentStatuses);
-
-    // Request permissions if not already granted
-    const permissionsToRequest = osPermissions.filter(
-      perm => currentStatuses[perm] !== RESULTS.GRANTED,
-    );
-
-    if (permissionsToRequest.length > 0) {
-      const newStatuses = await requestMultiple(permissionsToRequest);
-      console.log('Updated Permission Statuses:', newStatuses);
-    } else {
-      console.log('All necessary permissions are already granted.');
+      ];
+      const currentStatuses = await checkMultiple(iosPermissions);
+      console.log('Current iOS Permission Statuses:', currentStatuses);
+      const permissionsToRequest = iosPermissions.filter(
+        perm => currentStatuses[perm] !== RESULTS.GRANTED,
+      );
+      if (permissionsToRequest.length > 0) {
+        const newStatuses = await requestMultiple(permissionsToRequest);
+        console.log('Updated iOS Permission Statuses:', newStatuses);
+      } else {
+        console.log('All necessary iOS permissions are already granted.');
+      }
     }
   }
 
-  // Request user permissions for notifications
-  // async function requestUserPermission() {
-  //   const authStatus = await messaging().requestPermission();
-  //   const enabled =
-  //     authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-  //     authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-
-  //   if (enabled) {
-  //     console.log('Authorization status:', authStatus);
-  //   } else {
-  //     console.log('Notification permission not granted');
-  //   }
-  // }
-
-  // // Request notification permission for Android
-  // async function requestNotificationPermission() {
-  //   const granted = await PermissionsAndroid.request(
-  //     PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-  //     {
-  //       title: 'Notification Permission',
-  //       message:
-  //         'This app needs access to your notifications so you can receive important updates.',
-  //       buttonNeutral: 'Ask Me Later',
-  //       buttonNegative: 'Cancel',
-  //       buttonPositive: 'OK',
-  //     },
-  //   );
-  //   if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-  //     console.log('You can use the notifications');
-  //   } else {
-  //     console.log('Notification permission denied');
-  //   }
-  // }
-
-  // Get FCM tokens and store them
+  // Get FCM token and store it in the backend if needed.
   async function getTokens() {
     try {
       const fcm = await EncryptedStorage.getItem('fcm_token');
       const cs_token = await EncryptedStorage.getItem('cs_token');
-      console.log(fcm);
+      console.log('Stored FCM token:', fcm);
       if (!fcm && cs_token) {
         const token = await messaging().getToken();
         await EncryptedStorage.setItem('fcm_token', token);
         const cs_token = await EncryptedStorage.getItem('cs_token');
         if (cs_token) {
           await axios.post(
-            `http://192.168.55.103:5000/api/user/store-fcm-token`,
+            `http://192.168.55.101:5000/api/user/store-fcm-token`,
             {fcmToken: token},
             {headers: {Authorization: `Bearer ${cs_token}`}},
           );
@@ -213,12 +191,12 @@ function App() {
   }
 
   // Store notification in backend
-  async function storeNotificationInBackend(notification) {
+  async function storeNotificationInBackend(notification: any) {
     try {
       const pcs_token = await EncryptedStorage.getItem('cs_token');
       const fcmToken = await EncryptedStorage.getItem('fcm_token');
       await axios.post(
-        `http://192.168.55.103:5000/api/user/store-notification`,
+        `http://192.168.55.101:5000/api/user/store-notification`,
         {notification, fcmToken},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
@@ -228,20 +206,13 @@ function App() {
     }
   }
 
-  // Store notification locally
-  async function storeNotificationLocally(notification) {
+  // Store notification locally and then backend
+  async function storeNotificationLocally(notification: any) {
     try {
-      const existingNotifications = await EncryptedStorage.getItem(
-        'notifications',
-      );
-      let notifications = existingNotifications
-        ? JSON.parse(existingNotifications)
-        : [];
+      const existingNotifications = await EncryptedStorage.getItem('notifications');
+      let notifications = existingNotifications ? JSON.parse(existingNotifications) : [];
       notifications.push(notification);
-      await EncryptedStorage.setItem(
-        'notifications',
-        JSON.stringify(notifications),
-      );
+      await EncryptedStorage.setItem('notifications', JSON.stringify(notifications));
       console.log('Notification stored locally:', notification);
       storeNotificationInBackend(notification);
     } catch (error) {
@@ -249,28 +220,23 @@ function App() {
     }
   }
 
-  // Handle navigation based on notification data
-  async function handleNotificationNavigation(remoteMessage) {
+  // Navigate based on notification data
+  async function handleNotificationNavigation(remoteMessage: any) {
     if (!remoteMessage || !remoteMessage.data) return;
-
     const notificationId = remoteMessage.data.notification_id;
     const encodedNotificationId = btoa(notificationId);
     const screen = remoteMessage.data.screen;
-
     if (!navigationRef.current || !screen) {
       return;
     }
-
     console.log('Navigating based on notification to screen:', screen);
-
-    const navigationActions = {
+    const navigationActions: any = {
       UserNavigation: () =>
         navigationRef.current.dispatch(
           CommonActions.navigate('UserNavigation', {
             encodedId: encodedNotificationId,
           }),
         ),
-
       worktimescreen: () =>
         navigationRef.current.dispatch(
           CommonActions.navigate('ServiceInProgress', {
@@ -296,7 +262,7 @@ function App() {
                       {
                         name: 'Home',
                         params: {
-                          encodedId: encodedNotificationId, // Pass encodedId when present
+                          encodedId: encodedNotificationId,
                         },
                       },
                     ],
@@ -315,7 +281,7 @@ function App() {
                   state: {
                     routes: [
                       {
-                        name: 'Home', // Redirect without params
+                        name: 'Home',
                       },
                     ],
                   },
@@ -326,14 +292,13 @@ function App() {
         }
       },
     };
-
     if (navigationActions[screen]) {
       navigationActions[screen]();
     }
   }
 
   useEffect(() => {
-    // Configure Push Notifications
+    // Configure push notifications
     PushNotification.configure({
       onNotification: function (notification) {
         if (notification.userInteraction) {
@@ -344,11 +309,9 @@ function App() {
 
     // Request permissions and get tokens
     requestAllPermissions();
-    // requestUserPermission();
-    // requestNotificationPermission();
     getTokens();
 
-    // Create notification channel
+    // Create notification channel for Android
     PushNotification.createChannel(
       {
         channelId: 'default-channel-id',
@@ -365,7 +328,6 @@ function App() {
     const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
       console.log('A new FCM message arrived!', JSON.stringify(remoteMessage));
       await handleNotificationNavigation(remoteMessage);
-
       const notification = {
         title: remoteMessage.notification?.title || 'No title',
         body: remoteMessage.notification?.body || 'No body',
@@ -382,9 +344,7 @@ function App() {
           hour12: false,
         }).format(new Date()),
       };
-
       storeNotificationLocally(notification);
-
       PushNotification.localNotification({
         channelId: 'default-channel-id',
         title: notification.title,
@@ -398,12 +358,8 @@ function App() {
 
     // Background and quit state message handler
     messaging().setBackgroundMessageHandler(async remoteMessage => {
-      console.log(
-        'Message handled in the background!',
-        JSON.stringify(remoteMessage),
-      );
+      console.log('Message handled in the background!', JSON.stringify(remoteMessage));
       await handleNotificationNavigation(remoteMessage);
-
       const notification = {
         title: remoteMessage.notification?.title || 'No title',
         body: remoteMessage.notification?.body || 'No body',
@@ -426,12 +382,8 @@ function App() {
       .getInitialNotification()
       .then(async remoteMessage => {
         if (remoteMessage) {
-          console.log(
-            'Notification caused app to open from quit state:',
-            JSON.stringify(remoteMessage),
-          );
+          console.log('Notification caused app to open from quit state:', JSON.stringify(remoteMessage));
           await handleNotificationNavigation(remoteMessage);
-
           const notification = {
             title: remoteMessage.notification?.title || 'No title',
             body: remoteMessage.notification?.body || 'No body',
@@ -451,14 +403,10 @@ function App() {
       });
 
     // When a notification is opened from the background state
-    const unsubscribeOnNotificationOpenedApp =
-      messaging().onNotificationOpenedApp(async remoteMessage => {
-        console.log(
-          'Notification opened from background state:',
-          JSON.stringify(remoteMessage),
-        );
-        await handleNotificationNavigation(remoteMessage);
-      });
+    const unsubscribeOnNotificationOpenedApp = messaging().onNotificationOpenedApp(async remoteMessage => {
+      console.log('Notification opened from background state:', JSON.stringify(remoteMessage));
+      await handleNotificationNavigation(remoteMessage);
+    });
 
     return () => {
       unsubscribeOnMessage();
@@ -470,9 +418,8 @@ function App() {
     const checkOnboarding = async () => {
       try {
         const onboarded = await EncryptedStorage.getItem('onboarded');
-
         if (onboarded) {
-          setInitialRoute('Tabs'); // Navigate to Tabs
+          setInitialRoute('Tabs');
           navigationRef.current?.navigate('Tabs');
         } else {
           setInitialRoute('OnboardingScreen');
@@ -480,165 +427,54 @@ function App() {
         }
       } catch (error) {
         console.error('Error retrieving tokens:', error);
-        setInitialRoute('Login'); // Default to Login if error occurs
-        navigationRef.current?.navigate('Login'); // Force navigation to Login
+        setInitialRoute('Login');
+        navigationRef.current?.navigate('Login');
       }
     };
-
     checkOnboarding();
   }, []);
 
-  // Show a loading screen or null until initialRoute is determined
-  // if (!initialRoute) {
-  //   return (
-  //     <View>
-  //       <ActivityIndicator size="large" color="#0000ff" />
-  //     </View>
-  //   );
-  // }
-  //
   useEffect(() => {
     SplashScreen.hide();
   }, []);
 
-  return (
+  if (!initialRoute) {
+    return (
+      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  return ( 
     <NavigationContainer ref={navigationRef}>
       <Stack.Navigator initialRouteName={initialRoute}>
-        <Stack.Screen
-          name="Tabs"
-          component={TabNavigator}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="UserLocation"
-          component={UserLocation}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="OnboardingScreen"
-          component={OnboardingScreen}
-          options={{headerShown: false}}
-        />
-
-        <Stack.Screen
-          name="Login"
-          component={LoginScreen}
-          options={{headerShown: false}}
-        />
-
-        <Stack.Screen
-          name="VerificationScreen"
-          component={VerificationScreen}
-          options={{headerShown: false}}
-        />
-
-        <Stack.Screen
-          name="OrderScreen"
-          component={OrderScreen}
-          options={{headerShown: false}}
-        />
-
-        <Stack.Screen
-          name="DeleteAccount"
-          component={AccountDelete}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="ReferralScreen"
-          component={ReferralScreen}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="Myrefferals"
-          component={Myrefferals}
-          options={{headerShown: false}}
-        />
-
-        <Stack.Screen
-          name="userwaiting"
-          component={WaitingUser}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="UserNavigation"
-          component={Navigation}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="worktimescreen"
-          component={ServiceInProgress}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="Paymentscreen"
-          component={Payment}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="Rating"
-          component={Rating}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="ServiceBooking"
-          component={SingleService}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="RecentServices"
-          component={RecentServices}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="serviceCategory"
-          component={PaintingServices}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="SearchItem"
-          component={SearchItem}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="SignupDetails"
-          component={SignUpScreen}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="LocationSearch"
-          component={LocationSearch}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="EditProfile"
-          component={EditProfile}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="ServiceTrackingItem"
-          component={ServiceTrackingItemScreen}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="serviceBookingItem"
-          component={ServiceBookingItem}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="Notifications"
-          component={UserNotifications}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="Help"
-          component={PaymentScreenRazor}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="ServiceInProgress"
-          component={ServiceInProgress}
-          options={{headerShown: false}}
-        />
+        <Stack.Screen name="Tabs" component={TabNavigator} options={{headerShown: false}} />
+        <Stack.Screen name="UserLocation" component={UserLocation} options={{headerShown: false}} />
+        <Stack.Screen name="OnboardingScreen" component={OnboardingScreen} options={{headerShown: false}} />
+        <Stack.Screen name="Login" component={LoginScreen} options={{headerShown: false}} />
+        <Stack.Screen name="VerificationScreen" component={VerificationScreen} options={{headerShown: false}} />
+        <Stack.Screen name="OrderScreen" component={OrderScreen} options={{headerShown: false}} />
+        <Stack.Screen name="DeleteAccount" component={AccountDelete} options={{headerShown: false}} />
+        <Stack.Screen name="ReferralScreen" component={ReferralScreen} options={{headerShown: false}} />
+        <Stack.Screen name="Myrefferals" component={Myrefferals} options={{headerShown: false}} />
+        <Stack.Screen name="userwaiting" component={WaitingUser} options={{headerShown: false}} />
+        <Stack.Screen name="UserNavigation" component={Navigation} options={{headerShown: false}} />
+        <Stack.Screen name="worktimescreen" component={ServiceInProgress} options={{headerShown: false}} />
+        <Stack.Screen name="Paymentscreen" component={Payment} options={{headerShown: false}} />
+        <Stack.Screen name="Rating" component={Rating} options={{headerShown: false}} />
+        <Stack.Screen name="ServiceBooking" component={SingleService} options={{headerShown: false}} />
+        <Stack.Screen name="RecentServices" component={RecentServices} options={{headerShown: false}} />
+        <Stack.Screen name="serviceCategory" component={PaintingServices} options={{headerShown: false}} />
+        <Stack.Screen name="SearchItem" component={SearchItem} options={{headerShown: false}} />
+        <Stack.Screen name="SignupDetails" component={SignUpScreen} options={{headerShown: false}} />
+        <Stack.Screen name="LocationSearch" component={LocationSearch} options={{headerShown: false}} />
+        <Stack.Screen name="EditProfile" component={EditProfile} options={{headerShown: false}} />
+        <Stack.Screen name="ServiceTrackingItem" component={ServiceTrackingItemScreen} options={{headerShown: false}} />
+        <Stack.Screen name="serviceBookingItem" component={ServiceBookingItem} options={{headerShown: false}} />
+        <Stack.Screen name="Notifications" component={UserNotifications} options={{headerShown: false}} />
+        <Stack.Screen name="Help" component={HelpScreen} options={{headerShown: false}} />
+        <Stack.Screen name="ServiceInProgress" component={ServiceInProgress} options={{headerShown: false}} />
       </Stack.Navigator>
     </NavigationContainer>
   );

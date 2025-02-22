@@ -67,7 +67,7 @@ const WorkerOtpVerificationScreen = () => {
     try {
       // Call WorkerValidateOtp endpoint
       const validateResponse = await axios.get(
-        `http://192.168.55.103:5000/api/worker/validateOtp`,
+        `http://192.168.55.101:5000/api/worker/validateOtp`,
         {
           params: {
             mobileNumber: phoneNumber,
@@ -80,7 +80,7 @@ const WorkerOtpVerificationScreen = () => {
       if (validateResponse.data.message === 'OTP Verified') {
         // OTP is valid; now call Partnerlogin to complete login
         const loginResponse = await axios.post(
-          `http://192.168.55.103:5000/api/worker/login`,
+          `http://192.168.55.102:5000/api/worker/login`,
           { phone_number: phoneNumber }
         );
         const { status, data } = loginResponse;

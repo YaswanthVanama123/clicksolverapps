@@ -38,7 +38,7 @@ const PartnerSteps = () => {
       if (!pcs_token) throw new Error('pcs_token not found');
 
       const response = await axios.post(
-        `http://192.168.55.103:5000/api/onboarding/step-status`,
+        `http://192.168.55.101:5000/api/onboarding/step-status`,
         {},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );

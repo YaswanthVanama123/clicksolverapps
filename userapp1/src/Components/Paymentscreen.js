@@ -55,7 +55,7 @@ const Payment = ({route}) => {
   const fetchPaymentDetails = useCallback(async decodedId => {
     try {
       const response = await axios.post(
-        `http://192.168.55.103:5000/api/payment/details`,
+        `http://192.168.55.101:5000/api/payment/details`,
         {
           notification_id: decodedId,
         },
@@ -181,7 +181,7 @@ const Payment = ({route}) => {
     try {
       const cs_token = await EncryptedStorage.getItem('cs_token');
       await axios.post(
-        `http://192.168.55.103:5000/api/user/payed`,
+        `http://192.168.55.101:5000/api/user/payed`,
         {
           totalAmount: grandTotal,
           paymentMethod,

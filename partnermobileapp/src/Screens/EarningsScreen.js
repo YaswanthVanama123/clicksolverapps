@@ -58,7 +58,7 @@ const EarningsScreen = () => {
 
       const payload = endDate ? {startDate: date, endDate: endDate} : {date};
       const response = await axios.post(
-        `http://192.168.55.103:5000/api/worker/earnings`,
+        `http://192.168.55.101:5000/api/worker/earnings`,
         payload,
         {
           headers: {
@@ -95,10 +95,9 @@ const EarningsScreen = () => {
         minutes: Number(total_time_worked_hours) * 60,
         service_counts: Number(service_counts),
         cashback_pending:
-          Number(cashback_approved_times) - (Number(service_counts) % 6), // Updated logic for cashback_pending
+          Number(cashback_approved_times) - (Number(cashback_gain) % 6), // Updated logic for cashback_pending
         cashback_gain:
-          (Number(cashback_approved_times) -
-            (Number(cashback_approved_times) - (Number(service_counts) % 6))) *
+        Math.trunc(Number(service_counts) / 6) *
           100, // Adjusted cashback_gain
         cashback_approved_times: Number(cashback_approved_times),
         cashback: Number(service_counts) % 6,
@@ -300,7 +299,6 @@ const EarningsScreen = () => {
       <ScrollView
         contentContainerStyle={styles.statsContainer}
         showsVerticalScrollIndicator={false}>
-        {console.log('earn', earnings)}
         {[
           {value: earnings.payment_count, title: 'Services', color: '#4CAF50'},
           {

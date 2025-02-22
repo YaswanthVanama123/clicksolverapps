@@ -58,7 +58,7 @@ const WorkerLoginScreen = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        `http://192.168.55.103:5000/api/worker/sendOtp`,
+        `http://192.168.55.101:5000/api/worker/sendOtp`,
         { mobileNumber: phoneNumber }
       );
       if (response.status === 200) {

@@ -129,7 +129,7 @@ function ServiceApp({navigation, route}) {
       console.log("called")
       if (cs_token) {
         const response = await axios.get(
-          'http://192.168.55.103:5000/api/user/track/details',
+          'http://192.168.55.101:5000/api/user/track/details',
           {
             headers: {Authorization: `Bearer ${cs_token}`},
           },
@@ -153,7 +153,7 @@ function ServiceApp({navigation, route}) {
       crashlytics().log('Attempting to fetch services from API');
 
       const response = await axios.get(
-        'http://192.168.55.103:5000/api/servicecategories',
+        'https://backend.clicksolver.com/api/servicecategories',
 
       );
 
@@ -274,7 +274,7 @@ function ServiceApp({navigation, route}) {
   const submitFeedback = async () => {
     try {
       const response = await axios.post(
-        'http://192.168.55.103:5000/api/user/feedback',
+        'http://192.168.55.101:5000/api/user/feedback',
         {
           rating,
           comment,
@@ -392,7 +392,7 @@ function ServiceApp({navigation, route}) {
                       width:
                         trackScreen.length > 1
                           ? Dimensions.get('window').width * 0.8
-                          : Dimensions.get('window').width * 0.9,
+                          : Dimensions.get('window').width * 0.88,
                       marginRight: trackScreen.length > 1 ? 10 : 0,
                     },
                   ]}
@@ -713,6 +713,7 @@ const styles = StyleSheet.create({
   },
   scrollViewHorizontal: {
     alignItems: 'center',
+    backgroundColor:'#FFFFFF'
   },
   messageBoxContainer: {
     backgroundColor: '#ffffff',

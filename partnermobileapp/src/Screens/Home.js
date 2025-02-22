@@ -8,6 +8,7 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
+  Modal,  // <-- Make sure to import Modal
 } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 Mapbox.setAccessToken(
@@ -52,6 +53,10 @@ const HomeScreen = () => {
   const [greetingIcon, setGreetingIcon] = useState(null);
   const [showUpArrow, setShowUpArrow] = useState(false);
   const [showDownArrow, setShowDownArrow] = useState(false);
+
+  // NEW: For the inspection confirmation modal
+  const [inspectionModalVisible, setInspectionModalVisible] = useState(false);
+  const [pendingNotificationId, setPendingNotificationId] = useState(null);
 
   // Function to fetch notifications and update state
   const fetchNotifications = useCallback(async () => {
@@ -113,33 +118,43 @@ const HomeScreen = () => {
   const fetchTrackDetails = async () => {
     try {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
-
+  
       if (pcs_token) {
         const response = await axios.get(
-          `http://192.168.55.103:5000/api/worker/track/details`,
+          `http://192.168.55.101:5000/api/worker/track/details`,
           {
-            headers: {Authorization: `Bearer ${pcs_token}`},
-          },
+            headers: { Authorization: `Bearer ${pcs_token}` },
+          }
         );
+  
+        const { route, parameter } = response.data;
+        const params = parameter ? JSON.parse(parameter) : null;
+  
+        // Extract screen name safely
+        const screenName = route || null;
 
-        const {route, parameter} = response.data;
-        const params = JSON.parse(parameter);
-
-        if (route) {
-          setMessageBoxDisplay(true);
-        } else {
-          setMessageBoxDisplay(false);
+        console.log("scr",response.data)
+  
+        // Remove "workerInAction" if there's no route OR if screen matches specific screens
+        if (!route || screenName === "Paymentscreen" || screenName === "worktimescreen") {
+          console.log(`Removing workerInAction due to screen: ${screenName || "No Route"}`);
+          await EncryptedStorage.removeItem("workerInAction");
         }
-
-        setScreenName(route);
-        setParams(params);
+  
+        setScreenName(screenName || ""); // Default to empty string if null
+        setParams(params || {}); // Default to empty object if no parameters
+        setMessageBoxDisplay(!!route); // Show message box if route exists
       } else {
+        console.log("No pcs_token found, removing workerInAction key and redirecting to Login");
+        await EncryptedStorage.removeItem("workerInAction");
         navigation.replace('Login');
       }
     } catch (error) {
       console.error('Error fetching track details:', error);
+      await EncryptedStorage.removeItem("workerInAction"); // Ensure cleanup on error
     }
   };
+  
 
   // Function to toggle tracking
   const toggleSwitch = async () => {
@@ -173,28 +188,65 @@ const HomeScreen = () => {
     navigation.push('Earnings');
   };
 
+  /**
+   * STEP 1 of 2:
+   * acceptRequest checks if the services include "inspection" (case-insensitive).
+   * If yes, shows a confirmation modal. If not, calls finalizeAcceptRequest directly.
+   */
   const acceptRequest = async userNotificationId => {
-    // Decode the notification ID if needed
-    const decodedId = Buffer.from(userNotificationId, 'base64').toString(
-      'ascii',
+    const decodedId = Buffer.from(userNotificationId, 'base64').toString('ascii');
+
+    // Locate the corresponding notification
+    const notif = notificationsArray.find(
+      n => n.data.user_notification_id === userNotificationId,
     );
+
+    let requiresInspectionConfirmation = false;
+
+    if (notif && notif.data.service) {
+      try {
+        const serviceData = JSON.parse(notif.data.service);
+        // Check if any serviceName includes "inspection" (case-insensitive)
+        requiresInspectionConfirmation = serviceData.some(service =>
+          service.serviceName.toLowerCase().includes('inspection'),
+        );
+      } catch (error) {
+        console.error('Error parsing service data:', error);
+      }
+    }
+
+    if (requiresInspectionConfirmation) {
+      // Show the inspection modal
+      setPendingNotificationId(userNotificationId);
+      setInspectionModalVisible(true);
+      return;
+    }
+
+    // Otherwise, no inspection needed -> finalize acceptance immediately
+    await finalizeAcceptRequest(userNotificationId);
+  };
+
+  /**
+   * STEP 2 of 2:
+   * finalizeAcceptRequest contains the original acceptance logic
+   */
+  const finalizeAcceptRequest = async userNotificationId => {
+    const decodedId = Buffer.from(userNotificationId, 'base64').toString('ascii');
 
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const response = await axios.post(
-        `http://192.168.55.103:5000/api/accept/request`,
+        `http://192.168.55.101:5000/api/accept/request`,
         {user_notification_id: decodedId},
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
 
       if (response.status === 200) {
-        // After a successful request acceptance, remove the notification from state
+        // Remove the accepted notification from state & local storage
         setNotificationsArray(prevNotifications => {
           const updatedNotifications = prevNotifications.filter(
             notif => notif.data.user_notification_id !== userNotificationId,
           );
-
-          // Also update the locally stored notifications
           EncryptedStorage.setItem(
             'Requestnotifications',
             JSON.stringify(updatedNotifications),
@@ -209,7 +261,7 @@ const HomeScreen = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `http://192.168.55.103:5000/api/worker/action`,
+          `http://192.168.55.101:5000/api/worker/action`,
           {
             encodedId: encodedNotificationId,
             screen: 'UserNavigation',
@@ -231,11 +283,10 @@ const HomeScreen = () => {
           }),
         );
       } else {
-        // Handle the error case (if needed)
+        // Handle error case
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
-
         await axios.post(
-          `http://192.168.55.103:5000/api/worker/action`,
+          `http://192.168.55.101:5000/api/worker/action`,
           {
             encodedId: '',
             screen: '',
@@ -330,59 +381,55 @@ const HomeScreen = () => {
     try {
       // Check if FCM token already exists in EncryptedStorage
       const storedToken = await EncryptedStorage.getItem('fcm_token');
-  
+
       if (storedToken) {
         console.log('FCM token already exists, skipping backend update.');
         return; // Skip sending to the backend
       }
-  
+
       // Fetch new FCM token
       const newToken = await messaging().getToken();
-  
+
       if (!newToken) {
         console.error('Failed to retrieve FCM token.');
         return;
       }
-  
+
       // Store the new token in EncryptedStorage
       await EncryptedStorage.setItem('fcm_token', newToken);
-  
+
       // Get PCS token for authorization
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       if (!pcs_token) {
         console.error('No PCS token found, skipping FCM update.');
         return;
       }
-  
+
       // Send the new token to the backend
       await axios.post(
-        `http://192.168.55.103:5000/api/worker/store-fcm-token`,
-        { fcmToken: newToken },
-        { headers: { Authorization: `Bearer ${pcs_token}` } }
+        `http://192.168.55.101:5000/api/worker/store-fcm-token`,
+        {fcmToken: newToken},
+        {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
-  
+
       console.log('New FCM token stored and sent to backend.');
     } catch (error) {
       console.error('Error handling FCM token:', error);
     }
   };
-  
 
   useEffect(() => {
-    // fetchTrackDetails();
-    fetchTrackingState(); 
+    fetchTrackingState();
     fetchNotifications();
     setGreetingBasedOnTime();
     requestUserPermission();
     getTokens();
-
-    // Other initialization code...
   }, []);
 
   useFocusEffect(
     useCallback(() => {
       fetchTrackDetails();
-    }, [])
+    }, []),
   );
 
   useEffect(() => {
@@ -414,9 +461,9 @@ const HomeScreen = () => {
           notifications.push(notification);
 
           // Get the receivedAt time from the notification
-          const receivedAt = notification.receivedAt; // e.g., "06/10/2024, 11:26:16"
+          const receivedAt = notification.receivedAt;
 
-          // Manually parse receivedAt (from DD/MM/YYYY, HH:mm:ss to MM/DD/YYYY HH:mm:ss)
+          // Manually parse receivedAt (from DD/MM/YYYY, HH:mm:ss to YYYY-MM-DDTHH:mm:ss)
           const [datePart, timePart] = receivedAt.split(', ');
           const [day, month, year] = datePart.split('/');
           const parsedReceivedAt = `${year}-${month}-${day}T${timePart}`;
@@ -432,24 +479,20 @@ const HomeScreen = () => {
             const notiReceivedAt = new Date(parsedNotiReceivedAt);
 
             const timeDifferenceInMinutes =
-              (currentDate - notiReceivedAt) / (1000 * 60); // milliseconds to minutes
+              (currentDate - notiReceivedAt) / (1000 * 60);
 
             return timeDifferenceInMinutes <= 10;
           });
 
-          // Update the notifications array with the filtered notifications
           notifications = filteredNotifications;
 
-          // Update the notifications array and store locally
           setNotificationsArray(notifications);
           console.log('setNotificationsArray');
-          // Store updated notifications in local storage
+
           await EncryptedStorage.setItem(
             'Requestnotifications',
             JSON.stringify(notifications),
           );
-
-          // Also store in backend
         } catch (error) {
           console.error('Failed to store notification locally:', error);
         }
@@ -466,15 +509,8 @@ const HomeScreen = () => {
       if (remoteMessage.data && remoteMessage.data.screen === 'Home') {
         await axios.post(
           `${process.env.BackendAPI}/api/worker/action`,
-          {
-            encodedId: '',
-            screen: '',
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${pcs_token}`,
-            },
-          },
+          {encodedId: '', screen: ''},
+          {headers: {Authorization: `Bearer ${pcs_token}`}},
         );
 
         navigation.dispatch(
@@ -496,7 +532,7 @@ const HomeScreen = () => {
         data: remoteMessage.data,
         service: remoteMessage.data.service,
         location: remoteMessage.data.location,
-        userNotificationId: remoteMessage.data.user_notification_id, // Include the user_notification_id
+        userNotificationId: remoteMessage.data.user_notification_id,
         receivedAt: new Intl.DateTimeFormat('en-IN', {
           timeZone: 'Asia/Kolkata',
           year: 'numeric',
@@ -562,7 +598,7 @@ const HomeScreen = () => {
         data: remoteMessage.data,
         service: remoteMessage.data.service,
         location: remoteMessage.data.location,
-        userNotificationId: remoteMessage.data.user_notification_id, // Include the user_notification_id
+        userNotificationId: remoteMessage.data.user_notification_id,
         receivedAt: new Intl.DateTimeFormat('en-IN', {
           timeZone: 'Asia/Kolkata',
           year: 'numeric',
@@ -585,15 +621,8 @@ const HomeScreen = () => {
         if (remoteMessage.data && remoteMessage.data.screen === 'Home') {
           await axios.post(
             `${process.env.BackendAPI}/api/worker/action`,
-            {
-              encodedId: '',
-              screen: '',
-            },
-            {
-              headers: {
-                Authorization: `Bearer ${pcs_token}`,
-              },
-            },
+            {encodedId: '', screen: ''},
+            {headers: {Authorization: `Bearer ${pcs_token}`}},
           );
 
           navigation.dispatch(
@@ -620,15 +649,8 @@ const HomeScreen = () => {
           if (remoteMessage.data && remoteMessage.data.screen === 'Home') {
             await axios.post(
               `${process.env.BackendAPI}/api/worker/action`,
-              {
-                encodedId: '',
-                screen: '',
-              },
-              {
-                headers: {
-                  Authorization: `Bearer ${pcs_token}`,
-                },
-              },
+              {encodedId: '', screen: ''},
+              {headers: {Authorization: `Bearer ${pcs_token}`}},
             );
 
             navigation.dispatch(
@@ -650,7 +672,7 @@ const HomeScreen = () => {
             data: remoteMessage.data,
             service: remoteMessage.data.service,
             location: remoteMessage.data.location,
-            userNotificationId: remoteMessage.data.user_notification_id, // Include the user_notification_id
+            userNotificationId: remoteMessage.data.user_notification_id,
             receivedAt: new Intl.DateTimeFormat('en-IN', {
               timeZone: 'Asia/Kolkata',
               year: 'numeric',
@@ -749,6 +771,7 @@ const HomeScreen = () => {
           </TouchableOpacity>
         </View>
       </View>
+
       {isEnabled ? (
         <>
           <Mapbox.MapView
@@ -760,7 +783,8 @@ const HomeScreen = () => {
               </View>
             </Mapbox.PointAnnotation>
           </Mapbox.MapView>
-          {/* Include the LocationTracker component */}
+
+          {/* Location Tracker Component */}
           <LocationTracker
             isEnabled={isEnabled}
             onLocationUpdate={(latitude, longitude) => {
@@ -772,6 +796,7 @@ const HomeScreen = () => {
       ) : (
         <Text style={styles.message}>Please click the switch on</Text>
       )}
+
       {isEnabled && (
         <ScrollView
           horizontal
@@ -780,20 +805,13 @@ const HomeScreen = () => {
           contentContainerStyle={styles.scrollContainer}
           style={styles.messageScrollView}>
           {notificationsArray.map((notification, index) => {
-            // Parse the title string if it's valid JSON
-            let parsedTitle;
-            let totalCost = 0;
+            let parsedTitle = [];
             let cost = notification.data.cost;
 
             try {
               parsedTitle = JSON.parse(notification.data.service);
-
-              totalCost = parsedTitle.reduce((accumulator, service) => {
-                return accumulator + (service.cost || 0); // Default to 0 if cost is undefined
-              }, 0);
             } catch (error) {
               console.error('Error parsing title:', error);
-              parsedTitle = []; // Default to an empty array if parsing fails
             }
 
             return (
@@ -801,11 +819,7 @@ const HomeScreen = () => {
                 <View style={styles.serviceCostContainer}>
                   <View style={styles.serviceContainer}>
                     <Text style={styles.secondaryColor}>Service</Text>
-                    <View
-                      style={{
-                        position:
-                          'relative' /* container for arrows and scroll view */,
-                      }}>
+                    <View style={{ position: 'relative' }}>
                       {showUpArrow && (
                         <View style={styles.arrowUpContainer}>
                           <Entypo
@@ -823,9 +837,7 @@ const HomeScreen = () => {
                         scrollEventThrottle={16}>
                         {Array.isArray(parsedTitle) ? (
                           parsedTitle.map((service, serviceIndex) => (
-                            <Text
-                              key={serviceIndex}
-                              style={styles.primaryColor}>
+                            <Text key={serviceIndex} style={styles.primaryColor}>
                               {service.serviceName}
                               {serviceIndex < parsedTitle.length - 1
                                 ? ', '
@@ -881,6 +893,7 @@ const HomeScreen = () => {
           })}
         </ScrollView>
       )}
+
       {messageBoxDisplay && (
         <TouchableOpacity
           style={styles.messageBoxContainer}
@@ -908,9 +921,6 @@ const HomeScreen = () => {
               )}
             </View>
             <View>
-              {/* <Text style={styles.textContainerText}>
-                Switch board & Socket repairing
-              </Text> */}
               {screenName === 'Paymentscreen' ? (
                 <Text style={styles.textContainerText}>
                   Payment in progress
@@ -937,6 +947,42 @@ const HomeScreen = () => {
           </View>
         </TouchableOpacity>
       )}
+
+      {/** INSPECTION CONFIRMATION MODAL */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={inspectionModalVisible}
+        onRequestClose={() => setInspectionModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Inspection Confirmation</Text>
+            <Text style={styles.modalMessage}>
+              The service request includes an inspection.
+              {'\n'}Inspection fee is ₹49. If you are comfortable with just
+              inspecting, click "Sure" to accept. Otherwise, click "Cancel".
+            </Text>
+            <View style={styles.modalButtonsRow}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalSureButton]}
+                onPress={() => {
+                  finalizeAcceptRequest(pendingNotificationId);
+                  setInspectionModalVisible(false);
+                }}
+              >
+                <Text style={styles.modalButtonText}>Sure</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalCancelButton]}
+                onPress={() => setInspectionModalVisible(false)}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -990,12 +1036,11 @@ const styles = StyleSheet.create({
     color: '#212121',
     marginLeft: 10,
   },
-  status:{
-    paddingLeft:10
+  status: {
+    paddingLeft: 10,
   },
   serviceNamesContainer: {
     flexWrap: 'wrap',
-    // Set a fixed height for the services container
     maxHeight: 60, // Adjust height according to your design
   },
   serviceNamesContent: {
@@ -1008,7 +1053,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
-    // Optionally add background color / opacity for better visibility:
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   arrowDownContainer: {
@@ -1018,11 +1062,6 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
-  },
-  textContainerTextCommander: {
-    fontSize: 12,
-    color: '#9e9e9e',
-    marginLeft: 10,
   },
   iconContainer: {
     width: 40,
@@ -1106,7 +1145,7 @@ const styles = StyleSheet.create({
     padding: 20,
     display: 'flex',
     flexDirection: 'column',
-    justifyContent: 'space-between', // Helps keep buttons at bottom
+    justifyContent: 'space-between', 
   },
   messageText: {
     fontSize: 16,
@@ -1284,6 +1323,60 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#333',
     fontWeight: 'bold',
+  },
+  message: {
+    fontSize: 15,
+    textAlign: 'center',
+    marginTop: 20,
+    color: '#777',
+  },
+
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  modalMessage: {
+    fontSize: 15,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  modalSureButton: {
+    backgroundColor: '#FF5722',
+  },
+  modalCancelButton: {
+    backgroundColor: '#BDBDBD',
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

@@ -34,7 +34,7 @@ const ReferralScreen = () => {
         }
 
         const response = await axios.get(
-          'http://192.168.55.103:5000/api/user/referrals',
+          'http://172.25.160.1:5000/api/user/referrals',
           {
             headers: {
               Authorization: `Bearer ${token}`,

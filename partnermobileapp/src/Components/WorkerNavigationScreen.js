@@ -168,7 +168,8 @@ const WorkerNavigationScreen = () => {
   // ---------------------------------------------------------------------
   useFocusEffect(
     useCallback(() => {
-      const onBackPress = () => {
+      const onBackPress = async () => {
+        await EncryptedStorage.removeItem("workerInAction");
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
@@ -208,13 +209,13 @@ const WorkerNavigationScreen = () => {
   const checkCancellationStatus = async () => {
     try {
       const response = await axios.get(
-        `http://192.168.55.103:5000/api/worker/cancelled/status`,
+        `http://192.168.55.101:5000/api/worker/cancelled/status`,
         {params: {notification_id: decodedId}},
       );
       if (response.data.notificationStatus === 'usercanceled') {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         await axios.post(
-          `http://192.168.55.103:5000/api/worker/action`,
+          `http://192.168.55.101:5000/api/worker/action`,
           {encodedId: '', screen: ''},
           {headers: {Authorization: `Bearer ${pcs_token}`}},
         );
@@ -231,13 +232,34 @@ const WorkerNavigationScreen = () => {
     }
   };
 
+  const phoneCall = async () => {
+    try { 
+      const response = await axios.post('http://192.168.55.101:5000/api/user/call', { decodedId });
+  
+      if (response.status === 200 && response.data.mobile) {
+        const phoneNumber = response.data.mobile;
+        console.log("Call initiated successfully:", phoneNumber);
+  
+        // Open phone dialer with the retrieved number
+        const dialURL = `tel:${phoneNumber}`;
+        Linking.openURL(dialURL).catch(err => 
+          console.error("Error opening dialer:", err)
+        );
+      } else {
+        console.log("Failed to initiate call:", response.data);
+      }
+    } catch (error) {
+      console.error("Error initiating call:", error.response ? error.response.data : error.message);
+    }
+  };
+
   // ---------------------------------------------------------------------
   // B) FETCH ADDRESS DETAILS
   // ---------------------------------------------------------------------
   const fetchAddressDetails = useCallback(async () => {
     try {
       const response = await axios.get(
-        `http://192.168.55.103:5000/api/user/address/details`,
+        `http://192.168.55.101:5000/api/user/address/details`,
         {params: {notification_id: decodedId}},
       );
       setAddressDetails(response.data);
@@ -253,7 +275,7 @@ const WorkerNavigationScreen = () => {
   const fetchLocationDetails = async () => {
     try {
       const response = await axios.post(
-        `http://192.168.55.103:5000/api/service/location/navigation`,
+        `http://192.168.55.101:5000/api/service/location/navigation`,
         {notification_id: decodedId},
       );
       const {startPoint, endPoint} = response.data;
@@ -276,7 +298,7 @@ const WorkerNavigationScreen = () => {
     try {
       setIsLoading(true);
       const response = await axios.post(
-        `http://192.168.55.103:5000/api/worker/work/cancel`,
+        `http://192.168.55.101:5000/api/worker/work/cancel`,
         {notification_id: decodedId},
       );
       if (response.status === 200) {
@@ -287,7 +309,7 @@ const WorkerNavigationScreen = () => {
         }
 
         await axios.post(
-          `http://192.168.55.103:5000/api/worker/action`,
+          `http://192.168.55.101:5000/api/worker/action`,
           {encodedId: '', screen: ''},
           {headers: {Authorization: `Bearer ${pcs_token}`}},
         );
@@ -691,7 +713,7 @@ const WorkerNavigationScreen = () => {
               <Text style={styles.serviceType}>Service</Text>
             </View>
             <View style={styles.iconsContainer}>
-              <TouchableOpacity style={styles.actionButton}>
+              <TouchableOpacity style={styles.actionButton} onPress={phoneCall}>
                 <MaterialIcons name="call" size={18} color="#FF5722" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionButton}>
@@ -763,7 +785,7 @@ const WorkerNavigationScreen = () => {
 };
 
 // -------------------------------- STYLES --------------------------------
-const bottomCardHeight = 330;
+const bottomCardHeight = 300;
 const screenHeight = Dimensions.get('window').height;
 
 const styles = StyleSheet.create({

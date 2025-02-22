@@ -107,7 +107,7 @@ const SearchItem = () => {
       setLoading(true);
       try {
         const response = await axios.get(
-          `http://192.168.55.103:5000/api/services?search=${query}`,
+          `http://192.168.55.101:5000/api/services?search=${query}`,
         );
         setSuggestions(response.data);
       } catch (error) {
@@ -196,7 +196,7 @@ const SearchItem = () => {
         style={styles.suggestionImage}
       /> */}
       <Image
-        source={{uri: item.service_urls || 'https://via.placeholder.com/150'}}
+        source={{uri: item.service_details.urls || 'https://via.placeholder.com/150'}}
         style={styles.suggestionImage}
       />
       <View style={styles.textContainer}>

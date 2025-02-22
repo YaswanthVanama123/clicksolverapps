@@ -146,7 +146,9 @@ const {
   createFundAccount,
   validateAndSaveUPI ,
   userLogout,
-  workerLogout
+  workerLogout,
+  phoneCall,
+  UserPhoneCall
 } = require("./controller.js");
 
 const router = express.Router();
@@ -158,6 +160,9 @@ const { authAdminMiddleware } = require("./src/middlewares/authAdminMiddleware.j
 
 // Define the route for getting service details
 router.post("/single/service", getServiceByName);
+
+router.post('/worker/call', phoneCall);
+router.post('/user/call', UserPhoneCall);
 
 router.post('/workerLogout', workerLogout);
 

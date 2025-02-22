@@ -209,7 +209,137 @@ const verifyPayment = async (req, res) => {
   }
 };
 
+const phoneCall = async (req, res) => {
+  try {
+    const { decodedId } = req.body;
 
+    if (!decodedId || typeof decodedId !== "string") {
+      return res.status(400).json({ message: "Valid decodedId is required." });
+    }
+
+    // Fetch `from_number` from accepted table by joining with user and workersverified tables
+    const query = `
+      SELECT 
+        u.phone_number AS from_number, 
+        w.phone_number AS mobile_number
+      FROM accepted a
+      JOIN "user" u ON a.user_id = u.user_id
+      JOIN workersverified w ON a.worker_id = w.worker_id
+      WHERE a.notification_id = $1
+    `;
+
+    const values = [decodedId];
+    const result = await client.query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "No matching data found." });
+    }
+
+    const { from_number, mobile_number } = result.rows[0];
+
+    // Ensure these are strings (avoiding JSON structure issues)
+    if (typeof from_number !== "string" || typeof mobile_number !== "string") {
+      return res.status(500).json({ message: "Invalid phone number format." });
+    }
+
+    console.log("From Number:", from_number, "Mobile Number:", mobile_number);
+
+    // Call the external API
+    const apiResponse = await axios.post(
+      'https://apiv1.cloudshope.com/api/outboundCall',
+      { from_number, mobile_number },
+      {
+        headers: {
+          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEwMzgzLCJ1c2VybmFtZSI6Illhc2h3YW50NjU0OTQiLCJtYWluX3VzZXIiOjEwMzgzLCJpYXQiOjE3Mzk3NzIzOTB9.HKURS7DdnYsizBBDgeTn6E5JpkKk1C8qkuRDL3l3qDE`
+        }
+      }
+    );
+
+    // Extracting mobile from response data properly
+    const responseData = apiResponse.data?.data?.mobile;
+
+    console.log("Masked Number:", responseData);
+
+    res.status(200).json({
+      message: "Call initiated successfully.",
+      mobile: responseData
+    });
+
+  } catch (error) {
+    console.error("Error initiating call:", error.message);
+    
+    res.status(500).json({
+      message: "Internal server error.",
+      error: error.message
+    });
+  }
+};
+
+const UserPhoneCall = async (req, res) => {
+  try {
+    const { decodedId } = req.body;
+
+    if (!decodedId || typeof decodedId !== "string") {
+      return res.status(400).json({ message: "Valid decodedId is required." });
+    }
+
+    // Fetch `from_number` from accepted table by joining with user and workersverified tables
+    const query = `
+      SELECT 
+        u.phone_number AS mobile_number, 
+        w.phone_number AS from_number
+      FROM accepted a
+      JOIN "user" u ON a.user_id = u.user_id
+      JOIN workersverified w ON a.worker_id = w.worker_id
+      WHERE a.notification_id = $1
+    `;
+
+    const values = [decodedId];
+    const result = await client.query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "No matching data found." });
+    }
+
+    const { from_number, mobile_number } = result.rows[0];
+
+    // Ensure these are strings (avoiding JSON structure issues)
+    if (typeof from_number !== "string" || typeof mobile_number !== "string") {
+      return res.status(500).json({ message: "Invalid phone number format." });
+    }
+
+    console.log("From Number:", from_number, "Mobile Number:", mobile_number);
+
+    // Call the external API
+    const apiResponse = await axios.post(
+      'https://apiv1.cloudshope.com/api/outboundCall',
+      { from_number, mobile_number },
+      {
+        headers: {
+          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEwMzgzLCJ1c2VybmFtZSI6Illhc2h3YW50NjU0OTQiLCJtYWluX3VzZXIiOjEwMzgzLCJpYXQiOjE3Mzk3NzIzOTB9.HKURS7DdnYsizBBDgeTn6E5JpkKk1C8qkuRDL3l3qDE`
+        }
+      }
+    );
+
+    // Extracting mobile from response data properly
+    const responseData = apiResponse.data?.data?.mobile;
+
+    console.log("Masked Number:", responseData);
+
+    res.status(200).json({
+      message: "Call initiated successfully.",
+      mobile: responseData
+    });
+
+  } catch (error) {
+    console.error("Error initiating call:", error.message);
+    
+    res.status(500).json({
+      message: "Internal server error.",
+      error: error.message
+    });
+  }
+};
 
 // Function to update `no_due` in `workersverified` only for workers with a record in `workerlife`
 const updateWorkerNoDueStatus = async () => {
@@ -9813,7 +9943,9 @@ const getWorkerNavigationDetails = async (req, res) => {
       un.area,
       un.city,
       un.pincode,
-      ws.profile
+      ws.profile,
+      wl.average_rating, -- Fetch average rating from workerlife
+      wl.service_counts  -- Fetch service counts from workerlife
     FROM 
       accepted n
     JOIN 
@@ -9822,9 +9954,12 @@ const getWorkerNavigationDetails = async (req, res) => {
       usernotifications un ON n.user_notification_id = un.user_notification_id
     JOIN 
       workerskills ws ON n.worker_id = ws.worker_id
+    JOIN 
+      workerlife wl ON n.worker_id = wl.worker_id -- Joining workerlife table to get ratings and service counts
     WHERE 
-      n.notification_id = $1
+      n.notification_id = $1;
   `;
+  
 
     const result = await client.query(query, [notificationId]);
 
@@ -9844,6 +9979,9 @@ const getWorkerNavigationDetails = async (req, res) => {
       area,
       city,
       service_booked,
+      average_rating,
+      service_counts
+
     } = result.rows[0];
 
     // Send the response
@@ -9856,12 +9994,15 @@ const getWorkerNavigationDetails = async (req, res) => {
       area,
       city,
       service_booked,
+      average_rating,
+      service_counts
     });
   } catch (error) {
     console.error("Error getting worker navigation details:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 const registrationStatus = async (req, res) => {
   const workerId = req.worker.id;
@@ -11111,41 +11252,52 @@ const submitFeedback = async (req, res) => {
       });
     }
 
-    // Insert feedback with worker_id and user's name fetched from related tables
+    // Using CTE to insert feedback and update worker's ratings count & average rating
     const query = `
-      INSERT INTO feedback (notification_id, rating, comment, user_id, worker_id, name)
-      VALUES (
-        $1,
-        $2,
-        $3,
-        $4,
-        (SELECT worker_id FROM completenotifications WHERE notification_id = $1),
-        (SELECT name FROM "user" WHERE user_id = $4)
+      WITH inserted_feedback AS (
+        INSERT INTO feedback (notification_id, rating, comment, user_id, worker_id, name)
+        VALUES (
+          $1,
+          $2,
+          $3,
+          $4,
+          (SELECT worker_id FROM completenotifications WHERE notification_id = $1),
+          (SELECT name FROM "user" WHERE user_id = $4)
+        )
+        RETURNING worker_id, rating
+      ),
+      updated_worker AS (
+        UPDATE workerlife
+        SET 
+          ratings_count = ratings_count + 1,
+          average_rating = (average_rating * (ratings_count) + (SELECT rating FROM inserted_feedback)) / (ratings_count + 1)
+        WHERE worker_id = (SELECT worker_id FROM inserted_feedback)
+        RETURNING worker_id, ratings_count, average_rating
       )
-      RETURNING *;
+      SELECT * FROM updated_worker;
     `;
 
-    // Pass `comment` as-is (it can be null)
     const values = [notification_id, rating, comment || null, user_id];
     const result = await client.query(query, values);
 
-    if (result.rows.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "Worker ID or User Name not found." });
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Worker ID not found or update failed." });
     }
 
     res.status(201).json({
-      message: "Feedback submitted successfully.",
-      feedback: result.rows[0],
+      message: "Feedback submitted and rating updated successfully.",
+      feedback: {
+        worker_id: result.rows[0].worker_id,
+        ratings_count: result.rows[0].ratings_count,
+        average_rating: result.rows[0].average_rating.toFixed(2),
+      },
     });
   } catch (error) {
     console.error("Error submitting feedback:", error);
-    res
-      .status(500)
-      .json({ message: "Internal server error.", error: error.message });
+    res.status(500).json({ message: "Internal server error.", error: error.message });
   }
 };
+
 
 // const submitFeedback = async (req, res) => {
 //   const { notification_id, rating, comments } = req.body;
@@ -12063,6 +12215,8 @@ const getWorkerEarnings = async (req, res) => {
       selectStartDate,
       selectEndDate,
     ]);
+
+    console.log(result.rows[0])
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "No earnings data found" });
@@ -13027,5 +13181,7 @@ module.exports = {
   createFundAccount,
   validateAndSaveUPI,
   userLogout,
-  workerLogout
+  workerLogout,
+  phoneCall,
+  UserPhoneCall
 };

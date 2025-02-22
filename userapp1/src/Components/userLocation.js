@@ -241,7 +241,7 @@ const UserLocation = () => {
         return;
       }
       const response = await axios.post(
-        `http://192.168.55.103:5000/api/user/location`,
+        `http://192.168.55.101:5000/api/user/location`,
         {longitude: String(longitude), latitude: String(latitude)},
         {
           headers: {
@@ -286,7 +286,7 @@ const UserLocation = () => {
         return;
       }
       const response = await axios.get(
-        `http://192.168.55.103:5000/api/get/user`,
+        `http://192.168.55.101:5000/api/get/user`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

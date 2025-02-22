@@ -41,7 +41,7 @@ const ApprovalStatusScreen = () => {
         }
 
         const response = await axios.post(
-          `http://192.168.55.103:5000/api/check/approval/verification/status`,
+          `http://192.168.55.101:5000/api/check/approval/verification/status`,
           {},
           {
             headers: {

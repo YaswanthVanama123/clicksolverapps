@@ -108,7 +108,7 @@ const RatingsScreen = () => {
       if (!token) throw new Error('Token not found');
 
       const response = await axios.get(
-        `http://192.168.55.103:5000/api/worker/ratings`,
+        `http://192.168.55.101:5000/api/worker/ratings`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

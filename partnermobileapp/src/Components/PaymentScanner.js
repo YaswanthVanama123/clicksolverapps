@@ -46,7 +46,7 @@ const PaymentScanner = ({route}) => {
       if (decodedId) {
         try {
           const response = await axios.post(
-            `http://192.168.55.103:5000/api/worker/payment/scanner/details`,
+            `http://192.168.55.101:5000/api/worker/payment/scanner/details`,
             {
               notification_id: decodedId,
             },
@@ -89,14 +89,14 @@ const PaymentScanner = ({route}) => {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       const numberAmmount = Number(totalAmount);
       console.log('sended data', numberAmmount, paymentMethod, decodedId);
-      await axios.post(`http://192.168.55.103:5000/api/user/payed`, {
+      await axios.post(`http://192.168.55.101:5000/api/user/payed`, {
         totalAmount: numberAmmount,
         paymentMethod,
         decodedId,
       });
 
       await axios.post( 
-        `http://192.168.55.103:5000/api/worker/action`,
+        `http://192.168.55.101:5000/api/worker/action`,
         {
           encodedId,
           screen: '',
