@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
+  ActivityIndicator,
+  useWindowDimensions, // <-- for responsiveness
 } from 'react-native';
 import LottieView from 'lottie-react-native';
 import Entypo from 'react-native-vector-icons/Entypo';
@@ -19,10 +21,14 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import RazorpayCheckout from 'react-native-razorpay';
 
 const BalanceScreen = () => {
+  // 1) Grab screen width for dynamic styles
+  const { width } = useWindowDimensions();
+  const styles = dynamicStyles(width);
+
   const navigation = useNavigation();
   const [balance, setBalance] = useState(null);
   const [transactions, setTransactions] = useState([]); // For service charge history
-  const [dummyTransactions, setDummyTransactions] = useState([]); // For payment history (if any)
+  const [dummyTransactions, setDummyTransactions] = useState([]); // For payment history
   const [activeCard, setActiveCard] = useState('ServiceHistory');
   const [loading, setLoading] = useState(true);
 
@@ -31,11 +37,12 @@ const BalanceScreen = () => {
     setLoading(true);
     try {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
+      console.log(await EncryptedStorage.getItem('pcs_token'))
       if (!pcs_token) throw new Error('User not authenticated');
 
-      // Call your backend API to fetch balance and history
+      // 2) Call your backend API to fetch balance and history
       const response = await axios.post(
-        'http://192.168.55.101:5000/api/balance/ammount',
+        'https://backend.clicksolver.com/api/balance/ammount',
         {},
         { headers: { Authorization: `Bearer ${pcs_token}` } }
       );
@@ -49,7 +56,7 @@ const BalanceScreen = () => {
       const serviceBalanceHistory = response.data.map((transaction, index) => {
         const paymentType = transaction.payment_type.toLowerCase();
         const paymentValue = Number(transaction.payment);
-        // Calculation logic: adjust as per your business rules
+        // Calculation logic: adjust as needed
         const deduction = paymentType === 'cash' ? paymentValue * 0.12 : paymentValue * 0.88;
         const amount = `${paymentType === 'cash' ? '-' : '+'} ₹${deduction.toFixed(2)}`;
         const dateObject = new Date(transaction.end_time);
@@ -78,14 +85,9 @@ const BalanceScreen = () => {
     }
   }, []);
 
-  const removetheToken = async () =>{
-    console.log("called")
-    await EncryptedStorage.removeItem("workerPreviousLocation")
-  } 
-
   useEffect(() => {
+    
     fetchServiceBalanceHistory();
-    // removetheToken()
   }, [fetchServiceBalanceHistory]);
 
   // Check if the balance is negative
@@ -104,7 +106,7 @@ const BalanceScreen = () => {
 
       // 1. Create an order on the backend (amount returned in paise)
       const createResponse = await axios.post(
-        'http://192.168.55.101:5000/api/create-order',
+        'https://backend.clicksolver.com/api/create-order',
         { amount: amountToPay, currency: 'INR' },
         { headers: { Authorization: `Bearer ${pcs_token}` } }
       );
@@ -116,7 +118,7 @@ const BalanceScreen = () => {
         description: 'Payment for clearing negative balance',
         currency: data.currency,
         key: 'rzp_test_vca9xUL1SxWrEM', // Replace with your Razorpay key
-        amount: data.amount, // Amount in paise as returned from backend
+        amount: data.amount, // Amount in paise
         order_id: data.order_id,
         name: 'Click Solver',
         prefill: {
@@ -131,7 +133,7 @@ const BalanceScreen = () => {
         .then(async (paymentData) => {
           // 3. Payment completed – verify payment on the backend
           const verifyResponse = await axios.post(
-            'http://192.168.55.101:5000/api/verify-payment',
+            'https://backend.clicksolver.com/api/verify-payment',
             paymentData,
             { headers: { Authorization: `Bearer ${pcs_token}` } }
           );
@@ -176,7 +178,9 @@ const BalanceScreen = () => {
         </View>
         <View style={styles.paymentDetails}>
           <Text
-            style={item.amount.startsWith('-') ? styles.amountNegative : styles.amountPositive}
+            style={
+              item.amount.startsWith('-') ? styles.amountNegative : styles.amountPositive
+            }
           >
             {item.amount}
           </Text>
@@ -239,7 +243,12 @@ const BalanceScreen = () => {
         </View>
         <View style={styles.balanceContainer}>
           <Text style={styles.balanceTitle}>Balance</Text>
-          <Text style={[styles.balanceAmount, isBalanceNegative && styles.negativeBalance]}>
+          <Text
+            style={[
+              styles.balanceAmount,
+              balance !== null && Number(balance) < 0 && styles.negativeBalance,
+            ]}
+          >
             ₹{balance ?? 0}
           </Text>
         </View>
@@ -306,7 +315,7 @@ const BalanceScreen = () => {
       </View>
 
       {/* Show Pay Now Button if Balance is Negative */}
-      {isBalanceNegative && (
+      {balance !== null && Number(balance) < 0 && (
         <TouchableOpacity style={styles.payNowButton} onPress={handlePayNow}>
           <Text style={styles.payNowButtonText}>Pay Now</Text>
         </TouchableOpacity>
@@ -315,134 +324,216 @@ const BalanceScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f3f3' },
-  headContainer: { backgroundColor: '#ffffff' },
-  header: { alignItems: 'center', paddingVertical: 10, marginBottom: 10 },
-  leftIcon: { position: 'absolute', left: 10, top: 10 },
-  balanceContainer: {
-    alignItems: 'center',
-    marginBottom: 15,
-    backgroundColor: '#ffffff',
-  },
-  balanceTitle: { fontSize: 17, color: '#212121' },
-  balanceAmount: { fontSize: 22, fontWeight: 'bold', color: '#212121' },
-  negativeBalance: { color: 'red' },
-  cardContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginHorizontal: 20,
-    marginBottom: 10,
-  },
-  card: {
-    flex: 1,
-    paddingVertical: 10,
-    marginHorizontal: 5,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    borderRadius: 10,
-    elevation: 5,
-  },
-  activeCard: { borderWidth: 1, borderColor: '#FF5722' },
-  cardText: { fontSize: 13, color: '#4a4a4a' },
-  activeCardText: { color: '#212121', fontWeight: 'bold' },
-  scrollContainer: { flex: 1, marginTop: 10 },
-  loadingAnimation: { width: '100%', height: 200 },
-  flatlistContainer: { paddingBottom: 20 },
+/**
+ * A helper function that returns a StyleSheet based on screen width.
+ * If `width >= 600`, we treat it as a tablet and scale up certain styles.
+ */
+function dynamicStyles(width) {
+  const isTablet = width >= 600;
 
-  // No data styles
-  noDataContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  noDataText: {
-    fontSize: 16,
-    color: '#999',
-    fontWeight: 'bold',
-  },
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#f3f3f3',
+    },
+    headContainer: {
+      backgroundColor: '#ffffff',
+      paddingBottom: isTablet ? 20 : 10,
+    },
+    header: {
+      alignItems: 'center',
+      paddingVertical: isTablet ? 12 : 10,
+      marginBottom: isTablet ? 15 : 10,
+    },
+    leftIcon: {
+      position: 'absolute',
+      left: isTablet ? 20 : 10,
+      top: isTablet ? 10 : 5,
+    },
+    balanceContainer: {
+      alignItems: 'center',
+      marginBottom: isTablet ? 20 : 15,
+    },
+    balanceTitle: {
+      fontSize: isTablet ? 20 : 17,
+      color: '#212121',
+    },
+    balanceAmount: {
+      fontSize: isTablet ? 26 : 22,
+      fontWeight: 'bold',
+      color: '#212121',
+    },
+    negativeBalance: {
+      color: 'red',
+    },
+    cardContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginHorizontal: isTablet ? 30 : 20,
+      marginBottom: isTablet ? 15 : 10,
+    },
+    card: {
+      flex: 1,
+      paddingVertical: isTablet ? 12 : 10,
+      marginHorizontal: isTablet ? 10 : 5,
+      backgroundColor: '#ffffff',
+      alignItems: 'center',
+      borderRadius: 10,
+      elevation: 5,
+    },
+    activeCard: {
+      borderWidth: 1,
+      borderColor: '#FF5722',
+    },
+    cardText: {
+      fontSize: isTablet ? 15 : 13,
+      color: '#4a4a4a',
+    },
+    activeCardText: {
+      color: '#212121',
+      fontWeight: 'bold',
+    },
+    scrollContainer: {
+      flex: 1,
+      marginTop: isTablet ? 15 : 10,
+    },
+    loadingAnimation: {
+      width: '100%',
+      height: isTablet ? 250 : 200,
+    },
+    flatlistContainer: {
+      paddingBottom: 20,
+    },
+    noDataContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    noDataText: {
+      fontSize: isTablet ? 18 : 16,
+      color: '#999',
+      fontWeight: 'bold',
+    },
+    transactionContainer: {
+      backgroundColor: '#FFFFFF',
+      borderRadius: 15,
+      padding: isTablet ? 24 : 20,
+      marginHorizontal: isTablet ? 30 : 20,
+      marginBottom: 10,
+      elevation: 1,
+    },
+    paymentContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    iconContainer: {
+      width: isTablet ? 50 : 45,
+      height: isTablet ? 50 : 45,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#FF5722',
+      borderRadius: isTablet ? 25 : 22.5,
+    },
+    paymentDetails: {
+      flex: 1,
+      marginLeft: isTablet ? 15 : 12,
+    },
+    paymentText: {
+      fontSize: isTablet ? 16 : 14,
+      fontWeight: 'bold',
+      color: '#4a4a4a',
+    },
+    nameText: {
+      fontSize: isTablet ? 17 : 16,
+      color: '#212121',
+    },
+    amountPositive: {
+      fontSize: isTablet ? 18 : 16,
+      fontWeight: 'bold',
+      color: '#212121',
+      textAlign: 'right',
+    },
+    amountNegative: {
+      fontSize: isTablet ? 18 : 16,
+      fontWeight: 'bold',
+      color: 'red',
+      textAlign: 'right',
+    },
+    timeText: {
+      fontSize: isTablet ? 15 : 14,
+      color: '#4a4a4a',
+      marginTop: 8,
+      textAlign: 'right',
+    },
+    payNowButton: {
+      position: 'absolute',
+      bottom: isTablet ? 30 : 20,
+      left: isTablet ? 30 : 20,
+      right: isTablet ? 30 : 20,
+      backgroundColor: '#FF5722',
+      borderRadius: 10,
+      paddingVertical: isTablet ? 12 : 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginHorizontal: '20%',
+    },
+    payNowButtonText: {
+      color: '#ffffff',
+      fontSize: isTablet ? 18 : 16,
+      fontWeight: 'bold',
+    },
 
-  // Service charge transaction styling
-  transactionContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 15,
-    padding: 20,
-    marginHorizontal: 20,
-    marginBottom: 10,
-    elevation: 1,
-  },
-  paymentContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  iconContainer: {
-    width: 45,
-    height: 45,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FF5722',
-    borderRadius: 22.5,
-  },
-  paymentDetails: { flex: 1, marginLeft: 12 },
-  paymentText: { fontSize: 14, fontWeight: 'bold', color: '#4a4a4a' },
-  nameText: { fontSize: 16, color: '#212121' },
-  amountPositive: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#212121',
-    textAlign: 'right',
-  },
-  amountNegative: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: 'red',
-    textAlign: 'right',
-  },
-  timeText: { fontSize: 14, color: '#4a4a4a', marginTop: 8, textAlign: 'right' },
-
-  // Pay Now button
-  payNowButton: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    backgroundColor: '#FF5722',
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: '20%',
-  },
-  payNowButtonText: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
-
-  // Payment history transaction styling
-  cardPaymentContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 15,
-    marginVertical: 8,
-    marginHorizontal: 16,
-    elevation: 2,
-  },
-  iconWrapper: {
-    backgroundColor: '#FF5722',
-    borderRadius: 25,
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  detailsWrapper: { flex: 2, marginLeft: 15 },
-  typeText: { fontSize: 16, fontWeight: 'bold', color: '#000' },
-  companyText: { fontSize: 14, color: '#4a4a4a' },
-  dateText: { fontSize: 12, color: '#a9a9a9' },
-  amountWrapper: { alignItems: 'flex-end' },
-  amountText: { fontSize: 18, fontWeight: 'bold', color: '#000' },
-  statusText: { fontSize: 12, color: '#a9a9a9' },
-});
+    // Payment history transaction styling
+    cardPaymentContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: 'white',
+      borderRadius: 10,
+      padding: isTablet ? 20 : 15,
+      marginVertical: 8,
+      marginHorizontal: isTablet ? 30 : 16,
+      elevation: 2,
+    },
+    iconWrapper: {
+      backgroundColor: '#FF5722',
+      borderRadius: 25,
+      width: isTablet ? 45 : 40,
+      height: isTablet ? 45 : 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    detailsWrapper: {
+      flex: 2,
+      marginLeft: isTablet ? 18 : 15,
+    },
+    typeText: {
+      fontSize: isTablet ? 17 : 16,
+      fontWeight: 'bold',
+      color: '#000',
+    },
+    companyText: {
+      fontSize: isTablet ? 15 : 14,
+      color: '#4a4a4a',
+    },
+    dateText: {
+      fontSize: isTablet ? 13 : 12,
+      color: '#a9a9a9',
+    },
+    amountWrapper: {
+      alignItems: 'flex-end',
+    },
+    amountText: {
+      fontSize: isTablet ? 20 : 18,
+      fontWeight: 'bold',
+      color: '#000',
+    },
+    statusText: {
+      fontSize: isTablet ? 14 : 12,
+      color: '#a9a9a9',
+    },
+  });
+}
 
 export default BalanceScreen;

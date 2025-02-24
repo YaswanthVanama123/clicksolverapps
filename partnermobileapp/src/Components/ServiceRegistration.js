@@ -155,7 +155,7 @@ const ServiceRegistration = () => {
       }
 
       const response = await axios.post(
-        `http://192.168.55.101:5000/api/registration/submit`,
+        `https://backend.clicksolver.com/api/registration/submit`,
         formData,
         {
           headers: {
@@ -182,7 +182,7 @@ const ServiceRegistration = () => {
       }
 
       const response = await axios.get(
-        `http://192.168.55.101:5000/api/service/categories`,
+        `https://backend.clicksolver.com/api/service/categories`,
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
@@ -237,7 +237,7 @@ const ServiceRegistration = () => {
     if (field === 'skillCategory') {
       try {
         const subserviceResponse = await axios.post(
-          `http://192.168.55.101:5000/api/subservice/checkboxes`,
+          `https://backend.clicksolver.com/api/subservice/checkboxes`,
           {
             selectedService: value,
           },

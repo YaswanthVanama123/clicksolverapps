@@ -10,6 +10,7 @@ import {
   Alert,
   Platform,
   Linking,
+  useWindowDimensions, // <-- Import useWindowDimensions
 } from 'react-native';
 import {
   useNavigation,
@@ -22,16 +23,22 @@ import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import axios from 'axios';
 import uuid from 'react-native-uuid';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import LottieView from 'lottie-react-native'; // Import LottieView
+import LottieView from 'lottie-react-native';
 import PushNotification from 'react-native-push-notification';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 const PaintingServices = () => {
   const navigation = useNavigation();
+  const route = useRoute();
+
+  // 1) Get screen dimensions
+  const {width, height} = useWindowDimensions();
+  // 2) Generate dynamic styles based on dimensions
+  const styles = dynamicStyles(width, height);
+
   const [subservice, setSubServices] = useState([]);
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(true);
-  const route = useRoute();
 
   useEffect(() => {
     if (route.params) {
@@ -64,7 +71,7 @@ const PaintingServices = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        `http://192.168.55.101:5000/api/individual/service`,
+        `https://backend.clicksolver.com/api/individual/service`,
         {
           serviceObject: serviceObject,
         },
@@ -137,8 +144,8 @@ const PaintingServices = () => {
 
   // Dummy search handler; add your search functionality here.
   const handleSearch = useCallback(() => {
-   navigation.push('SearchItem')
-  }, []);
+    navigation.push('SearchItem');
+  }, [navigation]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -200,145 +207,168 @@ const PaintingServices = () => {
 };
 
 const ServiceItem = React.memo(
-  ({title, imageUrl, handleBookCommander, serviceId}) => (
-    <View style={styles.serviceItem}>
-      <View style={styles.serviceImageContainer}>
-        <Image
-          source={{uri: imageUrl}}
-          style={styles.serviceImage}
-          resizeMode="stretch"
-        />
+  ({title, imageUrl, handleBookCommander, serviceId}) => {
+    // We'll need the same dynamic styles here if we want the items to respond to device size:
+    const {width} = useWindowDimensions();
+    const itemStyles = dynamicStyles(width); // We only need width for these small adjustments
+
+    return (
+      <View style={itemStyles.serviceItem}>
+        <View style={itemStyles.serviceImageContainer}>
+          <Image
+            source={{uri: imageUrl}}
+            style={itemStyles.serviceImage}
+            resizeMode="stretch"
+          />
+        </View>
+        <View style={itemStyles.serviceInfo}>
+          <Text style={itemStyles.serviceTitle}>{title}</Text>
+          <TouchableOpacity
+            style={itemStyles.bookNow}
+            onPress={() => handleBookCommander(serviceId)}>
+            <Text style={itemStyles.bookNowText}>Book Now ➔</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-      <View style={styles.serviceInfo}>
-        <Text style={styles.serviceTitle}>{title}</Text>
-        <TouchableOpacity
-          style={styles.bookNow}
-          onPress={() => handleBookCommander(serviceId)}>
-          <Text style={styles.bookNowText}>Book Now ➔</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  ),
+    );
+  },
 );
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 10,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 15,
-    justifyContent: 'space-between',
-  },
-  iconContainer: {
-    padding: 5,
-  },
-  headerTitle: {
-    fontSize: 20,
-    flex: 1,
-    textAlign: 'center',
-    marginHorizontal: 10,
-    color: '#1D2951',
-    fontFamily: 'RobotoSlab-Bold',
-    lineHeight: 23.44,
-  },
-  loadingAnimation: {
-    width: '100%',
-    height: '100%',
-  },
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF4E6',
-    borderRadius: 15,
-    marginVertical: 10,
-    marginBottom: 30,
-  },
-  bannerText: {
-    flex: 1,
-    padding: 15,
-  },
-  bannerPrice: {
-    color: '#ff4500',
-    fontSize: 25,
-    fontFamily: 'RobotoSlab-Bold',
-    lineHeight: 34,
-  },
-  bannerDescription: {
-    color: '#808080',
-    fontSize: 14,
-    marginTop: 5,
-    fontFamily: 'NotoSerif-SemiBold',
-    lineHeight: 16.41,
-  },
-  bannerInfo: {
-    color: '#808080',
-    fontFamily: 'RobotoSlab-Regular',
-    opacity: 0.8,
-    fontSize: 12,
-    marginTop: 5,
-    lineHeight: 14.06,
-  },
-  bannerImage: {
-    width: 100,
-    height: 100,
-    resizeMode: 'cover',
-    transform: [{rotate: '0deg'}],
-  },
-  services: {
-    flex: 1,
-  },
-  serviceItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    marginBottom: 10,
-  },
-  serviceImage: {
-    width: 165,
-    height: 105,
-    borderRadius: 10,
-  },
-  serviceInfo: {
-    flex: 1,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-  },
-  serviceTitle: {
-    fontSize: 16,
-    fontFamily: 'RobotoSlab-Bold',
-    color: '#333',
-  },
-  bookNow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FF4500',
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 15,
-    marginTop: 10,
-    width: 110,
-    height: 32,
-    opacity: 0.88,
-    elevation: 5,
-  },
-  bookNowText: {
-    color: '#FFF',
-    fontWeight: 'bold',
-    fontSize: 13,
-    textAlign: 'center',
-  },
-});
+/**
+ * DYNAMIC STYLES:
+ * Adjusts layout based on width to accommodate tablets (width >= 600).
+ */
+const dynamicStyles = (width, height) => {
+  const isTablet = width >= 600;
+
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1, 
+      backgroundColor: '#FFFFFF',
+    },
+    container: {
+      flex: 1,
+      backgroundColor: '#ffffff',
+      paddingHorizontal: isTablet ? 20 : 10,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: isTablet ? 20 : 15,
+      justifyContent: 'space-between',
+    },
+    iconContainer: {
+      padding: 5,
+    },
+    headerTitle: {
+      fontSize: isTablet ? 24 : 20,
+      flex: 1,
+      textAlign: 'center',
+      marginHorizontal: 10,
+      color: '#1D2951',
+      fontFamily: 'RobotoSlab-Bold',
+      lineHeight: 23.44,
+    },
+    loadingAnimation: {
+      width: '100%',
+      height: '100%',
+    },
+    banner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#FFF4E6',
+      borderRadius: 15,
+      marginVertical: isTablet ? 20 : 10,
+      marginBottom: isTablet ? 40 : 30,
+    },
+    bannerText: {
+      flex: 1,
+      padding: isTablet ? 20 : 15,
+    },
+    bannerDetails: {
+      // Extra spacing on tablets
+      marginBottom: isTablet ? 10 : 0,
+    },
+    bannerPrice: {
+      color: '#ff4500',
+      fontSize: isTablet ? 30 : 25,
+      fontFamily: 'RobotoSlab-Bold',
+      lineHeight: 34,
+    },
+    bannerDescription: {
+      color: '#808080',
+      fontSize: isTablet ? 16 : 14,
+      marginTop: 5,
+      fontFamily: 'NotoSerif-SemiBold',
+      lineHeight: 16.41,
+    },
+    bannerInfo: {
+      color: '#808080',
+      fontFamily: 'RobotoSlab-Regular',
+      opacity: 0.8,
+      fontSize: isTablet ? 14 : 12,
+      marginTop: 5,
+      lineHeight: 14.06,
+    },
+    bannerImage: {
+      width: isTablet ? 120 : 100,
+      height: isTablet ? 120 : 100,
+      resizeMode: 'cover',
+      transform: [{rotate: '0deg'}],
+    },
+    services: {
+      flex: 1,
+    },
+
+    /* --- Service Item Styles --- */
+    serviceItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      padding: isTablet ? 15 : 10,
+      borderRadius: 10,
+      backgroundColor: '#fff',
+      marginBottom: isTablet ? 15 : 10,
+    },
+    serviceImageContainer: {
+      // Example: Could also add different styling for tablets
+    },
+    serviceImage: {
+      width: isTablet ? 200 : 165,
+      height: isTablet ? 130 : 105,
+      borderRadius: 10,
+    },
+    serviceInfo: {
+      flex: 1,
+      paddingHorizontal: isTablet ? 20 : 15,
+      paddingVertical: isTablet ? 15 : 10,
+    },
+    serviceTitle: {
+      fontSize: isTablet ? 18 : 16,
+      fontFamily: 'RobotoSlab-Bold',
+      color: '#333',
+    },
+    bookNow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#FF4500',
+      paddingVertical: isTablet ? 10 : 8,
+      paddingHorizontal: isTablet ? 20 : 15,
+      borderRadius: 15,
+      marginTop: 10,
+      width: isTablet ? 130 : 110,
+      height: isTablet ? 38 : 32,
+      opacity: 0.88,
+      elevation: 5,
+    },
+    bookNowText: {
+      color: '#FFF',
+      fontWeight: 'bold',
+      fontSize: isTablet ? 15 : 13,
+      textAlign: 'center',
+    },
+  });
+};
 
 export default PaintingServices;

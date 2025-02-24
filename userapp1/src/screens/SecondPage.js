@@ -6,9 +6,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Dimensions,
   Modal,
   TextInput,
+  useWindowDimensions,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -24,11 +24,12 @@ import crashlytics from '@react-native-firebase/crashlytics';
 import EncryptedStorage from 'react-native-encrypted-storage';
 
 import QuickSearch from '../Components/QuickSearch';
-import { useFocusEffect } from '@react-navigation/native';
-
-const screenWidth = Dimensions.get('window').width;
+import {useFocusEffect} from '@react-navigation/native';
 
 function ServiceApp({navigation, route}) {
+  const {width, height} = useWindowDimensions();
+  const styles = dynamicStyles(width, height);
+
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [greeting, setGreeting] = useState('');
@@ -42,9 +43,6 @@ function ServiceApp({navigation, route}) {
   const [decodedId, setDecodedId] = useState(null);
 
   const scrollViewRef = useRef(null);
-
-  const messageBoxWidth =
-    trackScreen.length > 1 ? screenWidth * 0.85 : screenWidth * 0.9;
 
   const specialOffers = useMemo(
     () => [
@@ -85,18 +83,12 @@ function ServiceApp({navigation, route}) {
     [],
   );
 
-  // --------------------------------
-  //           HOOKS
-  // --------------------------------
   useEffect(() => {
     crashlytics().log('ServiceApp component mounted');
   }, []);
 
   useEffect(() => {
-    // If route.params has an encodedId for rating
-
     const {encodedId} = route.params || {};
-    console.log("params chudu macha",route.params)
     if (encodedId) {
       try {
         const decoded = atob(encodedId);
@@ -110,7 +102,6 @@ function ServiceApp({navigation, route}) {
 
   useEffect(() => {
     fetchServices();
-    // fetchTrackDetails();
     setGreetingBasedOnTime();
   }, []);
 
@@ -120,16 +111,12 @@ function ServiceApp({navigation, route}) {
     }, [])
   );
 
-  // --------------------------------
-  //           API CALLS
-  // --------------------------------
   const fetchTrackDetails = async () => {
     try {
       const cs_token = await EncryptedStorage.getItem('cs_token');
-      console.log("called")
       if (cs_token) {
         const response = await axios.get(
-          'http://192.168.55.101:5000/api/user/track/details',
+          'https://backend.clicksolver.com/api/user/track/details',
           {
             headers: {Authorization: `Bearer ${cs_token}`},
           },
@@ -153,20 +140,16 @@ function ServiceApp({navigation, route}) {
       crashlytics().log('Attempting to fetch services from API');
 
       const response = await axios.get(
-        'https://backend.clicksolver.com/api/servicecategories',
-
+        'https://backend.clicksolver.com/api/servicecategories'
       );
 
       crashlytics().log('Services fetched successfully');
-      console.log('Response Data:', response.data);
-
       const servicesWithIds = response.data.map(service => ({
         ...service,
         id: uuid.v4(),
       }));
-      setServices(servicesWithIds);
+      setServices(servicesWithIds); 
     } catch (error) {
-      crashlytics().log('Error occurred while fetching services');
       crashlytics().recordError(error);
       console.error('Detailed Error:', error.toJSON ? error.toJSON() : error);
     } finally {
@@ -174,9 +157,6 @@ function ServiceApp({navigation, route}) {
     }
   };
 
-  // --------------------------------
-  //           UI ACTIONS
-  // --------------------------------
   const handleNotification = () => {
     navigation.push('Notifications');
   };
@@ -209,9 +189,6 @@ function ServiceApp({navigation, route}) {
     setGreetingIcon(icon);
   };
 
-  // --------------------------------
-  //           RENDER UI
-  // --------------------------------
   const renderSpecialOffers = () => {
     return specialOffers.map(offer => (
       <View
@@ -237,15 +214,16 @@ function ServiceApp({navigation, route}) {
     if (loading) {
       return (
         <View style={styles.fullScreenLoader}>
-        <LottieView
-          source={require('../assets/cardsLoading.json')}
-          autoPlay
-          loop
-          style={styles.ScreenLoader}
-        />
-      </View>
+          <LottieView
+            source={require('../assets/cardsLoading.json')}
+            autoPlay
+            loop
+            style={styles.loadingAnimation}
+          />
+        </View>
       );
     }
+    
 
     return services.map(service => (
       <View key={service.id} style={styles.serviceCard}>
@@ -268,13 +246,10 @@ function ServiceApp({navigation, route}) {
     ));
   };
 
-  // --------------------------------
-  //          RATING MODAL
-  // --------------------------------
   const submitFeedback = async () => {
     try {
       const response = await axios.post(
-        'http://192.168.55.101:5000/api/user/feedback',
+        'https://backend.clicksolver.com/api/user/feedback',
         {
           rating,
           comment,
@@ -282,9 +257,7 @@ function ServiceApp({navigation, route}) {
         },
         {
           headers: {
-            Authorization: `Bearer ${await EncryptedStorage.getItem(
-              'cs_token',
-            )}`,
+            Authorization: `Bearer ${await EncryptedStorage.getItem('cs_token')}`,
           },
         },
       );
@@ -302,15 +275,11 @@ function ServiceApp({navigation, route}) {
     setModalVisible(false);
   };
 
-  // --------------------------------
-  //           COMPONENT
-  // --------------------------------
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {/* Header Row */}
         <View style={styles.header}>
-          {/* User Info */}
           <View style={styles.userInfo}>
             <View style={styles.userInitialCircle}>
               <Text style={styles.userInitialText}>
@@ -325,8 +294,6 @@ function ServiceApp({navigation, route}) {
               <Text style={styles.userName}>{name}</Text>
             </View>
           </View>
-
-          {/* Icons on the Right */}
           <View style={styles.headerIcons}>
             <TouchableOpacity onPress={handleNotification}>
               <Icon name="notifications-outline" size={23} color="#212121" />
@@ -366,125 +333,105 @@ function ServiceApp({navigation, route}) {
           </View>
         </ScrollView>
 
-        {/* Tracking Message Box 
-            - Now in normal layout flow (no absolute positioning).
-            - Renders below the ScrollView automatically, 
-              so no extra padding is needed.
-        */}
-          {messageBoxDisplay && (
-            <ScrollView
-              horizontal
-              ref={scrollViewRef}
-              style={styles.messageBoxWrapper}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{
-                // Padding so the rightmost card is partially visible
-                // paddingLeft: 10,
-                // paddingRight: 40,
-              }}
-            >
-              {trackScreen.map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.messageBoxContainer,
-                    {
-                      width:
-                        trackScreen.length > 1
-                          ? Dimensions.get('window').width * 0.8
-                          : Dimensions.get('window').width * 0.88,
-                      marginRight: trackScreen.length > 1 ? 10 : 0,
-                    },
-                  ]}
-                  onPress={() =>
-                    navigation.replace(item.screen, {
-                      encodedId: item.encodedId,
-                      area: item.area,
-                      city: item.city,
-                      pincode: item.pincode,
-                      alternateName: item.alternateName,
-                      alternatePhoneNumber: item.alternatePhoneNumber,
-                      serviceBooked: item.serviceBooked,
-                      location: item.location,
-                    })
-                  }
-                >
-                  <View style={styles.messageBox1}>
-                    <View style={styles.startingContainer}>
-                      <View style={styles.timeContainer}>
-                        {item.screen === 'Paymentscreen' ? (
-                          <Foundation name="paypal" size={24} color="#ffffff" />
-                        ) : item.screen === 'UserNavigation' ? (
-                          <MaterialCommunityIcons
-                            name="truck"
-                            size={24}
-                            color="#ffffff"
-                          />
-                        ) : item.screen === 'userwaiting' ? (
-                          <Feather name="search" size={24} color="#ffffff" />
-                        ) : item.screen === 'OtpVerification' ? (
-                          <Feather name="shield" size={24} color="#ffffff" />
-                        ) : item.screen === 'worktimescreen' ? (
-                          <MaterialCommunityIcons
-                            name="hammer"
-                            size={24}
-                            color="#ffffff"
-                          />
-                        ) : (
-                          <Feather name="alert-circle" size={24} color="#000" />
-                        )}
-                      </View>
-                      <View>
-                        <Text style={styles.textContainerText} numberOfLines={1}>
-                          {item.serviceBooked && item.serviceBooked.length > 0
-                            ? item.serviceBooked
-                                .slice(0, 2)
-                                .map(service => service.serviceName)
-                                .join(', ') +
-                              (item.serviceBooked.length > 2 ? '...' : '')
-                            : 'Service Booked'}
-                        </Text>
-                        <Text style={styles.textContainerTextCommander}>
-                          {item.screen === 'Paymentscreen'
-                            ? 'Payment in progress'
-                            : item.screen === 'UserNavigation'
-                            ? 'Commander is on the way'
-                            : item.screen === 'OtpVerification'
-                            ? 'User is waiting for your help'
-                            : item.screen === 'worktimescreen'
-                            ? 'Work in progress'
-                            : 'Nothing'}
-                        </Text>
-                      </View>
+        {/* Tracking Message Box */}
+        {messageBoxDisplay && (
+          <ScrollView
+            horizontal
+            ref={scrollViewRef}
+            style={styles.messageBoxWrapper}
+            showsHorizontalScrollIndicator={false}>
+            {trackScreen.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.messageBoxContainer,
+                  {
+                    width: trackScreen.length > 1 ? width * 0.8 : width * 0.88,
+                    marginRight: trackScreen.length > 1 ? 10 : 0,
+                  },
+                ]}
+                onPress={() =>
+                  navigation.replace(item.screen, {
+                    encodedId: item.encodedId,
+                    area: item.area,
+                    city: item.city,
+                    pincode: item.pincode,
+                    alternateName: item.alternateName,
+                    alternatePhoneNumber: item.alternatePhoneNumber,
+                    serviceBooked: item.serviceBooked,
+                    location: item.location,
+                  })
+                }>
+                <View style={styles.messageBox1}>
+                  <View style={styles.startingContainer}>
+                    <View style={styles.timeContainer}>
+                      {item.screen === 'Paymentscreen' ? (
+                        <Foundation name="paypal" size={24} color="#ffffff" />
+                      ) : item.screen === 'UserNavigation' ? (
+                        <MaterialCommunityIcons
+                          name="truck"
+                          size={24}
+                          color="#ffffff"
+                        />
+                      ) : item.screen === 'userwaiting' ? (
+                        <Feather name="search" size={24} color="#ffffff" />
+                      ) : item.screen === 'OtpVerification' ? (
+                        <Feather name="shield" size={24} color="#ffffff" />
+                      ) : item.screen === 'worktimescreen' ? (
+                        <MaterialCommunityIcons
+                          name="hammer"
+                          size={24}
+                          color="#ffffff"
+                        />
+                      ) : (
+                        <Feather name="alert-circle" size={24} color="#000" />
+                      )}
                     </View>
-                    <View style={styles.rightIcon}>
-                      <Feather name="chevrons-right" size={18} color="#9e9e9e" />
+                    <View>
+                      <Text style={styles.textContainerText} numberOfLines={1}>
+                        {item.serviceBooked && item.serviceBooked.length > 0
+                          ? item.serviceBooked
+                              .slice(0, 2)
+                              .map(service => service.serviceName)
+                              .join(', ') +
+                            (item.serviceBooked.length > 2 ? '...' : '')
+                          : 'Service Booked'}
+                      </Text>
+                      <Text style={styles.textContainerTextCommander}>
+                        {item.screen === 'Paymentscreen'
+                          ? 'Payment in progress'
+                          : item.screen === 'UserNavigation'
+                          ? 'Commander is on the way'
+                          : item.screen === 'OtpVerification'
+                          ? 'User is waiting for your help'
+                          : item.screen === 'worktimescreen'
+                          ? 'Work in progress'
+                          : 'Nothing'}
+                      </Text>
                     </View>
                   </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
-
+                  <View style={styles.rightIcon}>
+                    <Feather name="chevrons-right" size={18} color="#9e9e9e" />
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
         {/* Rating Modal */}
         <Modal visible={isModalVisible} transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              {/* Close Button */}
               <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
                 <Icon name="close" size={20} color="#FFFFFF" />
               </TouchableOpacity>
-
-              {/* Title and Subtitle */}
               <Text style={styles.modalTitle}>
                 How was the quality of your Service?
               </Text>
               <Text style={styles.modalSubtitle}>
                 Your answer is anonymous. This helps us improve our service.
               </Text>
-
-              {/* Star Rating */}
               <View style={styles.starsContainer}>
                 {[1, 2, 3, 4, 5].map(star => (
                   <TouchableOpacity
@@ -499,8 +446,6 @@ function ServiceApp({navigation, route}) {
                   </TouchableOpacity>
                 ))}
               </View>
-
-              {/* Comment Box */}
               <TextInput
                 style={styles.commentBox}
                 placeholder="Write your comment here..."
@@ -509,8 +454,6 @@ function ServiceApp({navigation, route}) {
                 value={comment}
                 onChangeText={setComment}
               />
-
-              {/* Buttons */}
               <View style={styles.modalButtons}>
                 <TouchableOpacity
                   onPress={closeModal}
@@ -528,316 +471,299 @@ function ServiceApp({navigation, route}) {
         </Modal>
       </View>
     </SafeAreaView>
-  );
+  );       
 }
 
+const dynamicStyles = (width, height) => {
+  const isTablet = width > 600;
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: '#FFFFFF',
+    },
+    container: {
+      flex: 1,
+      backgroundColor: '#FFFFFF',
+      padding: isTablet ? 30 : 20,
+      paddingBottom: 0,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: isTablet ? 30 : 20,
+    },
+    userInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    userInitialCircle: {
+      width: isTablet ? 50 : 40,
+      height: isTablet ? 50 : 40,
+      borderRadius: 25,
+      backgroundColor: '#f0f0f0',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 10,
+    },
+    userInitialText: {
+      fontSize: isTablet ? 20 : 18,
+      color: '#333',
+      fontFamily: 'RobotoSlab-Bold',
+    },
+    greeting: {
+      flexDirection: 'column',
+      color: '#333',
+    },
+    greetingText: {
+      fontSize: isTablet ? 16 : 14,
+      lineHeight: 18.75,
+      fontStyle: 'italic',
+      color: '#808080',
+      fontFamily: 'RobotoSlab-ExtraBold',
+    },
+    greetingIcon: {
+      fontSize: isTablet ? 19 : 17,
+    },
+    userName: {
+      fontSize: isTablet ? 18 : 16,
+      fontFamily: 'RobotoSlab-Bold',
+      color: '#4A4A4A',
+      lineHeight: 21.09,
+    },
+    headerIcons: {
+      flexDirection: 'row',
+      gap: 15,
+    },
+    scrollViewContent: {
+      paddingBottom: 10,
+    },
+    section: {
+      marginBottom: isTablet ? 25 : 20,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
+    sectionTitle: {
+      fontSize: isTablet ? 18 : 16,
+      color: '#1D2951',
+      fontFamily: 'RobotoSlab-Bold',
+    },
+    offersScrollView: {
+      display: 'flex',
+      gap: 10,
+    },
+    offerCard: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: isTablet ? 330 : 300,
+      borderRadius: 10,
+    },
+    offerDetails: {
+      width: '60%',
+      padding: 15,
+    },
+    offerTitle: {
+      fontSize: isTablet ? 34 : 30,
+      fontFamily: 'RobotoSlab-Bold',
+    },
+    offerSubtitle: {
+      fontSize: isTablet ? 16 : 14,
+      lineHeight: 16.41,
+      fontFamily: 'RobotoSlab-SemiBold',
+    },
+    offerDescription: {
+      fontSize: isTablet ? 14 : 12,
+      fontFamily: 'RobotoSlab-Regular',
+      opacity: 0.8,
+      lineHeight: 14.06,
+      fontWeight: '400',
+    },
+    offerImg: {
+      width: isTablet ? 140 : 119,
+      height: isTablet ? 150 : 136,
+      alignSelf: 'flex-end',
+    },
+    fullScreenLoader: {
+      flex: 1,
+      // justifyContent: 'center',
+      // alignItems: 'center',
+      // backgroundColor: '#FFFFFF',
+    },
+    serviceCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      padding: 10,
+      borderRadius: 10,
+      backgroundColor: '#fff',
+      marginBottom: 10,
+    },
+    serviceImg: {
+      width: isTablet ? 190 : 165,
+      height: isTablet ? 120 : 105,
+      borderRadius: 10,
+    },
+    serviceDetails: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingLeft: 10,
+    },
+    serviceTitle: {
+      fontSize: isTablet ? 18 : 16,
+      fontFamily: 'RobotoSlab-Bold',
+      color: '#333',
+    },
+    bookButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#FF4500',
+      borderRadius: 15,
+      marginTop: 10,
+      width: isTablet ? 130 : 110,
+      height: isTablet ? 36 : 31,
+      opacity: 0.88,
+    },
+    bookButtonText: {
+      color: '#ffffff',
+      fontFamily: 'RobotoSlab-SemiBold',
+      fontSize: isTablet ? 14 : 13,
+      textAlign: 'center',
+    },
+    messageBoxWrapper: {
+      marginTop: 10,
+    },
+    messageBoxContainer: {
+      backgroundColor: '#ffffff',
+      borderRadius: 10,
+      flexDirection: 'row',
+      padding: 15,
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      elevation: 1,
+    },
+    messageBox1: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flex: 1,
+    },
+    startingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
+    timeContainer: {
+      width: isTablet ? 50 : 45,
+      height: isTablet ? 50 : 45,
+      backgroundColor: '#ff5722',
+      borderRadius: 50,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    textContainerText: {
+      fontSize: isTablet ? 15 : 13,
+      fontFamily: 'RobotoSlab-Bold',
+      color: '#212121',
+      marginLeft: 10,
+      width: '80%',
+    },
+    textContainerTextCommander: {
+      fontSize: isTablet ? 14 : 12,
+      color: '#9e9e9e',
+      fontFamily: 'RobotoSlab-Regular',
+      marginLeft: 10,
+    },
+    rightIcon: {
+      marginLeft: 8,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'flex-end',
+    },
+    modalContent: {
+      backgroundColor: '#FFFFFF',
+      borderTopLeftRadius: 15,
+      borderTopRightRadius: 15,
+      padding: 20,
+      alignItems: 'center',
+    },
+    closeButton: {
+      alignSelf: 'flex-end',
+      backgroundColor: '#FF4500',
+      borderRadius: 15,
+      padding: 5,
+    },
+    modalTitle: {
+      fontSize: isTablet ? 20 : 18,
+      fontFamily: 'RobotoSlab-Medium',
+      color: '#212121', 
+      marginTop: 10,
+      textAlign: 'center',
+    },
+    modalSubtitle: {
+      fontSize: isTablet ? 15 : 13,
+      color: '#9e9e9e',
+      marginVertical: 10,
+      textAlign: 'center',
+      fontFamily: 'RobotoSlab-Regular',
+    },
+    starsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginVertical: 20,
+    },
+    starButton: {
+      marginHorizontal: 5,
+    },
+    commentBox: {
+      width: '100%',
+      height: 80,
+      borderWidth: 1,
+      borderColor: '#A9A9A9',
+      borderRadius: 10,
+      backgroundColor: '#FFFFFF',
+      padding: 10,
+      color: '#000000',
+      fontSize: 14,
+      fontFamily: 'RobotoSlab-Regular',
+      marginBottom: 20,
+      textAlignVertical: 'top',
+    },
+    modalButtons: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: '100%',
+      marginTop: 20,
+    },
+    notNowButton: {
+      padding: 10,
+      backgroundColor: '#A9A9A9',
+      borderRadius: 5,
+    },
+    notNowText: {
+      color: '#FFFFFF',
+      fontFamily: 'RobotoSlab-Medium',
+    },
+    submitButton: {
+      padding: 10,
+      backgroundColor: '#FF4500',
+      borderRadius: 5,
+    },
+    submitText: {
+      color: '#FFFFFF',
+      fontFamily: 'RobotoSlab-Medium',
+    },
+    loadingAnimation: {
+      width: 150,
+      height: 150,
+    }, 
+  });
+};
+
 export default ServiceApp;
-
-// --------------------------------
-//           STYLES
-// --------------------------------
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    paddingBottom: 0,
-    // Removed bottom padding so we rely on normal layout.
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  userInitialCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  userInitialText: {
-    fontSize: 18,
-    color: '#333',
-    fontFamily: 'RobotoSlab-Bold',
-  },
-  greeting: {
-    flexDirection: 'column',
-    color: '#333',
-  },
-  greetingText: {
-    fontSize: 14,
-    lineHeight: 18.75,
-    fontStyle: 'italic',
-    color: '#808080',
-    fontFamily: 'RobotoSlab-ExtraBold',
-  },
-  greetingIcon: {
-    fontSize: 17,
-  },
-  userName: {
-    fontSize: 16,
-    fontFamily: 'RobotoSlab-Bold',
-    color: '#4A4A4A',
-    lineHeight: 21.09,
-  },
-  headerIcons: {
-    flexDirection: 'row',
-    gap: 15,
-  },
-  scrollViewContent: {
-    // You can add slight padding if you want some spacing at the bottom,
-    // but it's not required for final item to be visible
-    paddingBottom: 10,
-  },
-  // section: {
-  //   marginBottom: 20,
-  // },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    color: '#1D2951',
-    fontFamily: 'RobotoSlab-Bold',
-  },
-  offersScrollView: {
-    display: 'flex',
-    gap: 10,
-  },
-  offerCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: 300,
-    borderRadius: 10,
-  },
-  offerDetails: {
-    width: '60%',
-    padding: 15,
-  },
-  offerTitle: {
-    fontSize: 30,
-    fontFamily: 'RobotoSlab-Bold',
-  },
-  offerSubtitle: {
-    fontSize: 14,
-    lineHeight: 16.41,
-    fontFamily: 'RobotoSlab-SemiBold',
-  },
-  offerDescription: {
-    fontSize: 12,
-    fontFamily: 'RobotoSlab-Regular',
-    opacity: 0.8,
-    lineHeight: 14.06,
-    fontWeight: '400',
-  },
-  offerImg: {
-    width: 119,
-    height: 136,
-    alignSelf: 'flex-end',
-  },
-  fullScreenLoader: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-    position: 'absolute', 
-    top: 0,
-    left: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF', // Optional: Add background to overlay
-    zIndex: 10, // Ensure it appears above other content
-  },
-  ScreenLoader:{
-    flex:1
-  },
-  serviceCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    marginBottom: 10,
-  },
-  serviceImg: {
-    width: 165,
-    height: 105,
-    borderRadius: 10,
-  },
-  serviceDetails: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingLeft: 10,
-  },
-  serviceTitle: {
-    fontSize: 16,
-    fontFamily: 'RobotoSlab-Bold',
-    color: '#333',
-  },
-  bookButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FF4500',
-    borderRadius: 15,
-    marginTop: 10,
-    width: 110,
-    height: 31,
-    opacity: 0.88,
-  },
-  bookButtonText: {
-    color: '#ffffff',
-    fontFamily: 'RobotoSlab-SemiBold',
-    fontSize: 13,
-    textAlign: 'center',
-  },
-
-  // Message Box (Now in normal flow)
-  messageBoxWrapper: {
-    marginTop: 10,
-  },
-  scrollViewHorizontal: {
-    alignItems: 'center',
-    backgroundColor:'#FFFFFF'
-  },
-  messageBoxContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    flexDirection: 'row',
-    padding: 15,
-
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    elevation: 1,
-  },
-  messageBox1: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flex: 1,
-  },
-  startingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  timeContainer: {
-    width: 45,
-    height: 45,
-    backgroundColor: '#ff5722',
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  textContainerText: {
-    fontSize: 13,
-    fontFamily: 'RobotoSlab-Bold',
-    color: '#212121',
-    marginLeft: 10,
-    width: '80%',
-  },
-  textContainerTextCommander: {
-    fontSize: 12,
-    color: '#9e9e9e',
-    fontFamily: 'RobotoSlab-Regular',
-    marginLeft: 10,
-  },
-  rightIcon: {
-    marginLeft: 8,
-  },
-
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
-    padding: 20,
-    alignItems: 'center',
-  },
-  closeButton: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#FF4500',
-    borderRadius: 15,
-    padding: 5,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontFamily: 'RobotoSlab-Medium',
-    color: '#212121',
-    marginTop: 10,
-    textAlign: 'center',
-  },
-  modalSubtitle: {
-    fontSize: 13,
-    color: '#9e9e9e',
-    marginVertical: 10,
-    textAlign: 'center',
-    fontFamily: 'RobotoSlab-Regular',
-  },
-  starsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginVertical: 20,
-  },
-  starButton: {
-    marginHorizontal: 5,
-  },
-  commentBox: {
-    width: '100%',
-    height: 80,
-    borderWidth: 1,
-    borderColor: '#A9A9A9',
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
-    padding: 10,
-    color: '#000000',
-    fontSize: 14,
-    fontFamily: 'RobotoSlab-Regular',
-    marginBottom: 20,
-    textAlignVertical: 'top',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginTop: 20,
-  },
-  notNowButton: {
-    padding: 10,
-    backgroundColor: '#A9A9A9',
-    borderRadius: 5,
-  },
-  notNowText: {
-    color: '#FFFFFF',
-    fontFamily: 'RobotoSlab-Medium',
-  },
-  submitButton: {
-    padding: 10,
-    backgroundColor: '#FF4500',
-    borderRadius: 5,
-  },
-  submitText: {
-    color: '#FFFFFF',
-    fontFamily: 'RobotoSlab-Medium',
-  },
-});

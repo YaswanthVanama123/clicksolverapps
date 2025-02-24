@@ -52,6 +52,7 @@ import Myrefferals from './Components/Myrefferals';
 import Help from './Components/Help';
 import VerificationScreen from './Components/VerificationScreen';
 import PaymentScreenRazor from './Components/PaymentScreenRazor';
+import AboutCS from './Components/AboutCS';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -179,7 +180,7 @@ function App() {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         if (cs_token) {
           await axios.post(
-            `http://192.168.55.101:5000/api/user/store-fcm-token`,
+            `https://backend.clicksolver.com/api/user/store-fcm-token`,
             {fcmToken: token},
             {headers: {Authorization: `Bearer ${cs_token}`}},
           );
@@ -196,7 +197,7 @@ function App() {
       const pcs_token = await EncryptedStorage.getItem('cs_token');
       const fcmToken = await EncryptedStorage.getItem('fcm_token');
       await axios.post(
-        `http://192.168.55.101:5000/api/user/store-notification`,
+        `https://backend.clicksolver.com/api/user/store-notification`,
         {notification, fcmToken},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
@@ -475,6 +476,8 @@ function App() {
         <Stack.Screen name="Notifications" component={UserNotifications} options={{headerShown: false}} />
         <Stack.Screen name="Help" component={HelpScreen} options={{headerShown: false}} />
         <Stack.Screen name="ServiceInProgress" component={ServiceInProgress} options={{headerShown: false}} />
+        <Stack.Screen name="AboutCS" component={AboutCS} options={{headerShown: false}} />
+        
       </Stack.Navigator>
     </NavigationContainer>
   );

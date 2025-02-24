@@ -154,7 +154,7 @@ function App(): React.JSX.Element {
         const fcm_token = await EncryptedStorage.getItem('fcm_token');
 
         if (fcm_token) {
-            await axios.post('http://192.168.55.101:5000/api/workerLogout', { fcm_token });
+            await axios.post('https://backend.clicksolver.com/api/workerLogout', { fcm_token });
         }
 
         await EncryptedStorage.removeItem("pcs_token");
@@ -172,6 +172,22 @@ function App(): React.JSX.Element {
     }
 };
 
+// useEffect(() => {
+//   const storeToken = async () => {
+//     try {
+//       await EncryptedStorage.setItem(
+//         'pcs_token',
+//         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3b3JrZXJfaWQiOjUsImlhdCI6MTc0MDQwNDYwMCwiZXhwIjo2MDYwNDA0NjAwfQ.dijhyH9Nx-GslxxiApazwIF_zNUaXnKYBuwPYRYYMhc'
+//       );
+//     } catch (error) {
+//       console.error('Error storing token:', error);
+//     }
+//   };
+
+//   storeToken();
+// }, []);
+
+
   useEffect(() => {
 
     const checkSessionOnAppStart = async () => {
@@ -186,7 +202,7 @@ function App(): React.JSX.Element {
   
 
           const response = await axios.post(
-            "http://192.168.55.101:5000/api/worker/token/verification",
+            "https://backend.clicksolver.com/api/worker/token/verification",
             { pcsToken }, // Sending pcsToken in the request body
             {
               headers: { Authorization: `Bearer ${pcsToken}` },

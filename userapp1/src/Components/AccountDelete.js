@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -7,68 +7,103 @@ import {
   StyleSheet,
   SafeAreaView,
   Image,
+  ActivityIndicator,
+  useWindowDimensions,
+  Modal, // <-- Import Modal
 } from 'react-native';
 import {useRoute, useNavigation, CommonActions} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-// import Config from 'react-native-config';
 
 const AccountDelete = () => {
+  const {width, height} = useWindowDimensions();
+  const styles = dynamicStyles(width, height);
+
+  const navigation = useNavigation();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false); // <-- Modal visibility state
 
   const route = useRoute();
-  const navigation = useNavigation();
 
   const fetchProfileDetails = async () => {
     const {details} = route.params;
-    console.log('Fetched Details: ', details); // Debug log
     setEmail(details.email);
     setPhone(details.phoneNumber);
     setFullName(details.name);
   };
 
-  const deleteAccount = async () => {
+  const handleLogout = async () => {
     try {
+      const fcm_token = await EncryptedStorage.getItem('fcm_token');
+
+      if (fcm_token) {
+        await axios.post('https://backend.clicksolver.com/api/userLogout', {
+          fcm_token,
+        });
+      }
+
+      await EncryptedStorage.removeItem('cs_token');
+      await EncryptedStorage.removeItem('fcm_token');
+      await EncryptedStorage.removeItem('notifications');
+      await EncryptedStorage.removeItem('messageBox');
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
+
+  // Function that actually updates the profile
+  const updateProfile = async () => {
+    try {
+      setUpdateLoading(true);
       const jwtToken = await EncryptedStorage.getItem('cs_token');
-      console.log('JWT Token: ', jwtToken); // Log the JWT token for debugging
 
       if (!jwtToken) {
         console.error('No JWT token found');
         return;
       }
 
-      console.log(
-        'Sending request to update profile with name:',
-        fullName,
-        email,
-        phone,
-      ); // Debug log
       const response = await axios.post(
-        `http://192.168.55.101:5000/api/user/account/delete`,
+        `https://backend.clicksolver.com/api/user/details/delete`,
         {name: fullName, email, phone},
         {
           headers: {Authorization: `Bearer ${jwtToken}`},
         },
       );
 
-      console.log('Response from server: ', response.status);
-
       if (response.status === 200) {
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{name: 'Tabs', state: {routes: [{name: 'Account'}]}}],
-          }),
-        );
+
+        handleLogout()
+
+        
       } else {
         console.error('Failed to update profile. Status: ', response.status);
       }
     } catch (error) {
       console.error('Error response: ', error.response?.data || error.message);
+    } finally {
+      setUpdateLoading(false);
     }
+  };
+
+  // Open the confirmation modal when Update Profile is pressed
+  const openConfirmationModal = () => {
+    setModalVisible(true);
+  };
+
+  // Close modal and then proceed with update
+  const handleUpdate = () => {
+    setModalVisible(false);
+    updateProfile();
   };
 
   useEffect(() => {
@@ -84,7 +119,7 @@ const AccountDelete = () => {
           color="#000"
           onPress={() => navigation.goBack()}
         />
-        <Text style={styles.headerText}>Edit Profile</Text>
+        <Text style={styles.headerText}>Account Delete</Text>
       </View>
 
       <View style={styles.form}>
@@ -93,10 +128,9 @@ const AccountDelete = () => {
           <TextInput
             style={styles.input}
             value={fullName}
+            editable={false}
             onChangeText={setFullName}
             testID="fullName-input"
-            editable={false} // Disables editing
-            selectTextOnFocus={false} // Prevents text selection
           />
         </View>
 
@@ -107,10 +141,9 @@ const AccountDelete = () => {
             <TextInput
               style={styles.inputText}
               value={email}
+              editable={false}
               onChangeText={setEmail}
               keyboardType="email-address"
-              editable={false} // Disables editing
-              selectTextOnFocus={false} // Prevents text selection
             />
           </View>
         </View>
@@ -130,111 +163,199 @@ const AccountDelete = () => {
               value={phone}
               onChangeText={setPhone}
               keyboardType="phone-pad"
-              editable={false} // Disables editing
-              selectTextOnFocus={false} // Prevents text selection
+              editable={false}
+              selectTextOnFocus={false}
             />
           </View>
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={deleteAccount}>
-          <Text style={styles.buttonText}>Delete Account</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={openConfirmationModal}
+          disabled={updateLoading}>
+          {updateLoading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Delete Account</Text>
+          )}
         </TouchableOpacity>
       </View>
+
+      {/* Modal for confirmation */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Confirm Delete</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to delete your profile?
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, {backgroundColor: '#ccc'}]}
+                onPress={() => setModalVisible(false)}>
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, {backgroundColor: '#FF4500'}]}
+                onPress={handleUpdate}>
+                <Text style={styles.modalButtonText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    paddingHorizontal: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 15,
-  },
-  headerText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginLeft: 10,
-    color: '#1D2951',
-    textAlign: 'center',
-  },
-  form: {
-    marginTop: 10,
-    flexDirection: 'column',
-    gap: 10,
-  },
-  label: {
-    fontSize: 14,
-    color: '#4a4a4a',
-    marginBottom: 5,
-    marginTop: 15,
-  },
-  input: {
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    backgroundColor: '#f9f9f9',
-    color: '#212121',
-    fontSize: 16,
-  },
-  inputWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    backgroundColor: '#f9f9f9',
-  },
-  inputText: {
-    flex: 1,
-    marginLeft: 10,
-    color: '#212121',
-    fontSize: 16,
-  },
-  phoneInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    backgroundColor: '#f9f9f9',
-  },
-  flagIcon: {
-    width: 24,
-    height: 16,
-    marginRight: 8,
-  },
-  callingCode: {
-    marginRight: 10,
-    fontSize: 16,
-    color: '#212121',
-  },
-  phoneInput: {
-    flex: 1,
-    color: '#212121',
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: '#FF4500',
-    height: 50,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 40,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
+const dynamicStyles = (width, height) => {
+  const isTablet = width >= 600;
+
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#fff',
+      paddingHorizontal: isTablet ? 30 : 20,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: isTablet ? 20 : 15,
+    },
+    headerText: {
+      fontSize: isTablet ? 24 : 20,
+      fontFamily: 'RobotoSlab-SemiBold',
+      marginLeft: isTablet ? 15 : 10,
+      color: '#1D2951',
+      textAlign: 'center',
+    },
+    form: {
+      marginTop: isTablet ? 20 : 10,
+      flexDirection: 'column',
+      gap: isTablet ? 15 : 10,
+    },
+    label: {
+      fontSize: isTablet ? 16 : 14,
+      fontFamily: 'RobotoSlab-Medium',
+      color: '#4a4a4a',
+      marginBottom: 5,
+      marginTop: isTablet ? 20 : 15,
+    },
+    input: {
+      height: isTablet ? 55 : 50,
+      borderWidth: 1,
+      borderColor: '#ddd',
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      backgroundColor: '#f9f9f9',
+      color: '#212121',
+      fontFamily: 'RobotoSlab-Regular',
+      fontSize: isTablet ? 18 : 16,
+    },
+    inputWithIcon: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: '#ddd',
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      backgroundColor: '#f9f9f9',
+    },
+    inputText: {
+      flex: 1,
+      marginLeft: isTablet ? 15 : 10,
+      color: '#212121',
+      fontFamily: 'RobotoSlab-Regular',
+      fontSize: isTablet ? 18 : 16,
+    },
+    phoneInputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: '#ddd',
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      backgroundColor: '#f9f9f9',
+    },
+    flagIcon: {
+      width: isTablet ? 30 : 24,
+      height: isTablet ? 20 : 16,
+      marginRight: 8,
+    },
+    callingCode: {
+      marginRight: 10,
+      fontSize: isTablet ? 18 : 16,
+      color: '#212121',
+      fontFamily: 'RobotoSlab-Regular',
+    },
+    phoneInput: {
+      flex: 1,
+      color: '#212121',
+      fontFamily: 'RobotoSlab-Regular',
+      fontSize: isTablet ? 18 : 16,
+    },
+    button: {
+      backgroundColor: '#FF4500',
+      height: isTablet ? 55 : 50,
+      borderRadius: 8,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: isTablet ? 50 : 40,
+    },
+    buttonText: {
+      color: '#fff',
+      fontSize: isTablet ? 18 : 16,
+      fontFamily: 'RobotoSlab-Medium',
+    },
+    modalContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modalContent: {
+      width: isTablet ? '40%' : '80%',
+      backgroundColor: '#fff',
+      padding: 20,
+      borderRadius: 10,
+      alignItems: 'center',
+    },
+    modalTitle: {
+      fontSize: isTablet ? 20 : 18,
+      fontFamily: 'RobotoSlab-Medium',
+      marginBottom: 10,
+      color: '#1D2951',
+    },
+    modalMessage: {
+      fontSize: isTablet ? 16 : 14,
+      fontFamily: 'RobotoSlab-Regular',
+      marginBottom: 20,
+      textAlign: 'center',
+      color: '#212121',
+    },
+    modalButtons: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: '100%',
+    },
+    modalButton: {
+      flex: 1,
+      marginHorizontal: 5,
+      paddingVertical: 10,
+      borderRadius: 8,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalButtonText: {
+      color: '#fff',
+      fontFamily: 'RobotoSlab-Medium',
+      fontSize: isTablet ? 16 : 14,
+    },
+  });
+};
 
 export default AccountDelete;

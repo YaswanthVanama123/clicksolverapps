@@ -12,7 +12,7 @@ exports.generateWorkerToken = (worker) => {
   return jwt.sign({ worker_id: worker.worker_id }, secretKey, { expiresIn: '50000d' });
 
 };
-
+ 
 exports.generateAdminToken = (admin) => {
   console.log("admin token",admin)
   return jwt.sign({ admin }, secretKey, { expiresIn: '30d' });

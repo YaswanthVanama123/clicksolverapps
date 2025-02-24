@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,42 +8,46 @@ import {
   ScrollView,
   Image,
   Alert,
-  ActivityIndicator, // <--- Import ActivityIndicator
+  ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import {Dropdown} from 'react-native-element-dropdown';
-import {RadioButton, Checkbox} from 'react-native-paper';
-import {launchImageLibrary} from 'react-native-image-picker';
+import { Dropdown } from 'react-native-element-dropdown';
+import { RadioButton, Checkbox } from 'react-native-paper';
+import { launchImageLibrary } from 'react-native-image-picker';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import SwipeButton from 'rn-swipe-button';
 import Entypo from 'react-native-vector-icons/Entypo';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import {useNavigation} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import uuid from 'react-native-uuid';
 
 const RegistrationScreen = () => {
+  const { width } = useWindowDimensions();
+  const styles = dynamicStyles(width); // <-- dynamic style creation
+
   const [subServices, setSubServices] = useState([]);
   const [titleColor, setTitleColor] = useState('#FF5722');
   const [errorFields, setErrorFields] = useState({});
   const [educationItems] = useState([
-    {label: 'High School', value: 'highschool'},
-    {label: "Bachelor's", value: 'bachelor'},
-    {label: "Master's", value: 'master'},
+    { label: 'High School', value: 'highschool' },
+    { label: "Bachelor's", value: 'bachelor' },
+    { label: "Master's", value: 'master' },
   ]);
   const [swiped, setSwiped] = useState(false);
   const [experienceItems] = useState([
-    {label: '0-1 Year', value: '0-1'},
-    {label: '1-3 years', value: '1-3'},
-    {label: 'more than 3 years', value: '3+'},
+    { label: '0-1 Year', value: '0-1' },
+    { label: '1-3 years', value: '1-3' },
+    { label: 'more than 3 years', value: '3+' },
   ]);
   const navigation = useNavigation();
   const [skillCategoryItems, setSkillCategoryItems] = useState([
-    {label: 'Electrician', value: 'electrician'},
-    {label: 'Plumber', value: 'plumber'},
-    {label: 'Carpenter', value: 'carpenter'},
+    { label: 'Electrician', value: 'electrician' },
+    { label: 'Plumber', value: 'plumber' },
+    { label: 'Carpenter', value: 'carpenter' },
   ]);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [formData, setFormData] = useState({
@@ -69,16 +73,16 @@ const RegistrationScreen = () => {
   // Introduce `loading` state
   const [loading, setLoading] = useState(false);
 
-  const handleCheckboxChange = serviceName => {
+  const handleCheckboxChange = (serviceName) => {
     const isChecked = formData.subSkills.includes(serviceName);
     const updatedSubSkills = isChecked
-      ? formData.subSkills.filter(skill => skill !== serviceName)
+      ? formData.subSkills.filter((skill) => skill !== serviceName)
       : [...formData.subSkills, serviceName];
 
-    setFormData({...formData, subSkills: updatedSubSkills});
+    setFormData({ ...formData, subSkills: updatedSubSkills });
   };
 
-  const uploadImage = async uri => {
+  const uploadImage = async (uri) => {
     const apiKey = '287b4ba48139a6a59e75b5a8266bbea2';
     const apiUrl = 'https://api.imgbb.com/1/upload';
 
@@ -107,31 +111,20 @@ const RegistrationScreen = () => {
     if (swiped) {
       return (
         <View style={styles.thumbContainer}>
-          <Text>
-            <Entypo
-              name="check"
-              size={20}
-              color="#FF5722"
-              style={styles.checkIcon}
-            />
-          </Text>
+          <Entypo name="check" size={20} color="#FF5722" style={styles.checkIcon} />
         </View>
       );
     } else {
       return (
         <View style={styles.thumbContainer}>
-          <Text>
-            <FontAwesome6 name="arrow-right-long" size={18} color="#FF5722" />
-          </Text>
+          <FontAwesome6 name="arrow-right-long" size={18} color="#FF5722" />
         </View>
       );
     }
   };
 
   const handleSubmit = async () => {
-    // Show loader when submit starts
-    setLoading(true);
-
+    setLoading(true); // Show loader
     const errors = {};
     for (const key in formData) {
       if (
@@ -145,7 +138,7 @@ const RegistrationScreen = () => {
     if (Object.keys(errors).length > 0) {
       setErrorFields(errors);
       Alert.alert('Error', 'Please fill all the required fields.');
-      setLoading(false); // Stop loader if validation fails
+      setLoading(false);
       return;
     }
     try {
@@ -155,23 +148,21 @@ const RegistrationScreen = () => {
         navigation.replace('Login');
       }
       const response = await axios.post(
-        `http://192.168.55.101:5000/api/registration/submit`,
+        `https://backend.clicksolver.com/api/registration/submit`,
         formData,
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
           },
-        },
+        }
       );
       if (response.status === 200) {
         setIsEditing(false);
-        // navigation.replace('PartnerSteps');
       }
     } catch (error) {
       console.error('Error fetching services:', error);
     } finally {
-      // Hide loader in the finally block
-      setLoading(false);
+      setLoading(false); // Hide loader
     }
   };
 
@@ -183,19 +174,19 @@ const RegistrationScreen = () => {
         navigation.replace('Login');
       }
       const response = await axios.get(
-        `http://192.168.55.101:5000/api/service/categories`,
+        `https://backend.clicksolver.com/api/service/categories`,
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
           },
-        },
+        }
       );
-      
+
       if (response.data[0].phone_numbers) {
         setPhoneNumber(response.data[0].phone_numbers);
       }
       const data = response.data;
-      const mappedData = data.map(item => ({
+      const mappedData = data.map((item) => ({
         label: item.service_name,
         value: item.service_name,
       }));
@@ -218,16 +209,16 @@ const RegistrationScreen = () => {
         'sign_up',
         'fcm_token',
         'start_work_time',
-        'nullCoordinates'
+        'nullCoordinates',
       ];
-  
+
       for (const key of keys) {
         const value = await EncryptedStorage.getItem(key);
         if (value !== null) {
           await EncryptedStorage.removeItem(key);
         }
       }
-  
+
       console.log('Logout successful, all necessary storage items removed.');
       navigation.replace('Login');
     } catch (error) {
@@ -235,21 +226,21 @@ const RegistrationScreen = () => {
     }
   };
 
-  const handleImagePick = async fieldName => {
+  const handleImagePick = async (fieldName) => {
     const options = {
       mediaType: 'photo',
       quality: 1,
       selectionLimit: 1,
     };
 
-    launchImageLibrary(options, async response => {
+    launchImageLibrary(options, async (response) => {
       if (response.didCancel) {
         console.log('User cancelled image picker');
       } else if (response.error) {
         console.error('ImagePicker Error: ', response.error);
         Alert.alert('Error', 'Failed to pick image.');
       } else if (response.assets) {
-        const {uri} = response.assets[0];
+        const { uri } = response.assets[0];
         try {
           const imageUrl = await uploadImage(uri);
           console.log('Uploaded Image URL:', imageUrl);
@@ -263,18 +254,18 @@ const RegistrationScreen = () => {
   };
 
   const handleInputChange = async (field, value) => {
-    setFormData({...formData, [field]: value});
-    setErrorFields(prev => ({...prev, [field]: false}));
+    setFormData({ ...formData, [field]: value });
+    setErrorFields((prev) => ({ ...prev, [field]: false }));
     if (field === 'skillCategory') {
       try {
         const response = await axios.post(
-          `http://192.168.55.101:5000/api/subservice/checkboxes`,
-          {selectedService: value},
+          `https://backend.clicksolver.com/api/subservice/checkboxes`,
+          { selectedService: value }
         );
         const data = response.data;
         console.log('selected service', data);
 
-        const mappedData = data.map(item => ({
+        const mappedData = data.map((item) => ({
           id: item.service_id,
           label: item.service_tag,
           category: item.service_category,
@@ -297,19 +288,18 @@ const RegistrationScreen = () => {
         return;
       }
 
-      // GET the profile details:
       const response = await axios.get(
-        `http://192.168.55.101:5000/api/profile/detsils`,
+        `https://backend.clicksolver.com/api/profile/detsils`,
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
           },
-        },
+        }
       );
 
       const data = response.data;
 
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         lastName: data.personaldetails.lastName,
         firstName: data.personaldetails.firstName,
@@ -331,19 +321,18 @@ const RegistrationScreen = () => {
 
       setPhoneNumber(data.phone_number);
 
-      // POST to /api/subservice/checkboxes with the service
       const subserviceResponse = await axios.post(
-        `http://192.168.55.101:5000/api/subservice/checkboxes`,
-        {selectedService: data.service},
+        `https://backend.clicksolver.com/api/subservice/checkboxes`,
+        { selectedService: data.service },
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
           },
-        },
+        }
       );
 
       const subserviceData = subserviceResponse.data;
-      const mappedData = subserviceData.map(item => ({
+      const mappedData = subserviceData.map((item) => ({
         id: item.service_id,
         label: item.service_tag,
         category: item.service_category,
@@ -356,7 +345,7 @@ const RegistrationScreen = () => {
   };
 
   const handleEdit = () => {
-    setIsEditing(prev => !prev);
+    setIsEditing((prev) => !prev);
   };
 
   useEffect(() => {
@@ -397,7 +386,7 @@ const RegistrationScreen = () => {
             style={[styles.input, errorFields.firstName && styles.errorInput]}
             value={formData.firstName}
             editable={isEditing}
-            onChangeText={value => handleInputChange('firstName', value)}
+            onChangeText={(value) => handleInputChange('firstName', value)}
           />
           {errorFields.firstName && (
             <Text style={styles.errorText}>This field is required.</Text>
@@ -408,7 +397,7 @@ const RegistrationScreen = () => {
             style={[styles.input, errorFields.lastName && styles.errorInput]}
             value={formData.lastName}
             editable={isEditing}
-            onChangeText={value => handleInputChange('lastName', value)}
+            onChangeText={(value) => handleInputChange('lastName', value)}
           />
           {errorFields.lastName && (
             <Text style={styles.errorText}>This field is required.</Text>
@@ -417,11 +406,7 @@ const RegistrationScreen = () => {
           <Text style={styles.label}>Gender</Text>
           <View style={styles.row}>
             <View>
-              <View
-                style={[
-                  styles.genderRow,
-                  formData.gender === 'male' && styles.checked,
-                ]}>
+              <View style={[styles.genderRow, formData.gender === 'male' && styles.checked]}>
                 <RadioButton
                   value="male"
                   status={formData.gender === 'male' ? 'checked' : 'unchecked'}
@@ -433,16 +418,10 @@ const RegistrationScreen = () => {
                 <Text style={styles.radioText}>Male</Text>
               </View>
 
-              <View
-                style={[
-                  styles.genderRow,
-                  formData.gender === 'female' && styles.checked,
-                ]}>
+              <View style={[styles.genderRow, formData.gender === 'female' && styles.checked]}>
                 <RadioButton
                   value="female"
-                  status={
-                    formData.gender === 'female' ? 'checked' : 'unchecked'
-                  }
+                  status={formData.gender === 'female' ? 'checked' : 'unchecked'}
                   onPress={() => {
                     if (isEditing) handleInputChange('gender', 'female');
                   }}
@@ -455,10 +434,7 @@ const RegistrationScreen = () => {
 
           <Text style={styles.label}>Work Experience (Years)</Text>
           <Dropdown
-            style={[
-              styles.dropdown,
-              errorFields.workExperience && styles.errorInput,
-            ]}
+            style={[styles.dropdown, errorFields.workExperience && styles.errorInput]}
             containerStyle={styles.dropdownContainer}
             disable={!isEditing}
             data={experienceItems}
@@ -470,11 +446,11 @@ const RegistrationScreen = () => {
             valueField="value"
             placeholder="Select your experience"
             value={formData.workExperience}
-            onChange={item => handleInputChange('workExperience', item.value)}
+            onChange={(item) => handleInputChange('workExperience', item.value)}
             renderRightIcon={() => (
               <FontAwesome name="chevron-down" size={14} color="#9e9e9e" />
             )}
-            renderItem={item => (
+            renderItem={(item) => (
               <View style={styles.dropdownItem}>
                 <Text style={styles.dropdownItemText}>{item.label}</Text>
               </View>
@@ -489,7 +465,7 @@ const RegistrationScreen = () => {
             style={[styles.input, errorFields.dob && styles.errorInput]}
             value={formData.dob}
             editable={isEditing}
-            onChangeText={value => handleInputChange('dob', value)}
+            onChangeText={(value) => handleInputChange('dob', value)}
           />
           {errorFields.dob && (
             <Text style={styles.errorText}>This field is required.</Text>
@@ -497,10 +473,7 @@ const RegistrationScreen = () => {
 
           <Text style={styles.label}>Education</Text>
           <Dropdown
-            style={[
-              styles.dropdown,
-              errorFields.education && styles.errorInput,
-            ]}
+            style={[styles.dropdown, errorFields.education && styles.errorInput]}
             containerStyle={styles.dropdownContainer}
             disable={!isEditing}
             data={educationItems}
@@ -512,11 +485,11 @@ const RegistrationScreen = () => {
             valueField="value"
             placeholder="Select Education"
             value={formData.education}
-            onChange={item => handleInputChange('education', item.value)}
+            onChange={(item) => handleInputChange('education', item.value)}
             renderRightIcon={() => (
               <FontAwesome name="chevron-down" size={14} color="#9e9e9e" />
             )}
-            renderItem={item => (
+            renderItem={(item) => (
               <View style={styles.dropdownItem}>
                 <Text style={styles.dropdownItemText}>{item.label}</Text>
               </View>
@@ -557,7 +530,7 @@ const RegistrationScreen = () => {
             style={[styles.input, errorFields.doorNo && styles.errorInput]}
             value={formData.doorNo}
             editable={isEditing}
-            onChangeText={value => handleInputChange('doorNo', value)}
+            onChangeText={(value) => handleInputChange('doorNo', value)}
           />
           {errorFields.doorNo && (
             <Text style={styles.errorText}>This field is required.</Text>
@@ -568,7 +541,7 @@ const RegistrationScreen = () => {
             style={[styles.input, errorFields.landmark && styles.errorInput]}
             value={formData.landmark}
             editable={isEditing}
-            onChangeText={value => handleInputChange('landmark', value)}
+            onChangeText={(value) => handleInputChange('landmark', value)}
           />
           {errorFields.landmark && (
             <Text style={styles.errorText}>This field is required.</Text>
@@ -579,7 +552,7 @@ const RegistrationScreen = () => {
             style={[styles.input, errorFields.city && styles.errorInput]}
             value={formData.city}
             editable={isEditing}
-            onChangeText={value => handleInputChange('city', value)}
+            onChangeText={(value) => handleInputChange('city', value)}
           />
           {errorFields.city && (
             <Text style={styles.errorText}>This field is required.</Text>
@@ -590,7 +563,7 @@ const RegistrationScreen = () => {
             style={[styles.input, errorFields.pincode && styles.errorInput]}
             value={formData.pincode}
             editable={isEditing}
-            onChangeText={value => handleInputChange('pincode', value)}
+            onChangeText={(value) => handleInputChange('pincode', value)}
           />
           {errorFields.pincode && (
             <Text style={styles.errorText}>This field is required.</Text>
@@ -601,7 +574,7 @@ const RegistrationScreen = () => {
             style={[styles.input, errorFields.district && styles.errorInput]}
             value={formData.district}
             editable={isEditing}
-            onChangeText={value => handleInputChange('district', value)}
+            onChangeText={(value) => handleInputChange('district', value)}
           />
           {errorFields.district && (
             <Text style={styles.errorText}>This field is required.</Text>
@@ -612,7 +585,7 @@ const RegistrationScreen = () => {
             style={[styles.input, errorFields.state && styles.errorInput]}
             value={formData.state}
             editable={isEditing}
-            onChangeText={value => handleInputChange('state', value)}
+            onChangeText={(value) => handleInputChange('state', value)}
           />
           {errorFields.state && (
             <Text style={styles.errorText}>This field is required.</Text>
@@ -625,10 +598,7 @@ const RegistrationScreen = () => {
 
           <Text style={styles.label}>Select Service Category</Text>
           <Dropdown
-            style={[
-              styles.dropdown,
-              errorFields.skillCategory && styles.Service,
-            ]}
+            style={[styles.dropdown, errorFields.skillCategory && styles.Service]}
             containerStyle={styles.dropdownContainer}
             data={skillCategoryItems}
             disable={!isEditing}
@@ -640,11 +610,11 @@ const RegistrationScreen = () => {
             valueField="value"
             placeholder="Select Service Category"
             value={formData.skillCategory}
-            onChange={item => handleInputChange('skillCategory', item.value)}
+            onChange={(item) => handleInputChange('skillCategory', item.value)}
             renderRightIcon={() => (
               <FontAwesome name="chevron-down" size={14} color="#9e9e9e" />
             )}
-            renderItem={item => (
+            renderItem={(item) => (
               <View style={styles.dropdownItem}>
                 <Text style={styles.dropdownItemText}>{item.label}</Text>
               </View>
@@ -658,19 +628,15 @@ const RegistrationScreen = () => {
             style={[
               styles.checkboxGrid,
               formData.subSkills.length > 0 && styles.checked,
-            ]}>
-            {Object.keys(groupedSubServices).map(categoryName => (
-              <View key={categoryName} style={{marginBottom: 16}}>
-                <Text
-                  style={{
-                    fontWeight: 'bold',
-                    fontSize: 16,
-                    marginVertical: 8,
-                    color: '#000',
-                  }}>
+            ]}
+          >
+            {/* Group subServices by category */}
+            {Object.keys(groupedSubServices).map((categoryName) => (
+              <View key={categoryName} style={{ marginBottom: 16 }}>
+                <Text style={styles.checkboxCategoryTitle}>
                   {categoryName}
                 </Text>
-                {groupedSubServices[categoryName].map(item => (
+                {groupedSubServices[categoryName].map((item) => (
                   <View key={item.id} style={styles.checkboxContainer}>
                     <Checkbox
                       status={
@@ -696,25 +662,25 @@ const RegistrationScreen = () => {
         <View style={styles.horizantalLine} />
 
         {/* If not editing, show logout. If editing, show the SwipeButton or loader */}
-        <View style={{marginBottom: 30}}>
+        <View style={{ marginBottom: 30 }}>
           {loading ? (
             <ActivityIndicator
               size="large"
               color="#FF5722"
-              style={{marginVertical: 20}}
+              style={{ marginVertical: 20 }}
             />
           ) : isEditing ? (
             <SwipeButton
-              forceReset={reset => {
+              forceReset={(reset) => {
                 // Optional: capture this reset if you want to reset swipe on error
               }}
               title="Submit to Commander"
-              titleStyles={{color: titleColor, fontSize: 16}}
+              titleStyles={{ color: titleColor, fontSize: 16 }}
               railBackgroundColor="#ffffff"
               railBorderColor="#EFDCCB"
+              height={50}
               railStyles={{
                 borderRadius: 25,
-                height: 50,
                 backgroundColor: '#FF450000',
                 borderColor: '#FF450000',
               }}
@@ -725,7 +691,6 @@ const RegistrationScreen = () => {
               thumbIconHeight={50}
               onSwipeStart={() => setTitleColor('#802300')}
               onSwipeSuccess={() => {
-                // When the user successfully swipes:
                 handleSubmit();
                 setTitleColor('#FF5722');
                 setSwiped(true);
@@ -745,257 +710,272 @@ const RegistrationScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingBottom: 0,
-    backgroundColor: '#FFFFFF',
-  },
-  scrollContainer: {
-    flex: 1,
-    paddingBottom: 0,
-    backgroundColor: '#FFFFFF',
-  },
-  placeholderStyle: {
-    color: '#212121',
-  },
-  uploadContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  imagePreview: {
-    width: 80,
-    height: 80,
-    borderRadius: 50,
-  },
-  editContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  imageContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    alignItems: 'center',
-  },
-  imageUpload: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    alignItems: 'center',
-  },
-  errorInput: {
-    borderColor: '#FF4500',
-  },
-  buttonContainer: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  doneButton: {
-    borderWidth: 1,
-    borderColor: '#FF5722',
-    backgroundColor: '#ffffff',
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 10,
-    width: '60%',
-  },
-  doneText: {
-    color: '#FF5722',
-    fontSize: 15,
-    fontWeight: 'bold',
-  },
-  errorText: {
-    color: '#FF4500',
-    fontSize: 12,
-  },
-  image1: {
-    margin: 10,
-    marginLeft: 20,
-  },
-  text1: {
-    marginLeft: 20,
-  },
-  text2: {
-    marginRight: 30,
-  },
-  image2: {
-    margin: 10,
-    marginRight: 30,
-  },
-  checkboxGrid: {
-    flexDirection: 'column',
-  },
-  radioText: {
-    fontSize: 16,
-    marginLeft: 2,
-    color: '#212121',
-    fontWeight: 'bold',
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  genderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    paddingBottom: 12,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.5,
-    shadowRadius: 5,
-    backgroundColor: '#FFFFFF',
-    zIndex: 1,
-  },
-  iconStyle: {
-    width: 20,
-    height: 20,
-  },
-  headerTitle: {
-    position: 'absolute',
-    left: '38%',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginLeft: 10,
-    color: '#1D2951',
-    textAlign: 'center',
-  },
-  dropdownItem: {
-    padding: 10,
-    backgroundColor: '#FFFFFF',
-  },
-  dropdownItemText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  horizantalLine: {
-    height: 2,
-    width: '100%',
-    backgroundColor: '#F5F5F5',
-  },
-  section: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 10,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#1D2951',
-  },
-  label: {
-    marginBottom: 5,
-    color: '#666',
-  },
-  input: {
-    height: 40,
-    borderColor: '#E0E0E0',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    marginBottom: 15,
-    color: '#212121',
-  },
-  selectedTextStyle: {
-    color: '#212121',
-  },
-  dropdown: {
-    height: 40,
-    borderColor: '#E0E0E0',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    marginBottom: 15,
-  },
-  dropdownContainer: {
-    marginBottom: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 5,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 30,
-    marginBottom: 15,
-  },
-  genderButton: {
-    flex: 1,
-    padding: 10,
-    backgroundColor: '#E0E0E0',
-    alignItems: 'center',
-    borderRadius: 5,
-    marginHorizontal: 5,
-  },
-  activeButton: {
-    backgroundColor: '#007BFF',
-    color: '#fff',
-  },
-  phoneContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  countryCode: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderColor: '#E0E0E0',
-    borderWidth: 1,
-    borderRadius: 5,
-    padding: 10,
-    marginRight: 10,
-  },
-  flagIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 5,
-  },
-  inputPhone: {
-    flex: 1,
-    height: 40,
-    borderColor: '#E0E0E0',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    color: '#212121',
-  },
-  uploadButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: 5,
-    marginBottom: 10,
-    width: 130,
-  },
-  fileText: {
-    color: '#212121',
-    fontWeight: 'bold',
-  },
-  // Loading overlay style
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 999,
-  },
-});
+/**
+ * DYNAMIC STYLES FOR RESPONSIVENESS
+ */
+function dynamicStyles(width) {
+  const isTablet = width >= 600;
+
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#FFFFFF',
+      paddingBottom: 0,
+    },
+    loadingOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(255,255,255,0.7)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 999,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: isTablet ? 20 : 16,
+      paddingBottom: isTablet ? 14 : 12,
+      elevation: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.5,
+      shadowRadius: 5,
+      backgroundColor: '#FFFFFF',
+      zIndex: 1,
+    },
+    editContainer: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      flex: 1,
+    },
+    headerTitle: {
+      position: 'absolute',
+      left: '40%',
+      fontSize: isTablet ? 22 : 20,
+      fontWeight: 'bold',
+      marginLeft: 10,
+      color: '#1D2951',
+      textAlign: 'center',
+    },
+    scrollContainer: {
+      flex: 1,
+      paddingBottom: 0,
+      backgroundColor: '#FFFFFF',
+    },
+    section: {
+      backgroundColor: '#FFFFFF',
+      padding: isTablet ? 24 : 20,
+      borderRadius: 10,
+    },
+    sectionTitle: {
+      fontSize: isTablet ? 20 : 18,
+      fontWeight: 'bold',
+      marginBottom: 10,
+      color: '#1D2951',
+    },
+    label: {
+      marginBottom: 5,
+      color: '#666',
+      fontSize: isTablet ? 16 : 14,
+    },
+    input: {
+      height: isTablet ? 45 : 40,
+      borderColor: '#E0E0E0',
+      borderWidth: 1,
+      borderRadius: 5,
+      paddingHorizontal: 10,
+      marginBottom: 15,
+      color: '#212121',
+      fontSize: isTablet ? 16 : 14,
+    },
+    errorInput: {
+      borderColor: '#FF4500',
+    },
+    errorText: {
+      color: '#FF4500',
+      fontSize: isTablet ? 14 : 12,
+      marginBottom: 10,
+    },
+    placeholderStyle: {
+      color: '#212121',
+    },
+    dropdown: {
+      height: isTablet ? 45 : 40,
+      borderColor: '#E0E0E0',
+      borderWidth: 1,
+      borderRadius: 5,
+      paddingHorizontal: 10,
+      marginBottom: 15,
+    },
+    dropdownContainer: {
+      marginBottom: 20,
+      backgroundColor: '#FFFFFF',
+      borderRadius: 5,
+      elevation: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+    },
+    selectedTextStyle: {
+      color: '#212121',
+      fontSize: isTablet ? 16 : 14,
+    },
+    iconStyle: {
+      width: isTablet ? 24 : 20,
+      height: isTablet ? 24 : 20,
+    },
+    inputSearchStyle: {
+      fontSize: isTablet ? 16 : 14,
+    },
+    row: {
+      flexDirection: 'row',
+      gap: isTablet ? 40 : 30,
+      marginBottom: 15,
+    },
+    genderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    radioText: {
+      fontSize: isTablet ? 16 : 14,
+      marginLeft: 2,
+      color: '#212121',
+      fontWeight: 'bold',
+    },
+    phoneContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 15,
+    },
+    countryCode: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderColor: '#E0E0E0',
+      borderWidth: 1,
+      borderRadius: 5,
+      padding: isTablet ? 12 : 10,
+      marginRight: 10,
+    },
+    flagIcon: {
+      width: isTablet ? 24 : 20,
+      height: isTablet ? 24 : 20,
+      marginRight: 5,
+    },
+    inputPhone: {
+      flex: 1,
+      height: isTablet ? 45 : 40,
+      borderColor: '#E0E0E0',
+      borderWidth: 1,
+      borderRadius: 5,
+      paddingHorizontal: 10,
+      color: '#212121',
+      fontSize: isTablet ? 16 : 14,
+    },
+    horizantalLine: {
+      height: 2,
+      width: '100%',
+      backgroundColor: '#F5F5F5',
+      marginVertical: isTablet ? 16 : 12,
+    },
+    checkboxGrid: {
+      flexDirection: 'column',
+    },
+    checkboxCategoryTitle: {
+      fontWeight: 'bold',
+      fontSize: isTablet ? 18 : 16,
+      marginVertical: 8,
+      color: '#000',
+    },
+    checkboxContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    uploadContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+    },
+    imagePreview: {
+      width: isTablet ? 90 : 80,
+      height: isTablet ? 90 : 80,
+      borderRadius: 50,
+    },
+    imageContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      width: '100%',
+      alignItems: 'center',
+    },
+    imageUpload: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: '100%',
+      alignItems: 'center',
+    },
+    serviceTimeLineContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    sectionPaymentTitle: {
+      fontSize: isTablet ? 20 : 16,
+      fontWeight: 'bold',
+      color: '#212121',
+      marginBottom: 8,
+      paddingLeft: isTablet ? 14 : 10,
+    },
+    paymentInnerContainer: {
+      padding: isTablet ? 12 : 10,
+      backgroundColor: '#f5f5f5',
+      marginTop: 10,
+      marginBottom: 10,
+    },
+    PaymentItemContainer: {
+      paddingLeft: isTablet ? 20 : 16,
+      flexDirection: 'column',
+      gap: 5,
+    },
+    buttonContainer: {
+      display: 'flex',
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginBottom: 20,
+    },
+    doneButton: {
+      borderWidth: 1,
+      borderColor: '#FF5722',
+      backgroundColor: '#ffffff',
+      paddingVertical: isTablet ? 12 : 10,
+      borderRadius: 10,
+      alignItems: 'center',
+      marginTop: 10,
+      width: isTablet ? '40%' : '60%',
+    },
+    doneText: {
+      color: '#FF5722',
+      fontSize: isTablet ? 16 : 15,
+      fontWeight: 'bold',
+    },
+    swipeButton: {
+      marginHorizontal: isTablet ? 24 : 20,
+      marginBottom: isTablet ? 20 : 10,
+    },
+    thumbContainer: {
+      width: isTablet ? 55 : 50,
+      height: isTablet ? 55 : 50,
+      borderRadius: isTablet ? 27.5 : 25,
+      backgroundColor: '#EFDCCB',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: '#ddd',
+    },
+    checkIcon: {
+      alignSelf: 'center',
+    },
+  });
+}
 
 export default RegistrationScreen;

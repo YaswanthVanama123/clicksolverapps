@@ -56,6 +56,7 @@ const WaitingUser = () => {
     useState(false);
   const [selectedReason, setSelectedReason] = useState('');
   const [discount, setDiscount] = useState(0);
+  const [tipAmount,setTipAmount] = useState(0);
   // New state to handle backend operations loading
   const [backendLoading, setBackendLoading] = useState(false);
 
@@ -87,6 +88,7 @@ const WaitingUser = () => {
       serviceBooked,
       location,
       discount,
+      tipAmount
     } = route.params;
     console.log('user waiting params', route.params);
     setCity(city);
@@ -97,6 +99,7 @@ const WaitingUser = () => {
     setService(serviceBooked);
     setLocation(location);
     setDiscount(discount);
+    setTipAmount(tipAmount);
   }, []);
 
   const fetchData = async () => {
@@ -109,6 +112,7 @@ const WaitingUser = () => {
       serviceBooked,
       location,
       discount,
+      tipAmount
     } = route.params;
     setCity(city);
     setArea(area);
@@ -118,7 +122,7 @@ const WaitingUser = () => {
     setService(serviceBooked);
     setLocation(location);
     setDiscount(discount);
-
+    setTipAmount(tipAmount);
     setBackendLoading(true);
     try {
       const jwtToken = await EncryptedStorage.getItem('cs_token');
@@ -126,23 +130,24 @@ const WaitingUser = () => {
         // Alert.alert('Error', 'No token found');
         return;
       }
-
+      console.log("tip",tipAmount)
       const response = await axios.post(
-        `http://192.168.55.101:5000/api/workers-nearby`,
-        {
+        `https://backend.clicksolver.com/api/workers-nearby`,
+        { 
           area,
           city,
           pincode,
-          alternateName,
+          alternateName, 
           alternatePhoneNumber,
           serviceBooked,
           discount,
+          tipAmount
         },
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
 
       if (response.status === 200) {
-        const encode = response.data;
+        const encode = response.data; 
         setEncodedData(encode);
         console.log('res', response.data);
         console.log(encode);
@@ -154,7 +159,7 @@ const WaitingUser = () => {
           encode !== 'No workers match the requested subservices'
         ) {
           await axios.post(
-            `http://192.168.55.101:5000/api/user/action`,
+            `https://backend.clicksolver.com/api/user/action`,
             {
               encodedId: encode,
               screen: 'userwaiting',
@@ -166,6 +171,7 @@ const WaitingUser = () => {
               alternatePhoneNumber,
               location,
               discount,
+              tipAmount
             },
             {headers: {Authorization: `Bearer ${jwtToken}`}},
           );
@@ -214,7 +220,7 @@ const WaitingUser = () => {
     try {
       if (decodedId) {
         await axios.post(
-          `http://192.168.55.101:5000/api/user/cancellation`,
+          `https://backend.clicksolver.com/api/user/cancellation`,
           {
             user_notification_id: decodedId,
             cancellation_reason: selectedReason, // Optionally send the reason
@@ -223,7 +229,7 @@ const WaitingUser = () => {
 
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
-          `http://192.168.55.101:5000/api/user/action/cancel`,
+          `https://backend.clicksolver.com/api/user/action/cancel`,
           {encodedId: encodedData, screen: 'userwaiting'},
           {headers: {Authorization: `Bearer ${cs_token}`}},
         );
@@ -268,14 +274,14 @@ const WaitingUser = () => {
         //   'Unable to find workers after 3 attempts. Please try again later.',
         // );
         await axios.post(
-          `http://192.168.55.101:5000/api/user/cancellation`,
+          `https://backend.clicksolver.com/api/user/cancellation`,
           {
             user_notification_id: decodedId,
           },
         );
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
-          `http://192.168.55.101:5000/api/user/action/cancel`,
+          `https://backend.clicksolver.com/api/user/action/cancel`,
           {encodedId: encodedData, screen: 'userwaiting'},
           {headers: {Authorization: `Bearer ${cs_token}`}},
         );
@@ -284,7 +290,7 @@ const WaitingUser = () => {
           CommonActions.reset({
             index: 0,
             routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
-          }),
+          }),   
         );
         return;
       }
@@ -292,7 +298,7 @@ const WaitingUser = () => {
       if (decodedId) {
         try {
           await axios.post(
-            `http://192.168.55.101:5000/api/user/cancellation`,
+            `https://backend.clicksolver.com/api/user/cancellation`,
             {
               user_notification_id: decodedId,
             },
@@ -304,7 +310,7 @@ const WaitingUser = () => {
 
       const cs_token = await EncryptedStorage.getItem('cs_token');
       await axios.post(
-        `http://192.168.55.101:5000/api/user/action/cancel`,
+        `https://backend.clicksolver.com/api/user/action/cancel`,
         {encodedId: encodedData, screen: 'userwaiting'},
         {headers: {Authorization: `Bearer ${cs_token}`}},
       );
@@ -339,7 +345,7 @@ const WaitingUser = () => {
       setBackendLoading(true);
       try {
         const response = await axios.get(
-          `http://192.168.55.101:5000/api/checking/status`,
+          `https://backend.clicksolver.com/api/checking/status`,
           {
             params: {user_notification_id: decodedId},
           },
@@ -364,13 +370,13 @@ const WaitingUser = () => {
           const cs_token = await EncryptedStorage.getItem('cs_token');
 
           await axios.post(
-            `http://192.168.55.101:5000/api/user/action/cancel`,
+            `https://backend.clicksolver.com/api/user/action/cancel`,
             {encodedId: encodedData, screen: 'userwaiting'},
             {headers: {Authorization: `Bearer ${cs_token}`}},
           );
 
           await axios.post(
-            `http://192.168.55.101:5000/api/user/action`,
+            `https://backend.clicksolver.com/api/user/action`,
             {
               encodedId: encodedNotificationId,
               screen: 'UserNavigation',

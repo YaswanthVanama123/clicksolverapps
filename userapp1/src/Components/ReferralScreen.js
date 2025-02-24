@@ -29,7 +29,7 @@ const ReferralScreen = () => {
       try {
         const token = await EncryptedStorage.getItem('cs_token');
         if (!token) {
-          console.error("No token found in storage.");
+          console.error('No token found in storage.');
           return;
         }
 
@@ -42,27 +42,25 @@ const ReferralScreen = () => {
           }
         );
 
-        console.log('Original Data:', response.data);
-        
         if (response.data.length > 0) {
+          // We assume the first item has the referral code
           const data = response.data[0];
-          const refundCode = data.referralcode;
-          console.log("date", refundCode);
+          const code = data.referralcode;
+          setReferralCode(code);
 
-          // Set code and link
-          setReferralCode(refundCode);
-          setReferralLink(`https://play.google.com/apps/internaltest/4701348414051959035?referralCode=${refundCode}`);
+          // Construct a sample link with query param
+          setReferralLink(
+            `https://play.google.com/apps/internaltest/4701348414051959035?referralCode=${code}`
+          );
 
           // Transform referral data
-        
           const transformedData = response.data
-          .filter(item => item.name) // Only include items with a truthy name
-          .map((item, index) => ({
-            id: index,
-            name: item.name,
-            status: item.status_completed ? 'Completed' : 'Pending',
-          }));
-        
+            .filter(item => item.name) // Only include items that have a "name"
+            .map((item, index) => ({
+              id: index,
+              name: item.name,
+              status: item.status_completed ? 'Completed' : 'Pending',
+            }));
 
           setReferrals(transformedData);
         } else {
@@ -76,18 +74,13 @@ const ReferralScreen = () => {
     fetchReferrals();
   }, []);
 
-  // 1) Separate copy function for CODE
+  // ------------------ COPY & SHARE HELPERS ------------------
   const copyCodeToClipboard = () => {
-    if (referralCode) {
-      Clipboard.setString(referralCode);
-    }
+    if (referralCode) Clipboard.setString(referralCode);
   };
 
-  // 2) Separate copy function for LINK
   const copyLinkToClipboard = () => {
-    if (referralLink) {
-      Clipboard.setString(referralLink);
-    }
+    if (referralLink) Clipboard.setString(referralLink);
   };
 
   const shareReferralCode = async () => {
@@ -95,13 +88,8 @@ const ReferralScreen = () => {
       const result = await Share.share({
         message: `Join me on this amazing app! Use my referral code: ${referralCode}. Download the app now: ${referralLink}`,
       });
-
-      if (result.action === Share.sharedAction) {
-        if (result.activityType) {
-          console.log('Shared with activity type:', result.activityType);
-        } else {
-          console.log('Shared successfully');
-        }
+      if (result.action === Share.sharedAction && result.activityType) {
+        console.log('Shared with activity type:', result.activityType);
       } else if (result.action === Share.dismissedAction) {
         console.log('Share dismissed');
       }
@@ -110,22 +98,22 @@ const ReferralScreen = () => {
     }
   };
 
-  // 3) Direct or normal WhatsApp share
   const shareViaWhatsApp = () => {
-    const whatsappMessage = `Join me on this amazing app! Use my referral code: ${referralCode}. Download the app now: ${referralLink}`;
-    const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(whatsappMessage)}`;
+    const message = `Join me on this amazing app! Use my referral code: ${referralCode}. Download the app now: ${referralLink}`;
+    const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
 
     Linking.canOpenURL(whatsappUrl)
       .then(supported => {
         if (supported) {
-          return Linking.openURL(whatsappUrl);
-        } 
+          Linking.openURL(whatsappUrl);
+        } else {
+          console.log('WhatsApp is not installed or not supported on this device.');
+        }
       })
       .catch(err => console.error('Error opening WhatsApp:', err));
   };
 
-  // 4) SMS invite
-  const inviteViaSMS = (phoneNumber) => {
+  const inviteViaSMS = phoneNumber => {
     if (!phoneNumber) return;
     const smsMessage = `Join me on this amazing app! Use my referral code: ${referralCode}. Download the app now: ${referralLink}`;
     const url = `sms:${phoneNumber}?body=${encodeURIComponent(smsMessage)}`;
@@ -135,6 +123,7 @@ const ReferralScreen = () => {
     });
   };
 
+  // ------------------ CONTACTS PERMISSION & FETCH ------------------
   const requestContactsPermission = async () => {
     if (Platform.OS === 'android') {
       const granted = await PermissionsAndroid.request(
@@ -149,48 +138,14 @@ const ReferralScreen = () => {
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     }
+    // iOS or other platforms
     return true;
-  };
-
-  const renderContactItem = ({item}) => {
-    const phoneNumber = item.phoneNumbers && item.phoneNumbers.length > 0
-      ? item.phoneNumbers[0].number.replace(/\s+/g, '')
-      : null;
-
-    return (
-      <TouchableOpacity
-        style={styles.contactItem}
-        onPress={() => inviteViaSMS(phoneNumber)}
-      >
-        <View style={styles.contactAvatar}>
-          <Text style={styles.contactInitials}>
-            {item.displayName ? item.displayName[0].toUpperCase() : '?'}
-          </Text>
-        </View>
-        <View style={styles.contactDetails}>
-          <Text style={styles.contactName}>{item.displayName}</Text>
-          {item.phoneNumbers && item.phoneNumbers.length > 0 && (
-            <Text style={styles.contactNumber}>
-              {item.phoneNumbers[0].number}
-            </Text>
-          )}
-        </View>
-        <TouchableOpacity
-          style={styles.inviteButton}
-          onPress={() => inviteViaSMS(phoneNumber)}
-        >
-          <Text style={styles.inviteButtonText}>Invite</Text>
-        </TouchableOpacity>
-      </TouchableOpacity>
-    );
   };
 
   const fetchContacts = async () => {
     try {
       const permission = await requestContactsPermission();
-      if (!permission) {
-        return;
-      }
+      if (!permission) return;
 
       const contactsList = await Contacts.getAll();
       setContacts(contactsList);
@@ -200,7 +155,8 @@ const ReferralScreen = () => {
     }
   };
 
-  const renderReferralItem = ({item}) => (
+  // ------------------ RENDER HELPERS ------------------
+  const renderReferralItem = ({ item }) => (
     <View style={styles.referralItem}>
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>
@@ -215,117 +171,157 @@ const ReferralScreen = () => {
             item.status === 'Pending'
               ? styles.statusPending
               : styles.statusCompleted,
-          ]}>
+          ]}
+        >
           {item.status}
         </Text>
       </View>
     </View>
   );
 
+  const renderContactItem = ({ item }) => {
+    const phoneNumber =
+      item.phoneNumbers && item.phoneNumbers.length > 0
+        ? item.phoneNumbers[0].number.replace(/\s+/g, '')
+        : null;
+
+    return (
+      <View style={styles.contactItem}>
+        <View style={styles.contactAvatar}>
+          <Text style={styles.contactInitials}>
+            {item.displayName ? item.displayName[0].toUpperCase() : '?'}
+          </Text>
+        </View>
+        <View style={styles.contactDetails}>
+          <Text style={styles.contactName}>{item.displayName}</Text>
+          {phoneNumber && <Text style={styles.contactNumber}>{phoneNumber}</Text>}
+        </View>
+        <TouchableOpacity
+          style={styles.inviteButton}
+          onPress={() => inviteViaSMS(phoneNumber)}
+        >
+          <Text style={styles.inviteButtonText}>Invite</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  // ------------------ MAIN RENDER ------------------
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Back Button */}
-        <TouchableOpacity style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#212121" />
-        </TouchableOpacity>
 
-        {/* Title and Subtitle */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Refer Friends</Text>
-          <Text style={styles.subtitle}>Invite your friends</Text>
-          <Text style={styles.description}>
+        {/* Header Section */}
+        <View style={styles.headerSection}>
+          <TouchableOpacity style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#212121" />
+          </TouchableOpacity>
+          <Text style={styles.mainTitle}>Refer Friends</Text>
+          <Text style={styles.subTitle}>Invite your friends</Text>
+          <Text style={styles.subDescription}>
             ...to the cool new way of managing money!
           </Text>
         </View>
 
-        {/* How It Works Section */}
-        <View style={styles.howItWorks}>
-          <View style={styles.step}>
-            <Ionicons name="document-text-outline" size={20} color="#ffffff" />
-            <Text style={styles.stepText}>
+        {/* Orange Card - "How It Works" */}
+        <View style={styles.orangeCard}>
+          <View style={styles.cardRow}>
+            <Ionicons name="document-text-outline" size={20} color="#fff" />
+            <Text style={styles.cardRowText}>
               Share your referral link or code with a friend.
             </Text>
           </View>
-          <View style={styles.step}>
-            <Ionicons name="person-add-outline" size={20} color="#ffffff" />
-            <Text style={styles.stepText}>
+          <View style={styles.cardRow}>
+            <Ionicons name="person-add-outline" size={20} color="#fff" />
+            <Text style={styles.cardRowText}>
               Your friend joins using your link or code.
             </Text>
           </View>
-          <View style={styles.step}>
-            <Ionicons name="gift-outline" size={20} color="#ffffff" />
-            <Text style={styles.stepText}>
+          <View style={styles.cardRow}>
+            <Ionicons name="gift-outline" size={20} color="#fff" />
+            <Text style={styles.cardRowText}>
               Both you and your friend enjoy amazing benefits.
             </Text>
           </View>
         </View>
 
-        {/* Tabs */}
-        <View style={styles.tabs}>
+        {/* Tab Switcher */}
+        <View style={styles.tabContainer}>
           <TouchableOpacity
             style={[styles.tab, !showContacts && styles.activeTab]}
-            onPress={() => setShowContacts(false)}>
+            onPress={() => setShowContacts(false)}
+          >
             <Text style={styles.tabText}>Your Referrals</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, showContacts && styles.activeTab]}
-            onPress={fetchContacts}>
+            onPress={fetchContacts}
+          >
             <Text style={styles.tabText}>Invite Contacts</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Scrollable Content Area */}
-        <View style={{ flex: 1 }}>
+        {/* List Section */}
+        <View style={styles.listContainer}>
           {!showContacts ? (
-            referrals.length > 0 && (
+            referrals.length > 0 ? (
               <FlatList
                 data={referrals}
-                keyExtractor={(item) => item.id.toString()}
+                keyExtractor={item => item.id.toString()}
                 renderItem={renderReferralItem}
                 contentContainerStyle={{ paddingBottom: 20 }}
               />
+            ) : (
+              <Text style={styles.noDataText}>No referrals yet.</Text>
             )
           ) : (
             <FlatList
               data={contacts}
-              keyExtractor={(item) => item.recordID}
+              keyExtractor={item => item.recordID}
               renderItem={renderContactItem}
-              contentContainerStyle={[styles.contactList, { flexGrow: 1 }]}
+              contentContainerStyle={{ paddingBottom: 20 }}
             />
           )}
         </View>
 
-        {/* Referral Code Section */}
-        <View style={styles.referralCodeSection}>
+        {/* Referral Code + Copy Section */}
+        <View style={styles.referralCodeContainer}>
           <Text style={styles.referralLabel}>Your Code:</Text>
           <TouchableOpacity
-            style={styles.copyCodeContainer}
-            onPress={copyCodeToClipboard}>
-            <Text style={styles.referralCode}>{referralCode || 'N/A'}</Text>
+            style={styles.referralCodeBox}
+            onPress={copyCodeToClipboard}
+          >
+            <Text style={styles.referralCodeText}>
+              {referralCode || 'N/A'}
+            </Text>
             <Ionicons
               name="copy-outline"
-              size={20}
-              color="#ffffff"
-              style={styles.copyIcon}
+              size={18}
+              color="#fff"
+              style={{ marginLeft: 6 }}
             />
           </TouchableOpacity>
         </View>
 
         {/* Share Buttons */}
-        <View style={styles.shareButtons}>
-          <TouchableOpacity style={styles.shareButton} onPress={shareViaWhatsApp}>
-            <Ionicons name="logo-whatsapp" size={20} color="white" />
+        <View style={styles.shareButtonsContainer}>
+          <TouchableOpacity
+            style={styles.shareButton}
+            onPress={shareViaWhatsApp}
+          >
+            <Ionicons name="logo-whatsapp" size={22} color="#fff" />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.shareButton}
-            onPress={copyLinkToClipboard}>
-            <Ionicons name="link-outline" size={20} color="white" />
+            onPress={copyLinkToClipboard}
+          >
+            <Ionicons name="link-outline" size={22} color="#fff" />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.shareButton}
-            onPress={shareReferralCode}>
-            <Ionicons name="share-social-outline" size={20} color="white" />
+            onPress={shareReferralCode}
+          >
+            <Ionicons name="share-social-outline" size={22} color="#fff" />
           </TouchableOpacity>
         </View>
       </View>
@@ -333,89 +329,114 @@ const ReferralScreen = () => {
   );
 };
 
+// ------------------ STYLES ------------------
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  }, 
+    backgroundColor: '#fff',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fff',
+  },
+  /* Header */
+  headerSection: {
+    alignItems: 'center',
+    paddingTop: 10,
+    paddingHorizontal: 20,
+    marginBottom: 10,
   },
   backButton: {
-    padding: 10,
     position: 'absolute',
+    left: 20,
     top: 10,
-    left: 5,
-    zIndex: 10,
+    padding: 5,
   },
-  header: {
-    marginTop: 60,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-  },
-  title: {
+  mainTitle: {
+    marginTop: 40,
     fontSize: 24,
     fontWeight: 'bold',
     color: '#212121',
   },
-  subtitle: {
+  subTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#212121',
-    marginTop: 10,
+    marginTop: 5,
   },
-  description: {
+  subDescription: {
     fontSize: 14,
-    color: '#9e9e9e',
+    color: '#757575',
     marginTop: 5,
     textAlign: 'center',
   },
-  howItWorks: {
-    backgroundColor: '#FF8A66',
+  /* Orange Card */
+  orangeCard: {
+    backgroundColor: '#FF7043',
+    marginHorizontal: 20,
     borderRadius: 10,
-    padding: 15,
-    margin: 20,
+    padding: 16,
+    marginTop: 20,
   },
-  step: {
+  cardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 12,
   },
-  stepText: {
-    marginLeft: 10,
+  cardRowText: {
+    marginLeft: 8,
     fontSize: 14,
-    color: '#ffffff',
+    color: '#fff',
+    lineHeight: 20,
   },
-  tabs: {
+  /* Tab Switcher */
+  tabContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    marginTop: 20,
     marginHorizontal: 20,
-    marginTop: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
   },
   tab: {
-    fontSize: 16,
-    color: '#ff5722',
-    textAlign: 'center',
-    paddingVertical: 10,
     flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
   },
   activeTab: {
-    fontWeight: 'bold',
-    borderBottomWidth: 2,
-    borderBottomColor: '#4A148C',
+    borderBottomWidth: 3,
+    borderBottomColor: '#FF7043',
   },
+  tabText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  /* Lists */
+  listContainer: {
+    flex: 1,
+    marginTop: 10,
+    marginHorizontal: 20,
+  },
+  noDataText: {
+    textAlign: 'center',
+    marginTop: 30,
+    fontSize: 16,
+    color: '#9E9E9E',
+  },
+  /* Referrals */
   referralItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 20,
-    marginVertical: 10,
+    marginBottom: 12,
+    backgroundColor: '#FAFAFA',
+    borderRadius: 8,
+    padding: 10,
+    elevation: 1,
   },
   avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#ff5722',
+    backgroundColor: '#FF7043',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -430,83 +451,41 @@ const styles = StyleSheet.create({
   },
   referralName: {
     fontSize: 16,
+    fontWeight: '500',
     color: '#212121',
   },
   referralStatus: {
     fontSize: 14,
+    marginTop: 2,
   },
   statusPending: {
-    color: 'orange',
+    color: '#FB8C00',
   },
   statusCompleted: {
-    color: 'green',
+    color: '#388E3C',
   },
-  referralCodeSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginHorizontal: 20,
-    marginVertical: 20,
-  },
-  referralLabel: {
-    fontSize: 16,
-    color: '#212121',
-  },
-  copyCodeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ff5722',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 5,
-  },
-  referralCode: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
-  copyIcon: {
-    marginLeft: 5,
-  },
-  shareButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginHorizontal: 20,
-    marginBottom: 10,
-  },
-  shareButton: {
-    backgroundColor: '#ff5722',
-    padding: 15,
-    borderRadius: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    marginHorizontal: 5,
-  },
-  contactList: {
-    padding: 16,
-  },
+  /* Contacts */
   contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#FAFAFA',
     padding: 12,
     borderRadius: 8,
     marginBottom: 12,
-    elevation: 2,
+    elevation: 1,
   },
   contactAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#FF5722',
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
+    backgroundColor: '#FF7043',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   contactInitials: {
-    color: '#ffffff',
-    fontSize: 18,
+    color: '#fff',
+    fontSize: 16,
     fontWeight: 'bold',
   },
   contactDetails: {
@@ -520,17 +499,59 @@ const styles = StyleSheet.create({
   contactNumber: {
     fontSize: 14,
     color: '#757575',
+    marginTop: 2,
   },
   inviteButton: {
-    backgroundColor: '#FF5722',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    backgroundColor: '#FF7043',
+    paddingVertical: 6,
+    paddingHorizontal: 14,
     borderRadius: 6,
   },
   inviteButtonText: {
     color: '#ffffff',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  /* Referral Code + Share */
+  referralCodeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 16,
+    justifyContent: 'space-between',
+  },
+  referralLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#212121',
+  },
+  referralCodeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF7043',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  referralCodeText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+  shareButtonsContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    justifyContent: 'space-between',
+  },
+  shareButton: {
+    backgroundColor: '#FF7043',
+    padding: 14,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    marginHorizontal: 5,
   },
 });
 

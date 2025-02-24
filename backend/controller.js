@@ -775,6 +775,54 @@ const WorkerValidateOtp = (req, res) => {
   });
 };
 
+const worker = () =>{
+  const token = generateWorkerToken({ worker_id: 5 }); 
+  console.log("tok",token)
+}
+
+// worker()
+
+const accountDelete = async (req, res) => {
+  const workerId = req.user.id;
+  console.log("woek",workerId)
+  try {
+    const query = `
+      WITH track_data AS (
+        SELECT COALESCE(
+          (SELECT jsonb_array_length(track)
+           FROM useraction
+           WHERE user_id = $1
+           LIMIT 1),
+          0
+        ) AS track_length
+      ),
+      update_query AS (
+        UPDATE "user"
+        SET phone_number = NULL
+        WHERE user_id = $1
+          AND (SELECT track_length FROM track_data) = 0
+        RETURNING *
+      )
+      SELECT json_build_object(
+        'status', CASE WHEN EXISTS(SELECT 1 FROM update_query) THEN 200 ELSE 205 END,
+        'message', CASE WHEN EXISTS(SELECT 1 FROM update_query)
+                          THEN 'User phone number removed successfully.'
+                          ELSE 'Account deletion not allowed due to existing track records.'
+                     END
+      ) AS result;
+    `;
+    
+    const { rows } = await client.query(query, [workerId]);
+    const result = rows[0].result;
+    return res.status(result.status).json({ message: result.message });
+  } catch (error) {
+    console.error('Error in accountDelete:', error);
+    return res.status(500).json({ message: 'Internal Server Error.' });
+  }
+};
+
+
+
 
 // Partnerlogin function – Logs in the worker based on database checks
 const Partnerlogin = async (req, res) => {
@@ -4135,27 +4183,30 @@ const getWorkerReviewDetails = async (req, res) => {
   const workerId = req.worker.id;
   try {
     const query = `
-    SELECT 
-      f.rating, 
-      f.comment, 
-      f.created_at, 
-      ws.profile, 
-      ws.service,
-      w.name,
-      u.name AS username
-    FROM 
-      feedback f
-    JOIN 
-      workersverified w ON f.worker_id = w.worker_id
-    JOIN 
-      workerskills ws ON ws.worker_id = w.worker_id
-    JOIN 
-      "user" u ON u.user_id = f.user_id
-    WHERE 
-      f.worker_id = $1
-    ORDER BY 
-      f.created_at DESC;
-  `;
+      SELECT 
+        f.rating, 
+        f.comment, 
+        f.created_at, 
+        ws.profile, 
+        ws.service,
+        w.name,
+        u.name AS username,
+        wl.average_rating
+      FROM 
+        feedback f
+      JOIN 
+        workersverified w ON f.worker_id = w.worker_id
+      JOIN 
+        workerskills ws ON ws.worker_id = w.worker_id
+      JOIN 
+        "user" u ON u.user_id = f.user_id
+      JOIN 
+        workerlife wl ON wl.worker_id = w.worker_id
+      WHERE 
+        f.worker_id = $1
+      ORDER BY 
+        f.created_at DESC;
+    `;
 
     const { rows } = await client.query(query, [workerId]);
 
@@ -4167,6 +4218,7 @@ const getWorkerReviewDetails = async (req, res) => {
       .json({ error: "An error occurred while fetching worker reviews" });
   }
 };
+
 
 const getWorkerBookings = async (req, res) => {
   const workerId = req.worker.id;
@@ -4531,6 +4583,7 @@ const createUserAction = async (req, res) => {
     pincode,
     location,
     discount,
+    tipAmount
   } = req.body;
 
   // console.log("User action creation initiated", req.body);
@@ -4580,6 +4633,7 @@ const createUserAction = async (req, res) => {
           newAction.pincode = pincode;
           newAction.location = location;
           newAction.discount = discount;
+          newAction.tipAmount = tipAmount;
         }
         // console.log("new action anta ", newAction);
         // console.log("new action anta ra location undha", newAction.location);
@@ -4622,6 +4676,7 @@ const createUserAction = async (req, res) => {
           newAction.pincode = pincode;
           newAction.location = location;
           newAction.discount = discount;
+          newAction.tipAmount = tipAmount;
         }
 
         newTrack = [newAction];
@@ -5235,47 +5290,80 @@ const fetchLocationDetails = async (notificationId) => {
 };
 
 
+// const userCoupons = async (req, res) => {
+//   const userId = req.user.id;
+//   try {
+//     // const result = await client.query(
+//     //   `
+//     //   SELECT 
+//     //     u.service_completed,
+//     //     COALESCE(rr.coupons, NULL) AS coupons
+//     //   FROM 
+//     //     user u
+//     //   LEFT JOIN 
+//     //     referral_rewards rr
+//     //   ON 
+//     //     u.user_id = rr.user_id
+//     //   WHERE 
+//     //     u.user_id = $1
+//     //   `,
+//     //   [userId]
+//     // );
+
+//     const result = await client.query(
+//       `
+//       SELECT 
+//         u.service_completed,
+//         COALESCE(rr.coupons, NULL) AS coupons
+//       FROM 
+//         user u
+//       LEFT JOIN 
+//         referral_rewards rr
+//       ON 
+//         u.referral_code = rr.referral_code
+//       WHERE 
+//         u.user_id = $1
+//       `,
+//       [userId]
+//     );
+    
+
+//     if (result.rows.length > 0) {
+//       const { service_completed, coupons } = result.rows[0];
+//       res.json({ service_completed, coupons });
+//     } else {
+//       res.status(404).json({ message: "User not found or no data available" });
+//     }
+//   } catch (error) {
+//     console.error("Error fetching user coupons:", error);
+//     res.status(500).json({ error: "Internal Server Error" });
+//   }
+// };
+
+
 const userCoupons = async (req, res) => {
   const userId = req.user.id;
   try {
-    // const result = await client.query(
-    //   `
-    //   SELECT 
-    //     u.service_completed,
-    //     COALESCE(rr.coupons, NULL) AS coupons
-    //   FROM 
-    //     user u
-    //   LEFT JOIN 
-    //     referral_rewards rr
-    //   ON 
-    //     u.user_id = rr.user_id
-    //   WHERE 
-    //     u.user_id = $1
-    //   `,
-    //   [userId]
-    // );
-
     const result = await client.query(
       `
       SELECT 
-        u.service_completed,
+        u.service_completed, 
         COALESCE(rr.coupons, NULL) AS coupons
       FROM 
-        user u
+        public."user" u  -- "user" is a reserved keyword, so it's wrapped in double quotes
       LEFT JOIN 
         referral_rewards rr
       ON 
-        u.referral_code = rr.referral_code
+        u."referral_Code" = rr.referral_code  -- Corrected column reference
       WHERE 
         u.user_id = $1
       `,
       [userId]
     );
-    
 
     if (result.rows.length > 0) {
       const { service_completed, coupons } = result.rows[0];
-      res.json({ service_completed, coupons });
+      res.json({ service_completed, coupons: coupons || null });
     } else {
       res.status(404).json({ message: "User not found or no data available" });
     }
@@ -5284,6 +5372,8 @@ const userCoupons = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+
 
 // Check cancellation status
 const checkCancellationStatus = async (req, res) => {
@@ -5933,14 +6023,15 @@ const acceptRequest = async (req, res) => {
           n.longitude, 
           n.latitude, 
           n.discount, 
-          n.total_cost
+          n.total_cost,
+          n.tip_amount
         FROM notifications n
         WHERE n.user_notification_id = $1 
         FOR UPDATE
       ),
       insert_accept AS (
         INSERT INTO accepted 
-          (user_notification_id, worker_id, notification_id, status, user_id, service_booked, service_status, pin, longitude, latitude, time, discount, total_cost)
+          (user_notification_id, worker_id, notification_id, status, user_id, service_booked, service_status, pin, longitude, latitude, time, discount, total_cost, tip_amount)
         SELECT 
           $1, 
           $2, 
@@ -5970,7 +6061,8 @@ const acceptRequest = async (req, res) => {
             'paymentCompleted', null
           ),
           gn.discount,
-          gn.total_cost
+          gn.total_cost,
+          gn.tip_amount
         FROM get_notification gn
         RETURNING notification_id
       ),
@@ -6291,7 +6383,8 @@ const userNavigationCancel = async (req, res) => {
           complete_status,
           time,
           discount,
-          total_cost
+          total_cost,
+          tip_amount
       ),
       inserted AS (
         INSERT INTO completenotifications (
@@ -6307,7 +6400,8 @@ const userNavigationCancel = async (req, res) => {
           service_booked, 
           time,
           discount,
-          total_cost
+          total_cost,
+          tip_amount
         )
         SELECT 
           accepted_id, 
@@ -6322,7 +6416,8 @@ const userNavigationCancel = async (req, res) => {
           to_jsonb('service_booked'::text), 
           time,
           discount,
-          total_cost
+          total_cost,
+          tip_amount
         FROM updated
         RETURNING 
           worker_id, 
@@ -6775,7 +6870,8 @@ const workerNavigationCancel = async (req, res) => {
           complete_status,
           time,
           discount,
-          total_cost
+          total_cost,
+          tip_amount
       ),
       inserted AS (
         INSERT INTO completenotifications (
@@ -6791,7 +6887,8 @@ const workerNavigationCancel = async (req, res) => {
           service_booked, 
           time,
           discount,
-          total_cost
+          total_cost,
+          tip_amount
         )
         SELECT 
           accepted_id, 
@@ -6806,7 +6903,8 @@ const workerNavigationCancel = async (req, res) => {
           to_jsonb('service_booked'::text), 
           time,
           discount,
-          total_cost
+          total_cost,
+          tip_amount
         FROM updated
         RETURNING user_id, notification_id, service_booked
       )
@@ -7736,6 +7834,7 @@ async function getWorkerLocations(workerIds) {
 
 // above is the main
 const getWorkersNearby = async (req, res) => {
+  console.log("called")
   try {
     const user_id = req.user.id;
     const {
@@ -7746,12 +7845,15 @@ const getWorkersNearby = async (req, res) => {
       alternatePhoneNumber,
       serviceBooked,
       discount,
+      tipAmount
+
     } = req.body;
+    console.log(tipAmount)
     const created_at = getCurrentTimestamp();
     const serviceArray = JSON.stringify(serviceBooked);
     const serviceNames = serviceBooked.map((s) => s.serviceName);
     const totalCost =
-      serviceBooked.reduce((acc, s) => acc + s.cost, 0) - discount;
+      serviceBooked.reduce((acc, s) => acc + s.cost, 0) - discount + tipAmount;
 
     /**
      *  ┌───────────────────────────────────────────────────────┐
@@ -7905,6 +8007,8 @@ const getWorkersNearby = async (req, res) => {
       return res.status(200).json("No workers found within 2 km radius");
     }
 
+    console.log("nearbyWorkers",nearbyWorkers)
+
     /**
      *  ┌───────────────────────────────────────────────────────┐
      *  │  3) Single Query #2: Insert notifications for         │
@@ -7917,7 +8021,7 @@ const getWorkersNearby = async (req, res) => {
       INSERT INTO notifications (
         user_notification_id, user_id, worker_id,
         longitude, latitude, created_at, pin, service_booked,
-        discount, total_cost
+        discount, total_cost, tip_amount
       )
       SELECT
         $1,  -- user_notification_id
@@ -7929,7 +8033,8 @@ const getWorkersNearby = async (req, res) => {
         $6,  -- pin
         $7,  -- serviceArray
         $9,  -- discount
-        $10  -- total_cost
+        $10,  -- total_cost
+        $11
       FROM UNNEST($8::int[]) AS w(worker_id)
       RETURNING worker_id
     ),
@@ -7952,10 +8057,12 @@ const getWorkersNearby = async (req, res) => {
       nearbyWorkers, // $8 :: int[]
       discount, // $9
       totalCost, // $10
+      tipAmount
     ];
 
     const result2 = await client.query(query2, query2Params);
     const tokens = result2.rows[0].tokens || [];
+    console.log("tok",tokens)
 
     // 4) Send FCM notifications
     const encodedUserNotificationId = Buffer.from(
@@ -10840,7 +10947,8 @@ const processPayment = async (req, res) => {
           a.worker_id,
           a.time,
           a.discount,
-          a.total_cost
+          a.total_cost,
+          a.tip_amount
       ),
       upsert_workerlife AS (
         INSERT INTO workerlife (
@@ -10881,7 +10989,8 @@ const processPayment = async (req, res) => {
           worker_id,
           time,
           discount,
-          total_cost
+          total_cost,
+          tip_amount
         )
         SELECT
           ua.accepted_id,
@@ -10894,7 +11003,8 @@ const processPayment = async (req, res) => {
           ua.worker_id,
           ua.time,
           ua.discount,
-          ua.total_cost
+          ua.total_cost,
+          ua.tip_amount
         FROM update_accepted ua
         RETURNING *
       ),
@@ -10961,6 +11071,7 @@ const processPayment = async (req, res) => {
       end_time,        // $4: End time
       paymentMethod,   // $5: Payment method used in upsert_workerlife logic
       totalAmount,     // $6: Payment amount used for workerlife
+
     ];
 
     const combinedResult = await client.query(combinedQuery, values);
@@ -11270,7 +11381,7 @@ const submitFeedback = async (req, res) => {
         UPDATE workerlife
         SET 
           ratings_count = ratings_count + 1,
-          average_rating = (average_rating * (ratings_count) + (SELECT rating FROM inserted_feedback)) / (ratings_count + 1)
+          average_rating = ((average_rating::numeric * ratings_count) + (SELECT rating::numeric FROM inserted_feedback)) / (ratings_count + 1)
         WHERE worker_id = (SELECT worker_id FROM inserted_feedback)
         RETURNING worker_id, ratings_count, average_rating
       )
@@ -11289,7 +11400,7 @@ const submitFeedback = async (req, res) => {
       feedback: {
         worker_id: result.rows[0].worker_id,
         ratings_count: result.rows[0].ratings_count,
-        average_rating: result.rows[0].average_rating.toFixed(2),
+        average_rating: Number(result.rows[0].average_rating).toFixed(2)
       },
     });
   } catch (error) {
@@ -11297,6 +11408,7 @@ const submitFeedback = async (req, res) => {
     res.status(500).json({ message: "Internal server error.", error: error.message });
   }
 };
+
 
 
 // const submitFeedback = async (req, res) => {
@@ -13183,5 +13295,6 @@ module.exports = {
   userLogout,
   workerLogout,
   phoneCall,
-  UserPhoneCall
+  UserPhoneCall,
+  accountDelete
 };

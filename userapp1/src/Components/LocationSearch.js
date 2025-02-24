@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef, useCallback} from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,39 +8,39 @@ import {
   StyleSheet,
   SafeAreaView,
   BackHandler,
-  ActivityIndicator, // Import ActivityIndicator
+  ActivityIndicator,
+  useWindowDimensions
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import Entypo from 'react-native-vector-icons/Entypo';
-import {
-  useFocusEffect,
-  useNavigation,
-  useRoute,
-} from '@react-navigation/native';
-import {Places} from 'ola-maps'; // Import the Places module from ola-maps
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import { Places } from 'ola-maps';
 
-const placesClient = new Places('iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT'); // Initialize the Places client with your API key
+const placesClient = new Places('iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT');
 
 const LocationSearch = () => {
+  const { width } = useWindowDimensions();
+  const styles = dynamicStyles(width);
+
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false); // Loading state for suggestions
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [serviceArray, setServiceArray] = useState([]);
   const route = useRoute();
   const navigation = useNavigation();
-  const {serviceName} = route.params;
+  
+  // Extract serviceName, savings, tipAmount from route.params
+  const { serviceName, savings, tipAmount } = route.params || {};
   const inputRef = useRef(null);
 
-  // Fetch and set place details using ola-maps Places client
-  const fetchAndSetPlaceDetails = useCallback(async query => {
+  // 1) Places Autocomplete
+  const fetchAndSetPlaceDetails = useCallback(async (searchQuery) => {
     try {
       setLoadingSuggestions(true);
-      // Use the ola-maps Places client to get autocomplete results
-      const response = await placesClient.autocomplete(query);
-
-      if (response && response.body && response.body.predictions) {
-        const places = response.body.predictions.map(place => ({
+      const response = await placesClient.autocomplete(searchQuery);
+      if (response?.body?.predictions) {
+        const places = response.body.predictions.map((place) => ({
           id: place.place_id,
           title: place.structured_formatting.main_text,
           address: place.structured_formatting.secondary_text,
@@ -56,22 +56,33 @@ const LocationSearch = () => {
     }
   }, []);
 
+  // 2) When a suggestion is pressed, pass all keys (including savings and tipAmount)
+  const handleSuggestionPress = useCallback(
+    (item) => {
+      setQuery(item.title);
+      navigation.replace('UserLocation', { serviceName, savings, tipAmount, suggestion: item });
+      setSuggestions([]);
+    },
+    [navigation, serviceName, savings, tipAmount],
+  );
+
+  // 3) Handle hardware back: pass savings and tipAmount too
   const onBackPress = () => {
-    navigation.replace('UserLocation', {serviceName});
+    navigation.replace('UserLocation', { serviceName, savings, tipAmount });
   };
 
   useFocusEffect(
     useCallback(() => {
-      const onBackPress = () => {
-        navigation.replace('UserLocation', {serviceName});
+      const handleHardwareBack = () => {
+        onBackPress();
         return true;
       };
-      BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () =>
-        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-    }, [navigation]),
+      BackHandler.addEventListener('hardwareBackPress', handleHardwareBack);
+      return () => BackHandler.removeEventListener('hardwareBackPress', handleHardwareBack);
+    }, [navigation, serviceName, savings, tipAmount]),
   );
 
+  // 4) Fetch suggestions when query changes
   useEffect(() => {
     if (query.length > 0) {
       fetchAndSetPlaceDetails(query);
@@ -80,30 +91,22 @@ const LocationSearch = () => {
     }
   }, [query, fetchAndSetPlaceDetails]);
 
+  // 5) Store serviceName in state if available
   useEffect(() => {
     if (serviceName) {
       setServiceArray(serviceName);
     }
   }, [serviceName]);
 
+  // 6) Auto-focus the search input
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  const handleSuggestionPress = useCallback(
-    item => {
-      setQuery(item.title);
-      navigation.replace('UserLocation', {serviceName, suggestion: item});
-      setSuggestions([]);
-    },
-    [navigation, serviceName],
-  );
-
+  // 7) Render suggestion item
   const renderItem = useCallback(
-    ({item}) => (
-      <TouchableOpacity
-        style={styles.item}
-        onPress={() => handleSuggestionPress(item)}>
+    ({ item }) => (
+      <TouchableOpacity style={styles.item} onPress={() => handleSuggestionPress(item)}>
         <View style={styles.iconContainer}>
           <Icon name="location-on" size={24} color="#6e6e6e" />
         </View>
@@ -121,14 +124,15 @@ const LocationSearch = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.searchContainer}>
-        <TouchableOpacity onPress={onBackPress}>
+      {/* Fixed top search bar */}
+      <View style={styles.headerContainer}>
+        <TouchableOpacity onPress={onBackPress} style={styles.backIcon}>
           <FontAwesome6 name="arrow-left-long" size={18} color="gray" />
         </TouchableOpacity>
         <TextInput
           ref={inputRef}
           style={styles.searchInput}
-          placeholder="Search..."
+          placeholder="Search location..."
           placeholderTextColor="#1D2951"
           value={query}
           onChangeText={setQuery}
@@ -139,92 +143,85 @@ const LocationSearch = () => {
           </TouchableOpacity>
         )}
       </View>
-
+      {/* Suggestions or loader */}
       {loadingSuggestions ? (
-        <ActivityIndicator
-          size="large"
-          color="#FF5722"
-          style={styles.loader}
-        />
+        <ActivityIndicator size="large" color="#FF5722" style={styles.loader} />
       ) : (
         <FlatList
           data={suggestions}
-          keyExtractor={item => item.id}
+          keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={styles.listContainer}
+          style={styles.suggestionsList}
         />
       )}
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: 'RobotoSlab-SemiBold',
-    marginLeft: 12,
-    color: '#1D2951',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    margin: 16,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    backgroundColor: '#f9f9f9',
-  },
-  searchInput: {
-    flex: 1,
-    padding: 8,
-    paddingLeft: 15,
-    fontSize: 15,
-    color: '#1D2951',
-    fontFamily: 'RobotoSlab-Medium',
-  },
-  list: {
-    paddingHorizontal: 16,
-  },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  iconContainer: {
-    marginRight: 12,
-  },
-  textContainer: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 15,
-    fontFamily: 'RobotoSlab-SemiBold',
-    marginBottom: 4,
-    color: '#212121',
-  },
-  address: {
-    fontSize: 14,
-    color: '#4a4a4a',
-    fontFamily: 'RobotoSlab-Regular',
-  },
-  loader: {
-    marginTop: 20,
-    alignSelf: 'center',
-  },
-});
+function dynamicStyles(width) {
+  const isTablet = width >= 600;
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#fff',
+    },
+    headerContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: isTablet ? 20 : 15,
+      paddingVertical: isTablet ? 12 : 10,
+      borderBottomWidth: 1,
+      borderBottomColor: '#eee',
+      backgroundColor: '#fff',
+    },
+    backIcon: {
+      marginRight: isTablet ? 15 : 10,
+    },
+    searchInput: {
+      flex: 1,
+      padding: 8,
+      fontSize: isTablet ? 16 : 14,
+      color: '#1D2951',
+      backgroundColor: '#f9f9f9',
+      borderRadius: 8,
+      marginRight: isTablet ? 12 : 10,
+    },
+    loader: {
+      marginTop: isTablet ? 40 : 20,
+      alignSelf: 'center',
+    },
+    suggestionsList: {
+      flex: 1,
+    },
+    listContainer: {
+      paddingBottom: 20,
+    },
+    item: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: isTablet ? 14 : 12,
+      paddingHorizontal: isTablet ? 20 : 16,
+      borderBottomWidth: 1,
+      borderBottomColor: '#f0f0f0',
+    },
+    iconContainer: {
+      marginRight: 12,
+    },
+    textContainer: {
+      flex: 1,
+    },
+    title: {
+      fontSize: isTablet ? 16 : 14,
+      fontWeight: '600',
+      marginBottom: 2,
+      color: '#212121',
+    },
+    address: {
+      fontSize: isTablet ? 14 : 12,
+      color: '#4a4a4a',
+    },
+  });
+}
 
 export default LocationSearch;

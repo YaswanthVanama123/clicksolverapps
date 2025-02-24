@@ -47,7 +47,7 @@ const PendingCashbackWorkers = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.get(
-          `http://192.168.55.101:5000/api/workers/pending/cashback`,
+          `https://backend.clicksolver.com/api/workers/pending/cashback`,
           {},
         );
         console.log(response.data);

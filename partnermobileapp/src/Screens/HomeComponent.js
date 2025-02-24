@@ -71,7 +71,7 @@ const HelloWorld = () => {
 
       if (pcs_token) {
         const response = await axios.get(
-          `http://192.168.55.101:5000/api/worker/track/details`,
+          `https://backend.clicksolver.com/api/worker/track/details`,
           {
             headers: {Authorization: `Bearer ${pcs_token}`},
           },
@@ -135,7 +135,7 @@ const HelloWorld = () => {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
       await axios.post(
-        `http://192.168.55.101:5000/api/worker/store-fcm-token`,
+        `https://backend.clicksolver.com/api/worker/store-fcm-token`,
         {fcmToken: token},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
@@ -303,7 +303,7 @@ const HelloWorld = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         const fcmToken = await EncryptedStorage.getItem('fcm_token');
         await axios.post(
-          `http://192.168.55.101:5000/api/worker/store-notification`,
+          `https://backend.clicksolver.com/api/worker/store-notification`,
           {notification, fcmToken},
           {headers: {Authorization: `Bearer ${pcs_token}`}},
         );

@@ -7,30 +7,25 @@ import {
   StyleSheet,
   ScrollView,
   Modal,
+  Image,
+  useWindowDimensions,
 } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/FontAwesome6';
 import Entypo from 'react-native-vector-icons/Entypo';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
-import Icon from 'react-native-vector-icons/FontAwesome6';
 
-/**
- * OrderScreen 
- * -------------
- * Displays the cart with quantity controls, coupon application, and payment summary.
- */
 const OrderScreen = () => {
+  const { width } = useWindowDimensions();
+  const styles = dynamicStyles(width);
   const navigation = useNavigation();
   const route = useRoute();
- 
-  // Expect an array of services from route.params
   const { serviceName } = route.params || [];
 
   const [services, setServices] = useState([]);
-  const [showCoupons, setShowCoupons] = useState(true);
-
-  // Coupon and discount states
+  const [showCoupons, setShowCoupons] = useState(false);
   const [completed, setCompleted] = useState(0);
   const [couponsAvailable, setCouponsAvailable] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState(null);
@@ -38,7 +33,10 @@ const OrderScreen = () => {
   const [discountedPrice, setDiscountedPrice] = useState(0);
   const [savings, setSavings] = useState(0);
 
-  // Modal state for error messages
+  // For tip selection
+  const [selectedTip, setSelectedTip] = useState(0);
+
+  // Modal for error messages
   const [errorModalVisible, setErrorModalVisible] = useState(false);
   const [errorModalContent, setErrorModalContent] = useState({ title: '', message: '' });
 
@@ -53,13 +51,18 @@ const OrderScreen = () => {
       const updatedServices = serviceName.map((service) => {
         const baseCost = service.quantity > 0 ? service.cost / service.quantity : service.cost;
         const totalCost = baseCost * service.quantity;
-        return { ...service, baseCost, totalCost };
+        return {
+          ...service,
+          baseCost,
+          totalCost,
+          imageUrl: service.url || 'https://via.placeholder.com/100',
+        };
       });
       setServices(updatedServices);
     }
   }, [serviceName]);
 
-  // 2) Recalculate totals when services change
+  // 2) Recalculate totals when services or coupon changes
   useEffect(() => {
     let tempTotal = 0;
     services.forEach((s) => {
@@ -83,7 +86,7 @@ const OrderScreen = () => {
           const token = await EncryptedStorage.getItem('cs_token');
           if (!token) return;
           const response = await axios.post(
-            'http://192.168.55.101:5000/api/user/coupons',
+            'https://backend.clicksolver.com/api/user/coupons',
             {},
             { headers: { Authorization: `Bearer ${token}` } }
           );
@@ -164,6 +167,7 @@ const OrderScreen = () => {
 
   const handleApplyCoupon = (couponCode) => {
     if (appliedCoupon === couponCode) {
+      // Unapply if same coupon is tapped again
       setAppliedCoupon(null);
       setDiscountedPrice(totalPrice);
       setSavings(0);
@@ -177,14 +181,23 @@ const OrderScreen = () => {
   };
 
   const isCouponDisabled = (couponCode) => !COUPONS[couponCode].isAvailable();
-  const finalPrice = appliedCoupon ? discountedPrice : totalPrice;
 
-  // 7) Address Handling
+  // Final price after coupon
+  const finalPrice = appliedCoupon ? discountedPrice : totalPrice;
+  // Add tip to final price
+  const finalPriceWithTip = finalPrice + selectedTip;
+
+  // 7) Address Handling - pass tipAmount as a separate parameter
   const addAddress = async () => {
     try {
       const cs_token = await EncryptedStorage.getItem('cs_token');
       if (cs_token) {
-        navigation.push('UserLocation', { serviceName: services, savings });
+        // Pass the services array along with tipAmount and savings
+        navigation.push('UserLocation', {
+          serviceName: services,
+          tipAmount: selectedTip,
+          savings,
+        });
       } else {
         console.error('No token found, user must login');
       }
@@ -199,178 +212,206 @@ const OrderScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {/* Header */}
-        <View style={styles.headerContainer}>
-          <TouchableOpacity style={styles.backArrow} onPress={handleBackPress}>
-            <Icon name="arrow-left-long" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>My Cart</Text>
-        </View>
+      {/* Header */}
+      <View style={styles.headerContainer}>
+        <TouchableOpacity onPress={handleBackPress} style={styles.backArrow}>
+          <Icon name="arrow-left-long" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>My Cart</Text>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        {/* Divider */}
+        <View style={styles.sectionDivider} />
 
         {/* Cart Items */}
-        <View style={styles.itemCard}>
-          {services.map((service, index) => (
-            <View key={service.main_service_id} style={styles.itemRow}>
-              <Text style={styles.itemName}>{service.serviceName}</Text>
-              <View style={styles.quantityContainer}>
-                <TouchableOpacity onPress={() => decrementQuantity(index)} style={styles.quantityBtn}>
-                  <Text style={styles.quantityBtnText}>-</Text>
-                </TouchableOpacity>
-                <Text style={styles.quantityValue}>{service.quantity}</Text>
-                <TouchableOpacity onPress={() => incrementQuantity(index)} style={styles.quantityBtn}>
-                  <Text style={styles.quantityBtnText}>+</Text>
-                </TouchableOpacity>
+        {services.map((service, index) => (
+          <View key={service.main_service_id || index}>
+            <View style={styles.itemRow}>
+              <Image source={{ uri: service.imageUrl }} style={styles.itemImage} resizeMode="cover" />
+              <View style={styles.itemInfoContainer}>
+                <Text style={styles.itemName}>{service.serviceName}</Text>
+                <Text style={styles.itemPrice}>₹{service.totalCost}</Text>
               </View>
-              <Text style={styles.itemPrice}>₹{service.totalCost}</Text>
+              <View style={styles.quantityPriceContainer}>
+                <View style={styles.quantityControls}>
+                  <TouchableOpacity onPress={() => decrementQuantity(index)} style={styles.quantityBtn}>
+                    <Text style={styles.quantityBtnText}>-</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.quantityValue}>{service.quantity}</Text>
+                  <TouchableOpacity onPress={() => incrementQuantity(index)} style={styles.quantityBtn}>
+                    <Text style={styles.quantityBtnText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+                {/* <Text style={styles.itemPrice}>₹{service.totalCost}</Text> */}
+              </View>
             </View>
-          ))}
-
-          <View style={styles.horizontalButtons}>
-            <TouchableOpacity style={styles.textBtn}>
-              <Text style={styles.textBtnLabel}>Add any more</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.textBtn} onPress={handleBackPress}>
-              <Text style={styles.textBtnLabel}>+ Add more items</Text>
-            </TouchableOpacity>
+            <View style={styles.sectionDivider} />
           </View>
-        </View>
+        ))}
 
-        {/* Coupons Section */}
-        <View style={styles.couponsCard}>
-          <TouchableOpacity
-            style={styles.couponsHeader}
-            onPress={() => setShowCoupons(!showCoupons)}
-          >
-            <View style={styles.couponTitleContainer}>
-              <View style={styles.offerContainer}>
-                <MaterialIcons name="local-offer" size={20} color="#fff" />
-              </View>
-              <Text style={styles.couponsHeaderText}>Apply Coupon</Text>
-            </View>
-            <Entypo name={showCoupons ? 'chevron-up' : 'chevron-down'} size={20} color="#333" />
+        {/* Add more items */}
+        <View style={styles.addMoreContainer}>
+          <TouchableOpacity onPress={handleBackPress}>
+            <Text style={styles.addMoreText}>+ Add more items</Text>
           </TouchableOpacity>
-
-          {showCoupons && (
-            <View style={styles.couponsSection}>
-              {/* Coupon 30% */}
-              <View style={styles.couponRow}>
-                <Text style={styles.couponLabel}>{COUPONS[30].label}</Text>
-                {appliedCoupon === '30' ? (
-                  <TouchableOpacity
-                    style={styles.appliedContainer}
-                    onPress={() => handleApplyCoupon('30')}
-                  >
-                    <Entypo name="check" size={16} color="#ff4500" />
-                    <Text style={styles.appliedText}>Applied</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={[styles.applyBtn, isCouponDisabled(30) && styles.disabledBtn]}
-                    disabled={isCouponDisabled(30)}
-                    onPress={() => handleApplyCoupon('30')}
-                  >
-                    <Text style={styles.applyBtnText}>Apply</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <Text style={styles.couponDescription}>
-                Earn rewards for every referral! (Requires > 0 coupons)
-              </Text>
-
-              {/* Coupon 40% */}
-              <View style={styles.couponRow}>
-                <Text style={styles.couponLabel}>{COUPONS[40].label}</Text>
-                {appliedCoupon === '40' ? (
-                  <TouchableOpacity
-                    style={styles.appliedContainer}
-                    onPress={() => handleApplyCoupon('40')}
-                  >
-                    <Entypo name="check" size={16} color="#ff4500" />
-                    <Text style={styles.appliedText}>Applied</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={[styles.applyBtn, isCouponDisabled(40) && styles.disabledBtn]}
-                    disabled={isCouponDisabled(40)}
-                    onPress={() => handleApplyCoupon('40')}
-                  >
-                    <Text style={styles.applyBtnText}>Apply</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <Text style={styles.couponDescription}>
-                Valid only on your first service booking!
-              </Text>
-
-              {/* Coupon 35% */}
-              <View style={styles.couponRow}>
-                <Text style={styles.couponLabel}>{COUPONS[35].label}</Text>
-                {appliedCoupon === '35' ? (
-                  <TouchableOpacity
-                    style={styles.appliedContainer}
-                    onPress={() => handleApplyCoupon('35')}
-                  >
-                    <Entypo name="check" size={16} color="#ff4500" />
-                    <Text style={styles.appliedText}>Applied</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={[styles.applyBtn, isCouponDisabled(35) && styles.disabledBtn]}
-                    disabled={isCouponDisabled(35)}
-                    onPress={() => handleApplyCoupon('35')}
-                  >
-                    <Text style={styles.applyBtnText}>Apply</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <Text style={styles.couponDescription}>
-                Valid only on your first service booking!
-              </Text>
-            </View>
-          )}
         </View>
 
-        {/* Service Type Section */}
-        <View style={styles.serviceTypeCard}>
-          <Text style={styles.serviceTypeHeading}>Service Type</Text>
-          <View style={styles.serviceOption}>
-            <Text style={styles.serviceOptionTitle}>Instant Worker</Text>
-            <Text style={styles.serviceOptionDesc}>
-              A skilled worker will arrive at your location within 15 minutes,
-              ready to assist you.
+        <View style={styles.sectionDivider} />
+
+        {/* Coupon Section */}
+        <TouchableOpacity style={styles.applyCouponHeader} onPress={() => setShowCoupons(!showCoupons)}>
+          <View style={styles.couponLeft}>
+            <MaterialIcons name="local-offer" size={20} color="#fff" style={styles.couponIcon} />
+            <Text style={styles.applyCouponText}>Apply Coupon</Text>
+          </View>
+          <Entypo name={showCoupons ? 'chevron-up' : 'chevron-down'} size={20} color="#333" />
+        </TouchableOpacity>
+
+        {showCoupons && (
+          <View style={styles.couponListContainer}>
+            <View style={styles.couponRow}>
+              <Text style={styles.couponLabel}>{COUPONS[30].label}</Text>
+              {appliedCoupon === '30' ? (
+                <TouchableOpacity style={styles.appliedContainer} onPress={() => handleApplyCoupon('30')}>
+                  <Entypo name="check" size={16} color="#ff4500" />
+                  <Text style={styles.appliedText}>Applied</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.applyBtn, isCouponDisabled(30) && styles.disabledBtn]}
+                  disabled={isCouponDisabled(30)}
+                  onPress={() => handleApplyCoupon('30')}
+                >
+                  <Text style={styles.applyBtnText}>Apply</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <Text style={styles.couponDescription}>
+              Earn rewards for every referral! (Requires &gt; 0 coupons)
             </Text>
+
+            <View style={styles.couponRow}>
+              <Text style={styles.couponLabel}>{COUPONS[40].label}</Text>
+              {appliedCoupon === '40' ? (
+                <TouchableOpacity style={styles.appliedContainer} onPress={() => handleApplyCoupon('40')}>
+                  <Entypo name="check" size={16} color="#ff4500" />
+                  <Text style={styles.appliedText}>Applied</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.applyBtn, isCouponDisabled(40) && styles.disabledBtn]}
+                  disabled={isCouponDisabled(40)}
+                  onPress={() => handleApplyCoupon('40')}
+                >
+                  <Text style={styles.applyBtnText}>Apply</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <Text style={styles.couponDescription}>Valid only on your first service booking!</Text>
+
+            <View style={styles.couponRow}>
+              <Text style={styles.couponLabel}>{COUPONS[35].label}</Text>
+              {appliedCoupon === '35' ? (
+                <TouchableOpacity style={styles.appliedContainer} onPress={() => handleApplyCoupon('35')}>
+                  <Entypo name="check" size={16} color="#ff4500" />
+                  <Text style={styles.appliedText}>Applied</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.applyBtn, isCouponDisabled(35) && styles.disabledBtn]}
+                  disabled={isCouponDisabled(35)}
+                  onPress={() => handleApplyCoupon('35')}
+                >
+                  <Text style={styles.applyBtnText}>Apply</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <Text style={styles.couponDescription}>Valid only on your first service booking!</Text>
+          </View>
+        )}
+
+        <View style={styles.sectionDivider} />
+
+        {/* Tip Section */}
+        <View style={styles.tipContainer}>
+          <Text style={styles.tipTitle}>Add a tip to thank the professional</Text>
+          <View style={styles.tipOptions}>
+            {[50, 75, 100, 150, 200].map((amount) => (
+              <TouchableOpacity
+                key={amount}
+                style={[styles.tipOption, selectedTip === amount && styles.tipOptionSelected]}
+                onPress={() => {
+                  if (selectedTip === amount) {
+                    setSelectedTip(0); // remove tip if tapped again
+                  } else {
+                    setSelectedTip(amount); // set new tip
+                  }
+                }}
+              >
+                <Text style={[styles.tipOptionText, selectedTip === amount && styles.tipOptionTextSelected]}>
+                  ₹{amount}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
+
+        <View style={styles.sectionDivider} />
 
         {/* Payment Summary */}
-        <View style={styles.paymentCard}>
-          {appliedCoupon && savings > 0 ? (
-            <>
-              <Text style={styles.paymentInfo}>
-                To Pay{' '}
-                <Text style={styles.strikeThrough}>₹{totalPrice}</Text>{' '}
-                ₹{finalPrice}
+        <View style={styles.paymentSummaryContainer}>
+          <Text style={styles.paymentSummaryTitle}>Payment summary</Text>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Item total</Text>
+            {appliedCoupon && savings > 0 ? (
+              <Text style={styles.summaryValue}>
+                <Text style={styles.strikeThrough}>₹{totalPrice}</Text> ₹{finalPrice}
               </Text>
-              <Text style={styles.paymentSavings}>You saved ₹{savings} on this order!</Text>
-            </>
-          ) : (
-            <Text style={styles.paymentInfo}>To Pay ₹{totalPrice}</Text>
+            ) : (
+              <Text style={styles.summaryValue}>₹{totalPrice}</Text>
+            )}
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Taxes and Fee</Text>
+            <Text style={styles.summaryValue}>₹0</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Tip</Text>
+            <Text style={styles.summaryValue}>₹{selectedTip}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Total amount</Text>
+            <Text style={styles.summaryValue}>₹{finalPriceWithTip}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Amount to pay</Text>
+            <Text style={styles.summaryValue}>₹{finalPriceWithTip}</Text>
+          </View>
+          {appliedCoupon && savings > 0 && (
+            <Text style={styles.savingsText}>You saved ₹{savings} on this order!</Text>
           )}
         </View>
 
+        <View style={styles.sectionDivider} />
+
         {/* Address Section */}
-        <View style={styles.addressCard}>
+        <View style={styles.addressSection}>
           <Text style={styles.addressQuestion}>
             Where would you like us to send your skilled worker?
           </Text>
-          <TouchableOpacity style={styles.addressBtn} onPress={addAddress}>
-            <Text style={styles.addressBtnText}>Add address</Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* Custom Modal for error messages */}
+      {/* Bottom bar */}
+      <View style={styles.bottomBar}>
+        <Text style={styles.bottomBarTotal}>₹{finalPriceWithTip}</Text>
+        <TouchableOpacity style={styles.bottomBarButton} onPress={addAddress}>
+          <Text style={styles.bottomBarButtonText}>Add Address</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Error Modal */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -381,10 +422,7 @@ const OrderScreen = () => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{errorModalContent.title}</Text>
             <Text style={styles.modalMessage}>{errorModalContent.message}</Text>
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={() => setErrorModalVisible(false)}
-            >
+            <TouchableOpacity style={styles.modalButton} onPress={() => setErrorModalVisible(false)}>
               <Text style={styles.modalButtonText}>OK</Text>
             </TouchableOpacity>
           </View>
@@ -396,300 +434,82 @@ const OrderScreen = () => {
 
 export default OrderScreen;
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fafafa',
-  },
-  scrollContainer: {
-    paddingBottom: 40,
-  },
-  /* Header */
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#fff',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  backArrow: {
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
-  },
-  /* Item Card */
-  itemCard: {
-    backgroundColor: '#fff',
-    margin: 10,
-    padding: 16,
-    borderRadius: 10,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  itemName: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  quantityContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 12,
-  },
-  quantityBtn: {
-    backgroundColor: '#e0e0e0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  quantityBtnText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  quantityValue: {
-    marginHorizontal: 12,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  itemPrice: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#555',
-  },
-  horizontalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-  textBtn: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  textBtnLabel: {
-    fontSize: 14,
-    color: '#333',
-  },
-  /* Coupons */
-  couponsCard: {
-    backgroundColor: '#fff',
-    margin: 10,
-    padding: 16,
-    borderRadius: 10,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  couponsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  couponTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  offerContainer: {
-    backgroundColor: '#ff4500',
-    height: 30,
-    width: 30,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  couponsHeaderText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  couponsSection: {
-    marginTop: 8,
-  },
-  couponRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  couponLabel: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  couponDescription: {
-    fontSize: 12,
-    color: '#777',
-    marginBottom: 8,
-  },
-  applyBtn: {
-    backgroundColor: '#f36c21',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  applyBtnText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  disabledBtn: {
-    backgroundColor: '#ccc',
-  },
-  appliedContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ff4500',
-  },
-  appliedText: {
-    color: '#ff4500',
-    marginLeft: 6,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  /* Service Type */
-  serviceTypeCard: {
-    backgroundColor: '#fff',
-    margin: 10,
-    padding: 16,
-    borderRadius: 10,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  serviceTypeHeading: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
-  },
-  serviceOption: {
-    marginVertical: 8,
-  },
-  serviceOptionTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 4,
-  },
-  serviceOptionDesc: {
-    fontSize: 12,
-    color: '#777',
-  },
-  /* Payment Summary */
-  paymentCard: {
-    backgroundColor: '#fff',
-    margin: 10,
-    padding: 16,
-    borderRadius: 10,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  paymentInfo: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 6,
-  },
-  strikeThrough: {
-    textDecorationLine: 'line-through',
-    color: '#888',
-  },
-  paymentSavings: {
-    fontSize: 14,
-    color: 'green',
-  },
-  /* Address Section */
-  addressCard: {
-    backgroundColor: '#fff',
-    margin: 10,
-    padding: 16,
-    borderRadius: 10,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  addressQuestion: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 16,
-  },
-  addressBtn: {
-    backgroundColor: '#ff6f00',
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  addressBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  /* Modal Styles */
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
-    width: '80%',
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  modalMessage: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  modalButton: {
-    backgroundColor: '#ff6f00',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  modalButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+const dynamicStyles = (width) => {
+  const isTablet = width >= 600;
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: '#fff' },
+    contentContainer: { paddingBottom: 80 },
+    headerContainer: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#fff' },
+    backArrow: { marginRight: 12 },
+    headerTitle: { fontSize: isTablet ? 22 : 20, fontWeight: 'bold', color: '#212121' },
+    sectionDivider: { height: 8, backgroundColor: '#f5f5f5', width: '100%' },
+    membershipBanner: { backgroundColor: '#fff7f2', padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+    membershipTextContainer: { flex: 1, alignItems: 'center' },
+    membershipPlusText: { fontSize: isTablet ? 16 : 14, fontWeight: '800', textTransform: 'uppercase', color: '#ff6f00', marginBottom: 4 },
+    membershipPlan: { fontSize: isTablet ? 15 : 13, fontWeight: '600', color: '#333', marginBottom: 2 },
+    membershipBenefits: { fontSize: isTablet ? 14 : 12, color: '#666', marginBottom: 4, textAlign: 'center' },
+    membershipViewLink: { fontSize: isTablet ? 14 : 12, color: '#ff6f00', fontWeight: '600' },
+    itemRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#fff' },
+    itemImage: { width: 60, height: 60, borderRadius: 8 },
+    itemInfoContainer: { flex: 1, marginLeft: 12, justifyContent: 'center' },
+    itemName: { fontSize: isTablet ? 18 : 16, fontWeight: '600', color: '#333', marginBottom: 4 },
+    itemSubtitle: { fontSize: isTablet ? 14 : 12, color: '#777' },
+    quantityPriceContainer: { alignItems: 'flex-end', justifyContent: 'center' },
+    quantityControls: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+    quantityBtn: { backgroundColor: '#e0e0e0', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 },
+    quantityBtnText: { fontSize: isTablet ? 18 : 16, fontWeight: 'bold', color: '#333' },
+    quantityValue: { marginHorizontal: 8, fontSize: isTablet ? 16 : 14, fontWeight: '600', color: '#333' },
+    itemPrice: { fontSize: isTablet ? 16 : 14, fontWeight: '600', color: '#000' },
+    addMoreContainer: { backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 12 },
+    addMoreText: { fontSize: isTablet ? 16 : 14, color: '#ff6f00', fontWeight: '600' },
+    frequentlyContainer: { backgroundColor: '#fff', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14 },
+    frequentlyTitle: { fontSize: isTablet ? 16 : 14, fontWeight: '700', color: '#333' },
+    frequentlyItem: { width: 120, backgroundColor: '#f9f9f9', borderRadius: 8, marginRight: 12, alignItems: 'center', padding: 8 },
+    frequentlyItemImage: { width: 80, height: 80, borderRadius: 8, marginBottom: 6 },
+    frequentlyItemName: { fontSize: isTablet ? 14 : 12, fontWeight: '600', color: '#333', marginBottom: 4, textAlign: 'center' },
+    frequentlyItemPrice: { fontSize: isTablet ? 14 : 12, color: '#777', marginBottom: 6 },
+    frequentlyItemAddBtn: { backgroundColor: '#ff6f00', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 6 },
+    frequentlyItemAddBtnText: { color: '#fff', fontSize: isTablet ? 14 : 12, fontWeight: '600' },
+    applyCouponHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 14 },
+    couponLeft: { flexDirection: 'row', alignItems: 'center' },
+    couponIcon: { backgroundColor: '#ff6f00', padding: 4, borderRadius: 4, marginRight: 8 },
+    applyCouponText: { fontSize: isTablet ? 16 : 14, fontWeight: '700', color: '#333' },
+    couponListContainer: { backgroundColor: '#fff', paddingHorizontal: 16, paddingBottom: 12 },
+    couponRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
+    couponLabel: { flex: 1, fontSize: isTablet ? 15 : 13, fontWeight: '600', color: '#333', marginRight: 8 },
+    couponDescription: { fontSize: isTablet ? 13 : 11, color: '#777', marginBottom: 8, marginTop: 2 },
+    applyBtn: { backgroundColor: '#f36c21', paddingVertical: 6, paddingHorizontal: 14, borderRadius: 6 },
+    applyBtnText: { color: '#fff', fontSize: isTablet ? 14 : 12, fontWeight: '600' },
+    disabledBtn: { backgroundColor: '#ccc' },
+    appliedContainer: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 14, borderRadius: 6, borderWidth: 1, borderColor: '#ff4500' },
+    appliedText: { color: '#ff4500', marginLeft: 6, fontSize: isTablet ? 14 : 12, fontWeight: '600' },
+    tipContainer: { backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 14 },
+    tipTitle: { fontSize: isTablet ? 16 : 14, fontWeight: '700', color: '#333', marginBottom: 10 },
+    tipOptions: { flexDirection: 'row', flexWrap: 'wrap' },
+    tipOption: { backgroundColor: '#f1f1f1', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 6, marginRight: 8, marginBottom: 8 },
+    tipOptionText: { color: '#333', fontSize: isTablet ? 14 : 12, fontWeight: '600' },
+    tipOptionSelected: { backgroundColor: '#ff6f00' },
+    tipOptionTextSelected: { color: '#fff' },
+    paymentSummaryContainer: { backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 14 },
+    paymentSummaryTitle: { fontSize: isTablet ? 17 : 15, fontWeight: '700', color: '#333', marginBottom: 10 },
+    summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+    summaryLabel: { fontSize: isTablet ? 15 : 13, color: '#555' },
+    summaryValue: { fontSize: isTablet ? 15 : 13, fontWeight: '700', color: '#333' },
+    strikeThrough: { textDecorationLine: 'line-through', color: '#888' },
+    savingsText: { marginTop: 6, fontSize: isTablet ? 14 : 12, color: 'green', fontWeight: '600' },
+    addressSection: { backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 14 },
+    addressQuestion: { fontSize: isTablet ? 15 : 13, fontWeight: '600', color: '#333', marginBottom: 10 },
+    addressBtn: { backgroundColor: '#ff6f00', paddingVertical: 12, borderRadius: 6, alignItems: 'center' },
+    addressBtnText: { color: '#fff', fontSize: isTablet ? 15 : 13, fontWeight: '700' },
+    bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', paddingVertical: 14, paddingHorizontal: 16, borderTopWidth: 1, borderTopColor: '#f5f5f5' },
+    bottomBarTotal: { fontSize: isTablet ? 18 : 16, fontWeight: '700', color: '#333' },
+    bottomBarButton: { backgroundColor: '#ff6f00', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6 },
+    bottomBarButtonText: { color: '#fff', fontSize: isTablet ? 16 : 14, fontWeight: '700' },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+    modalContent: { backgroundColor: '#fff', padding: 20, borderRadius: 8, width: '80%', alignItems: 'center' },
+    modalTitle: { fontSize: isTablet ? 18 : 16, fontWeight: 'bold', marginBottom: 10 },
+    modalMessage: { fontSize: isTablet ? 16 : 14, textAlign: 'center', marginBottom: 20 },
+    modalButton: { backgroundColor: '#ff6f00', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 6 },
+    modalButtonText: { color: '#fff', fontSize: isTablet ? 16 : 14, fontWeight: '600' },
+  });
+};

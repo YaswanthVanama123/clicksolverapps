@@ -6,9 +6,9 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
-  Linking,
   Animated,
-  ActivityIndicator, // Import ActivityIndicator
+  ActivityIndicator,
+  useWindowDimensions, // <-- 1) Import useWindowDimensions
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome6';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -19,12 +19,16 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 const ServiceBookingItem = () => {
+  // 2) Get screen width & height
+  const {width, height} = useWindowDimensions();
+  // 3) Generate dynamic styles
+  const styles = dynamicStyles(width, height);
+
   const [details, setDetails] = useState({});
-  const [paymentDetails, setPaymentDetails] = useState({});
   const [serviceArray, setServiceArray] = useState([]);
   const {tracking_id} = useRoute().params;
   const [paymentExpanded, setPaymentExpanded] = useState(false);
-  const [loading, setLoading] = useState(true); // New loading state
+  const [loading, setLoading] = useState(true); // Loading state
   const [status, setStatus] = useState({}); // Status object with timestamps
 
   const navigation = useNavigation();
@@ -58,9 +62,7 @@ const ServiceBookingItem = () => {
   // Timeline data generation based on status object
   const getTimelineData = useMemo(() => {
     const statusKeys = Object.keys(status);
-    const currentStatusIndex = statusKeys.findIndex(
-      key => status[key] === null,
-    );
+    const currentStatusIndex = statusKeys.findIndex((key) => status[key] === null);
 
     return statusKeys.map((statusKey, index) => ({
       title: statusDisplayNames[statusKey],
@@ -81,10 +83,9 @@ const ServiceBookingItem = () => {
       try {
         setLoading(true);
         const response = await axios.post(
-          `http://192.168.55.101:5000/api/service/booking/item/details`,
+          `https://backend.clicksolver.com/api/service/booking/item/details`,
           {tracking_id},
         );
-        console.log(response.data);
         const {data} = response.data;
         setStatus(data.time || {});
         setDetails(data);
@@ -112,6 +113,7 @@ const ServiceBookingItem = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        {/* Header */}
         <View style={styles.header}>
           <Icon
             name="arrow-left-long"
@@ -121,6 +123,7 @@ const ServiceBookingItem = () => {
           />
           <Text style={styles.headerText}>Service Trackings</Text>
         </View>
+
         <ScrollView>
           {/* User Profile */}
           <View style={styles.profileContainer}>
@@ -215,13 +218,15 @@ const ServiceBookingItem = () => {
               style={styles.paymentSummaryContainer}
               onPress={togglePaymentDetails}
               accessibilityRole="button"
-              accessibilityLabel="Toggle Payment Details">
+              accessibilityLabel="Toggle Payment Details"
+            >
               <Text style={styles.sectionPaymentTitle}>Payment Details</Text>
               <Animated.View style={{transform: [{rotate: rotateInterpolate}]}}>
                 <Entypo name="chevron-small-right" size={20} color="#ff4500" />
               </Animated.View>
             </TouchableOpacity>
           </View>
+
           <View style={styles.sectionContainer}>
             {paymentExpanded && (
               <>
@@ -233,7 +238,7 @@ const ServiceBookingItem = () => {
                       </Text>
                       <Text style={styles.paymentValue}>
                         ₹{service.cost.toFixed(2)}
-                      </Text> 
+                      </Text>
                     </View>
                   ))}
                   {details.discount > 0 && (
@@ -245,9 +250,9 @@ const ServiceBookingItem = () => {
                     </View>
                   )}
                   <View style={styles.paymentRow}>
-                    <Text style={styles.paymentValue}> Grand Total</Text>
+                    <Text style={styles.paymentValue}>Grand Total</Text>
                     <Text style={styles.paymentValue}>
-                      ₹ {details.total_cost}
+                      ₹{details.total_cost}
                     </Text>
                   </View>
                 </View>
@@ -265,218 +270,230 @@ const ServiceBookingItem = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    paddingBottom: 12,
-    elevation: 2,
-    shadowColor: '#1D2951',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    backgroundColor: '#ffffff',
-  },
-  backIcon: {
-    marginRight: 10,
-  },
-  headerText: {
-    fontSize: 18,
-    fontFamily: 'RobotoSlab-SemiBold',
-    color: '#1D2951',
-    paddingLeft: 30,
-  },
-  profileContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 15,
-    paddingLeft: 16,
-  },
-  profileImage: {
-    width: 60,
-    height: 60,
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FF7A22',
-    borderRadius: 30,
-    marginRight: 5,
-  },
-  profileInitial: {
-    color: '#FFFFFF',
-    fontFamily: 'RobotoSlab-Medium',
-    fontSize: 22,
-  },
-  profileTextContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingRight: 16,
-  },
-  userName: {
-    fontSize: 20,
-    fontFamily: 'RobotoSlab-Medium',
-    color: '#1D2951',
-  },
-  userDesignation: {
-    fontSize: 14,
-    color: '#4a4a4a',
-    fontFamily: 'RobotoSlab-Regular',
-  },
-  horizantalLine: {
-    height: 2,
-    backgroundColor: '#F5F5F5',
-    marginBottom: 12,
-  },
-  sectionContainer: {
-    marginBottom: 16,
-    paddingLeft: 15,
-    paddingRight: 16,
-    paddingTop: 5,
-    width: '95%',
-  },
-  sectionBookedTitle: {
-    fontSize: 16,
-    fontFamily: 'RobotoSlab-SemiBold',
-    color: '#212121',
-    marginBottom: 8,
-  },
-  innerContainer: {
-    paddingLeft: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontFamily: 'RobotoSlab-SemiBold',
-    color: '#212121',
-    marginBottom: 8,
-    paddingBottom: 15,
-  },
-  serviceDetail: {
-    fontSize: 14,
-    color: '#212121',
-    fontFamily: 'RobotoSlab-Regular',
-    marginBottom: 4,
-  },
-  serviceTimeLineContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  innerContainerLine: {
-    paddingLeft: 16,
-  },
-  timelineItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  timelineTextContainer: {
-    flex: 1,
-    marginLeft: 10,
-  },
-  timelineText: {
-    fontSize: 14,
-    color: '#212121',
-    fontFamily: 'RobotoSlab-Medium',
-  },
-  timelineTime: {
-    fontSize: 10,
-    color: '#4a4a4a',
-    fontFamily: 'RobotoSlab-Regular',
-  },
-  lineSegment: {
-    width: 2,
-    height: 40,
-  },
-  PaymentItemContainer: {
-    paddingLeft: 16,
-    flexDirection: 'column',
-    gap: 5,
-  },
-  paymentRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  paymentLabel: {
-    fontSize: 12,
-    fontFamily: 'RobotoSlab-Regular',
-    color: '#212121',
-  },
-  paymentLabelHead: {
-    width: '80%',
-    fontSize: 12,
-    fontFamily: 'RobotoSlab-Regular',
-    color: '#212121',
-  },
-  paymentValue: {
-    fontSize: 14,
-    fontFamily: 'RobotoSlab-SemiBold',
-    color: '#212121',
-  },
-  addressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: 10,
-  },
-  locationPinImage: {
-    width: 20,
-    height: 20,
-    marginRight: 10,
-  },
-  addressTextContainer: {
-    marginLeft: 10,
-  },
-  address: {
-    fontSize: 12,
-    fontFamily: 'RobotoSlab-Regular',
-    color: '#212121',
-  },
-  paymentInnerContainer: {
-    padding: 10,
-    backgroundColor: '#f5f5f5',
-    marginTop: 10,
-    marginBottom: 10,
-  },
-  paymentSummaryContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionPaymentTitle: {
-    fontSize: 16,
-    fontFamily: 'RobotoSlab-SemiBold',
-    color: '#212121',
-    marginBottom: 8,
-    paddingLeft: 10,
-  },
-  payButton: {
-    backgroundColor: '#ff4500',
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginVertical: 20,
-    marginHorizontal: 20,
-  },
-  payButtonText: {
-    fontSize: 16,
-    textAlign: 'center',
-    fontFamily: 'RobotoSlab-Regular',
-    color: '#fff',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
+/**
+ * 4) DYNAMIC STYLES:
+ *    This function returns a StyleSheet whose values depend on the device width/height.
+ *    If `width >= 600`, we treat it as a tablet and scale up certain styles.
+ */
+const dynamicStyles = (width, height) => {
+  const isTablet = width >= 600;
+
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: '#FFFFFF',
+    },
+    container: {
+      flex: 1,
+      backgroundColor: '#ffffff',
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: isTablet ? 20 : 16,
+      paddingBottom: isTablet ? 16 : 12,
+      elevation: 2,
+      shadowColor: '#1D2951',
+      shadowOffset: {width: 0, height: 2},
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      backgroundColor: '#ffffff',
+    },
+    backIcon: {
+      marginRight: isTablet ? 15 : 10,
+    },
+    headerText: {
+      fontSize: isTablet ? 20 : 18,
+      fontFamily: 'RobotoSlab-SemiBold',
+      color: '#1D2951',
+      paddingLeft: isTablet ? 40 : 30,
+    },
+    profileContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: isTablet ? 20 : 15,
+      paddingLeft: isTablet ? 20 : 16,
+    },
+    profileImage: {
+      width: isTablet ? 70 : 60,
+      height: isTablet ? 70 : 60,
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#FF7A22',
+      borderRadius: isTablet ? 35 : 30,
+      marginRight: 5,
+    },
+    profileInitial: {
+      color: '#FFFFFF',
+      fontFamily: 'RobotoSlab-Medium',
+      fontSize: isTablet ? 24 : 22,
+    },
+    profileTextContainer: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingRight: isTablet ? 20 : 16,
+    },
+    userName: {
+      fontSize: isTablet ? 22 : 20,
+      fontFamily: 'RobotoSlab-Medium',
+      color: '#1D2951',
+    },
+    userDesignation: {
+      fontSize: isTablet ? 16 : 14,
+      color: '#4a4a4a',
+      fontFamily: 'RobotoSlab-Regular',
+    },
+    horizantalLine: {
+      height: 2,
+      backgroundColor: '#F5F5F5',
+      marginBottom: isTablet ? 16 : 12,
+    },
+    sectionContainer: {
+      marginBottom: isTablet ? 20 : 16,
+      paddingLeft: isTablet ? 20 : 15,
+      paddingRight: isTablet ? 20 : 16,
+      paddingTop: isTablet ? 10 : 5,
+      width: '95%',
+    },
+    sectionBookedTitle: {
+      fontSize: isTablet ? 18 : 16,
+      fontFamily: 'RobotoSlab-SemiBold',
+      color: '#212121',
+      marginBottom: 8,
+    },
+    innerContainer: {
+      paddingLeft: isTablet ? 20 : 16,
+    },
+    sectionTitle: {
+      fontSize: isTablet ? 18 : 16,
+      fontFamily: 'RobotoSlab-SemiBold',
+      color: '#212121',
+      marginBottom: 8,
+      paddingBottom: isTablet ? 20 : 15,
+    },
+    serviceDetail: {
+      fontSize: isTablet ? 16 : 14,
+      color: '#212121',
+      fontFamily: 'RobotoSlab-Regular',
+      marginBottom: 4,
+    },
+    serviceTimeLineContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    innerContainerLine: {
+      paddingLeft: isTablet ? 20 : 16,
+    },
+    timelineItem: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+    },
+    timelineIcon: {
+      marginBottom: 5,
+    },
+    timelineTextContainer: {
+      flex: 1,
+      marginLeft: 10,
+    },
+    timelineText: {
+      fontSize: isTablet ? 16 : 14,
+      color: '#212121',
+      fontFamily: 'RobotoSlab-Medium',
+    },
+    timelineTime: {
+      fontSize: isTablet ? 12 : 10,
+      color: '#4a4a4a',
+      fontFamily: 'RobotoSlab-Regular',
+    },
+    lineSegment: {
+      width: 2,
+      height: isTablet ? 50 : 40,
+    },
+    PaymentItemContainer: {
+      paddingLeft: isTablet ? 20 : 16,
+      flexDirection: 'column',
+      gap: 5,
+    },
+    paymentRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 4,
+    },
+    paymentLabel: {
+      fontSize: isTablet ? 14 : 12,
+      fontFamily: 'RobotoSlab-Regular',
+      color: '#212121',
+    },
+    paymentLabelHead: {
+      width: '80%',
+      fontSize: isTablet ? 14 : 12,
+      fontFamily: 'RobotoSlab-Regular',
+      color: '#212121',
+    },
+    paymentValue: {
+      fontSize: isTablet ? 16 : 14,
+      fontFamily: 'RobotoSlab-SemiBold',
+      color: '#212121',
+    },
+    addressContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingLeft: isTablet ? 12 : 10,
+    },
+    locationPinImage: {
+      width: isTablet ? 24 : 20,
+      height: isTablet ? 24 : 20,
+      marginRight: isTablet ? 12 : 10,
+    },
+    addressTextContainer: {
+      marginLeft: isTablet ? 12 : 10,
+    },
+    address: {
+      fontSize: isTablet ? 14 : 12,
+      fontFamily: 'RobotoSlab-Regular',
+      color: '#212121',
+    },
+    paymentInnerContainer: {
+      padding: isTablet ? 15 : 10,
+      backgroundColor: '#f5f5f5',
+      marginTop: isTablet ? 15 : 10,
+      marginBottom: isTablet ? 15 : 10,
+    },
+    paymentSummaryContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    sectionPaymentTitle: {
+      fontSize: isTablet ? 18 : 16,
+      fontFamily: 'RobotoSlab-SemiBold',
+      color: '#212121',
+      marginBottom: 8,
+      paddingLeft: isTablet ? 15 : 10,
+    },
+    payButton: {
+      backgroundColor: '#ff4500',
+      paddingVertical: isTablet ? 14 : 12,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginVertical: isTablet ? 25 : 20,
+      marginHorizontal: isTablet ? 25 : 20,
+    },
+    payButtonText: {
+      fontSize: isTablet ? 18 : 16,
+      textAlign: 'center',
+      fontFamily: 'RobotoSlab-Regular',
+      color: '#fff',
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+  });
+};
 
 export default ServiceBookingItem;

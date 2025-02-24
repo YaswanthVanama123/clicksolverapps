@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback, useRef} from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   TextInput,
@@ -9,6 +9,7 @@ import {
   Dimensions,
   Image,
   BackHandler,
+  useWindowDimensions, // <-- 1) Import useWindowDimensions
 } from 'react-native';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Entypo from 'react-native-vector-icons/Entypo';
@@ -24,8 +25,12 @@ import LottieView from 'lottie-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const SearchItem = () => {
+  // 1) Get screen width & height
+  const { width, height } = useWindowDimensions();
+  // 2) Generate dynamic styles
+  const styles = dynamicStyles(width, height);
+
   const initialPlaceholder = 'Search for ';
-  const screenWidth = Dimensions.get('window').width;
   const additionalTexts = [
     'electrician',
     'plumber',
@@ -42,7 +47,7 @@ const SearchItem = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [isFocused, setIsFocused] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
-  const inputRef = useRef(null);
+
 
   const navigation = useNavigation();
 
@@ -59,17 +64,17 @@ const SearchItem = () => {
     'Microwave repair',
   ];
 
-  /**
-   * Placeholder animation logic
-   */
+  // -----------------------------------------
+  //  Placeholder animation logic
+  // -----------------------------------------
   const updatePlaceholder = useCallback(() => {
     const word = additionalTexts[currentIndex];
     if (currentWordIndex < word.length) {
-      setPlaceholderText(prev => prev + word[currentWordIndex]);
-      setCurrentWordIndex(prev => prev + 1);
+      setPlaceholderText((prev) => prev + word[currentWordIndex]);
+      setCurrentWordIndex((prev) => prev + 1);
     } else {
       setPlaceholderText(initialPlaceholder);
-      setCurrentIndex(prev => (prev + 1) % additionalTexts.length);
+      setCurrentIndex((prev) => (prev + 1) % additionalTexts.length);
       setCurrentWordIndex(0);
     }
   }, [currentIndex, currentWordIndex, additionalTexts, initialPlaceholder]);
@@ -79,9 +84,9 @@ const SearchItem = () => {
     return () => clearInterval(interval);
   }, [updatePlaceholder]);
 
-  /**
-   * Fetch recent services from EncryptedStorage
-   */
+  // -----------------------------------------
+  //  Fetch recent services from storage
+  // -----------------------------------------
   useEffect(() => {
     const recentServicesList = async () => {
       try {
@@ -96,10 +101,10 @@ const SearchItem = () => {
     recentServicesList();
   }, []);
 
-  /**
-   * Handle user typing in the search box
-   */
-  const handleInputChange = async query => {
+  // -----------------------------------------
+  //  Input change handler
+  // -----------------------------------------
+  const handleInputChange = async (query) => {
     setSearchQuery(query);
 
     if (query.length > 0) {
@@ -107,7 +112,7 @@ const SearchItem = () => {
       setLoading(true);
       try {
         const response = await axios.get(
-          `http://192.168.55.101:5000/api/services?search=${query}`,
+          `https://backend.clicksolver.com/api/services?search=${query}`
         );
         setSuggestions(response.data);
       } catch (error) {
@@ -122,22 +127,21 @@ const SearchItem = () => {
     }
   };
 
-  /**
-   * Store a clicked service to recent services
-   */
-  const storeRecentService = useCallback(async service => {
+  // -----------------------------------------
+  //  Store a clicked service to recents
+  // -----------------------------------------
+  const storeRecentService = useCallback(async (service) => {
     try {
       const existingServicesJson = await EncryptedStorage.getItem(
-        'recentServices',
+        'recentServices'
       );
       let updatedServices = [];
       if (existingServicesJson) {
         const existingServices = JSON.parse(existingServicesJson);
-
         // Filter out any existing entry for the same service
         updatedServices = existingServices.filter(
-          existingService =>
-            existingService.main_service_id !== service.main_service_id,
+          (existingService) =>
+            existingService.main_service_id !== service.main_service_id
         );
         // Add new service at the beginning
         updatedServices.unshift(service);
@@ -150,7 +154,7 @@ const SearchItem = () => {
 
       await EncryptedStorage.setItem(
         'recentServices',
-        JSON.stringify(updatedServices),
+        JSON.stringify(updatedServices)
       );
       setRecentSearches(updatedServices);
     } catch (error) {
@@ -158,45 +162,42 @@ const SearchItem = () => {
     }
   }, []);
 
-  /**
-   * Clear the search box
-   */
+  // -----------------------------------------
+  //  Clear the search box
+  // -----------------------------------------
   const handleClear = useCallback(() => {
     setSearchQuery('');
     setSuggestions([]);
     setIsFocused(false);
   }, []);
 
-  /**
-   * Handle clicking on a suggestion (service)
-   */
+  // -----------------------------------------
+  //  On suggestion click
+  // -----------------------------------------
   const handleServiceClick = useCallback(
-    item => {
-      // Store the recent service
+    (item) => {
       storeRecentService(item);
-      // Navigate to the ServiceBooking screen with the required parameters
       navigation.push('ServiceBooking', {
         serviceName: item.service_category,
       });
     },
-    [navigation, storeRecentService],
+    [navigation, storeRecentService]
   );
 
-  /**
-   * Render a single suggestion item
-   */
+  // -----------------------------------------
+  //  Render a single suggestion item
+  // -----------------------------------------
   const renderSuggestionItem = (item, index) => (
     <TouchableOpacity
       key={index}
       style={styles.suggestionItem}
-      onPress={() => handleServiceClick(item)}>
-      {console.log('items are there', item)}
-      {/* <Image
-        source={{uri: item.service_urls || 'https://via.placeholder.com/150'}}
-        style={styles.suggestionImage}
-      /> */}
+      onPress={() => handleServiceClick(item)}
+    >
       <Image
-        source={{uri: item.service_details.urls || 'https://via.placeholder.com/150'}}
+        source={{
+          uri:
+            item.service_details?.urls || 'https://via.placeholder.com/150',
+        }}
         style={styles.suggestionImage}
       />
       <View style={styles.textContainer}>
@@ -208,9 +209,9 @@ const SearchItem = () => {
     </TouchableOpacity>
   );
 
-  /**
-   * Render a single recent search item
-   */
+  // -----------------------------------------
+  //  Render a single recent search item
+  // -----------------------------------------
   const renderRecentSearchItem = (item, index) => (
     <TouchableOpacity
       key={`${item.main_service_id}-${index}`}
@@ -219,7 +220,8 @@ const SearchItem = () => {
         navigation.push('ServiceBooking', {
           serviceName: item.service_category,
         })
-      }>
+      }
+    >
       <View style={styles.recentIcon}>
         <Entypo name="back-in-time" size={30} color="#d7d7d7" />
       </View>
@@ -227,9 +229,9 @@ const SearchItem = () => {
     </TouchableOpacity>
   );
 
-  /**
-   * Render trending searches
-   */
+  // -----------------------------------------
+  //  Render trending searches
+  // -----------------------------------------
   const renderTrendingSearches = () =>
     trendingSearches.map((item, index) => (
       <TouchableOpacity key={index} style={styles.trendingItem}>
@@ -237,9 +239,9 @@ const SearchItem = () => {
       </TouchableOpacity>
     ));
 
-  /**
-   * Override back button behavior
-   */
+  // -----------------------------------------
+  //  Override back button
+  // -----------------------------------------
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -253,25 +255,26 @@ const SearchItem = () => {
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () =>
         BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-    }, [navigation]),
+    }, [navigation])
   );
 
-  /**
-   * Handle going back (arrow left)
-   */
+  // -----------------------------------------
+  //  Handle going back
+  // -----------------------------------------
   const handleHome = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
 
-  /**
-   * Focus the input whenever this screen is in focus
-   */
+  // -----------------------------------------
+  //  Focus the input whenever screen is in focus
+  // -----------------------------------------
+  const inputRef = useRef(null);
   useFocusEffect(
     useCallback(() => {
       if (inputRef.current) {
         inputRef.current.focus();
       }
-    }, []),
+    }, [])
   );
 
   return (
@@ -282,7 +285,7 @@ const SearchItem = () => {
           <TouchableOpacity onPress={handleHome}>
             <AntDesign
               name="arrowleft"
-              size={20}
+              size={isFocused ? 22 : 20}
               color="#000"
               style={styles.icon}
             />
@@ -293,7 +296,6 @@ const SearchItem = () => {
               style={styles.searchInput}
               placeholder={placeholderText}
               placeholderTextColor="#000"
-              fontFamily="RobotoSlab-Regular"
               value={searchQuery}
               onChangeText={handleInputChange}
               onFocus={() => setIsFocused(true)}
@@ -311,36 +313,37 @@ const SearchItem = () => {
         {/* Otherwise, show either no results or recents + trending */}
         <ScrollView
           style={styles.scrollContainer}
-          keyboardShouldPersistTaps="handled">
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Show suggestions if there are any and user is focused */}
           {isFocused && suggestions.length > 0 && (
             <View style={styles.suggestionsList}>
               {suggestions.map((item, index) =>
-                renderSuggestionItem(item, index),
+                renderSuggestionItem(item, index)
               )}
             </View>
-          )}
+          )} 
 
           {/* No results found scenario */}
-          {searchQuery.length > 0 && suggestions.length === 0 && !loading && (
-            <View style={styles.noResultsContainer}>
-              <MaterialIcons name="search-off" size={45} color="#000" />
-              <Text style={styles.noResultsText}>No results found</Text>
-              <Text style={styles.noResultsSubText}>
-                We couldn't find what you were looking for. Please check your
-                keywords again!
-              </Text>
-              <View
-                style={[styles.horizontalLine, {width: screenWidth, height: 8}]}
-              />
-              <View style={styles.trendingSearchesContainer}>
-                <Text style={styles.sectionTitle}>Trending searches</Text>
-                <View style={styles.trendingItemsContainer}>
-                  {renderTrendingSearches()}
+          {searchQuery.length > 0 &&
+            suggestions.length === 0 &&
+            !loading && (
+              <View style={styles.noResultsContainer}>
+                <MaterialIcons name="search-off" size={45} color="#000" />
+                <Text style={styles.noResultsText}>No results found</Text>
+                <Text style={styles.noResultsSubText}>
+                  We couldn't find what you were looking for. Please check your
+                  keywords again!
+                </Text>
+                <View style={[styles.horizontalLine, { width, height: 8 }]} />
+                <View style={styles.trendingSearchesContainer}>
+                  <Text style={styles.sectionTitle}>Trending searches</Text>
+                  <View style={styles.trendingItemsContainer}>
+                    {renderTrendingSearches()}
+                  </View>
                 </View>
               </View>
-            </View>
-          )}
+            )}
 
           {/* Show Recents + Trending only when there's no search query 
               or no suggestions (i.e., user hasn't typed or has cleared the input) */}
@@ -350,13 +353,11 @@ const SearchItem = () => {
               <View style={styles.recentSearchesContainer}>
                 <Text style={styles.sectionTitle}>Recents</Text>
                 {recentSearches.map((item, index) =>
-                  renderRecentSearchItem(item, index),
+                  renderRecentSearchItem(item, index)
                 )}
               </View>
 
-              <View
-                style={[styles.horizontalLine, {width: screenWidth, height: 8}]}
-              />
+              <View style={[styles.horizontalLine, { width, height: 8 }]} />
 
               {/* Trending */}
               <View style={styles.trendingSearchesContainer}>
@@ -383,160 +384,171 @@ const SearchItem = () => {
   );
 };
 
-export default SearchItem;
+/**
+ * 3) A helper function that returns a StyleSheet whose values depend on the device width/height.
+ *    If `width >= 600`, we treat it as a tablet and scale up certain styles (font sizes, spacing, etc.).
+ */
+function dynamicStyles(width, height) {
+  const isTablet = width >= 600;
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },  
-  mainContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  recentIcon: {
-    padding: 5,
-    backgroundColor: '#F8F8F8',
-    borderRadius: 10,
-  },
-  container: {
-    width: '100%',
-    backgroundColor: '#fff',
-  },
-  noResultsContainer: {
-    alignItems: 'center',
-    marginTop: 30,
-    paddingHorizontal: 20,
-  },
-  loadingAnimation: {
-    width: '100%',
-    height: 100,
-  },
-  noResultsText: {
-    fontSize: 20,
-    color: '#555555',
-    fontFamily: 'RobotoSlab-Medium',
-  },
-  noResultsSubText: {
-    fontSize: 14,
-    color: '#777777',
-    textAlign: 'center',
-    marginVertical: 20,
-    padding: 6,
-    fontFamily: 'RobotoSlab-Medium',
-  },
-  horizontalLine: {
-    backgroundColor: '#F0F0F0',
-    marginVertical: 10,
-  },
-  searchInputContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  clearIcon: {
-    position: 'absolute',
-    right: 10,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    backgroundColor: '#ffffff',
-    margin: 10,
-  },
-  icon: {
-    paddingLeft: 10,
-  },
-  searchInput: {
-    flex: 1,
-    height: 40,
-    paddingLeft: 10,
-    color: '#1D2951',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  searchSuggestionsContainer: {
-    marginTop: 15,
-  },
-  recentSearchesContainer: {
-    marginBottom: 15,
-    padding: 10,
-  },
-  sectionTitle: {
-    fontFamily: 'RobotoSlab-Medium',
-    marginBottom: 10,
-    fontSize: 16,
-    color: '#000',
-  },
-  recentItem: {
-    display: 'flex',
-    flexDirection: 'row',
-    gap: 20,
-    paddingVertical: 10,
-  },
-  recentText: {
-    color: '#000',
-    alignSelf: 'center',
-    fontFamily: 'RobotoSlab-Regular',
-  },
-  trendingSearchesContainer: {
-    marginBottom: 15,
-    padding: 10,
-  },
-  trendingItemsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  trendingItem: {
-    padding: 10,
-    borderRadius: 20,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    marginRight: 10,
-    marginBottom: 10,
-  },
-  trendingText: {
-    color: '#000',
-    fontFamily: 'RobotoSlab-Regular',
-  },
-  suggestionsList: {
-    marginTop: 5,
-    backgroundColor: '#fff',
-    borderRadius: 5,
-  },
-  suggestionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 15,
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  suggestionImage: {
-    width: 70,
-    height: 65,
-    borderRadius: 5,
-    marginRight: 10,
-  },
-  textContainer: {
-    flex: 1,
-  },
-  SuggestionText: {
-    color: '#1D2951',
-    fontWeight: '500',
-    fontSize: 16,
-    fontFamily: 'RobotoSlab-Medium',
-  },
-  SuggestionDescription: {
-    fontSize: 12,
-    color: '#4a4a4a',
-    fontFamily: 'RobotoSlab-Regular',
-  },
-});
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: '#FFFFFF',
+    },
+    mainContainer: {
+      flex: 1,
+      backgroundColor: '#fff',
+    },
+    scrollContainer: {
+      flex: 1,
+    },
+    container: {
+      width: '100%',
+      backgroundColor: '#fff',
+    },
+    noResultsContainer: {
+      alignItems: 'center',
+      marginTop: isTablet ? 40 : 30,
+      paddingHorizontal: isTablet ? 30 : 20,
+    },
+    loadingAnimation: {
+      width: '100%',
+      height: 100,
+    },
+    noResultsText: {
+      fontSize: isTablet ? 22 : 20,
+      color: '#555555',
+      fontFamily: 'RobotoSlab-Medium',
+    },
+    noResultsSubText: {
+      fontSize: isTablet ? 16 : 14,
+      color: '#777777',
+      textAlign: 'center',
+      marginVertical: isTablet ? 24 : 20,
+      padding: 6,
+      fontFamily: 'RobotoSlab-Medium',
+    },
+    horizontalLine: {
+      backgroundColor: '#F0F0F0',
+      marginVertical: 10,
+    },
+    searchBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderColor: '#ccc',
+      borderWidth: 1,
+      borderRadius: 5,
+      backgroundColor: '#ffffff',
+      margin: isTablet ? 15 : 10,
+      paddingHorizontal: isTablet ? 10 : 5,
+    },
+    icon: {
+      paddingLeft: isTablet ? 10 : 5,
+    },
+    searchInputContainer: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      position: 'relative',
+    },
+    searchInput: {
+      flex: 1,
+      height: isTablet ? 50 : 40,
+      paddingLeft: 10,
+      color: '#1D2951',
+      fontWeight: '600',
+      fontSize: isTablet ? 16 : 14,
+      fontFamily: 'RobotoSlab-Regular',
+    },
+    clearIcon: {
+      position: 'absolute',
+      right: 10,
+    },
+    searchSuggestionsContainer: {
+      marginTop: isTablet ? 20 : 15,
+    },
+    recentSearchesContainer: {
+      marginBottom: 15,
+      padding: isTablet ? 15 : 10,
+    },
+    sectionTitle: {
+      fontFamily: 'RobotoSlab-Medium',
+      marginBottom: 10,
+      fontSize: isTablet ? 18 : 16,
+      color: '#000',
+    },
+    recentItem: {
+      flexDirection: 'row',
+      gap: 20,
+      paddingVertical: 10,
+    },
+    recentIcon: {
+      padding: 5,
+      backgroundColor: '#F8F8F8',
+      borderRadius: 10,
+    },
+    recentText: {
+      color: '#000',
+      alignSelf: 'center',
+      fontFamily: 'RobotoSlab-Regular',
+      fontSize: isTablet ? 16 : 14,
+    },
+    trendingSearchesContainer: {
+      marginBottom: 15,
+      padding: isTablet ? 15 : 10,
+    },
+    trendingItemsContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+    trendingItem: {
+      padding: isTablet ? 12 : 10,
+      borderRadius: 20,
+      borderColor: '#ccc',
+      borderWidth: 1,
+      marginRight: 10,
+      marginBottom: 10,
+    },
+    trendingText: {
+      color: '#000',
+      fontFamily: 'RobotoSlab-Regular',
+      fontSize: isTablet ? 16 : 14,
+    },
+    suggestionsList: {
+      marginTop: 5,
+      backgroundColor: '#fff',
+      borderRadius: 5,
+    },
+    suggestionItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 15,
+      padding: isTablet ? 12 : 10,
+      borderBottomWidth: 1,
+      borderBottomColor: '#eee',
+    },
+    suggestionImage: {
+      width: isTablet ? 85 : 70,
+      height: isTablet ? 80 : 65,
+      borderRadius: 5,
+      marginRight: 10,
+    },
+    textContainer: {
+      flex: 1,
+    },
+    SuggestionText: {
+      color: '#1D2951',
+      fontWeight: '500',
+      fontSize: isTablet ? 18 : 16,
+      fontFamily: 'RobotoSlab-Medium',
+    },
+    SuggestionDescription: {
+      fontSize: isTablet ? 14 : 12,
+      color: '#4a4a4a',
+      fontFamily: 'RobotoSlab-Regular',
+    },
+  });
+}
+
+export default SearchItem;

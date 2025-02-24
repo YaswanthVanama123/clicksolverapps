@@ -43,7 +43,7 @@ const OTPVerification = ({route}) => {
   const checkCancellationStatus = async () => {
     try {
       const {data} = await axios.get(
-        `http://192.168.55.101:5000/api/worker/cancelled/status`,
+        `https://backend.clicksolver.com/api/worker/cancelled/status`,
         {
           params: {notification_id: decodedId},
         },
@@ -52,7 +52,7 @@ const OTPVerification = ({route}) => {
       if (data.notificationStatus === 'usercanceled') {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         await axios.post(
-          `http://192.168.55.101:5000/api/worker/action`,
+          `https://backend.clicksolver.com/api/worker/action`,
           {encodedId: '', screen: ''},
           {headers: {Authorization: `Bearer ${pcs_token}`}},
         );
@@ -83,7 +83,7 @@ const OTPVerification = ({route}) => {
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const {data, status} = await axios.post(
-        `http://192.168.55.101:5000/api/pin/verification`,
+        `https://backend.clicksolver.com/api/pin/verification`,
         {notification_id: decodedId, otp: enteredOtp},
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
@@ -93,7 +93,7 @@ const OTPVerification = ({route}) => {
         await EncryptedStorage.setItem('start_time', data.timeResult);
 
         await axios.post(
-          `http://192.168.55.101:5000/api/worker/action`,
+          `https://backend.clicksolver.com/api/worker/action`,
           {encodedId, screen: 'worktimescreen'},
           {headers: {Authorization: `Bearer ${pcs_token}`}},
         );

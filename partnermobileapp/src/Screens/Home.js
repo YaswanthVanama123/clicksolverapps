@@ -1,5 +1,3 @@
-// HelloWorld.js
-
 import React, {useState, useEffect, useCallback} from 'react';
 import {
   Dimensions,
@@ -8,7 +6,7 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  Modal,  // <-- Make sure to import Modal
+  Modal,
 } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 Mapbox.setAccessToken(
@@ -38,11 +36,17 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 // Import the LocationTracker component
 import LocationTracker from './LocationTracker';
 
+// 1) We’ll use useWindowDimensions for responsive styling
+import { useWindowDimensions } from 'react-native';
+
 const HomeScreen = () => {
+  // 2) Grab screen width & height
+  const { width, height } = useWindowDimensions();
+  // 3) Create dynamic styles
+  const styles = dynamicStyles(width, height);
+
   const [center, setCenter] = useState([0, 0]);
   const [workerLocation, setWorkerLocation] = useState([]);
-  const screenHeight = Dimensions.get('window').height;
-  const screenWidth = Dimensions.get('window').width;
   const navigation = useNavigation();
   const [notificationsArray, setNotificationsArray] = useState([]);
   const [screenName, setScreenName] = useState(null);
@@ -71,25 +75,21 @@ const HomeScreen = () => {
     const currentDate = new Date();
 
     // Filter notifications received within the past 10 minutes
-    const filteredNotifications = notifications.filter(noti => {
+    const filteredNotifications = notifications.filter((noti) => {
       const [notiDatePart, notiTimePart] = noti.receivedAt.split(', ');
       const [notiDay, notiMonth, notiYear] = notiDatePart.split('/');
       const parsedNotiReceivedAt = `${notiYear}-${notiMonth}-${notiDay}T${notiTimePart}`;
       const notiReceivedAt = new Date(parsedNotiReceivedAt);
 
       const timeDifferenceInMinutes =
-        (currentDate - notiReceivedAt) / (1000 * 60); // milliseconds to minutes
+        (currentDate - notiReceivedAt) / (1000 * 60); // ms -> min
 
       return timeDifferenceInMinutes <= 10;
     });
 
-    // Update the notifications array with the filtered notifications
     notifications = filteredNotifications;
-
-    // Update the notifications array and store locally
     setNotificationsArray(notifications);
 
-    // Store updated notifications in local storage
     await EncryptedStorage.setItem(
       'Requestnotifications',
       JSON.stringify(notifications),
@@ -98,12 +98,11 @@ const HomeScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      // Fetch notifications when the screen gains focus
       fetchNotifications();
     }, [fetchNotifications]),
   );
 
-  const handleScroll = event => {
+  const handleScroll = (event) => {
     const offsetY = event.nativeEvent.contentOffset.y;
     const containerHeight = event.nativeEvent.layoutMeasurement.height;
     const contentHeight = event.nativeEvent.contentSize.height;
@@ -118,32 +117,29 @@ const HomeScreen = () => {
   const fetchTrackDetails = async () => {
     try {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
-  
       if (pcs_token) {
         const response = await axios.get(
-          `http://192.168.55.101:5000/api/worker/track/details`,
+          `https://backend.clicksolver.com/api/worker/track/details`,
           {
             headers: { Authorization: `Bearer ${pcs_token}` },
           }
         );
-  
+
         const { route, parameter } = response.data;
         const params = parameter ? JSON.parse(parameter) : null;
-  
-        // Extract screen name safely
-        const screenName = route || null;
 
-        console.log("scr",response.data)
-  
-        // Remove "workerInAction" if there's no route OR if screen matches specific screens
+        const screenName = route || null;
+        console.log("scr", response.data);
+
+        // If no route or if route is "Paymentscreen"/"worktimescreen" => remove "workerInAction"
         if (!route || screenName === "Paymentscreen" || screenName === "worktimescreen") {
           console.log(`Removing workerInAction due to screen: ${screenName || "No Route"}`);
           await EncryptedStorage.removeItem("workerInAction");
         }
-  
-        setScreenName(screenName || ""); // Default to empty string if null
-        setParams(params || {}); // Default to empty object if no parameters
-        setMessageBoxDisplay(!!route); // Show message box if route exists
+
+        setScreenName(screenName || "");
+        setParams(params || {});
+        setMessageBoxDisplay(!!route);
       } else {
         console.log("No pcs_token found, removing workerInAction key and redirecting to Login");
         await EncryptedStorage.removeItem("workerInAction");
@@ -154,25 +150,20 @@ const HomeScreen = () => {
       await EncryptedStorage.removeItem("workerInAction"); // Ensure cleanup on error
     }
   };
-  
 
-  // Function to toggle tracking
   const toggleSwitch = async () => {
-    setIsEnabled(prevState => {
+    setIsEnabled((prevState) => {
       const newEnabledState = !prevState;
-
       EncryptedStorage.setItem(
         'trackingEnabled',
         JSON.stringify(newEnabledState),
-      ).catch(error => {
+      ).catch((error) => {
         console.error('Error saving enabled state:', error);
       });
-
       return newEnabledState;
     });
   };
 
-  // Fetch tracking state
   const fetchTrackingState = async () => {
     try {
       const storedState = await EncryptedStorage.getItem('trackingEnabled');
@@ -191,14 +182,11 @@ const HomeScreen = () => {
   /**
    * STEP 1 of 2:
    * acceptRequest checks if the services include "inspection" (case-insensitive).
-   * If yes, shows a confirmation modal. If not, calls finalizeAcceptRequest directly.
    */
-  const acceptRequest = async userNotificationId => {
+  const acceptRequest = async (userNotificationId) => {
     const decodedId = Buffer.from(userNotificationId, 'base64').toString('ascii');
-
-    // Locate the corresponding notification
     const notif = notificationsArray.find(
-      n => n.data.user_notification_id === userNotificationId,
+      (n) => n.data.user_notification_id === userNotificationId
     );
 
     let requiresInspectionConfirmation = false;
@@ -206,9 +194,8 @@ const HomeScreen = () => {
     if (notif && notif.data.service) {
       try {
         const serviceData = JSON.parse(notif.data.service);
-        // Check if any serviceName includes "inspection" (case-insensitive)
-        requiresInspectionConfirmation = serviceData.some(service =>
-          service.serviceName.toLowerCase().includes('inspection'),
+        requiresInspectionConfirmation = serviceData.some((s) =>
+          s.serviceName.toLowerCase().includes('inspection')
         );
       } catch (error) {
         console.error('Error parsing service data:', error);
@@ -216,57 +203,50 @@ const HomeScreen = () => {
     }
 
     if (requiresInspectionConfirmation) {
-      // Show the inspection modal
       setPendingNotificationId(userNotificationId);
       setInspectionModalVisible(true);
       return;
     }
 
-    // Otherwise, no inspection needed -> finalize acceptance immediately
+    // Otherwise finalize acceptance
     await finalizeAcceptRequest(userNotificationId);
   };
 
   /**
    * STEP 2 of 2:
-   * finalizeAcceptRequest contains the original acceptance logic
+   * finalizeAcceptRequest => original acceptance logic
    */
-  const finalizeAcceptRequest = async userNotificationId => {
+  const finalizeAcceptRequest = async (userNotificationId) => {
     const decodedId = Buffer.from(userNotificationId, 'base64').toString('ascii');
-
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const response = await axios.post(
-        `http://192.168.55.101:5000/api/accept/request`,
-        {user_notification_id: decodedId},
-        {headers: {Authorization: `Bearer ${jwtToken}`}},
+        `https://backend.clicksolver.com/api/accept/request`,
+        { user_notification_id: decodedId },
+        { headers: { Authorization: `Bearer ${jwtToken}` } },
       );
 
       if (response.status === 200) {
-        // Remove the accepted notification from state & local storage
-        setNotificationsArray(prevNotifications => {
-          const updatedNotifications = prevNotifications.filter(
-            notif => notif.data.user_notification_id !== userNotificationId,
+        // Remove the accepted notification
+        setNotificationsArray((prev) => {
+          const updated = prev.filter(
+            (n) => n.data.user_notification_id !== userNotificationId
           );
           EncryptedStorage.setItem(
             'Requestnotifications',
-            JSON.stringify(updatedNotifications),
+            JSON.stringify(updated),
           );
-          return updatedNotifications;
+          return updated;
         });
 
-        const {notificationId} = response.data;
-        const encodedNotificationId = Buffer.from(
-          notificationId.toString(),
-        ).toString('base64');
+        const { notificationId } = response.data;
+        const encodedNotificationId = Buffer.from(notificationId.toString()).toString('base64');
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `http://192.168.55.101:5000/api/worker/action`,
-          {
-            encodedId: encodedNotificationId,
-            screen: 'UserNavigation',
-          },
-          {headers: {Authorization: `Bearer ${pcs_token}`}},
+          `https://backend.clicksolver.com/api/worker/action`,
+          { encodedId: encodedNotificationId, screen: 'UserNavigation' },
+          { headers: { Authorization: `Bearer ${pcs_token}` } },
         );
 
         await EncryptedStorage.setItem('workerInAction', 'true');
@@ -275,30 +255,22 @@ const HomeScreen = () => {
           CommonActions.reset({
             index: 0,
             routes: [
-              {
-                name: 'UserNavigation',
-                params: {encodedId: encodedNotificationId},
-              },
+              { name: 'UserNavigation', params: { encodedId: encodedNotificationId } },
             ],
-          }),
+          })
         );
       } else {
-        // Handle error case
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         await axios.post(
-          `http://192.168.55.101:5000/api/worker/action`,
-          {
-            encodedId: '',
-            screen: '',
-          },
-          {headers: {Authorization: `Bearer ${pcs_token}`}},
+          `https://backend.clicksolver.com/api/worker/action`,
+          { encodedId: '', screen: '' },
+          { headers: { Authorization: `Bearer ${pcs_token}` } },
         );
-
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
-          }),
+            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
+          })
         );
       }
     } catch (error) {
@@ -306,36 +278,23 @@ const HomeScreen = () => {
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
-        }),
+          routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
+        })
       );
     }
   };
 
-  const rejectNotification = async userNotificationId => {
+  const rejectNotification = async (userNotificationId) => {
     try {
-      // Retrieve the existing notifications
       const storedNotifications = await EncryptedStorage.getItem(
-        'Requestnotifications',
+        'Requestnotifications'
       );
-      const notifications = storedNotifications
-        ? JSON.parse(storedNotifications)
-        : [];
-
-      // Filter out the notification with the matching userNotificationId
-      const updatedNotifications = notifications.filter(
-        notification =>
-          notification.data.user_notification_id !== userNotificationId,
+      const notifications = storedNotifications ? JSON.parse(storedNotifications) : [];
+      const updated = notifications.filter(
+        (n) => n.data.user_notification_id !== userNotificationId
       );
-
-      // Store the updated notifications back in EncryptedStorage
-      await EncryptedStorage.setItem(
-        'Requestnotifications',
-        JSON.stringify(updatedNotifications),
-      );
-
-      // Update state with the new notifications array
-      setNotificationsArray(updatedNotifications);
+      await EncryptedStorage.setItem('Requestnotifications', JSON.stringify(updated));
+      setNotificationsArray(updated);
     } catch (error) {
       console.error('Failed to remove notification:', error);
     }
@@ -379,39 +338,29 @@ const HomeScreen = () => {
   // Get FCM tokens
   const getTokens = async () => {
     try {
-      // Check if FCM token already exists in EncryptedStorage
       const storedToken = await EncryptedStorage.getItem('fcm_token');
-
       if (storedToken) {
         console.log('FCM token already exists, skipping backend update.');
-        return; // Skip sending to the backend
+        return;
       }
-
-      // Fetch new FCM token
       const newToken = await messaging().getToken();
-
       if (!newToken) {
         console.error('Failed to retrieve FCM token.');
         return;
       }
-
-      // Store the new token in EncryptedStorage
       await EncryptedStorage.setItem('fcm_token', newToken);
 
-      // Get PCS token for authorization
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       if (!pcs_token) {
         console.error('No PCS token found, skipping FCM update.');
         return;
       }
 
-      // Send the new token to the backend
       await axios.post(
-        `http://192.168.55.101:5000/api/worker/store-fcm-token`,
-        {fcmToken: newToken},
-        {headers: {Authorization: `Bearer ${pcs_token}`}},
+        `https://backend.clicksolver.com/api/worker/store-fcm-token`,
+        { fcmToken: newToken },
+        { headers: { Authorization: `Bearer ${pcs_token}` } },
       );
-
       console.log('New FCM token stored and sent to backend.');
     } catch (error) {
       console.error('Error handling FCM token:', error);
@@ -433,6 +382,7 @@ const HomeScreen = () => {
   );
 
   useEffect(() => {
+    // Create channel
     PushNotification.createChannel(
       {
         channelId: 'default-channel-id',
@@ -442,53 +392,28 @@ const HomeScreen = () => {
         importance: 4,
         vibrate: true,
       },
-      created => console.log(`createChannel returned ''`),
+      (created) => console.log(`createChannel returned ''`),
     );
 
-    const storeNotificationLocally = async notification => {
-      console.log('called atleast');
-      // Check if notification has notification.data.notification_id
+    const storeNotificationLocally = async (notification) => {
       if (notification.data.screen === 'Acceptance') {
         try {
-          const existingNotifications = await EncryptedStorage.getItem(
-            'Requestnotifications',
-          );
-          let notifications = existingNotifications
-            ? JSON.parse(existingNotifications)
-            : [];
-
-          // Add the new notification to the array
+          const existing = await EncryptedStorage.getItem('Requestnotifications');
+          let notifications = existing ? JSON.parse(existing) : [];
           notifications.push(notification);
 
-          // Get the receivedAt time from the notification
-          const receivedAt = notification.receivedAt;
-
-          // Manually parse receivedAt (from DD/MM/YYYY, HH:mm:ss to YYYY-MM-DDTHH:mm:ss)
-          const [datePart, timePart] = receivedAt.split(', ');
-          const [day, month, year] = datePart.split('/');
-          const parsedReceivedAt = `${year}-${month}-${day}T${timePart}`;
-          const notificationDate = new Date(parsedReceivedAt);
-
           const currentDate = new Date();
-
-          // Filter notifications received within the past 10 minutes
-          const filteredNotifications = notifications.filter(noti => {
-            const [notiDatePart, notiTimePart] = noti.receivedAt.split(', ');
-            const [notiDay, notiMonth, notiYear] = notiDatePart.split('/');
-            const parsedNotiReceivedAt = `${notiYear}-${notiMonth}-${notiDay}T${notiTimePart}`;
-            const notiReceivedAt = new Date(parsedNotiReceivedAt);
-
-            const timeDifferenceInMinutes =
-              (currentDate - notiReceivedAt) / (1000 * 60);
-
-            return timeDifferenceInMinutes <= 10;
+          const filtered = notifications.filter((noti) => {
+            const [datePart, timePart] = noti.receivedAt.split(', ');
+            const [d, m, y] = datePart.split('/');
+            const parsed = `${y}-${m}-${d}T${timePart}`;
+            const notiReceivedAt = new Date(parsed);
+            const diff = (currentDate - notiReceivedAt) / (1000 * 60);
+            return diff <= 10;
           });
 
-          notifications = filteredNotifications;
-
+          notifications = filtered;
           setNotificationsArray(notifications);
-          console.log('setNotificationsArray');
-
           await EncryptedStorage.setItem(
             'Requestnotifications',
             JSON.stringify(notifications),
@@ -501,29 +426,25 @@ const HomeScreen = () => {
       }
     };
 
-    const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
-      console.log('Foreground Fcm', remoteMessage);
+    const unsubscribeOnMessage = messaging().onMessage(async (remoteMessage) => {
+      console.log('Foreground FCM', remoteMessage);
       const notificationId = remoteMessage.data.notification_id;
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
       if (remoteMessage.data && remoteMessage.data.screen === 'Home') {
         await axios.post(
           `${process.env.BackendAPI}/api/worker/action`,
-          {encodedId: '', screen: ''},
-          {headers: {Authorization: `Bearer ${pcs_token}`}},
+          { encodedId: '', screen: '' },
+          { headers: { Authorization: `Bearer ${pcs_token}` } },
         );
-
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
           }),
         );
-      } else if (
-        remoteMessage.data &&
-        remoteMessage.data.screen === 'TaskConfirmation'
-      ) {
-        navigation.push('TaskConfirmation', {encodedId: notificationId});
+      } else if (remoteMessage.data && remoteMessage.data.screen === 'TaskConfirmation') {
+        navigation.push('TaskConfirmation', { encodedId: notificationId });
       }
 
       const notification = {
@@ -532,7 +453,7 @@ const HomeScreen = () => {
         data: remoteMessage.data,
         service: remoteMessage.data.service,
         location: remoteMessage.data.location,
-        userNotificationId: remoteMessage.data.user_notification_id,
+        user_notification_id: remoteMessage.data.user_notification_id,
         receivedAt: new Intl.DateTimeFormat('en-IN', {
           timeZone: 'Asia/Kolkata',
           year: 'numeric',
@@ -562,43 +483,36 @@ const HomeScreen = () => {
 
     PushNotification.configure({
       onNotification: function (Dismissnotification) {
-        const userNotificationId = notification.data.user_notification_id;
-        const route = notification.data.route;
-        if (notification.action === 'Dismiss') {
-          PushNotification.cancelLocalNotifications({id: notification.id});
-        } else if (notification.userInteraction) {
-          if (userNotificationId && route) {
-            navigation.push(route, {encodedId: userNotificationId});
-          }
+        if (Dismissnotification.action === 'Dismiss') {
+          PushNotification.cancelLocalNotifications({ id: Dismissnotification.id });
+        } else if (Dismissnotification.userInteraction) {
+          // handle user interaction
         }
       },
       actions: ['Dismiss'],
     });
 
-    messaging().setBackgroundMessageHandler(async remoteMessage => {
-      console.log('setBackgroundMessageHandler Fcm', remoteMessage);
+    messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+      console.log('setBackgroundMessageHandler FCM', remoteMessage);
       const notificationId = remoteMessage.data.notification_id;
-
       if (remoteMessage.data && remoteMessage.data.screen === 'Home') {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
           }),
         );
-      } else if (
-        remoteMessage.data &&
-        remoteMessage.data.screen === 'TaskConfirmation'
-      ) {
-        navigation.push('TaskConfirmation', {encodedId: notificationId});
+      } else if (remoteMessage.data && remoteMessage.data.screen === 'TaskConfirmation') {
+        navigation.push('TaskConfirmation', { encodedId: notificationId });
       }
+
       const notification = {
         title: remoteMessage.notification.title,
         body: remoteMessage.notification.body,
         data: remoteMessage.data,
         service: remoteMessage.data.service,
         location: remoteMessage.data.location,
-        userNotificationId: remoteMessage.data.user_notification_id,
+        user_notification_id: remoteMessage.data.user_notification_id,
         receivedAt: new Intl.DateTimeFormat('en-IN', {
           timeZone: 'Asia/Kolkata',
           year: 'numeric',
@@ -613,35 +527,54 @@ const HomeScreen = () => {
       storeNotificationLocally(notification);
     });
 
-    const unsubscribeOnNotificationOpenedApp =
-      messaging().onNotificationOpenedApp(async remoteMessage => {
+    const unsubscribeOnNotificationOpenedApp = messaging().onNotificationOpenedApp(
+      async (remoteMessage) => {
         const notificationId = remoteMessage.data.notification_id;
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         if (remoteMessage.data && remoteMessage.data.screen === 'Home') {
           await axios.post(
             `${process.env.BackendAPI}/api/worker/action`,
-            {encodedId: '', screen: ''},
-            {headers: {Authorization: `Bearer ${pcs_token}`}},
+            { encodedId: '', screen: '' },
+            { headers: { Authorization: `Bearer ${pcs_token}` } },
           );
-
           navigation.dispatch(
             CommonActions.reset({
               index: 0,
-              routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+              routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
             }),
           );
         } else if (
           remoteMessage.data &&
           remoteMessage.data.screen === 'TaskConfirmation'
         ) {
-          navigation.push('TaskConfirmation', {encodedId: notificationId});
+          navigation.push('TaskConfirmation', { encodedId: notificationId });
         }
-      });
+        const notification = {
+          title: remoteMessage.notification.title,
+          body: remoteMessage.notification.body,
+          data: remoteMessage.data,
+          service: remoteMessage.data.service,
+          location: remoteMessage.data.location,
+          user_notification_id: remoteMessage.data.user_notification_id,
+          receivedAt: new Intl.DateTimeFormat('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false,
+          }).format(new Date()),
+        };
+        storeNotificationLocally(notification);
+      },
+    );
 
     messaging()
       .getInitialNotification()
-      .then(async remoteMessage => {
+      .then(async (remoteMessage) => {
         if (remoteMessage) {
           const notificationId = remoteMessage.data.notification_id;
           const pcs_token = await EncryptedStorage.getItem('pcs_token');
@@ -649,21 +582,20 @@ const HomeScreen = () => {
           if (remoteMessage.data && remoteMessage.data.screen === 'Home') {
             await axios.post(
               `${process.env.BackendAPI}/api/worker/action`,
-              {encodedId: '', screen: ''},
-              {headers: {Authorization: `Bearer ${pcs_token}`}},
+              { encodedId: '', screen: '' },
+              { headers: { Authorization: `Bearer ${pcs_token}` } },
             );
-
             navigation.dispatch(
               CommonActions.reset({
                 index: 0,
-                routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+                routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
               }),
             );
           } else if (
             remoteMessage.data &&
             remoteMessage.data.screen === 'TaskConfirmation'
           ) {
-            navigation.push('TaskConfirmation', {encodedId: notificationId});
+            navigation.push('TaskConfirmation', { encodedId: notificationId });
           }
 
           const notification = {
@@ -672,7 +604,7 @@ const HomeScreen = () => {
             data: remoteMessage.data,
             service: remoteMessage.data.service,
             location: remoteMessage.data.location,
-            userNotificationId: remoteMessage.data.user_notification_id,
+            user_notification_id: remoteMessage.data.user_notification_id,
             receivedAt: new Intl.DateTimeFormat('en-IN', {
               timeZone: 'Asia/Kolkata',
               year: 'numeric',
@@ -715,7 +647,8 @@ const HomeScreen = () => {
                 style={[
                   styles.track,
                   isEnabled ? styles.trackEnabled : styles.trackDisabled,
-                ]}>
+                ]}
+              >
                 <View
                   style={[
                     styles.thumb,
@@ -729,7 +662,8 @@ const HomeScreen = () => {
           <View>
             <TouchableOpacity
               style={styles.notificationContainer}
-              onPress={() => navigation.push('RatingsScreen')}>
+              onPress={() => navigation.push('RatingsScreen')}
+            >
               <AntDesign name="staro" size={22} color="#656565" />
             </TouchableOpacity>
           </View>
@@ -774,8 +708,7 @@ const HomeScreen = () => {
 
       {isEnabled ? (
         <>
-          <Mapbox.MapView
-            style={{minHeight: screenHeight, minWidth: screenWidth}}>
+          <Mapbox.MapView style={{ minHeight: height, minWidth: width }}>
             <Mapbox.Camera zoomLevel={17} centerCoordinate={center} />
             <Mapbox.PointAnnotation id="current-location" coordinate={center}>
               <View style={styles.markerContainer}>
@@ -803,7 +736,8 @@ const HomeScreen = () => {
           showsHorizontalScrollIndicator={false}
           pagingEnabled={false}
           contentContainerStyle={styles.scrollContainer}
-          style={styles.messageScrollView}>
+          style={styles.messageScrollView}
+        >
           {notificationsArray.map((notification, index) => {
             let parsedTitle = [];
             let cost = notification.data.cost;
@@ -834,7 +768,8 @@ const HomeScreen = () => {
                         style={styles.serviceNamesContainer}
                         contentContainerStyle={styles.serviceNamesContent}
                         onScroll={handleScroll}
-                        scrollEventThrottle={16}>
+                        scrollEventThrottle={16}
+                      >
                         {Array.isArray(parsedTitle) ? (
                           parsedTitle.map((service, serviceIndex) => (
                             <Text key={serviceIndex} style={styles.primaryColor}>
@@ -877,14 +812,16 @@ const HomeScreen = () => {
                   <TouchableOpacity
                     onPress={() =>
                       rejectNotification(notification.data.user_notification_id)
-                    }>
+                    }
+                  >
                     <Entypo name="cross" size={25} color="#9e9e9e" />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.secondaryButton}
                     onPress={() =>
                       acceptRequest(notification.data.user_notification_id)
-                    }>
+                    }
+                  >
                     <Text style={styles.secondaryButtonText}>Accept</Text>
                   </TouchableOpacity>
                 </View>
@@ -897,7 +834,8 @@ const HomeScreen = () => {
       {messageBoxDisplay && (
         <TouchableOpacity
           style={styles.messageBoxContainer}
-          onPress={() => navigation.replace(screenName, params)}>
+          onPress={() => navigation.replace(screenName, params)}
+        >
           <View style={styles.messageBox1}>
             <View style={styles.timeContainer}>
               {screenName === 'Paymentscreen' ? (
@@ -911,11 +849,7 @@ const HomeScreen = () => {
               ) : screenName === 'OtpVerification' ? (
                 <Feather name="shield" size={24} color="#ffffff" />
               ) : screenName === 'worktimescreen' ? (
-                <MaterialCommunityIcons
-                  name="hammer"
-                  size={24}
-                  color="#ffffff"
-                />
+                <MaterialCommunityIcons name="hammer" size={24} color="#ffffff" />
               ) : (
                 <Feather name="alert-circle" size={24} color="#000" />
               )}
@@ -934,9 +868,7 @@ const HomeScreen = () => {
                   User is waiting for your help
                 </Text>
               ) : screenName === 'worktimescreen' ? (
-                <Text style={styles.textContainerText}>
-                  Work in progress
-                </Text>
+                <Text style={styles.textContainerText}>Work in progress</Text>
               ) : (
                 <Text style={styles.textContainerText}>Nothing</Text>
               )}
@@ -951,7 +883,7 @@ const HomeScreen = () => {
       {/** INSPECTION CONFIRMATION MODAL */}
       <Modal
         animationType="slide"
-        transparent={true}
+        transparent
         visible={inspectionModalVisible}
         onRequestClose={() => setInspectionModalVisible(false)}
       >
@@ -987,397 +919,327 @@ const HomeScreen = () => {
   );
 };
 
-const screenWidth = Dimensions.get('window').width;
+/**
+ * 4) A helper function that returns a StyleSheet based on screen width & height.
+ *    If width >= 600, we treat it as a tablet and scale up certain styles.
+ */
+function dynamicStyles(width, height) {
+  const isTablet = width >= 600;
 
-const styles = StyleSheet.create({
-  messageBoxContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    flexDirection: 'row',
-    padding: 10,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    elevation: 3,
-    position: 'absolute',
-    bottom: 8,
-    left: 10,
-    right: 10,
-    marginHorizontal: '2%',
-  },
-  workerImage: {
-    height: 40,
-    width: 30,
-  },
-  messageBox1: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  timeContainer: {
-    width: 50,
-    height: 50,
-    backgroundColor: '#ff5722',
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  timeContainerText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  textContainerText: {
-    fontSize: 15,
-    paddingBottom: 5,
-    fontWeight: 'bold',
-    color: '#212121',
-    marginLeft: 10,
-  },
-  status: {
-    paddingLeft: 10,
-  },
-  serviceNamesContainer: {
-    flexWrap: 'wrap',
-    maxHeight: 60, // Adjust height according to your design
-  },
-  serviceNamesContent: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  arrowUpContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-  },
-  arrowDownContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    marginRight: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  rightIcon: {
-    marginLeft: 8,
-  },
-  secondaryButton: {
-    backgroundColor: '#FF5722',
-    width: 120,
-    height: 36,
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 10,
-  },
-  screenContainer: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    paddingBottom: 70,
-  },
-  secondaryButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    lineHeight: 16,
-    fontWeight: '600',
-  },
-  secondaryColor: {
-    color: '#9e9e9e',
-    fontSize: 16,
-  },
-  buttonsContainer: {
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-  serviceCostContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  serviceContainer: {
-    flex: 1,
-  },
-  addressContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  markerContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  messageScrollView: {
-    position: 'absolute',
-    bottom: '-5%',
-    left: 0,
-    right: 0,
-    height: 300,
-  },
-  scrollContainer: {
-    paddingHorizontal: screenWidth * 0.05,
-  },
-  messageBox: {
-    width: screenWidth * 0.85,
-    height: 220, // Fixed card height
-    backgroundColor: '#fff',
-    marginRight: screenWidth * 0.05,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: {width: 0, height: 2},
-    shadowRadius: 10,
-    elevation: 5,
-    padding: 20,
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between', 
-  },
-  messageText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  greeting: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    color: '#333',
-    marginVertical: 10,
-  },
-  greetingText: {
-    fontSize: 14,
-    fontFamily: 'Roboto',
-    lineHeight: 18.75,
-    fontStyle: 'italic',
-    color: '#808080',
-    fontWeight: 'bold',
-  },
-  greetingIcon: {
-    fontSize: 17,
-  },
-  userName: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#4A4A4A',
-    lineHeight: 21.09,
-  },
-  moneyContainer: {
-    padding: 10,
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 10,
-  },
-  balanceContainer: {
-    padding: 10,
-    width: 162,
-    height: 45,
-    borderRadius: 25,
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: {width: 0, height: 1},
-    shadowRadius: 2,
-    elevation: 1,
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  balanceText: {
-    flex: 1,
-    textAlign: 'center',
-    color: '#212121',
-    fontFamily: 'Poppins-Bold',
-  },
-  downArrow: {
-    marginLeft: 10,
-  },
-  primaryColor: {
-    color: '#212121',
-    fontSize: 15,
-  },
-  address: {
-    color: '#212121',
-    fontSize: 12,
-    width: 210,
-  },
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  track: {
-    width: 47,
-    height: 27,
-    borderRadius: 15,
-    justifyContent: 'center',
-    padding: 2,
-  },
-  trackEnabled: {
-    backgroundColor: '#4CAF50',
-  },
-  trackDisabled: {
-    backgroundColor: '#E1DAD2',
-  },
-  thumb: {
-    width: 24,
-    height: 24,
-    borderRadius: 13,
-  },
-  thumbEnabled: {
-    backgroundColor: '#ffffff',
-    alignSelf: 'flex-end',
-  },
-  thumbDisabled: {
-    backgroundColor: '#f4f3f4',
-    alignSelf: 'flex-start',
-  },
-  text: {
-    color: '#000',
-  },
-  workStatus: {
-    color: '#4CAF50',
-    fontSize: 15,
-  },
-  workStatusContainer: {
-    display: 'flex',
-    alignSelf: 'center',
-  },
-  innerSwitch: {
-    display: 'flex',
-    flexDirection: 'row',
-    gap: 10,
-  },
-  textCS: {
-    paddingTop: 3,
-    paddingRight: 5,
-    fontSize: 13,
-    color: '#7B6B6E',
-  },
-  notificationContainer: {
-    display: 'flex',
-    alignSelf: 'center',
-  },
-  earningsText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  earnings: {
-    padding: 10,
-    backgroundColor: '#7B6B6E',
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  markerContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 25,
-    height: 25,
-    paddingBottom: 2,
-  },
-  switchContainer: {
-    padding: 10,
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  header: {
-    backgroundColor: '#ffffff',
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  switch: {
-    width: 47,
-    height: 27,
-  },
-  userInitialCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  map: {
-    flex: 1,
-  },
-  userInitialText: {
-    fontSize: 18,
-    color: '#333',
-    fontWeight: 'bold',
-  },
-  message: {
-    fontSize: 15,
-    textAlign: 'center',
-    marginTop: 20,
-    color: '#777',
-  },
-
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
-    width: '80%',
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  modalMessage: {
-    fontSize: 15,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  modalButtonsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginHorizontal: 5,
-  },
-  modalSureButton: {
-    backgroundColor: '#FF5722',
-  },
-  modalCancelButton: {
-    backgroundColor: '#BDBDBD',
-  },
-  modalButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+  return StyleSheet.create({
+    screenContainer: {
+      flex: 1,
+      backgroundColor: '#ffffff',
+      paddingBottom: 70,
+    },
+    header: {
+      backgroundColor: '#ffffff',
+      flexDirection: 'column',
+    },
+    switchContainer: {
+      padding: 10,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    innerSwitch: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    workStatusContainer: {
+      alignSelf: 'center',
+    },
+    workStatus: {
+      color: '#4CAF50',
+      fontSize: isTablet ? 16 : 15,
+    },
+    container: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    track: {
+      width: isTablet ? 52 : 47,
+      height: isTablet ? 32 : 27,
+      borderRadius: isTablet ? 18 : 15,
+      justifyContent: 'center',
+      padding: 2,
+    },
+    trackEnabled: {
+      backgroundColor: '#4CAF50',
+    },
+    trackDisabled: {
+      backgroundColor: '#E1DAD2',
+    },
+    thumb: {
+      width: isTablet ? 28 : 24,
+      height: isTablet ? 28 : 24,
+      borderRadius: isTablet ? 14 : 13,
+    },
+    thumbEnabled: {
+      backgroundColor: '#ffffff',
+      alignSelf: 'flex-end',
+    },
+    thumbDisabled: {
+      backgroundColor: '#f4f3f4',
+      alignSelf: 'flex-start',
+    },
+    status: {
+      paddingLeft: 10,
+      fontSize: isTablet ? 16 : 14,
+    },
+    notificationContainer: {
+      alignSelf: 'center',
+    },
+    greeting: {
+      flexDirection: 'column',
+      alignItems: 'center',
+      marginVertical: isTablet ? 12 : 10,
+    },
+    greetingText: {
+      fontSize: isTablet ? 16 : 14,
+      fontStyle: 'italic',
+      color: '#808080',
+      fontWeight: 'bold',
+    },
+    greetingIcon: {
+      fontSize: isTablet ? 18 : 16,
+    },
+    userName: {
+      fontSize: isTablet ? 18 : 16,
+      fontWeight: '500',
+      color: '#4A4A4A',
+      marginTop: 4,
+    },
+    moneyContainer: {
+      padding: 10,
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginBottom: isTablet ? 12 : 10,
+    },
+    balanceContainer: {
+      padding: isTablet ? 12 : 10,
+      width: isTablet ? 180 : 162,
+      height: isTablet ? 50 : 45,
+      borderRadius: isTablet ? 28 : 25,
+      backgroundColor: '#ffffff',
+      shadowColor: '#000',
+      shadowOpacity: 0.1,
+      shadowOffset: { width: 0, height: 1 },
+      shadowRadius: 2,
+      elevation: 1,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginHorizontal: isTablet ? 5 : 2,
+    },
+    balanceText: {
+      flex: 1,
+      textAlign: 'center',
+      color: '#212121',
+      fontWeight: 'bold',
+      fontSize: isTablet ? 16 : 14,
+    },
+    downArrow: {
+      marginLeft: 10,
+    },
+    markerContainer: {
+      backgroundColor: '#ffffff',
+      borderRadius: 12.5,
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: isTablet ? 30 : 25,
+      height: isTablet ? 30 : 25,
+      paddingBottom: 2,
+    },
+    message: {
+      fontSize: isTablet ? 16 : 14,
+      textAlign: 'center',
+      marginTop: 20,
+      color: '#777',
+    },
+    messageScrollView: {
+      position: 'absolute',
+      bottom: '-5%',
+      left: 0,
+      right: 0,
+      height: 300,
+    },
+    scrollContainer: {
+      paddingHorizontal: width * 0.05,
+    },
+    messageBox: {
+      width: width * 0.85,
+      height: isTablet ? 240 : 220,
+      backgroundColor: '#fff',
+      marginRight: width * 0.05,
+      borderRadius: 10,
+      shadowColor: '#000',
+      shadowOpacity: 0.1,
+      shadowOffset: { width: 0, height: 2 },
+      shadowRadius: 10,
+      elevation: 5,
+      padding: isTablet ? 24 : 20,
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+    },
+    serviceCostContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    serviceContainer: {
+      flex: 1,
+      marginRight: 10,
+    },
+    secondaryColor: {
+      color: '#9e9e9e',
+      fontSize: isTablet ? 17 : 15,
+    },
+    serviceNamesContainer: {
+      maxHeight: 60,
+    },
+    serviceNamesContent: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+    arrowUpContainer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+      zIndex: 1,
+    },
+    arrowDownContainer: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+      zIndex: 1,
+    },
+    primaryColor: {
+      color: '#212121',
+      fontSize: isTablet ? 16 : 14,
+    },
+    addressContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginTop: 10,
+    },
+    address: {
+      color: '#212121',
+      fontSize: isTablet ? 13 : 12,
+      width: isTablet ? 240 : 210,
+    },
+    buttonsContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 10,
+    },
+    secondaryButton: {
+      backgroundColor: '#FF5722',
+      width: isTablet ? 130 : 120,
+      height: isTablet ? 40 : 36,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: 10,
+    },
+    secondaryButtonText: {
+      color: '#ffffff',
+      fontSize: isTablet ? 15 : 14,
+      fontWeight: '600',
+    },
+    messageBoxContainer: {
+      backgroundColor: '#ffffff',
+      borderRadius: 10,
+      flexDirection: 'row',
+      padding: isTablet ? 12 : 10,
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      elevation: 3,
+      position: 'absolute',
+      bottom: isTablet ? 12 : 8,
+      left: 10,
+      right: 10,
+    },
+    messageBox1: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      width: '100%',
+    },
+    timeContainer: {
+      width: isTablet ? 55 : 50,
+      height: isTablet ? 55 : 50,
+      backgroundColor: '#ff5722',
+      borderRadius: isTablet ? 27.5 : 25,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: isTablet ? 20 : 16,
+    },
+    textContainerText: {
+      fontSize: isTablet ? 16 : 15,
+      paddingBottom: 5,
+      fontWeight: 'bold',
+      color: '#212121',
+      marginLeft: 10,
+    },
+    rightIcon: {
+      marginLeft: 8,
+    },
+    // Modal styles
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalContent: {
+      backgroundColor: '#fff',
+      padding: isTablet ? 24 : 20,
+      borderRadius: 10,
+      width: isTablet ? '60%' : '80%',
+      alignItems: 'center',
+    },
+    modalTitle: {
+      fontSize: isTablet ? 20 : 18,
+      fontWeight: 'bold',
+      marginBottom: 10,
+      textAlign: 'center',
+    },
+    modalMessage: {
+      fontSize: isTablet ? 16 : 14,
+      textAlign: 'center',
+      marginBottom: 20,
+      color: '#333',
+    },
+    modalButtonsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: '100%',
+    },
+    modalButton: {
+      flex: 1,
+      paddingVertical: isTablet ? 12 : 10,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginHorizontal: 5,
+    },
+    modalSureButton: {
+      backgroundColor: '#FF5722',
+    },
+    modalCancelButton: {
+      backgroundColor: '#BDBDBD',
+    },
+    modalButtonText: {
+      color: '#fff',
+      fontSize: isTablet ? 16 : 14,
+      fontWeight: '600',
+    },
+  });
+}
 
 export default HomeScreen;

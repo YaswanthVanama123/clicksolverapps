@@ -9,6 +9,7 @@ import {
   Platform,
   Image,
   ActivityIndicator,
+  useWindowDimensions, // <-- 1) Import useWindowDimensions
 } from 'react-native';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
@@ -18,8 +19,13 @@ import Entypo from 'react-native-vector-icons/Entypo';
 const VerificationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  // Retrieve phoneNumber and verificationId from navigation parameters
   const { phoneNumber, verificationId } = route.params;
+
+  // 1) Grab width & height from useWindowDimensions
+  const { width, height } = useWindowDimensions();
+  // 2) Dynamically generate styles
+  const styles = dynamicStyles(width, height);
+
   const [timer, setTimer] = useState(120); // 2 minutes timer
   const [code, setCode] = useState(['', '', '', '']);
   const [loading, setLoading] = useState(false);
@@ -29,7 +35,7 @@ const VerificationScreen = () => {
 
   useEffect(() => {
     const countdown = setInterval(() => {
-      setTimer(prevTimer => (prevTimer > 0 ? prevTimer - 1 : 0));
+      setTimer((prevTimer) => (prevTimer > 0 ? prevTimer - 1 : 0));
     }, 1000);
     return () => clearInterval(countdown);
   }, []);
@@ -50,19 +56,19 @@ const VerificationScreen = () => {
     try {
       // Validate OTP
       const validateResponse = await axios.get(
-        'http://192.168.55.101:5000/api/validate',
+        'https://backend.clicksolver.com/api/validate',
         {
           params: {
             mobileNumber: phoneNumber,
-            verificationId: verificationId,
-            otpCode: otpCode,
+            verificationId,
+            otpCode,
           },
         }
       );
       if (validateResponse.data.message === 'OTP Verified') {
         // If OTP is valid, proceed with login
         const loginResponse = await axios.post(
-          'http://192.168.55.101:5000/api/user/login',
+          'https://backend.clicksolver.com/api/user/login',
           { phone_number: phoneNumber }
         );
         if (loginResponse.status === 200) {
@@ -112,10 +118,10 @@ const VerificationScreen = () => {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={styles.keyboardAvoidingView}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={{ flex: 1 }}>
+      <View style={styles.mainContainer}>
         {/* Background Image */}
         <Image
           source={{
@@ -178,87 +184,101 @@ const VerificationScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1, 
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#212121',
-  },
-  instruction: {
-    fontSize: 16,
-    textAlign: 'center',
-    color: '#9e9e9e',
-  },
-  number: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 30,
-    color: '#212121',
-    fontWeight: 'bold',
-  },
-  codeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    width: '80%',
-    marginBottom: 20,
-    gap: 10,
-  },
-  codeInput: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 10,
-    width: 45,
-    height: 45,
-    textAlign: 'center',
-    fontSize: 18,
-    color: '#212121',
-  },
-  timer: {
-    fontSize: 18,
-    fontWeight: '800',
-    marginBottom: 20,
-    color: '#212121',
-  },
-  submitButton: {
-    backgroundColor: '#ff6c37',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 10,
-    marginBottom: 40,
-    width: 150,
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  contactContainer: {
-    alignItems: 'center',
-  },
-  contactText: {
-    fontSize: 16,
-    marginBottom: 10,
-  },
-  socialIcons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 5,
-    marginBottom: 10,
-  },
-  email: {
-    fontSize: 12,
-    color: '#9e9e9e',
-    paddingBottom: 30,
-  },
-});
+/**
+ * A helper function that returns a StyleSheet based on screen width/height.
+ * If width >= 600, we assume it’s a tablet and scale up certain styles.
+ */
+const dynamicStyles = (width, height) => {
+  const isTablet = width >= 600;
+
+  return StyleSheet.create({
+    keyboardAvoidingView: {
+      flex: 1,
+    },
+    mainContainer: {
+      flex: 1,
+    },
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: isTablet ? 30 : 20,
+    },
+    title: {
+      fontSize: isTablet ? 26 : 22,
+      fontWeight: 'bold',
+      marginBottom: isTablet ? 25 : 20,
+      color: '#212121',
+    },
+    instruction: {
+      fontSize: isTablet ? 18 : 16,
+      textAlign: 'center',
+      color: '#9e9e9e',
+    },
+    number: {
+      fontSize: isTablet ? 18 : 16,
+      textAlign: 'center',
+      marginBottom: isTablet ? 35 : 30,
+      color: '#212121',
+      fontWeight: 'bold',
+    },
+    codeContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      width: '80%',
+      marginBottom: isTablet ? 25 : 20,
+      gap: isTablet ? 15 : 10,
+    },
+    codeInput: {
+      borderWidth: 1,
+      borderColor: '#ccc',
+      borderRadius: 10,
+      width: isTablet ? 55 : 45,
+      height: isTablet ? 55 : 45,
+      textAlign: 'center',
+      fontSize: isTablet ? 20 : 18,
+      color: '#212121',
+    },
+    timer: {
+      fontSize: isTablet ? 20 : 18,
+      fontWeight: '800',
+      marginBottom: isTablet ? 25 : 20,
+      color: '#212121',
+    },
+    submitButton: {
+      backgroundColor: '#ff6c37',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: isTablet ? 18 : 15,
+      paddingHorizontal: isTablet ? 50 : 40,
+      borderRadius: 10,
+      marginBottom: isTablet ? 50 : 40,
+      width: isTablet ? 180 : 150,
+    },
+    submitButtonText: {
+      color: '#fff',
+      fontSize: isTablet ? 18 : 16,
+      fontWeight: 'bold',
+    },
+    contactContainer: {
+      alignItems: 'center',
+    },
+    contactText: {
+      fontSize: isTablet ? 18 : 16,
+      marginBottom: isTablet ? 15 : 10,
+    },
+    socialIcons: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 5,
+      marginBottom: isTablet ? 15 : 10,
+    },
+    email: {
+      fontSize: isTablet ? 14 : 12,
+      color: '#9e9e9e',
+      paddingBottom: isTablet ? 40 : 30, 
+    },
+  });
+};
 
 export default VerificationScreen;

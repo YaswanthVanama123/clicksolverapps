@@ -148,7 +148,8 @@ const {
   userLogout,
   workerLogout,
   phoneCall,
-  UserPhoneCall
+  UserPhoneCall,
+  accountDelete
 } = require("./controller.js");
 
 const router = express.Router();
@@ -254,6 +255,8 @@ router.post("/user/payed", processPayment);
 router.post("/add/tracking", insertTracking);
 
 router.post("/user/details/update", authenticateToken, accountDetailsUpdate);
+
+router.post("/user/details/delete",authenticateToken,accountDelete)
 
 router.post("/user/profile", authenticateToken, userProfileDetails);
 

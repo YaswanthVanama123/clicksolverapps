@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useCallback} from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,16 +10,20 @@ import {
   BackHandler,
   SafeAreaView,
   ActivityIndicator,
+  useWindowDimensions, // <-- for responsiveness
 } from 'react-native';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
-import {Calendar} from 'react-native-calendars';
+import { Calendar } from 'react-native-calendars';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import {useNavigation, useFocusEffect} from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Feather from 'react-native-vector-icons/Feather';
 import axios from 'axios';
 import DestinationCircles from '../Components/DestinationCircles';
 
 const EarningsScreen = () => {
+  const { width } = useWindowDimensions();
+  const styles = dynamicStyles(width); // use the dynamic style generator
+
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedPeriod, setSelectedPeriod] = useState('Today');
   const [showCalendar, setShowCalendar] = useState(false);
@@ -37,6 +41,7 @@ const EarningsScreen = () => {
     cashback_approved_times: 0,
     cashback_gain: 0,
     cashback: 0,
+    cashback_pending: 0,
   });
   const [loading, setLoading] = useState(false); // Loading state for API call
   const navigation = useNavigation();
@@ -53,22 +58,20 @@ const EarningsScreen = () => {
     try {
       setLoading(true); // Start loading
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
-      console.log(pcs_token);
       if (!pcs_token) throw new Error('pcs_token not found');
 
-      const payload = endDate ? {startDate: date, endDate: endDate} : {date};
+      const payload = endDate ? { startDate: date, endDate: endDate } : { date };
       const response = await axios.post(
-        `http://192.168.55.101:5000/api/worker/earnings`,
+        `https://backend.clicksolver.com/api/worker/earnings`,
         payload,
         {
           headers: {
             Authorization: `Bearer ${pcs_token}`,
           },
-        },
+        }
       );
 
-      console.log('sata:', response.data);
-
+      // destructure needed fields
       const {
         total_payment = 0,
         cash_payment = 0,
@@ -84,6 +87,10 @@ const EarningsScreen = () => {
         average_rating = 0,
       } = response.data;
 
+      // Example logic for computing certain fields
+      const serviceCountNum = Number(service_counts);
+      const gain = Math.trunc(serviceCountNum / 6) * 100;
+
       setEarnings({
         total_payment: Number(total_payment),
         cash_payment: Number(cash_payment),
@@ -93,19 +100,15 @@ const EarningsScreen = () => {
         rejectedcount: Number(rejectedcount),
         pendingcount: Number(pendingcount),
         minutes: Number(total_time_worked_hours) * 60,
-        service_counts: Number(service_counts),
-        cashback_pending:
-          Number(cashback_approved_times) - (Number(cashback_gain) % 6), // Updated logic for cashback_pending
-        cashback_gain:
-        Math.trunc(Number(service_counts) / 6) *
-          100, // Adjusted cashback_gain
+        service_counts: serviceCountNum,
+        cashback_pending: Number(cashback_approved_times) - (gain % 6),
+        cashback_gain: gain,
         cashback_approved_times: Number(cashback_approved_times),
-        cashback: Number(service_counts) % 6,
+        cashback: serviceCountNum % 6,
         average_rating: Number(average_rating),
       });
     } catch (error) {
       console.error('Error fetching payment details:', error);
-      // Optionally, handle error state
     } finally {
       setLoading(false); // End loading
     }
@@ -118,12 +121,11 @@ const EarningsScreen = () => {
         return true;
       };
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () =>
-        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-    }, [navigation]),
+      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [navigation])
   );
 
-  const handleTabClick = period => {
+  const handleTabClick = (period) => {
     setSelectedPeriod(period);
 
     if (period === 'Today') {
@@ -135,9 +137,9 @@ const EarningsScreen = () => {
     } else if (period === 'This Week') {
       const startOfWeek = new Date();
       const day = startOfWeek.getDay(); // 0 (Sunday) to 6 (Saturday)
-      startOfWeek.setDate(startOfWeek.getDate() - day); // Set to Sunday
+      startOfWeek.setDate(startOfWeek.getDate() - day); // set to Sunday
       const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(endOfWeek.getDate() + 6); // Set to Saturday
+      endOfWeek.setDate(endOfWeek.getDate() + 6); // set to Saturday
 
       setSelectedDate(startOfWeek);
       setStartDate(startOfWeek);
@@ -150,7 +152,7 @@ const EarningsScreen = () => {
     }
   };
 
-  const selectDate = day => {
+  const selectDate = (day) => {
     const selected = new Date(day.dateString);
 
     if (!startDate || (startDate && endDate)) {
@@ -189,7 +191,7 @@ const EarningsScreen = () => {
             textColor: 'white',
           };
         } else {
-          range[dateString] = {color: '#4CAF50', textColor: 'white'};
+          range[dateString] = { color: '#4CAF50', textColor: 'white' };
         }
         current.setDate(current.getDate() + 1);
       }
@@ -236,16 +238,18 @@ const EarningsScreen = () => {
 
       {/* Tabs */}
       <View style={styles.tabs}>
-        {['Today', 'This Week', 'Select Date'].map(period => (
+        {['Today', 'This Week', 'Select Date'].map((period) => (
           <TouchableOpacity
             key={period}
             style={[styles.tab, selectedPeriod === period && styles.tabActive]}
-            onPress={() => handleTabClick(period)}>
+            onPress={() => handleTabClick(period)}
+          >
             <Text
               style={[
                 styles.tabText,
                 selectedPeriod === period && styles.tabTextActive,
-              ]}>
+              ]}
+            >
               {period}
             </Text>
           </TouchableOpacity>
@@ -262,7 +266,8 @@ const EarningsScreen = () => {
           {/* Toggle Icon and Message */}
           <TouchableOpacity
             onPress={() => setIsMessageVisible(!isMessageVisible)}
-            style={styles.eyeIconContainer}>
+            style={styles.eyeIconContainer}
+          >
             <Feather
               name={isMessageVisible ? 'eye-off' : 'eye'}
               size={20}
@@ -290,6 +295,7 @@ const EarningsScreen = () => {
           </Text>
         </View>
       </View>
+
       <Text style={styles.cashBackAmount}>Cash back ₹100</Text>
       <View style={styles.completedCircle}>
         <DestinationCircles complete={earnings.cashback} />
@@ -298,35 +304,18 @@ const EarningsScreen = () => {
       {/* Statistics */}
       <ScrollView
         contentContainerStyle={styles.statsContainer}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+      >
         {[
-          {value: earnings.payment_count, title: 'Services', color: '#4CAF50'},
-          {
-            value: `${earnings.life_earnings}`,
-            title: 'Total Earnings',
-            color: '#4CAF50',
-          },
-          {
-            value: earnings.cashback_gain,
-            title: 'Cashback Earned',
-            color: '#4CAF50',
-          },
-          {
-            value: earnings.avgrating,
-            title: 'Avg Rating',
-            color: '#4CAF50',
-          },
-          {value: earnings.rejectedcount, title: 'Rejected', color: '#ff4436'},
-          {
-            value: earnings.cashback_pending,
-            title: 'Cashback pending',
-            color: '#ffa500',
-          },
+          { value: earnings.payment_count, title: 'Services', color: '#4CAF50' },
+          { value: earnings.life_earnings, title: 'Total Earnings', color: '#4CAF50' },
+          { value: earnings.cashback_gain, title: 'Cashback Earned', color: '#4CAF50' },
+          { value: earnings.avgrating, title: 'Avg Rating', color: '#4CAF50' },
+          { value: earnings.rejectedcount, title: 'Rejected', color: '#ff4436' },
+          { value: earnings.cashback_pending, title: 'Cashback pending', color: '#ffa500' },
         ].map((stat, index) => (
-          <View
-            key={index}
-            style={[styles.statBox, {borderLeftColor: stat.color}]}>
-            <Text style={[styles.statValue, {color: stat.color}]}>
+          <View key={index} style={[styles.statBox, { borderLeftColor: stat.color }]}>
+            <Text style={[styles.statValue, { color: stat.color }]}>
               {stat.value}
             </Text>
             <Text style={styles.statTitle}>{stat.title}</Text>
@@ -362,190 +351,211 @@ const EarningsScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    padding: 16,
-  },
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 999,
-  },
-  cashBackAmount: {
-    color: '#FF5722',
-    textAlign: 'right',
-    paddingRight: 16,
-    paddingTop: 10,
-    fontWeight: '600',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  eyeIconContainer: {
-    alignSelf: 'flex-end',
-    padding: 10,
-  },
-  messageContainer: {
-    flexDirection: 'row',
-    gap: 5,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  messageBox: {
-    marginTop: 10,
-    padding: 10,
-    marginBottom: 5,
-    backgroundColor: '#f3f3f3',
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  messageText: {
-    fontSize: 14,
-    color: '#4a4a4a',
-  },
-  cashCollectedAmount: {
-    color: '#4a4a4a',
-    fontWeight: '900',
-    paddingHorizontal: 20,
-    fontSize: 15,
-  },
-  rupeeIcon: {
-    color: '#4a4a4a',
-    fontWeight: '900',
-    paddingHorizontal: 19,
-    fontSize: 13,
-  },
-  mainRupeeIcon: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#212121',
-    textAlign: 'center',
-  },
-  cashCollectedText: {
-    fontSize: 15,
-    color: '#4a4a4a',
-    fontWeight: 'bold',
-    marginTop: 5,
-  },
-  cashContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  earningsIconContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  horizontalLine: {
-    width: '100%',
-    height: 2,
-    backgroundColor: '#f0f0f0',
-  },
-  screenName: {
-    color: '#212121',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  leftIcon: {
-    position: 'absolute',
-    left: 10,
-  },
-  tabs: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#f0f0f0',
-    height: 52,
-    borderRadius: 10,
-    marginTop: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-  },
-  tabActive: {
-    backgroundColor: '#FF5722',
-    borderRadius: 8,
-  },
-  tabText: {
-    color: '#4a4a4a',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  tabTextActive: {
-    color: '#ffffff',
-  },
-  earningsContainer: {
-    backgroundColor: '#fff',
-    marginTop: 15,
-    marginVertical: 10,
-    marginHorizontal: 16,
-    borderRadius: 10,
-    padding: 16,
-    elevation: 4,
-  },
-  totalEarningsText: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#212121',
-    textAlign: 'center',
-  },
-  statsContainer: {
-    marginTop: 20,
-    paddingBottom: 20,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  statBox: {
-    backgroundColor: '#ffffff',
-    padding: 20,
-    marginHorizontal: 5,
-    marginVertical: 8,
-    alignItems: 'center',
-    borderLeftWidth: 4,
-    borderRadius: 0,
-    elevation: 4,
-    width: '46%', // Approximately half width with some margin
-    height: 100,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  statTitle: {
-    color: '#4a4a4a',
-    fontWeight: '600',
-    marginTop: 5,
-    fontSize: 15,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  calendarContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    marginHorizontal: 20,
-    padding: 16,
-  },
-});
+/**
+ * A helper function that returns a StyleSheet based on screen width.
+ * If `width >= 600`, we treat it as a tablet and scale up certain styles.
+ */
+function dynamicStyles(width) {
+  const isTablet = width >= 600;
+
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#ffffff',
+      padding: isTablet ? 24 : 16,
+    },
+    loadingOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.3)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 999,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+      marginBottom: isTablet ? 20 : 10,
+    },
+    leftIcon: {
+      position: 'absolute',
+      left: isTablet ? 20 : 10,
+    },
+    earningsIconContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: isTablet ? 16 : 12,
+    },
+    EarningIcon: {
+      marginRight: 5,
+    },
+    screenName: {
+      color: '#212121',
+      fontSize: isTablet ? 24 : 20,
+      fontWeight: 'bold',
+    },
+    tabs: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      backgroundColor: '#f0f0f0',
+      height: isTablet ? 60 : 52,
+      borderRadius: 10,
+      marginTop: isTablet ? 15 : 10,
+      paddingHorizontal: 8,
+      paddingVertical: 8,
+    },
+    tab: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: isTablet ? 10 : 8,
+      marginHorizontal: isTablet ? 5 : 2,
+      borderRadius: 8,
+    },
+    tabActive: {
+      backgroundColor: '#FF5722',
+    },
+    tabText: {
+      color: '#4a4a4a',
+      fontSize: isTablet ? 18 : 16,
+      fontWeight: '500',
+    },
+    tabTextActive: {
+      color: '#ffffff',
+    },
+    earningsContainer: {
+      backgroundColor: '#fff',
+      marginTop: isTablet ? 20 : 15,
+      marginVertical: 10,
+      marginHorizontal: 0,
+      borderRadius: 10,
+      padding: isTablet ? 20 : 16,
+      elevation: 4,
+    },
+    messageContainer: {
+      flexDirection: 'row',
+      gap: 5,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    totalEarningsText: {
+      fontSize: isTablet ? 26 : 22,
+      fontWeight: 'bold',
+      color: '#212121',
+      textAlign: 'center',
+    },
+    mainRupeeIcon: {
+      fontSize: isTablet ? 22 : 18,
+      fontWeight: 'bold',
+      color: '#212121',
+      textAlign: 'center',
+    },
+    eyeIconContainer: {
+      alignSelf: 'flex-end',
+      padding: 10,
+    },
+    messageBox: {
+      marginTop: 10,
+      padding: 10,
+      marginBottom: 5,
+      backgroundColor: '#f3f3f3',
+      borderRadius: 5,
+      alignItems: 'center',
+    },
+    messageText: {
+      fontSize: isTablet ? 16 : 14,
+      color: '#4a4a4a',
+      textAlign: 'center',
+    },
+    horizontalLine: {
+      width: '100%',
+      height: isTablet ? 3 : 2,
+      backgroundColor: '#f0f0f0',
+      marginVertical: isTablet ? 14 : 10,
+    },
+    cashContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    cashCollectedText: {
+      fontSize: isTablet ? 17 : 15,
+      color: '#4a4a4a',
+      fontWeight: 'bold',
+      marginTop: 5,
+    },
+    cashCollectedAmount: {
+      color: '#4a4a4a',
+      fontWeight: '900',
+      paddingHorizontal: 20,
+      fontSize: isTablet ? 17 : 15,
+    },
+    rupeeIcon: {
+      color: '#4a4a4a',
+      fontWeight: '900',
+      fontSize: isTablet ? 15 : 13,
+    },
+    cashBackAmount: {
+      color: '#FF5722',
+      textAlign: 'right',
+      paddingRight: isTablet ? 24 : 16,
+      paddingTop: 10,
+      fontWeight: '600',
+      fontSize: isTablet ? 16 : 14,
+    },
+    completedCircle: {
+      alignItems: 'center',
+      marginTop: 10,
+    },
+    statsContainer: {
+      marginTop: isTablet ? 30 : 20,
+      paddingBottom: isTablet ? 30 : 20,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+    },
+    statBox: {
+      backgroundColor: '#ffffff',
+      padding: isTablet ? 24 : 20,
+      marginHorizontal: 5,
+      marginVertical: 8,
+      alignItems: 'center',
+      borderLeftWidth: 4,
+      borderRadius: 0,
+      elevation: 4,
+      width: isTablet ? '31%' : '46%',
+      height: isTablet ? 120 : 100,
+    },
+    statValue: {
+      fontSize: isTablet ? 22 : 20,
+      fontWeight: 'bold',
+    },
+    statTitle: {
+      color: '#4a4a4a',
+      fontWeight: '600',
+      marginTop: 5,
+      fontSize: isTablet ? 16 : 15,
+      textAlign: 'center',
+    },
+    modalContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    calendarContainer: {
+      backgroundColor: '#fff',
+      borderRadius: 10,
+      marginHorizontal: isTablet ? 60 : 20,
+      padding: isTablet ? 24 : 16,
+    },
+  });
+}
 
 export default EarningsScreen;
+ 
