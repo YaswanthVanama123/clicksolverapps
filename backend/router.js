@@ -149,7 +149,9 @@ const {
   workerLogout,
   phoneCall,
   UserPhoneCall,
-  accountDelete
+  accountDelete,
+  userTrackingCall,
+  workerTrackingCall
 } = require("./controller.js");
 
 const router = express.Router();
@@ -164,6 +166,9 @@ router.post("/single/service", getServiceByName);
 
 router.post('/worker/call', phoneCall);
 router.post('/user/call', UserPhoneCall);
+
+router.post('/worker/tracking/call',workerTrackingCall)
+router.post('/user/tracking/call',userTrackingCall);
 
 router.post('/workerLogout', workerLogout);
 

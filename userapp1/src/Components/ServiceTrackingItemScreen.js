@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Linking,
-  Animated,
+  Animated, 
   ActivityIndicator,
   useWindowDimensions, // <-- 1) Import useWindowDimensions
 } from 'react-native';
@@ -37,6 +37,30 @@ const ServiceTrackingItemScreen = () => {
   // Toggle Payment Details
   const togglePaymentDetails = () => {
     setPaymentExpanded(!paymentExpanded);
+  };
+
+  
+  const phoneCall = async () => {
+    try {
+      const response = await axios.post(
+        'http://192.168.55.102:5000/api/worker/tracking/call',
+        {tracking_id},
+      );
+      if (response.status === 200 && response.data.mobile) {
+        const phoneNumber = response.data.mobile;
+        const dialURL = `tel:${phoneNumber}`;
+        Linking.openURL(dialURL).catch((err) =>
+          console.error('Error opening dialer:', err),
+        );
+      } else {
+        console.log('Failed to initiate call:', response.data);
+      }
+    } catch (error) {
+      console.error(
+        'Error initiating call:',
+        error.response ? error.response.data : error.message,
+      );
+    }
   };
 
   // Build timeline data
@@ -70,10 +94,11 @@ const ServiceTrackingItemScreen = () => {
       try {
         setLoading(true);
         const response = await axios.post(
-          `https://backend.clicksolver.com/api/service/tracking/user/item/details`,
+          `http://192.168.55.102:5000/api/service/tracking/user/item/details`,
           {tracking_id},
         );
         const {data} = response.data;
+        console.log("dat",data)
         setPin(data.tracking_pin);
         setDetails(data);
         setServiceArray(data.service_booked);
@@ -82,7 +107,7 @@ const ServiceTrackingItemScreen = () => {
       } finally {
         setLoading(false);
       }
-    };
+    }; 
     fetchBookings();
   }, [tracking_id]);
 
@@ -133,7 +158,7 @@ const ServiceTrackingItemScreen = () => {
                 <Text style={styles.userName}>{details.name}</Text>
                 <Text style={styles.userDesignation}>{details.service}</Text>
               </View>
-              <TouchableOpacity style={styles.callIconContainer}>
+              <TouchableOpacity style={styles.callIconContainer} onPress={phoneCall}>
                 <MaterialIcons name="call" size={22} color="#FF5722" />
               </TouchableOpacity>
             </View>

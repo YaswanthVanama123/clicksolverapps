@@ -86,7 +86,7 @@ const OrderScreen = () => {
           const token = await EncryptedStorage.getItem('cs_token');
           if (!token) return;
           const response = await axios.post(
-            'https://backend.clicksolver.com/api/user/coupons',
+            'http://192.168.55.102:5000/api/user/coupons',
             {},
             { headers: { Authorization: `Bearer ${token}` } }
           );
@@ -441,7 +441,7 @@ const dynamicStyles = (width) => {
     contentContainer: { paddingBottom: 80 },
     headerContainer: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#fff' },
     backArrow: { marginRight: 12 },
-    headerTitle: { fontSize: isTablet ? 22 : 20, fontWeight: 'bold', color: '#212121' },
+    headerTitle: { fontSize: isTablet ? 22 : 20, fontWeight: '600', color: '#212121' },
     sectionDivider: { height: 8, backgroundColor: '#f5f5f5', width: '100%' },
     membershipBanner: { backgroundColor: '#fff7f2', padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
     membershipTextContainer: { flex: 1, alignItems: 'center' },
@@ -452,7 +452,7 @@ const dynamicStyles = (width) => {
     itemRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#fff' },
     itemImage: { width: 60, height: 60, borderRadius: 8 },
     itemInfoContainer: { flex: 1, marginLeft: 12, justifyContent: 'center' },
-    itemName: { fontSize: isTablet ? 18 : 16, fontWeight: '600', color: '#333', marginBottom: 4 },
+    itemName: { fontSize: isTablet ? 18 : 16, fontWeight: '500', color: '#212121', marginBottom: 4 },
     itemSubtitle: { fontSize: isTablet ? 14 : 12, color: '#777' },
     quantityPriceContainer: { alignItems: 'flex-end', justifyContent: 'center' },
     quantityControls: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {
   View,
   Text,
@@ -9,18 +9,20 @@ import {
   SafeAreaView,
   BackHandler,
   ActivityIndicator,
-  useWindowDimensions
+  useWindowDimensions, // <-- For responsiveness
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import Entypo from 'react-native-vector-icons/Entypo';
-import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
-import { Places } from 'ola-maps';
+import {useFocusEffect, useNavigation, useRoute} from '@react-navigation/native';
+import {Places} from 'ola-maps';
 
 const placesClient = new Places('iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT');
 
 const LocationSearch = () => {
+  // 1) Grab screen dimensions
   const { width } = useWindowDimensions();
+  // 2) Create dynamic styles
   const styles = dynamicStyles(width);
 
   const [query, setQuery] = useState('');
@@ -29,16 +31,14 @@ const LocationSearch = () => {
   const [serviceArray, setServiceArray] = useState([]);
   const route = useRoute();
   const navigation = useNavigation();
-  
-  // Extract serviceName, savings, tipAmount from route.params
-  const { serviceName, savings, tipAmount } = route.params || {};
+  const {serviceName} = route.params;
   const inputRef = useRef(null);
 
-  // 1) Places Autocomplete
-  const fetchAndSetPlaceDetails = useCallback(async (searchQuery) => {
+  // Autocomplete function
+  const fetchAndSetPlaceDetails = useCallback(async (query) => {
     try {
       setLoadingSuggestions(true);
-      const response = await placesClient.autocomplete(searchQuery);
+      const response = await placesClient.autocomplete(query);
       if (response?.body?.predictions) {
         const places = response.body.predictions.map((place) => ({
           id: place.place_id,
@@ -56,33 +56,23 @@ const LocationSearch = () => {
     }
   }, []);
 
-  // 2) When a suggestion is pressed, pass all keys (including savings and tipAmount)
-  const handleSuggestionPress = useCallback(
-    (item) => {
-      setQuery(item.title);
-      navigation.replace('UserLocation', { serviceName, savings, tipAmount, suggestion: item });
-      setSuggestions([]);
-    },
-    [navigation, serviceName, savings, tipAmount],
-  );
-
-  // 3) Handle hardware back: pass savings and tipAmount too
+  // On back press
   const onBackPress = () => {
-    navigation.replace('UserLocation', { serviceName, savings, tipAmount });
+    navigation.replace('UserLocation', { serviceName });
   };
 
   useFocusEffect(
     useCallback(() => {
-      const handleHardwareBack = () => {
-        onBackPress();
+      const handleBackPress = () => {
+        navigation.replace('UserLocation', { serviceName });
         return true;
       };
-      BackHandler.addEventListener('hardwareBackPress', handleHardwareBack);
-      return () => BackHandler.removeEventListener('hardwareBackPress', handleHardwareBack);
-    }, [navigation, serviceName, savings, tipAmount]),
+      BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+      return () => BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
+    }, [navigation])
   );
 
-  // 4) Fetch suggestions when query changes
+  // If query is not empty, fetch suggestions
   useEffect(() => {
     if (query.length > 0) {
       fetchAndSetPlaceDetails(query);
@@ -91,19 +81,29 @@ const LocationSearch = () => {
     }
   }, [query, fetchAndSetPlaceDetails]);
 
-  // 5) Store serviceName in state if available
+  // If we have a serviceName from route, store it
   useEffect(() => {
     if (serviceName) {
       setServiceArray(serviceName);
     }
   }, [serviceName]);
 
-  // 6) Auto-focus the search input
+  // Focus input on mount
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  // 7) Render suggestion item
+  // On suggestion press
+  const handleSuggestionPress = useCallback(
+    (item) => {
+      setQuery(item.title);
+      navigation.replace('UserLocation', { serviceName, suggestion: item });
+      setSuggestions([]);
+    },
+    [navigation, serviceName]
+  );
+
+  // Render suggestion item
   const renderItem = useCallback(
     ({ item }) => (
       <TouchableOpacity style={styles.item} onPress={() => handleSuggestionPress(item)}>
@@ -119,20 +119,20 @@ const LocationSearch = () => {
         </TouchableOpacity>
       </TouchableOpacity>
     ),
-    [handleSuggestionPress],
+    [handleSuggestionPress]
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Fixed top search bar */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={onBackPress} style={styles.backIcon}>
+      {/* Search bar */}
+      <View style={styles.searchContainer}>
+        <TouchableOpacity onPress={onBackPress}>
           <FontAwesome6 name="arrow-left-long" size={18} color="gray" />
         </TouchableOpacity>
         <TextInput
           ref={inputRef}
           style={styles.searchInput}
-          placeholder="Search location..."
+          placeholder="Search..."
           placeholderTextColor="#1D2951"
           value={query}
           onChangeText={setQuery}
@@ -143,7 +143,7 @@ const LocationSearch = () => {
           </TouchableOpacity>
         )}
       </View>
-      {/* Suggestions or loader */}
+
       {loadingSuggestions ? (
         <ActivityIndicator size="large" color="#FF5722" style={styles.loader} />
       ) : (
@@ -151,75 +151,70 @@ const LocationSearch = () => {
           data={suggestions}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={styles.listContainer}
-          style={styles.suggestionsList}
+          contentContainerStyle={styles.list}
         />
       )}
     </SafeAreaView>
   );
 };
 
+/* -------------- Dynamic Styles -------------- */
 function dynamicStyles(width) {
   const isTablet = width >= 600;
+
   return StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: '#fff',
     },
-    headerContainer: {
+    searchContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: isTablet ? 20 : 15,
-      paddingVertical: isTablet ? 12 : 10,
-      borderBottomWidth: 1,
-      borderBottomColor: '#eee',
-      backgroundColor: '#fff',
-    },
-    backIcon: {
-      marginRight: isTablet ? 15 : 10,
+      margin: isTablet ? 24 : 16,
+      paddingHorizontal: isTablet ? 16 : 12,
+      borderWidth: 1,
+      borderColor: '#ddd',
+      borderRadius: 8,
+      backgroundColor: '#f9f9f9',
     },
     searchInput: {
       flex: 1,
       padding: 8,
-      fontSize: isTablet ? 16 : 14,
+      paddingLeft: 15,
+      fontSize: isTablet ? 17 : 15,
       color: '#1D2951',
-      backgroundColor: '#f9f9f9',
-      borderRadius: 8,
-      marginRight: isTablet ? 12 : 10,
+      fontFamily: 'RobotoSlab-Medium',
     },
-    loader: {
-      marginTop: isTablet ? 40 : 20,
-      alignSelf: 'center',
-    },
-    suggestionsList: {
-      flex: 1,
-    },
-    listContainer: {
-      paddingBottom: 20,
+    list: {
+      paddingHorizontal: isTablet ? 24 : 16,
     },
     item: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingVertical: isTablet ? 14 : 12,
-      paddingHorizontal: isTablet ? 20 : 16,
       borderBottomWidth: 1,
       borderBottomColor: '#f0f0f0',
     },
     iconContainer: {
-      marginRight: 12,
+      marginRight: isTablet ? 14 : 12,
     },
     textContainer: {
       flex: 1,
     },
     title: {
-      fontSize: isTablet ? 16 : 14,
-      fontWeight: '600',
-      marginBottom: 2,
+      fontSize: isTablet ? 17 : 15,
+      fontFamily: 'RobotoSlab-SemiBold',
+      marginBottom: 4,
       color: '#212121',
     },
     address: {
-      fontSize: isTablet ? 14 : 12,
+      fontSize: isTablet ? 15 : 14,
       color: '#4a4a4a',
+      fontFamily: 'RobotoSlab-Regular',
+    },
+    loader: {
+      marginTop: 20,
+      alignSelf: 'center',
     },
   });
 }

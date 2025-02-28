@@ -79,7 +79,7 @@ const WorkerOtpVerificationScreen = () => {
     try {
       // 1) Validate OTP
       const validateResponse = await axios.get(
-        'https://backend.clicksolver.com/api/worker/validateOtp',
+        'http://192.168.55.102:5000/api/worker/validateOtp',
         {
           params: {
             mobileNumber: phoneNumber,
@@ -92,7 +92,7 @@ const WorkerOtpVerificationScreen = () => {
       if (validateResponse.data.message === 'OTP Verified') {
         // 2) If OTP is valid => attempt Worker login
         const loginResponse = await axios.post(
-          'https://backend.clicksolver.com/api/worker/login',
+          'http://192.168.55.102:5000/api/worker/login',
           { phone_number: phoneNumber } 
         );
         const { status, data } = loginResponse;

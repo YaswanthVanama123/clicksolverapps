@@ -42,7 +42,7 @@ const ProfileScreen = () => {
       setIsLoggedIn(true);
 
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/user/profile`,
+        `http://192.168.55.102:5000/api/user/profile`,
         {},
         {
           headers: { Authorization: `Bearer ${jwtToken}` },
@@ -72,7 +72,7 @@ const ProfileScreen = () => {
       const fcm_token = await EncryptedStorage.getItem('fcm_token');
 
       if (fcm_token) {
-        await axios.post('https://backend.clicksolver.com/api/userLogout', {
+        await axios.post('http://192.168.55.102:5000/api/userLogout', {
           fcm_token,
         });
       }

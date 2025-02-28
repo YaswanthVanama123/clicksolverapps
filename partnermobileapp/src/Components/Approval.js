@@ -41,7 +41,7 @@ const ApprovalStatusScreen = () => {
         }
 
         const response = await axios.post(
-          `https://backend.clicksolver.com/api/check/approval/verification/status`,
+          `http://192.168.55.102:5000/api/check/approval/verification/status`,
           {},
           {
             headers: {

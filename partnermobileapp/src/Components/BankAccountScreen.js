@@ -72,7 +72,7 @@ const BankAccountScreen = () => {
       // Call the backend API that creates a fund account via Razorpay.
       // Make sure your backend endpoint is set up to call Razorpay's /v1/fund_accounts API.
       const response = await axios.post(
-        "https://backend.clicksolver.com/api/account/fund_account",
+        "http://192.168.55.102:5000/api/account/fund_account",
         fundAccountDetails,
         { headers: { Authorization: `Bearer ${pcsToken}` } }
       );

@@ -74,7 +74,7 @@ const ServiceTrackingItemScreen = () => {
   const applyStatusChange = async (newStatus) => {
     try {
       await axios.post(
-        `https://backend.clicksolver.com/api/service/tracking/update/status`,
+        `http://192.168.55.102:5000/api/service/tracking/update/status`,
         {
           tracking_id,
           newStatus,
@@ -101,6 +101,28 @@ const ServiceTrackingItemScreen = () => {
     );
   };
 
+  const phoneCall = async () => {
+    try { 
+      console.log("trac",tracking_id)
+      const response = await axios.post('http://192.168.55.102:5000/api/user/tracking/call', { tracking_id });
+  
+      if (response.status === 200 && response.data.mobile) {
+        const phoneNumber = response.data.mobile;
+        console.log("Call initiated successfully:", phoneNumber);
+  
+        // Open phone dialer with the retrieved number
+        const dialURL = `tel:${phoneNumber}`;
+        Linking.openURL(dialURL).catch(err => 
+          console.error("Error opening dialer:", err)
+        );
+      } else {
+        console.log("Failed to initiate call:", response.data);
+      }
+    } catch (error) {
+      console.error("Error initiating call:", error.response ? error.response.data : error.message);
+    }
+  };
+
   // Generate timeline data
   const getTimelineData = useMemo(() => {
     const currentStatusIndex = statuses.indexOf(details.service_status);
@@ -119,7 +141,7 @@ const ServiceTrackingItemScreen = () => {
         const {
           data: { data, paymentDetails },
         } = await axios.post(
-          `https://backend.clicksolver.com/api/service/tracking/worker/item/details`,
+          `http://192.168.55.102:5000/api/service/tracking/worker/item/details`,
           { tracking_id }
         );
         setDetails(data);
@@ -156,7 +178,7 @@ const ServiceTrackingItemScreen = () => {
           </View>
           <View style={styles.profileTextContainer}>
             <Text style={styles.userName}>{details.name}</Text>
-            <TouchableOpacity style={styles.callIconContainer}>
+            <TouchableOpacity style={styles.callIconContainer} onPress={phoneCall}>
               <MaterialIcons name="call" size={styles.callIconSize} color="#FF5722" />
             </TouchableOpacity>
           </View>
@@ -393,6 +415,16 @@ function dynamicStyles(width) {
       justifyContent: 'space-between',
       paddingRight: isTablet ? 20 : 16,
     },
+    userName: {
+      fontSize: isTablet ? 22 : 20,
+      fontFamily: 'RobotoSlab-Medium',
+      color: '#1D2951',
+    },
+    userDesignation: { 
+      fontSize: isTablet ? 16 : 14,
+      color: '#4a4a4a',
+      fontFamily: 'RobotoSlab-Regular',
+    },
     callIconContainer: {
       backgroundColor: '#fff',
       borderRadius: 50,
@@ -449,10 +481,10 @@ function dynamicStyles(width) {
     timelineItem: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      marginBottom: isTablet ? 12 : 8,
+      // marginBottom: isTablet ? 12 : 8,
     },
     timelineIcon: {
-      marginBottom: 2,
+      // marginBottom: 2,
     },
     lineSegment: {
       width: 2,

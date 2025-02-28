@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Modal,
+  Animated 
 } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 Mapbox.setAccessToken(
@@ -52,7 +53,8 @@ const HomeScreen = () => {
   const [screenName, setScreenName] = useState(null);
   const [params, setParams] = useState(null);
   const [messageBoxDisplay, setMessageBoxDisplay] = useState(false);
-  const [isEnabled, setIsEnabled] = useState(false);
+  const [isEnabled, setIsEnabled] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [greeting, setGreeting] = useState('');
   const [greetingIcon, setGreetingIcon] = useState(null);
   const [showUpArrow, setShowUpArrow] = useState(false);
@@ -61,6 +63,7 @@ const HomeScreen = () => {
   // NEW: For the inspection confirmation modal
   const [inspectionModalVisible, setInspectionModalVisible] = useState(false);
   const [pendingNotificationId, setPendingNotificationId] = useState(null);
+  const AnimatedMarker = Animated.createAnimatedComponent(View);
 
   // Function to fetch notifications and update state
   const fetchNotifications = useCallback(async () => {
@@ -119,7 +122,7 @@ const HomeScreen = () => {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       if (pcs_token) {
         const response = await axios.get(
-          `https://backend.clicksolver.com/api/worker/track/details`,
+          `http://192.168.55.102:5000/api/worker/track/details`,
           {
             headers: { Authorization: `Bearer ${pcs_token}` },
           }
@@ -167,13 +170,14 @@ const HomeScreen = () => {
   const fetchTrackingState = async () => {
     try {
       const storedState = await EncryptedStorage.getItem('trackingEnabled');
-      if (storedState !== null) {
-        setIsEnabled(JSON.parse(storedState));
-      }
+      // Update isEnabled based on stored value (default to false if not found)
+      setIsEnabled(storedState !== null ? JSON.parse(storedState) : false);
     } catch (error) {
       console.error('Error fetching tracking state:', error);
+      setIsEnabled(false);
     }
   };
+  
 
   const earningsScreen = () => {
     navigation.push('Earnings');
@@ -221,7 +225,7 @@ const HomeScreen = () => {
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/accept/request`,
+        `http://192.168.55.102:5000/api/accept/request`,
         { user_notification_id: decodedId },
         { headers: { Authorization: `Bearer ${jwtToken}` } },
       );
@@ -244,7 +248,7 @@ const HomeScreen = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `https://backend.clicksolver.com/api/worker/action`,
+          `http://192.168.55.102:5000/api/worker/action`,
           { encodedId: encodedNotificationId, screen: 'UserNavigation' },
           { headers: { Authorization: `Bearer ${pcs_token}` } },
         );
@@ -262,7 +266,7 @@ const HomeScreen = () => {
       } else {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         await axios.post(
-          `https://backend.clicksolver.com/api/worker/action`,
+          `http://192.168.55.102:5000/api/worker/action`,
           { encodedId: '', screen: '' },
           { headers: { Authorization: `Bearer ${pcs_token}` } },
         );
@@ -344,6 +348,7 @@ const HomeScreen = () => {
         return;
       }
       const newToken = await messaging().getToken();
+      console.log("token",newToken)
       if (!newToken) {
         console.error('Failed to retrieve FCM token.');
         return;
@@ -357,7 +362,7 @@ const HomeScreen = () => {
       }
 
       await axios.post(
-        `https://backend.clicksolver.com/api/worker/store-fcm-token`,
+        `http://192.168.55.102:5000/api/worker/store-fcm-token`,
         { fcmToken: newToken },
         { headers: { Authorization: `Bearer ${pcs_token}` } },
       );
@@ -706,10 +711,16 @@ const HomeScreen = () => {
         </View>
       </View>
 
-      {isEnabled ? (
+
+
+      {/* {isEnabled ? (
         <>
           <Mapbox.MapView style={{ minHeight: height, minWidth: width }}>
-            <Mapbox.Camera zoomLevel={17} centerCoordinate={center} />
+            <Mapbox.Camera
+              zoomLevel={17}
+              centerCoordinate={center}
+              animationDuration={1000}  // smooth camera transition
+            />
             <Mapbox.PointAnnotation id="current-location" coordinate={center}>
               <View style={styles.markerContainer}>
                 <Octicons name="dot-fill" size={25} color="#0E52FB" />
@@ -717,10 +728,13 @@ const HomeScreen = () => {
             </Mapbox.PointAnnotation>
           </Mapbox.MapView>
 
-          {/* Location Tracker Component */}
+          
+          {console.log('[HOME] Current tracking state:', isEnabled)}
+        
           <LocationTracker
             isEnabled={isEnabled}
             onLocationUpdate={(latitude, longitude) => {
+              // Update center state so that the camera smoothly pans to the new location.
               setCenter([longitude, latitude]);
               setWorkerLocation([latitude, longitude]);
             }}
@@ -728,7 +742,33 @@ const HomeScreen = () => {
         </>
       ) : (
         <Text style={styles.message}>Please click the switch on</Text>
+      )} */}
+
+      {isEnabled !== null && (
+        <LocationTracker
+          isEnabled={isEnabled}
+          onLocationUpdate={(latitude, longitude) => {
+            setCenter([longitude, latitude]);
+            setWorkerLocation([latitude, longitude]);
+          }}
+        />
       )}
+
+    {isEnabled ? (
+      <>
+        <Mapbox.MapView style={{ minHeight: height, minWidth: width }}>
+          <Mapbox.Camera zoomLevel={17} centerCoordinate={center} animationDuration={1000} />
+          <Mapbox.PointAnnotation id="current-location" coordinate={center}>
+            <View style={styles.markerContainer}>
+              <Octicons name="dot-fill" size={25} color="#0E52FB" />
+            </View>
+          </Mapbox.PointAnnotation>
+        </Mapbox.MapView>
+      </>
+    ) : (
+      <Text style={styles.message}>Please click the switch on</Text>
+    )}
+
 
       {isEnabled && (
         <ScrollView
@@ -1243,3 +1283,4 @@ function dynamicStyles(width, height) {
 }
 
 export default HomeScreen;
+ 

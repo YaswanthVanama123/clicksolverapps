@@ -209,6 +209,72 @@ const verifyPayment = async (req, res) => {
   }
 };
 
+const workerTrackingCall = async (req,res) => {
+  try {
+    const { tracking_id } = req.body;
+
+    if (!tracking_id) {
+      return res.status(400).json({ message: "Valid decodedId is required." });
+    }
+
+    // Fetch `from_number` from accepted table by joining with user and workersverified tables
+    const query = `
+      SELECT 
+        u.phone_number AS from_number, 
+        w.phone_number AS mobile_number
+      FROM servicetracking s
+      JOIN "user" u ON s.user_id = u.user_id
+      JOIN workersverified w ON s.worker_id = w.worker_id
+      WHERE s.tracking_id = $1
+    `;
+
+    const values = [tracking_id];
+    const result = await client.query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "No matching data found." });
+    }
+
+    const { from_number, mobile_number } = result.rows[0];
+
+    // Ensure these are strings (avoiding JSON structure issues)
+    if (typeof from_number !== "string" || typeof mobile_number !== "string") {
+      return res.status(500).json({ message: "Invalid phone number format." });
+    }
+
+    console.log("From Number:", from_number, "Mobile Number:", mobile_number);
+
+    // Call the external API
+    const apiResponse = await axios.post(
+      'https://apiv1.cloudshope.com/api/outboundCall',
+      { from_number, mobile_number },
+      {
+        headers: {
+          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEwMzgzLCJ1c2VybmFtZSI6Illhc2h3YW50NjU0OTQiLCJtYWluX3VzZXIiOjEwMzgzLCJpYXQiOjE3Mzk3NzIzOTB9.HKURS7DdnYsizBBDgeTn6E5JpkKk1C8qkuRDL3l3qDE`
+        }
+      }
+    );
+
+    // Extracting mobile from response data properly
+    const responseData = apiResponse.data?.data?.mobile;
+
+    console.log("Masked Number:", responseData);
+
+    res.status(200).json({
+      message: "Call initiated successfully.",
+      mobile: responseData
+    });
+
+  } catch (error) {
+    console.error("Error initiating call:", error.message);
+    
+    res.status(500).json({
+      message: "Internal server error.",
+      error: error.message
+    });
+  }
+}
+
 const phoneCall = async (req, res) => {
   try {
     const { decodedId } = req.body;
@@ -274,6 +340,72 @@ const phoneCall = async (req, res) => {
     });
   }
 };
+
+const userTrackingCall = async (req,res) => {
+  try {
+    const { tracking_id } = req.body;
+
+    if (!tracking_id ) {
+      return res.status(400).json({ message: "Valid decodedId is required." });
+    }
+
+    // Fetch `from_number` from accepted table by joining with user and workersverified tables
+    const query = `
+      SELECT 
+        u.phone_number AS mobile_number, 
+        w.phone_number AS from_number
+      FROM servicetracking s
+      JOIN "user" u ON s.user_id = u.user_id
+      JOIN workersverified w ON s.worker_id = w.worker_id
+      WHERE s.tracking_id = $1
+    `;
+
+    const values = [tracking_id];
+    const result = await client.query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "No matching data found." });
+    }
+
+    const { from_number, mobile_number } = result.rows[0];
+
+    // Ensure these are strings (avoiding JSON structure issues)
+    if (typeof from_number !== "string" || typeof mobile_number !== "string") {
+      return res.status(500).json({ message: "Invalid phone number format." });
+    }
+
+    console.log("From Number:", from_number, "Mobile Number:", mobile_number);
+
+    // Call the external API
+    const apiResponse = await axios.post(
+      'https://apiv1.cloudshope.com/api/outboundCall',
+      { from_number, mobile_number },
+      {
+        headers: {
+          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEwMzgzLCJ1c2VybmFtZSI6Illhc2h3YW50NjU0OTQiLCJtYWluX3VzZXIiOjEwMzgzLCJpYXQiOjE3Mzk3NzIzOTB9.HKURS7DdnYsizBBDgeTn6E5JpkKk1C8qkuRDL3l3qDE`
+        }
+      }
+    );
+
+    // Extracting mobile from response data properly
+    const responseData = apiResponse.data?.data?.mobile;
+
+    console.log("Masked Number:", responseData);
+
+    res.status(200).json({
+      message: "Call initiated successfully.",
+      mobile: responseData
+    });
+
+  } catch (error) {
+    console.error("Error initiating call:", error.message);
+    
+    res.status(500).json({
+      message: "Internal server error.",
+      error: error.message
+    });
+  }
+}
 
 const UserPhoneCall = async (req, res) => {
   try {
@@ -8090,20 +8222,34 @@ const getWorkersNearby = async (req, res) => {
         },
         android: { priority: "high" },
       };
-
+    
       try {
-        const fcmResponse = await getMessaging().sendEachForMulticast(
-          normalNotificationMessage
-        );
+        console.log("Sending FCM Notification:", JSON.stringify(normalNotificationMessage, null, 2));
+    
+        const fcmResponse = await getMessaging().sendEachForMulticast(normalNotificationMessage);
+    
+        console.log("FCM Response:", JSON.stringify(fcmResponse, null, 2));
+    
+        let successCount = 0;
+        let failureCount = 0;
+    
         fcmResponse.responses.forEach((resp, idx) => {
-          if (!resp.success) {
-            console.error(`Error sending to token ${tokens[idx]}`, resp.error);
+          if (resp.success) {
+            console.log(`✅ Successfully sent to token ${tokens[idx]}`);
+            successCount++;
+          } else {
+            console.error(`❌ Error sending to token ${tokens[idx]}:`, resp.error);
+            failureCount++;
           }
         });
+    
+        console.log(`FCM Summary: ${successCount} success, ${failureCount} failure(s).`);
+    
       } catch (err) {
-        console.error("Error sending FCM notifications:", err);
+        console.error("❌ Error sending FCM notifications:", err);
       }
     }
+    
 
     return res.status(200).json(encodedUserNotificationId);
   } catch (error) {
@@ -13296,5 +13442,7 @@ module.exports = {
   workerLogout,
   phoneCall,
   UserPhoneCall,
-  accountDelete
+  accountDelete,
+  userTrackingCall,
+  workerTrackingCall
 };
