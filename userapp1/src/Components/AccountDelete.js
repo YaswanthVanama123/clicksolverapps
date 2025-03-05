@@ -9,7 +9,8 @@ import {
   Image,
   ActivityIndicator,
   useWindowDimensions,
-  Modal, // <-- Import Modal
+  Modal,
+  ScrollView, // <-- Import Modal
 } from 'react-native';
 import {useRoute, useNavigation, CommonActions} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -41,7 +42,7 @@ const AccountDelete = () => {
       const fcm_token = await EncryptedStorage.getItem('fcm_token');
 
       if (fcm_token) {
-        await axios.post('http://192.168.55.102:5000/api/userLogout', {
+        await axios.post('https://backend.clicksolver.com/api/userLogout', {
           fcm_token,
         });
       }
@@ -73,7 +74,7 @@ const AccountDelete = () => {
       }
 
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/user/details/delete`,
+        `https://backend.clicksolver.com/api/user/details/delete`,
         {name: fullName, email, phone},
         {
           headers: {Authorization: `Bearer ${jwtToken}`},
@@ -112,6 +113,7 @@ const AccountDelete = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+
       <View style={styles.header}>
         <Icon
           name="arrow-back"
@@ -121,7 +123,7 @@ const AccountDelete = () => {
         />
         <Text style={styles.headerText}>Account Delete</Text>
       </View>
-
+      <ScrollView>
       <View style={styles.form}>
         <View>
           <Text style={styles.label}>Full Name</Text>
@@ -208,6 +210,7 @@ const AccountDelete = () => {
           </View>
         </View>
       </Modal>
+      </ScrollView>
     </SafeAreaView>
   );
 };

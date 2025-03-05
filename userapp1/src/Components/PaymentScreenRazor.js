@@ -13,7 +13,7 @@ const PaymentScreenRazor = () => {
 
     try {
       // Step 1: Create Order
-      const response = await fetch("http://192.168.55.102:5000/api/create-order", {
+      const response = await fetch("https://backend.clicksolver.com/api/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: Number(amount), currency: "INR" }),
@@ -42,7 +42,7 @@ const PaymentScreenRazor = () => {
       RazorpayCheckout.open(options)
         .then(async (paymentData) => {
           // Step 3: Verify Payment
-          const verifyResponse = await fetch("http://192.168.55.102:5000/api/verify-payment", {
+          const verifyResponse = await fetch("https://backend.clicksolver.com/api/verify-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(paymentData),

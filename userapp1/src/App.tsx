@@ -171,16 +171,18 @@ function App() {
   // Get FCM token and store it in the backend if needed.
   async function getTokens() {
     try {
+      const token = await messaging().getToken();
+      console.log("token",token)
       const fcm = await EncryptedStorage.getItem('fcm_token');
       const cs_token = await EncryptedStorage.getItem('cs_token');
       console.log('Stored FCM token:', fcm);
-      if (!fcm && cs_token) {
+      if (!fcm && cs_token) { 
         const token = await messaging().getToken();
         await EncryptedStorage.setItem('fcm_token', token);
         const cs_token = await EncryptedStorage.getItem('cs_token');
         if (cs_token) {
           await axios.post(
-            `http://192.168.55.102:5000/api/user/store-fcm-token`,
+            `https://backend.clicksolver.com/api/user/store-fcm-token`,
             {fcmToken: token},
             {headers: {Authorization: `Bearer ${cs_token}`}},
           );
@@ -197,7 +199,7 @@ function App() {
       const pcs_token = await EncryptedStorage.getItem('cs_token');
       const fcmToken = await EncryptedStorage.getItem('fcm_token');
       await axios.post(
-        `http://192.168.55.102:5000/api/user/store-notification`,
+        `https://backend.clicksolver.com/api/user/store-notification`,
         {notification, fcmToken},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );

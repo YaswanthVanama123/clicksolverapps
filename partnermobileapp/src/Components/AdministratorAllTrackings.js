@@ -30,7 +30,7 @@ const AdministratorAllTrackings = () => {
         if (!token) throw new Error('Token not found');
 
         const response = await axios.get(
-          `http://192.168.55.102:5000/api/all/tracking/services`,
+          `https://backend.clicksolver.com/api/all/tracking/services`,
           {},
         );
         setServiceData(response.data);

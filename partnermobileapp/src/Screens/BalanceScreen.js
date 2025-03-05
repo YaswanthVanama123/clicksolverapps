@@ -6,29 +6,44 @@ import {
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
-  Alert,
-  ActivityIndicator,
-  useWindowDimensions, // <-- for responsiveness
+  useWindowDimensions,
 } from 'react-native';
 import LottieView from 'lottie-react-native';
-import Entypo from 'react-native-vector-icons/Entypo';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Feather from 'react-native-vector-icons/Feather';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import RazorpayCheckout from 'react-native-razorpay';
 
-const BalanceScreen = () => {
-  // 1) Grab screen width for dynamic styles
+/** 
+ * Helper function to compute relative time (e.g. "Just now", "3 hours ago", "Yesterday", etc.).
+ * You can adjust the thresholds and output format as desired.
+ */
+function getRelativeTime(dateString) {
+  const now = new Date();
+  const then = new Date(dateString);
+  const diffMs = now - then; // milliseconds
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHours = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMin < 1) return 'Just now';
+  if (diffHours < 1) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays === 1) return 'Yesterday';
+  return then.toDateString(); // fallback to full date if older than 1 day
+}
+
+const BalanceScreen = () => { 
   const { width } = useWindowDimensions();
   const styles = dynamicStyles(width);
-
   const navigation = useNavigation();
+
   const [balance, setBalance] = useState(null);
-  const [transactions, setTransactions] = useState([]); // For service charge history
-  const [dummyTransactions, setDummyTransactions] = useState([]); // For payment history
+  const [transactions, setTransactions] = useState([]); // Service Charge data
+  const [dummyTransactions, setDummyTransactions] = useState([]); // Payment History data
   const [activeCard, setActiveCard] = useState('ServiceHistory');
   const [loading, setLoading] = useState(true);
 
@@ -37,27 +52,30 @@ const BalanceScreen = () => {
     setLoading(true);
     try {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
-      console.log(await EncryptedStorage.getItem('pcs_token'))
       if (!pcs_token) throw new Error('User not authenticated');
-
-      // 2) Call your backend API to fetch balance and history
+  
       const response = await axios.post(
-        'http://192.168.55.102:5000/api/balance/ammount',
+        'http://192.168.55.103:5000/api/balance/ammount',
         {},
         { headers: { Authorization: `Bearer ${pcs_token}` } }
-      ); 
-
-      // Assuming response.data is an array with the first element having balance info
+      );
+  
+      // The first object in response.data is the main balance info
       const data = response.data[0];
       setDummyTransactions(data.balance_payment_history || []);
       setBalance(data.balance_amount);
-
-      // Map the service charge transactions for display
+  
+      // Build Service Charge array from entire 'response.data'
       const serviceBalanceHistory = response.data.map((transaction, index) => {
         const paymentType = transaction.payment_type.toLowerCase();
         const paymentValue = Number(transaction.payment);
-        // Calculation logic: adjust as needed
-        const deduction = paymentType === 'cash' ? paymentValue * 0.12 : paymentValue * 0.88;
+  
+        // Example deduction logic
+        const deduction =
+          paymentType === 'cash'
+            ? paymentValue * 0.12
+            : paymentValue * 0.88;
+  
         const amount = `${paymentType === 'cash' ? '-' : '+'} ₹${deduction.toFixed(2)}`;
         const dateObject = new Date(transaction.end_time);
         const formattedTime = dateObject.toLocaleDateString([], {
@@ -65,18 +83,20 @@ const BalanceScreen = () => {
           month: 'short',
           year: 'numeric',
         });
+  
         return {
           id: index.toString(),
           amount,
-          time: formattedTime,
-          service: 'Electrician',
+          time: formattedTime,         // Formatted display time
+          timestamp: dateObject.getTime(), // Raw timestamp for sorting
+          service: 'Electrician', // Example service type
           payment: paymentType === 'cash' ? 'Paid by Cash' : 'Paid to Click Solver',
           name: transaction.name,
         };
       });
-
-      // Sort transactions by date descending (if needed)
-      serviceBalanceHistory.sort((a, b) => new Date(b.time) - new Date(a.time));
+  
+      // Sort service charges by timestamp in descending order
+      serviceBalanceHistory.sort((a, b) => b.timestamp - a.timestamp);
       setTransactions(serviceBalanceHistory);
     } catch (error) {
       console.error('Error fetching balance history:', error);
@@ -84,41 +104,47 @@ const BalanceScreen = () => {
       setLoading(false);
     }
   }, []);
+  
 
   useEffect(() => {
-    
     fetchServiceBalanceHistory();
   }, [fetchServiceBalanceHistory]);
 
   // Check if the balance is negative
   const isBalanceNegative = balance !== null && Number(balance) < 0;
 
-  // Handle Pay Now: Create order, open Razorpay, and verify payment
+  // Handle Pay Now: create order, open Razorpay, and verify payment
   const handlePayNow = async () => {
     try {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       if (!pcs_token) {
-        Alert.alert('Error', 'User not authenticated.');
+        // navigation.navigate('PaymentConfirmationScreen', {
+        //   status: 'failure',
+        //   total: 0,
+        //   message: 'User not authenticated.',
+        //   transactionNumber: 'N/A',
+        //   paymentMethod: 'Unknown',
+        // });
         return;
       }
-      // Amount to pay is the absolute value of the negative balance (in rupees)
+
       const amountToPay = Math.abs(Number(balance));
 
-      // 1. Create an order on the backend (amount returned in paise)
+      // 1. Create an order on the backend
       const createResponse = await axios.post(
-        'http://192.168.55.102:5000/api/create-order',
+        'http://192.168.55.103:5000/api/create-order',
         { amount: amountToPay, currency: 'INR' },
         { headers: { Authorization: `Bearer ${pcs_token}` } }
       );
       const data = createResponse.data;
       if (!data.success) throw new Error('Order creation failed');
 
-      // 2. Open Razorpay Checkout using the returned order details
+      // 2. Open Razorpay Checkout
       const options = {
         description: 'Payment for clearing negative balance',
         currency: data.currency,
-        key: 'rzp_test_vca9xUL1SxWrEM', // Replace with your Razorpay key
-        amount: data.amount, // Amount in paise
+        key: 'rzp_test_vca9xUL1SxWrEM', // Replace with your actual key
+        amount: data.amount, // in paise
         order_id: data.order_id,
         name: 'Click Solver',
         prefill: {
@@ -131,43 +157,68 @@ const BalanceScreen = () => {
 
       RazorpayCheckout.open(options)
         .then(async (paymentData) => {
-          // 3. Payment completed – verify payment on the backend
+          // 3. Payment completed – verify on the backend
           const verifyResponse = await axios.post(
-            'http://192.168.55.102:5000/api/verify-payment',
+            'http://192.168.55.103:5000/api/verify-payment',
             paymentData,
             { headers: { Authorization: `Bearer ${pcs_token}` } }
           );
           const verifyData = verifyResponse.data;
+
           if (verifyData.success) {
-            Alert.alert('Payment Success', verifyData.message);
-            // Refresh the balance and transaction history
+            // navigation.navigate('PaymentConfirmationScreen', {
+            //   status: 'success',
+            //   total: amountToPay,
+            //   message: verifyData.message,
+            //   transactionNumber: paymentData.razorpay_payment_id,
+            //   paymentMethod: 'Online',
+            // });
+            // Refresh local data
             fetchServiceBalanceHistory();
           } else {
-            Alert.alert('Payment Verification Failed', verifyData.message);
+            // navigation.navigate('PaymentConfirmationScreen', {
+            //   status: 'failure',
+            //   total: amountToPay,
+            //   message: verifyData.message,
+            //   transactionNumber: paymentData.razorpay_payment_id || 'N/A',
+            //   paymentMethod: 'Online',
+            // });
           }
         })
         .catch((error) => {
-          Alert.alert('Payment Failed', error.description || error.message);
+          // navigation.navigate('PaymentConfirmationScreen', {
+          //   status: 'failure',
+          //   total: amountToPay,
+          //   message: error.description || error.message,
+          //   transactionNumber: 'N/A',
+          //   paymentMethod: 'Online',
+          // });
         });
     } catch (error) {
-      Alert.alert('Error', error.message);
+      // navigation.navigate('PaymentConfirmationScreen', {
+      //   status: 'failure',
+      //   total: 0,
+      //   message: error.message,
+      //   transactionNumber: 'N/A',
+      //   paymentMethod: 'Unknown',
+      // });
     }
   };
 
-  // Render no data message
+  // Fallback "no data" UI
   const renderNoData = (message) => (
     <View style={styles.noDataContainer}>
       <Text style={styles.noDataText}>{message}</Text>
     </View>
   );
 
-  // Render transaction item for Service Charge
+  // 1) Service History Card
   const renderServiceHistoryItem = ({ item }) => (
     <View style={styles.transactionContainer}>
       <View style={styles.paymentContainer}>
         <View style={styles.iconContainer}>
-          {item.payment.toLowerCase() === 'paid by cash' ? (
-            <Entypo name="wallet" size={20} color="white" />
+          {item.payment.toLowerCase().includes('cash') ? (
+            <MaterialCommunityIcons name="wallet" size={20} color="white" />
           ) : (
             <MaterialCommunityIcons name="bank" size={20} color="white" />
           )}
@@ -179,7 +230,9 @@ const BalanceScreen = () => {
         <View style={styles.paymentDetails}>
           <Text
             style={
-              item.amount.startsWith('-') ? styles.amountNegative : styles.amountPositive
+              item.amount.startsWith('-')
+                ? styles.amountNegative
+                : styles.amountPositive
             }
           >
             {item.amount}
@@ -190,37 +243,54 @@ const BalanceScreen = () => {
     </View>
   );
 
-  // Render transaction item for Payment History
-  const renderPaymentHistoryItem = ({ item }) => (
-    <View style={styles.cardPaymentContainer}>
-      <View style={styles.iconWrapper}>
-        <MaterialCommunityIcons
-          name={
-            item.type === 'Paid'
-              ? 'arrow-top-right'
-              : item.type === 'Received'
-              ? 'arrow-bottom-left'
-              : 'wrench'
-          }
-          size={20}
-          color="white"
-        />
+  // 2) Payment History Card
+  // Example item format:
+  // {
+  //   amount: 679.2,
+  //   order_id: "order_Q2fM4LyHKV1qGd",
+  //   paid: "paid by Click Solver",
+  //   status: "success",
+  //   time: "2025-03-04 09:36:37"
+  // }
+  const renderPaymentHistoryItem = ({ item }) => {
+    // Determine if user "Received" or "Paid"
+    const lowerPaid = item.paid.toLowerCase();
+    const isReceived = lowerPaid.includes('paid by click solver') || lowerPaid.includes('received');
+    const mainText = isReceived
+      ? `Received from Click Solver`
+      : `Paid to Click Solver`;
+
+    // Icon logic
+    const iconName = isReceived ? 'arrow-bottom-left' : 'arrow-top-right';
+    const iconBg = isReceived ? '#4CAF50' : '#FF5722';
+    const timeString = getRelativeTime(item.time);
+
+    // We'll place the order_id on the bottom line (right side),
+    // removing "Credited to you" or "Debited from you" lines.
+    // We'll keep the alignment for a professional look.
+    return (
+      <View style={styles.historyItemContainer}>
+        {/* Left Icon/Avatar */}
+        <View style={[styles.historyIconWrapper, { backgroundColor: iconBg }]}>
+          <MaterialCommunityIcons name={iconName} size={20} color="#fff" />
+        </View>
+
+        {/* Middle Section */}
+        <View style={styles.historyMiddle}>
+          <Text style={styles.historyMainText}>{mainText}</Text>
+          <Text style={styles.historyTimeText}>{timeString}</Text>
+        </View>
+
+        {/* Right Section */}
+        <View style={styles.historyRight}>
+          <Text style={styles.historyAmount}>₹{item.amount.toFixed(2)}</Text>
+          <Text style={styles.historyOrderId} numberOfLines={1}>
+            {item.order_id}
+          </Text>
+        </View>
       </View>
-      <View style={styles.detailsWrapper}>
-        <Text style={styles.typeText}>
-          {item.type === 'Paid' ? 'Paid to Click Solver' : 'Received from Click Solver'}
-        </Text>
-        <Text style={styles.companyText}>{item.name}</Text>
-        <Text style={styles.dateText}>{item.date}</Text>
-      </View>
-      <View style={styles.amountWrapper}>
-        <Text style={styles.amountText}>{item.amount}</Text>
-        <Text style={styles.statusText}>
-          {item.type === 'Paid' ? 'Debited from you' : 'Credited to you'}
-        </Text>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -315,7 +385,7 @@ const BalanceScreen = () => {
       </View>
 
       {/* Show Pay Now Button if Balance is Negative */}
-      {balance !== null && Number(balance) < 0 && (
+      {isBalanceNegative && (
         <TouchableOpacity style={styles.payNowButton} onPress={handlePayNow}>
           <Text style={styles.payNowButtonText}>Pay Now</Text>
         </TouchableOpacity>
@@ -324,13 +394,8 @@ const BalanceScreen = () => {
   );
 };
 
-/**
- * A helper function that returns a StyleSheet based on screen width.
- * If `width >= 600`, we treat it as a tablet and scale up certain styles.
- */
 function dynamicStyles(width) {
   const isTablet = width >= 600;
-
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -414,6 +479,8 @@ function dynamicStyles(width) {
       color: '#999',
       fontWeight: 'bold',
     },
+
+    // Service History transaction styling
     transactionContainer: {
       backgroundColor: '#FFFFFF',
       borderRadius: 15,
@@ -466,6 +533,8 @@ function dynamicStyles(width) {
       marginTop: 8,
       textAlign: 'right',
     },
+
+    // Pay Now button
     payNowButton: {
       position: 'absolute',
       bottom: isTablet ? 30 : 20,
@@ -484,54 +553,58 @@ function dynamicStyles(width) {
       fontWeight: 'bold',
     },
 
-    // Payment history transaction styling
-    cardPaymentContainer: {
+    // Payment History item styling (like reference image)
+    historyItemContainer: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'center',
-      backgroundColor: 'white',
-      borderRadius: 10,
-      padding: isTablet ? 20 : 15,
-      marginVertical: 8,
+      backgroundColor: '#fff',
       marginHorizontal: isTablet ? 30 : 16,
-      elevation: 2,
+      marginVertical: 8,
+      borderRadius: 10,
+      padding: isTablet ? 20 : 16,
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
     },
-    iconWrapper: {
-      backgroundColor: '#FF5722',
-      borderRadius: 25,
-      width: isTablet ? 45 : 40,
-      height: isTablet ? 45 : 40,
+    historyIconWrapper: {
+      width: isTablet ? 50 : 45,
+      height: isTablet ? 50 : 45,
+      borderRadius: isTablet ? 25 : 22.5,
       justifyContent: 'center',
       alignItems: 'center',
+      marginRight: isTablet ? 18 : 14,
     },
-    detailsWrapper: {
+    historyMiddle: {
       flex: 2,
-      marginLeft: isTablet ? 18 : 15,
+      justifyContent: 'center',
     },
-    typeText: {
-      fontSize: isTablet ? 17 : 16,
-      fontWeight: 'bold',
-      color: '#000',
+    historyMainText: {
+      fontSize: isTablet ? 16 : 14,
+      fontWeight: '600',
+      color: '#333',
+      marginBottom: 4,
     },
-    companyText: {
-      fontSize: isTablet ? 15 : 14,
-      color: '#4a4a4a',
-    },
-    dateText: {
-      fontSize: isTablet ? 13 : 12,
-      color: '#a9a9a9',
-    },
-    amountWrapper: {
-      alignItems: 'flex-end',
-    },
-    amountText: {
-      fontSize: isTablet ? 20 : 18,
-      fontWeight: 'bold',
-      color: '#000',
-    },
-    statusText: {
+    historyTimeText: {
       fontSize: isTablet ? 14 : 12,
-      color: '#a9a9a9',
+      color: '#999',
+    },
+    historyRight: {
+      alignItems: 'flex-end',
+      justifyContent: 'center',
+      marginLeft: isTablet ? 12 : 8,
+    },
+    historyAmount: {
+      fontSize: isTablet ? 18 : 16,
+      fontWeight: 'bold',
+      color: '#333',
+    },
+    historyOrderId: {
+      marginTop: 4,
+      fontSize: isTablet ? 13 : 12,
+      color: '#999',
+      maxWidth: 120, // so it doesn't overflow
     },
   });
 }

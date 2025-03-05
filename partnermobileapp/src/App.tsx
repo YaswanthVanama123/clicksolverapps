@@ -61,6 +61,7 @@ import {NavigationContainerRef} from '@react-navigation/native';
 import axios from 'axios';
 import WorkerOtpVerificationScreen from './Components/WorkerOtpVerificationScreen';
 import ProfileChange from './Components/ProfileChange';
+import PaymentConfirmationScreen from './Components/PaymentConfirmationScreen';
 // Additional imports...
 
 const Stack = createNativeStackNavigator();
@@ -154,7 +155,7 @@ function App(): React.JSX.Element {
         const fcm_token = await EncryptedStorage.getItem('fcm_token');
 
         if (fcm_token) {
-            await axios.post('http://192.168.55.102:5000/api/workerLogout', { fcm_token });
+            await axios.post('https://backend.clicksolver.com/api/workerLogout', { fcm_token });
         }
 
         await EncryptedStorage.removeItem("pcs_token");
@@ -202,7 +203,7 @@ function App(): React.JSX.Element {
   
 
           const response = await axios.post(
-            "http://192.168.55.102:5000/api/worker/token/verification",
+            "https://backend.clicksolver.com/api/worker/token/verification",
             { pcsToken }, // Sending pcsToken in the request body
             {
               headers: { Authorization: `Bearer ${pcsToken}` },
@@ -581,6 +582,11 @@ function App(): React.JSX.Element {
           name="OtpVerification"
           component={OTPVerification}
           options={{title: 'OtpVerification', headerShown: false}}
+        />
+        <Stack.Screen
+          name="PaymentConfirmationScreen"
+          component={PaymentConfirmationScreen}
+          options={{title: 'PaymentConfirmationScreen ', headerShown: false}}
         />
         <Stack.Screen
           name="Paymentscreen"

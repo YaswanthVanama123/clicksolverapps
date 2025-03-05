@@ -104,6 +104,111 @@ const createOrder = async (req, res) => {
 };
 
 
+// const verifyPayment = async (req, res) => {
+//   try {
+//     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+//     const worker_id = req.worker.id; // from authenticateWorkerToken
+//     console.log("worker_id", worker_id);
+
+//     // Generate expected signature using HMAC with SHA256
+//     const expectedSignature = crypto
+//       .createHmac('sha256', process.env.RAZORPAY_SECRET)
+//       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+//       .digest('hex');
+
+//     const paymentStatus = expectedSignature === razorpay_signature ? 'success' : 'failed';
+//     console.log("status", paymentStatus);
+//     const payment_method = req.body.method || 'unknown';
+//     const error_message = paymentStatus === 'failed' ? 'Invalid payment signature' : null;
+
+//     // Begin transaction
+//     await client.query('BEGIN');
+
+//     // Update orders and insert payment using chained CTEs:
+//     const cteQuery = `
+//       WITH updated_order AS (
+//         UPDATE orders
+//         SET status = $3::text, updated_at = NOW()
+//         WHERE order_id = $1::text AND worker_id = $2::int
+//         RETURNING amount
+//       ),
+//       insert_payment AS (
+//         INSERT INTO payments (
+//           worker_id, order_id, payment_id, amount_paid, status, payment_method, transaction_date, error_message
+//         )
+//         VALUES (
+//           $2::int,
+//           $1::text,
+//           $4,
+//           (SELECT amount FROM updated_order),
+//           $3::text,
+//           $5::text,
+//           NOW(),
+//           $6::text
+//         )
+//         RETURNING *
+//       )
+//       SELECT * FROM insert_payment;
+//     `;
+//     const result = await client.query(cteQuery, [
+//       razorpay_order_id,
+//       worker_id,
+//       paymentStatus,
+//       razorpay_payment_id,
+//       payment_method,
+//       error_message,
+//     ]);
+
+//     // Compute new balance first and then update workerlife using that computed number:
+//     const updateWorkerLifeCombinedQuery = `
+//       WITH order_amt AS (
+//         SELECT amount::numeric AS amt FROM orders WHERE order_id = $1::text
+//       ),
+//       current_balance AS (
+//         SELECT COALESCE(balance_amount, 0) AS curr_balance
+//         FROM workerlife
+//         WHERE worker_id = $2::int
+//       ),
+//       new_balance AS (
+//         SELECT curr_balance + order_amt.amt AS computed_balance
+//         FROM current_balance, order_amt
+//       )
+//       UPDATE workerlife
+//       SET balance_amount = new_balance.computed_balance,
+//           balance_payment_history = COALESCE(balance_payment_history, '[]'::jsonb) ||
+//             jsonb_build_array(
+//               jsonb_build_object(
+//                 'order_id', $1::text,
+//                 'amount', (SELECT amt FROM order_amt),
+//                 'time', TO_CHAR(NOW(), 'YYYY-MM-DD HH24:MI:SS'),
+//                 'status', $3::text
+//               )
+//             )
+//       FROM new_balance
+//       WHERE workerlife.worker_id = $2::int
+//       RETURNING workerlife.*;
+//     `;
+//     await client.query(updateWorkerLifeCombinedQuery, [
+//       razorpay_order_id,
+//       worker_id,
+//       paymentStatus,
+//     ]);
+
+//     // Commit the transaction
+//     await client.query('COMMIT');
+
+//     res.status(200).json({
+//       success: true,
+//       message: 'Payment verified successfully!',
+//       data: result.rows,
+//     });
+//   } catch (error) {
+//     await client.query('ROLLBACK');
+//     console.error('Error in verifyPayment:', error.message);
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
 const verifyPayment = async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
@@ -124,17 +229,26 @@ const verifyPayment = async (req, res) => {
     // Begin transaction
     await client.query('BEGIN');
 
-    // Update orders and insert payment using chained CTEs:
+    // 1) Update orders + Insert into payments (using chained CTEs)
     const cteQuery = `
       WITH updated_order AS (
         UPDATE orders
-        SET status = $3::text, updated_at = NOW()
-        WHERE order_id = $1::text AND worker_id = $2::int
+        SET status = $3::text,
+            updated_at = NOW()
+        WHERE order_id = $1::text
+          AND worker_id = $2::int
         RETURNING amount
       ),
       insert_payment AS (
         INSERT INTO payments (
-          worker_id, order_id, payment_id, amount_paid, status, payment_method, transaction_date, error_message
+          worker_id,
+          order_id,
+          payment_id,
+          amount_paid,
+          status,
+          payment_method,
+          transaction_date,
+          error_message
         )
         VALUES (
           $2::int,
@@ -159,10 +273,13 @@ const verifyPayment = async (req, res) => {
       error_message,
     ]);
 
-    // Compute new balance first and then update workerlife using that computed number:
+    // 2) Update workerlife: compute new balance + append to balance_payment_history
+    //    ALSO set no_due = TRUE if payment is "success"
     const updateWorkerLifeCombinedQuery = `
       WITH order_amt AS (
-        SELECT amount::numeric AS amt FROM orders WHERE order_id = $1::text
+        SELECT amount::numeric AS amt
+        FROM orders
+        WHERE order_id = $1::text
       ),
       current_balance AS (
         SELECT COALESCE(balance_amount, 0) AS curr_balance
@@ -172,21 +289,27 @@ const verifyPayment = async (req, res) => {
       new_balance AS (
         SELECT curr_balance + order_amt.amt AS computed_balance
         FROM current_balance, order_amt
-      )
-      UPDATE workerlife
-      SET balance_amount = new_balance.computed_balance,
+      ),
+      update_no_due AS (
+        UPDATE workerlife
+        SET
+          balance_amount = new_balance.computed_balance,
+          no_due = CASE WHEN $3::text = 'success' THEN true ELSE no_due END,
           balance_payment_history = COALESCE(balance_payment_history, '[]'::jsonb) ||
             jsonb_build_array(
               jsonb_build_object(
                 'order_id', $1::text,
                 'amount', (SELECT amt FROM order_amt),
                 'time', TO_CHAR(NOW(), 'YYYY-MM-DD HH24:MI:SS'),
-                'status', $3::text
+                'status', $3::text,
+                'paid', 'Paid to Click Solver'::text
               )
             )
-      FROM new_balance
-      WHERE workerlife.worker_id = $2::int
-      RETURNING workerlife.*;
+        FROM new_balance
+        WHERE workerlife.worker_id = $2::int
+        RETURNING workerlife.*
+      )
+      SELECT * FROM update_no_due;
     `;
     await client.query(updateWorkerLifeCombinedQuery, [
       razorpay_order_id,
@@ -208,6 +331,7 @@ const verifyPayment = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 const workerTrackingCall = async (req,res) => {
   try {
@@ -3909,8 +4033,9 @@ const workerCashbackPayed = async (req, res) => {
       {
         amount: cashbackPayed,
         time: currentTime,
-        paid: "paid by Click Solver",
+        paid: "Paid by Click Solver",
         count: cashbackCount,
+        status: "success",
       },
     ]);
 
@@ -6327,89 +6452,102 @@ const acceptRequest = async (req, res) => {
   }
 };
 
+
 // const userNavigationCancel = async (req, res) => {
 //   const { notification_id } = req.body;
+//   const encodedUserNotificationId = Buffer.from(
+//     notification_id.toString()
+//   ).toString("base64");
 
 //   try {
 //     // Begin a transaction
 //     await client.query("BEGIN");
 
-//     // First query: UPDATE and INSERT operations with verification_status check
+//     // First query: UPDATE and INSERT operations
 //     const combinedQuery = await client.query(
 //       `
 //       WITH updated AS (
 //         UPDATE accepted
 //         SET user_navigation_cancel_status = 'usercanceled'
-//         WHERE notification_id = $1 AND verification_status != 'TRUE'
-//         RETURNING
-//           accepted_id,
-//           notification_id,
-//           user_id,
-//           user_notification_id,
-//           longitude,
-//           latitude,
-//           created_at,
-//           worker_id,
+//         WHERE notification_id = $1
+//         RETURNING 
+//           accepted_id, 
+//           notification_id, 
+//           user_id, 
+//           user_notification_id, 
+//           longitude, 
+//           latitude, 
+//           created_at, 
+//           worker_id, 
 //           complete_status,
-//           time
+//           time,
+//           discount,
+//           total_cost,
+//           tip_amount
 //       ),
 //       inserted AS (
 //         INSERT INTO completenotifications (
-//           accepted_id,
-//           notification_id,
-//           user_id,
-//           user_notification_id,
-//           longitude,
-//           latitude,
-//           created_at,
-//           worker_id,
+//           accepted_id, 
+//           notification_id, 
+//           user_id, 
+//           user_notification_id, 
+//           longitude, 
+//           latitude, 
+//           created_at, 
+//           worker_id, 
 //           complete_status,
-//           service_booked,
-//           time
+//           service_booked, 
+//           time,
+//           discount,
+//           total_cost,
+//           tip_amount
 //         )
-//         SELECT
-//           accepted_id,
-//           notification_id,
-//           user_id,
-//           user_notification_id,
-//           longitude,
-//           latitude,
-//           created_at,
-//           worker_id,
-//           'cancel',
-//           to_jsonb('service_booked'::text),
-//           time
+//         SELECT 
+//           accepted_id, 
+//           notification_id, 
+//           user_id, 
+//           user_notification_id, 
+//           longitude, 
+//           latitude, 
+//           created_at, 
+//           worker_id, 
+//           'cancel', 
+//           to_jsonb('service_booked'::text), 
+//           time,
+//           discount,
+//           total_cost,
+//           tip_amount
 //         FROM updated
-//         RETURNING worker_id, notification_id
+//         RETURNING 
+//           worker_id, 
+//           notification_id
 //       )
-//       SELECT
-//         i.worker_id,
-//         ARRAY_AGG(f.fcm_token) AS fcm_tokens
+//       SELECT 
+//         i.worker_id, 
+//         f.fcm_token
 //       FROM inserted i
 //       JOIN workersverified w ON w.worker_id = i.worker_id
-//       JOIN fcm f ON f.worker_id = w.worker_id
-//       GROUP BY i.worker_id;
+//       JOIN fcm f ON f.worker_id = w.worker_id;
 //       `,
 //       [notification_id]
 //     );
 
-//     // Second query: DELETE operation (only if cancellation was performed)
-//     if (combinedQuery.rowCount > 0) {
-//       await client.query(
-//         `
-//         DELETE FROM accepted
-//         WHERE notification_id = $1;
-//       `,
-//         [notification_id]
-//       );
-//     }
+//     // Second query: DELETE operation
+//     const deleteResult = await client.query(
+//       `
+//       DELETE FROM accepted
+//       WHERE notification_id = $1
+//       RETURNING *;
+//     `,
+//       [notification_id]
+//     );
 
 //     // Commit the transaction
 //     await client.query("COMMIT");
 
 //     if (combinedQuery.rowCount > 0) {
 //       const workerId = combinedQuery.rows[0].worker_id;
-//       const fcmTokens = combinedQuery.rows[0].fcm_tokens;
+//       const fcmTokens = combinedQuery.rows.map((row) => row.fcm_token);
 
 //       if (fcmTokens.length > 0) {
 //         // Create the multicast message object for FCM tokens
@@ -6472,10 +6610,9 @@ const acceptRequest = async (req, res) => {
 //         });
 //       }
 //     } else {
-//       await client.query("ROLLBACK");
 //       return res.status(205).json({
 //         message:
-//           "Cancellation not performed. Either invalid ID, already canceled, or verification_status is TRUE.",
+//           "Cancellation not performed. Either invalid ID or already canceled.",
 //       });
 //     }
 //   } catch (error) {
@@ -6486,175 +6623,129 @@ const acceptRequest = async (req, res) => {
 //   }
 // };
 
+
 const userNavigationCancel = async (req, res) => {
   const { notification_id } = req.body;
-  const encodedUserNotificationId = Buffer.from(
-    notification_id.toString()
-  ).toString("base64");
 
   try {
-    // Begin a transaction
+    // Begin transaction
     await client.query("BEGIN");
 
-    // First query: UPDATE and INSERT operations
     const combinedQuery = await client.query(
       `
-      WITH updated AS (
+      WITH verification AS (
+        SELECT verification_status, worker_id
+        FROM accepted 
+        WHERE notification_id = $1
+      ),
+      updated AS (
         UPDATE accepted
         SET user_navigation_cancel_status = 'usercanceled'
-        WHERE notification_id = $1
-        RETURNING 
-          accepted_id, 
-          notification_id, 
-          user_id, 
-          user_notification_id, 
-          longitude, 
-          latitude, 
-          created_at, 
-          worker_id, 
-          complete_status,
-          time,
-          discount,
-          total_cost,
-          tip_amount
+        WHERE notification_id = $1 
+          AND (SELECT NOT verification_status FROM verification)
+        RETURNING *
       ),
       inserted AS (
         INSERT INTO completenotifications (
-          accepted_id, 
-          notification_id, 
-          user_id, 
-          user_notification_id, 
-          longitude, 
-          latitude, 
-          created_at, 
-          worker_id, 
-          complete_status,
-          service_booked, 
-          time,
-          discount,
-          total_cost,
-          tip_amount
+          accepted_id, notification_id, user_id, user_notification_id,
+          longitude, latitude, created_at, worker_id, complete_status,
+          service_booked, time, discount, total_cost, tip_amount
         )
         SELECT 
-          accepted_id, 
-          notification_id, 
-          user_id, 
-          user_notification_id, 
-          longitude, 
-          latitude, 
-          created_at, 
-          worker_id, 
-          'cancel', 
-          to_jsonb('service_booked'::text), 
-          time,
-          discount,
-          total_cost,
-          tip_amount
+          accepted_id, notification_id, user_id, user_notification_id,
+          longitude, latitude, created_at, worker_id, 'cancel',
+          to_jsonb('service_booked'::text), time, discount, total_cost, tip_amount
         FROM updated
-        RETURNING 
-          worker_id, 
-          notification_id
+        RETURNING worker_id, notification_id
+      ),
+      deleted AS (
+        DELETE FROM accepted
+        WHERE notification_id = $1
+          AND EXISTS (SELECT 1 FROM updated)
+        RETURNING *
       )
       SELECT 
-        i.worker_id, 
+        v.verification_status AS verified,
+        COALESCE(i.worker_id, v.worker_id) AS worker_id, 
         f.fcm_token
-      FROM inserted i
-      JOIN workersverified w ON w.worker_id = i.worker_id
-      JOIN fcm f ON f.worker_id = w.worker_id;
+      FROM verification v
+      LEFT JOIN inserted i ON true
+      LEFT JOIN workersverified w ON w.worker_id = COALESCE(i.worker_id, v.worker_id)
+      LEFT JOIN fcm f ON f.worker_id = w.worker_id;
       `,
       [notification_id]
     );
 
-    // Second query: DELETE operation
-    const deleteResult = await client.query(
-      `
-      DELETE FROM accepted
-      WHERE notification_id = $1
-      RETURNING *;
-    `,
-      [notification_id]
-    );
-
-    // Commit the transaction
+    // Commit transaction
     await client.query("COMMIT");
 
-    if (combinedQuery.rowCount > 0) {
-      const workerId = combinedQuery.rows[0].worker_id;
-      const fcmTokens = combinedQuery.rows.map((row) => row.fcm_token);
+    // If no row is returned, then the notification doesn't exist in accepted
+    if (combinedQuery.rows.length === 0) {
+      return res.status(404).json({ error: "Notification not found" });
+    }
 
-      if (fcmTokens.length > 0) {
-        // Create the multicast message object for FCM tokens
+    const { verified, worker_id, fcm_token } = combinedQuery.rows[0];
+    console.log("data", combinedQuery.rows);
+
+    // If the notification is verified, return 205
+    if (verified) {
+      return res.status(205).json({
+        message: "Cancellation blocked - verification already completed"
+      });
+    }
+
+    // Gather FCM tokens if available
+    const fcmTokens = combinedQuery.rows
+      .filter(row => row.fcm_token)
+      .map(row => row.fcm_token);
+
+    const screen = "";
+    const encodedId = Buffer.from(notification_id.toString()).toString("base64");
+
+    // Send FCM notifications if tokens exist
+    if (fcmTokens.length > 0) {
+      try {
         const multicastMessage = {
           tokens: fcmTokens,
           notification: {
             title: "Click Solver",
-            body: `Sorry for this, User cancelled the Service.`,
+            body: "Sorry for this, User cancelled the Service.",
           },
           data: {
             screen: "Home",
           },
         };
-
-        try {
-          // Send the message to multiple tokens using sendEachForMulticast
-          const response = await getMessaging().sendEachForMulticast(
-            multicastMessage
-          );
-
-          const successCount = response.responses.filter(
-            (res) => res.success
-          ).length;
-          const failureCount = response.responses.filter(
-            (res) => !res.success
-          ).length;
-
-          console.log(
-            `Notifications sent: ${successCount}, Notifications failed: ${failureCount}`
-          );
-
-          response.responses.forEach((res, index) => {
-            if (!res.success) {
-              console.error(
-                `Error sending message to token ${fcmTokens[index]}:`,
-                res.error
-              );
-            }
-          });
-        } catch (error) {
-          console.error("Error sending notifications:", error);
-        }
-
-        const screen = "";
-        const encodedId = Buffer.from(notification_id.toString()).toString(
-          "base64"
-        );
-        await updateWorkerAction(workerId, encodedId, screen);
-
-        return res.status(200).json({ message: "Cancellation successful" });
-      } else {
-        const screen = "";
-        const encodedId = Buffer.from(notification_id.toString()).toString(
-          "base64"
-        );
-        await updateWorkerAction(workerId, encodedId, screen);
-        console.error("No FCM tokens to send the message to.");
-        return res.status(200).json({
-          message: "Cancellation successful, but no FCM tokens found.",
+        const response = await getMessaging().sendEachForMulticast(multicastMessage);
+        const successCount = response.responses.filter((res) => res.success).length;
+        const failureCount = response.responses.filter((res) => !res.success).length;
+        console.log(`Notifications sent: ${successCount}, Notifications failed: ${failureCount}`);
+        response.responses.forEach((res, index) => {
+          if (!res.success) {
+            console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+          }
         });
+      } catch (error) {
+        console.error("Error sending notifications:", error);
       }
-    } else {
-      return res.status(205).json({
-        message:
-          "Cancellation not performed. Either invalid ID or already canceled.",
-      });
     }
+
+    // Update worker action (only if worker_id is available)
+    if (worker_id) {
+      await updateWorkerAction(worker_id, encodedId, screen);
+    } else {
+      console.error("No worker_id available to update worker action");
+    }
+
+    return res.status(200).json({ message: "Cancellation successful" });
   } catch (error) {
-    // Rollback the transaction in case of error
     await client.query("ROLLBACK");
     console.error("Error processing request:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+
+
 
 // main
 // const userNavigationCancel = async (req, res) => {

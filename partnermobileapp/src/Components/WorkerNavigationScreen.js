@@ -209,13 +209,13 @@ const WorkerNavigationScreen = () => {
   const checkCancellationStatus = async () => {
     try {
       const response = await axios.get(
-        `http://192.168.55.102:5000/api/worker/cancelled/status`,
+        `https://backend.clicksolver.com/api/worker/cancelled/status`,
         {params: {notification_id: decodedId}},
       );
       if (response.data.notificationStatus === 'usercanceled') {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         await axios.post(
-          `http://192.168.55.102:5000/api/worker/action`,
+          `https://backend.clicksolver.com/api/worker/action`,
           {encodedId: '', screen: ''},
           {headers: {Authorization: `Bearer ${pcs_token}`}},
         );
@@ -234,7 +234,7 @@ const WorkerNavigationScreen = () => {
 
   const phoneCall = async () => {
     try { 
-      const response = await axios.post('http://192.168.55.102:5000/api/user/call', { decodedId });
+      const response = await axios.post('https://backend.clicksolver.com/api/user/call', { decodedId });
   
       if (response.status === 200 && response.data.mobile) {
         const phoneNumber = response.data.mobile;
@@ -259,7 +259,7 @@ const WorkerNavigationScreen = () => {
   const fetchAddressDetails = useCallback(async () => {
     try {
       const response = await axios.get(
-        `http://192.168.55.102:5000/api/user/address/details`,
+        `https://backend.clicksolver.com/api/user/address/details`,
         {params: {notification_id: decodedId}},
       );
       setAddressDetails(response.data);
@@ -275,7 +275,7 @@ const WorkerNavigationScreen = () => {
   const fetchLocationDetails = async () => {
     try {
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/service/location/navigation`,
+        `https://backend.clicksolver.com/api/service/location/navigation`,
         {notification_id: decodedId},
       );
       const {startPoint, endPoint} = response.data;
@@ -298,7 +298,7 @@ const WorkerNavigationScreen = () => {
     try {
       setIsLoading(true);
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/worker/work/cancel`,
+        `https://backend.clicksolver.com/api/worker/work/cancel`,
         {notification_id: decodedId},
       );
       if (response.status === 200) {
@@ -309,7 +309,7 @@ const WorkerNavigationScreen = () => {
         }
 
         await axios.post(
-          `http://192.168.55.102:5000/api/worker/action`,
+          `https://backend.clicksolver.com/api/worker/action`,
           {encodedId: '', screen: ''},
           {headers: {Authorization: `Bearer ${pcs_token}`}},
         );

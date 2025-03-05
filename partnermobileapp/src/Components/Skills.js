@@ -148,7 +148,7 @@ const RegistrationScreen = () => {
         navigation.replace('Login');
       }
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/registration/submit`,
+        `http://192.168.55.103:5000/api/registration/submit`,
         formData,
         {
           headers: {
@@ -174,7 +174,7 @@ const RegistrationScreen = () => {
         navigation.replace('Login');
       }
       const response = await axios.get(
-        `http://192.168.55.102:5000/api/service/categories`,
+        `http://192.168.55.103:5000/api/service/categories`,
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
@@ -235,7 +235,7 @@ const RegistrationScreen = () => {
 
     launchImageLibrary(options, async (response) => {
       if (response.didCancel) {
-        console.log('User cancelled image picker');
+        console.log('User cancelled image picker'); 
       } else if (response.error) {
         console.error('ImagePicker Error: ', response.error);
         Alert.alert('Error', 'Failed to pick image.');
@@ -259,7 +259,7 @@ const RegistrationScreen = () => {
     if (field === 'skillCategory') {
       try {
         const response = await axios.post(
-          `http://192.168.55.102:5000/api/subservice/checkboxes`,
+          `http://192.168.55.103:5000/api/subservice/checkboxes`,
           { selectedService: value }
         );
         const data = response.data;
@@ -289,7 +289,7 @@ const RegistrationScreen = () => {
       }
 
       const response = await axios.get(
-        `http://192.168.55.102:5000/api/profile/detsils`,
+        `http://192.168.55.103:5000/api/profile/detsils`,
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
@@ -322,7 +322,7 @@ const RegistrationScreen = () => {
       setPhoneNumber(data.phone_number);
 
       const subserviceResponse = await axios.post(
-        `http://192.168.55.102:5000/api/subservice/checkboxes`,
+        `http://192.168.55.103:5000/api/subservice/checkboxes`,
         { selectedService: data.service },
         {
           headers: {
@@ -601,7 +601,7 @@ const RegistrationScreen = () => {
             style={[styles.dropdown, errorFields.skillCategory && styles.Service]}
             containerStyle={styles.dropdownContainer}
             data={skillCategoryItems}
-            disable={!isEditing}
+            disable={true}
             placeholderStyle={styles.placeholderStyle}
             labelField="label"
             selectedTextStyle={styles.selectedTextStyle}
@@ -830,6 +830,14 @@ function dynamicStyles(width) {
     },
     inputSearchStyle: {
       fontSize: isTablet ? 16 : 14,
+    },
+    dropdownItem: {
+      padding: 10,
+      backgroundColor: '#FFFFFF',
+    },
+    dropdownItemText: {
+      fontSize: 16,
+      color: '#333',
     },
     row: {
       flexDirection: 'row',

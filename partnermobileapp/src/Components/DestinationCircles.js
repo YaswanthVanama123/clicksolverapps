@@ -70,7 +70,7 @@ function dynamicStyles(width) {
       width: circleSize,
       height: circleSize,
       borderRadius: circleSize / 2,
-      marginHorizontal: isTablet ? 5 : 3,
+      // marginHorizontal: isTablet ? 5 : 3,
     },
     circleText: {
       fontWeight: 'bold',

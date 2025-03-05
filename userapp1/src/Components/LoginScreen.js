@@ -11,41 +11,37 @@ import {
   Platform,
   BackHandler,
   ActivityIndicator,
-  useWindowDimensions, // <-- 1) Import useWindowDimensions
+  useWindowDimensions,
 } from 'react-native';
 import axios from 'axios';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
-// Image URLs
-const BG_IMAGE_URL =
-  'https://i.postimg.cc/rFFQLGRh/Picsart-24-10-01-15-38-43-205.jpg';
+// Example image URLs
+const BG_IMAGE_URL = 'https://i.postimg.cc/rFFQLGRh/Picsart-24-10-01-15-38-43-205.jpg';
 const LOGO_URL = 'https://i.postimg.cc/hjjpy2SW/Button-1.png';
 const FLAG_ICON_URL = 'https://i.postimg.cc/C1hkm5sR/india-flag-icon-29.png';
 
 const LoginScreen = () => {
-  // 1) Grab width & height from useWindowDimensions
+  // Grab screen width & height for “media-query–like” logic
   const { width, height } = useWindowDimensions();
-
-  // 2) Generate dynamic styles
   const styles = dynamicStyles(width, height);
 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
 
-  // This function requests the OTP
+  // Request OTP
   const requestOtp = useCallback(async () => {
     if (!phoneNumber) return;
     try {
       setLoading(true);
-      // Call your backend sendOtp endpoint
+      // Call your backend to send OTP
       const response = await axios.post(
-        'http://192.168.55.102:5000/api/otp/send',
+        'https://backend.clicksolver.com/api/otp/send',
         { mobileNumber: phoneNumber }
       );
       if (response.status === 200) {
         const { verificationId } = response.data;
-        // Navigate to VerificationScreen, passing phoneNumber & verificationId
         navigation.navigate('VerificationScreen', { phoneNumber, verificationId });
       } else {
         console.error('Error sending OTP:', response.data);
@@ -57,6 +53,7 @@ const LoginScreen = () => {
     }
   }, [phoneNumber, navigation]);
 
+  // Handle hardware back press
   const handleBackPress = useCallback(() => {
     navigation.goBack();
     return true;
@@ -65,91 +62,103 @@ const LoginScreen = () => {
   useFocusEffect(
     useCallback(() => {
       BackHandler.addEventListener('hardwareBackPress', handleBackPress);
-      return () =>
-        BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
+      return () => BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
     }, [handleBackPress])
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Background Image */}
+    <View style={styles.root}>
+      {/* Full-bleed background image */}
       <Image
         source={{ uri: BG_IMAGE_URL }}
-        style={StyleSheet.absoluteFillObject}
-        resizeMode="stretch"
+        style={styles.backgroundImage}
+        resizeMode="cover"
       />
 
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View style={styles.contentOverlay}>
-          {/* Logo and Heading */}
-          <View style={styles.description}>
-            <View style={styles.logoContainer}>
-              <Image source={{ uri: LOGO_URL }} style={styles.logo} />
-              <Text style={styles.heading}>
-                Click <Text style={styles.solverText}>Solver</Text>
-              </Text>
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.contentOverlay}>
+            {/* Logo & Heading */}
+            <View style={styles.description}>
+              <View style={styles.logoContainer}>
+                <Image source={{ uri: LOGO_URL }} style={styles.logo} />
+                <Text style={styles.heading}>
+                  Click <Text style={styles.solverText}>Solver</Text>
+                </Text>
+              </View>
+              <Text style={styles.subheading}>ALL HOME Service Expert</Text>
+              <Text style={styles.tagline}>Instant Affordable Trusted</Text>
             </View>
-            <Text style={styles.subheading}>ALL HOME Service Expert</Text>
-            <Text style={styles.tagline}>Instant Affordable Trusted</Text>
-          </View>
 
-          {/* Mobile Input */}
-          <View style={styles.inputContainer}>
-            <View style={styles.countryCodeContainer}>
-              <Image source={{ uri: FLAG_ICON_URL }} style={styles.flagIcon} />
-              <Text style={styles.picker}>+91</Text>
+            {/* Mobile Input */}
+            <View style={styles.inputContainer}>
+              <View style={styles.countryCodeContainer}>
+                <Image source={{ uri: FLAG_ICON_URL }} style={styles.flagIcon} />
+                <Text style={styles.picker}>+91</Text>
+              </View>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter Mobile Number"
+                placeholderTextColor="#9e9e9e"
+                keyboardType="phone-pad"
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+              />
             </View>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter Mobile Number"
-              placeholderTextColor="#9e9e9e"
-              keyboardType="phone-pad"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-            />
+
+            {/* Request OTP Button */}
+            <TouchableOpacity
+              style={styles.button}
+              onPress={requestOtp}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Get Verification Code</Text>
+              )}
+            </TouchableOpacity>
           </View>
+        </KeyboardAvoidingView>
 
-          {/* Request OTP Button */}
-          <TouchableOpacity
-            style={styles.button}
-            onPress={requestOtp}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Get Verification Code</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-
-      {/* Loading Overlay */}
-      {loading && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#FF5720" />
-        </View>
-      )}
-    </SafeAreaView>
+        {/* Loading Overlay */}
+        {loading && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color="#FF5720" />
+          </View>
+        )}
+      </SafeAreaView>
+    </View>
   );
 };
 
-/**
- * Dynamic styles function that checks screen width to handle tablet breakpoints.
- * If width >= 600, we treat it as a tablet and scale up UI elements accordingly.
- */
+// ------------------------------------------
+// "Dynamic" styles with dimension-based logic
+// ------------------------------------------
 const dynamicStyles = (width, height) => {
-  const isTablet = width >= 600; // Tweak as needed
+  const isTablet = width >= 600;
 
   return StyleSheet.create({
+    root: {
+      flex: 1,
+    },
+    // This ensures the background fills the entire screen.
+    backgroundImage: {
+      ...StyleSheet.absoluteFillObject,
+      zIndex: -1,
+    },
     container: {
       flex: 1,
     },
-    keyboardAvoidingView: {
+    contentOverlay: {
       flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      // Increase side padding on bigger screens
+      paddingHorizontal: isTablet ? 40 : 20,
     },
     solverText: {
       color: '#212121',
@@ -158,12 +167,6 @@ const dynamicStyles = (width, height) => {
     description: {
       flexDirection: 'column',
       marginLeft: isTablet ? 20 : 10,
-    },
-    contentOverlay: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: isTablet ? 40 : 20,
     },
     logoContainer: {
       flexDirection: 'row',
@@ -252,9 +255,9 @@ const dynamicStyles = (width, height) => {
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
       justifyContent: 'center',
       alignItems: 'center',
-      zIndex: 999, // Ensures the loader appears on top of everything
+      zIndex: 999,
     },
   });
-}; 
+};
 
-export default LoginScreen; 
+export default LoginScreen;

@@ -48,7 +48,7 @@ const ServiceInProgressScreen = () => {
       if (!decodedId) return;
       try {
         const response = await axios.post(
-          'http://192.168.55.102:5000/api/user/work/progress/details',
+          'https://backend.clicksolver.com/api/user/work/progress/details',
           { decodedId }
         );
         const data = response.data[0];
@@ -105,7 +105,7 @@ const ServiceInProgressScreen = () => {
   const handleConfirmComplete = async () => {
     try {
       const response = await axios.post(
-        'http://192.168.55.102:5000/api/work/time/completed/request',
+        'https://backend.clicksolver.com/api/work/time/completed/request',
         { notification_id: decodedId }
       );
       if (response.status === 200) {

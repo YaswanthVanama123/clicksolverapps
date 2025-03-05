@@ -49,7 +49,7 @@ const SingleService = () => {
     try {
       console.log('serviceName', serviceName);
       const response = await axios.post(
-        'http://192.168.55.102:5000/api/single/service',
+        'https://backend.clicksolver.com/api/single/service',
         { serviceName }
       );
       const { relatedServices } = response.data;

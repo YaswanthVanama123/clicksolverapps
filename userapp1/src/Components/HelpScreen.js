@@ -70,7 +70,7 @@ const HelpScreen = () => {
     setLoadingCall(true);
     try {
       // Replace with your backend endpoint
-      const response = await axios.get('http://192.168.55.102:5000/customer/care');
+      const response = await axios.get('https://backend.clicksolver.com/customer/care');
       const phoneNumber = response.data.phone; // Expects { phone: '1234567890' }
       if (phoneNumber) {
         Linking.openURL(`tel:${phoneNumber}`).catch(err =>

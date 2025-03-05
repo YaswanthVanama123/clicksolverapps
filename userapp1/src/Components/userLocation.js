@@ -11,7 +11,6 @@ import {
   TouchableOpacity,
   Modal,
   ActivityIndicator,
-  Alert,
   BackHandler,
 } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
@@ -31,10 +30,8 @@ const placesClient = new Places('iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT');
 const UserLocation = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  // Expect route.params to include serviceName (array), savings, and tipAmount
   const { serviceName, suggestion, savings, tipAmount } = route.params;
   
-  // "service" holds the array of service objects (each with a totalCost)
   const [service, setService] = useState([]);
   const [discount, setDiscount] = useState(0);
   const [location, setLocation] = useState(null);
@@ -47,7 +44,7 @@ const UserLocation = () => {
   const [alternatePhoneNumber, setAlternatePhoneNumber] = useState('');
   const [alternateName, setAlternateName] = useState('');
   
-  // Error and input states for the modal
+  // Errors for the complete address modal (unchanged)
   const [cityError, setCityError] = useState('');
   const [areaError, setAreaError] = useState('');
   const [pincodeError, setPincodeError] = useState('');
@@ -55,10 +52,81 @@ const UserLocation = () => {
   const [nameError, setNameError] = useState('');
   const [inputText, setInputText] = useState(suggestion ? suggestion.title : '');
   const [showMessageBox, setShowMessageBox] = useState(false);
+  // New state for the out-of-geofence modal
+  const [showOutOfPolygonModal, setShowOutOfPolygonModal] = useState(false);
 
   const mapRef = useRef(null);
 
-  // On mount, set service array and discount from route.params
+  // Define two example polygon geofences
+  const polygonGeofences = [
+    {
+      id: 'zone1',
+      coordinates: [
+        [17.006761409194525, 80.53093335197622],
+        [17.005373260064985, 80.53291176992008],
+        [16.998813039026402, 80.52664649280518],
+        [16.993702747389463, 80.52215964720267],
+        [16.98846563857974, 80.5205112174242],
+        [16.985436512096513, 80.52097340481015],
+        [16.982407772736835, 80.51886205401541],
+        [16.987520443064497, 80.51325397397363],
+        [16.99023324951544, 80.51463921162184],
+        [16.995343035509578, 80.51463907310551],
+        [16.997739960285273, 80.5172774280341],
+        [16.998812144956858, 80.5151667160207],
+        [17.001713715885202, 80.51609017256038],
+        [17.002827038610846, 80.51776432647671],
+        [17.003291715895045, 80.52011454583169],
+        [17.00505854929827, 80.52875703518436],
+        [17.00682448638898, 80.5309333429243],
+        [17.006761409194525, 80.53093335197622],
+      ],
+    },
+    {
+      id: 'zone2',
+      coordinates: [
+        [16.743659016732067, 81.08236641250511],
+        [16.74034916284056, 81.1094786505995],
+        [16.75332517520627, 81.11236934565574],
+        [16.75189061713202, 81.12344773457119],
+        [16.74132482137297, 81.13930188707656],
+        [16.738499354073056, 81.14316076908437],
+        [16.727924964128718, 81.14435289187736],
+        [16.72342039833586, 81.14527321552549],
+        [16.714353330434236, 81.14475480852309],
+        [16.703383261743355, 81.13502168775335],
+        [16.696706590762375, 81.11606570973981],
+        [16.690277614635917, 81.11161284859327],
+        [16.690514707521203, 81.10419147444412],
+        [16.682222407654322, 81.09411194809388],
+        [16.680443872924542, 81.08526753004003],
+        [16.681096564850336, 81.08063131598783],
+        [16.68719744307066, 81.07017793961404],
+        [16.70130255228827, 81.06808977263063],
+        [16.696116367178703, 81.04868074812543],
+        [16.712614628885774, 81.05789409014807],
+        [16.730789178638346, 81.06475183815792],
+        [16.74056558441238, 81.0761195443987],
+        [16.743659016732067, 81.08236641250511],
+      ],
+    },
+  ];
+
+  // Ray-casting algorithm to check if a point is in a polygon
+  const isPointInPolygon = (point, polygon) => {
+    const x = point[1];
+    const y = point[0];
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const xi = polygon[i][0], yi = polygon[i][1];
+      const xj = polygon[j][0], yj = polygon[j][1];
+      const intersect = ((yi > y) !== (yj > y)) &&
+                        (x < ((xj - xi) * (y - yi)) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  };
+
   useEffect(() => {
     if (serviceName) {
       setService(serviceName);
@@ -69,7 +137,6 @@ const UserLocation = () => {
     }
   }, [route.params]);
 
-  // Request location and fetch place details
   useEffect(() => {
     const requestLocationPermission = async () => {
       try {
@@ -124,36 +191,6 @@ const UserLocation = () => {
     }, [])
   );
 
-  // const fetchAndSetPlaceDetails = useCallback(async (latitude, longitude) => {
-  //   try {
-  //     const response = await placesClient.reverse_geocode(latitude, longitude);
-  //     if (response && response.body && response.body.results.length > 0) {
-  //       const place = response.body.results[0];
-  //       const addressComponents = place.address_components;
-  //       const city =
-  //         addressComponents.find(component =>
-  //           component.types.includes('sublocality') ||
-  //           component.types.includes('locality') ||
-  //           component.types.includes('administrative_area_level_3') ||
-  //           component.types.includes('administrative_area_level_2')
-  //         )?.long_name || '';
-  //       const area = place.formatted_address || '';
-  //       const pincode =
-  //         addressComponents.find(component =>
-  //           component.types.includes('postal_code')
-  //         )?.short_name || '';
-  //         console.log("location",response.body)
-  //       setCity(city);
-  //       setArea(area);
-  //       setPincode(pincode);
-  //     } else {
-  //       console.warn('No address details found.');
-  //     }
-  //   } catch (error) {
-  //     console.error('Failed to fetch place details:', error);
-  //   }
-  // }, []);
-
   const fetchAndSetPlaceDetails = useCallback(async (latitude, longitude) => {
     try {
       const response = await placesClient.reverse_geocode(latitude, longitude);
@@ -162,17 +199,14 @@ const UserLocation = () => {
         const place = response.body.results[0];
         const addressComponents = place.address_components;
   
-        // Extracting pincode (postal_code)
         const pincode = addressComponents.find(component =>
           component.types.includes('postal_code')
         )?.long_name || '';
   
-        // Extracting city name (locality or closest admin area)
         let city = addressComponents.find(component =>
           component.types.includes('locality')
         )?.long_name || '';
   
-        // If locality is missing, try administrative area
         if (!city) {
           city = addressComponents.find(component =>
             component.types.includes('administrative_area_level_3')
@@ -184,7 +218,6 @@ const UserLocation = () => {
           )?.long_name || '';
         }
   
-        // Extracting area as full formatted address
         let area = place.formatted_address || '';
   
         console.log("Extracted Location Details:", { city, area, pincode });
@@ -200,9 +233,6 @@ const UserLocation = () => {
     }
   }, []);
   
-  
-  
-
   const sendDataToServer = useCallback(async (longitude, latitude) => {
     try {
       const token = await EncryptedStorage.getItem('cs_token');
@@ -211,7 +241,7 @@ const UserLocation = () => {
         return;
       }
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/user/location`,
+        `https://backend.clicksolver.com/api/user/location`,
         { longitude: String(longitude), latitude: String(latitude) },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -239,8 +269,20 @@ const UserLocation = () => {
     );
   };
 
+  // Updated Confirm Location handler
   const handleConfirmLocation = async () => {
     setConfirmLoading(true);
+    if (location) {
+      const inAnyGeofence = polygonGeofences.some(fence =>
+        isPointInPolygon(location, fence.coordinates)
+      );
+      if (!inAnyGeofence) {
+        // Instead of an Alert, show a modal informing the user
+        setShowOutOfPolygonModal(true);
+        setConfirmLoading(false);
+        return;
+      }
+    }
     setShowMessageBox(true);
     try {
       const token = await EncryptedStorage.getItem('cs_token');
@@ -250,7 +292,7 @@ const UserLocation = () => {
         return;
       }
       const response = await axios.get(
-        `http://192.168.55.102:5000/api/get/user`,
+        `https://backend.clicksolver.com/api/get/user`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (response.status === 200) {
@@ -263,10 +305,36 @@ const UserLocation = () => {
       }
     } catch (error) {
       console.error('Failed to fetch user data:', error);
-      Alert.alert('Error', 'Failed to fetch user data. Please try again.');
       setShowMessageBox(false);
     }
     setConfirmLoading(false);
+  };
+
+  // New handler for the "Remind Me" button in the out-of-polygon modal
+  const handleRemindMe = async () => {
+    try {
+      const token = await EncryptedStorage.getItem('cs_token');
+      if (!token) {
+        console.error('No token found');
+        setShowOutOfPolygonModal(false);
+        return;
+      }
+      const response = await axios.post(
+        `https://backend.clicksolver.com/api/send/reminder`,
+        { area, city },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      console.log('Reminder sent successfully:', response.data);
+    } catch (error) {
+      console.error('Failed to send reminder:', error);
+    } finally {
+      setShowOutOfPolygonModal(false);
+    }
+  };
+
+  // Handler for Cancel button in out-of-polygon modal
+  const handleCancelOutModal = () => {
+    setShowOutOfPolygonModal(false);
   };
 
   const handleBookCommander = () => {
@@ -314,7 +382,7 @@ const UserLocation = () => {
                   serviceBooked: service,
                   location,
                   discount,
-                  tipAmount
+                  tipAmount,
                 },
               },
             ],
@@ -339,8 +407,6 @@ const UserLocation = () => {
   const totalServiceCost = service.reduce((sum, s) => sum + s.totalCost, 0);
 
   // Render each service item.
-  // If a discount is applied (discount > 0), display the original cost (with strike-through)
-  // and the final discounted cost; otherwise, display only one value.
   const renderServiceItem = ({ item }) => {
     if (discount > 0) {
       const allocatedDiscount = Math.round((item.totalCost / totalServiceCost) * discount);
@@ -413,6 +479,25 @@ const UserLocation = () => {
               </Mapbox.PointAnnotation>
             </>
           )}
+          <Mapbox.ShapeSource
+            id="polygonGeofence"
+            shape={{
+              type: 'FeatureCollection',
+              features: polygonGeofences.map(fence => ({
+                type: 'Feature',
+                geometry: {
+                  type: 'Polygon',
+                  coordinates: [fence.coordinates],
+                },
+                properties: { id: fence.id },
+              })),
+            }}
+          >
+            <Mapbox.FillLayer
+              id="polygonGeofenceFill"
+              style={{ fillColor: 'rgba(255, 0, 0, 0.2)' }}
+            />
+          </Mapbox.ShapeSource>
         </Mapbox.MapView>
         {locationLoading && (
           <View style={styles.loadingContainer}>
@@ -440,6 +525,32 @@ const UserLocation = () => {
           </TouchableOpacity>
         </View>
       </View>
+
+      {showOutOfPolygonModal && (
+        <Modal
+          transparent={true}
+          visible={showOutOfPolygonModal}
+          animationType="slide"
+          onRequestClose={() => setShowOutOfPolygonModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Location Not Serviceable</Text>
+              <Text style={styles.modalMessage}>
+                We are not in {city || 'this'} location. Please choose another location or tap "Remind Me" to get a notification when service is available.
+              </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-around', width: '100%' }}>
+                <TouchableOpacity style={styles.modalCancelButton} onPress={handleCancelOutModal}>
+                  <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalButton} onPress={handleRemindMe}>
+                  <Text style={styles.modalButtonText}>Remind Me</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
 
       {showMessageBox && (
         <Modal
@@ -597,8 +708,11 @@ const styles = StyleSheet.create({
   bottomBarButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { backgroundColor: '#fff', padding: 20, borderRadius: 8, width: '80%', alignItems: 'center' },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
-  modalMessage: { fontSize: 16, textAlign: 'center', marginBottom: 20 },
-  modalButton: { backgroundColor: '#ff6f00', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 6 },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10, color:'#212121' },
+  modalMessage: { fontSize: 16, textAlign: 'center', marginBottom: 20,color:'#212121' },
+  modalCancelButton: { backgroundColor: '#f5f5f5', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 6, marginHorizontal: 5 },
+  modalButton: { backgroundColor: '#ff6f00', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 6, marginHorizontal: 5 },
   modalButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  modalCancelButtonText: { color: '#9e9e9e', fontSize: 16, fontWeight: '600' },
+  
 });

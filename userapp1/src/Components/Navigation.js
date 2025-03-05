@@ -1,4 +1,9 @@
-import React, {useEffect, useState, useCallback, useRef} from 'react';
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+} from 'react';
 import {
   View,
   StyleSheet,
@@ -10,12 +15,12 @@ import {
   Modal,
   PermissionsAndroid,
   Platform,
-  AppState,
   ScrollView,
   Animated,
   Easing,
   Linking,
-  useWindowDimensions, // <-- 1) Import useWindowDimensions
+  useWindowDimensions,
+  AppState, // <-- import AppState
 } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import EncryptedStorage from 'react-native-encrypted-storage';
@@ -66,6 +71,9 @@ const Navigation = () => {
   const [showDownArrowService, setShowDownArrowService] = useState(false);
   // Loading indicator
   const [isLoading, setIsLoading] = useState(false);
+
+  // Camera ref for calling fitBounds
+  const cameraRef = useRef(null);
 
   // For rotating refresh icon
   const rotationValue = useRef(new Animated.Value(0)).current;
@@ -221,7 +229,7 @@ const Navigation = () => {
       setIsLoading(true);
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       const response = await axios.post(
-        'http://192.168.55.102:5000/api/worker/navigation/details',
+        'https://backend.clicksolver.com/api/worker/navigation/details',
         {notificationId: decodedId},
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
@@ -275,14 +283,14 @@ const Navigation = () => {
     const checkVerificationStatus = async () => {
       try {
         const response = await axios.get(
-          'http://192.168.55.102:5000/api/worker/verification/status',
+          'https://backend.clicksolver.com/api/worker/verification/status',
           {params: {notification_id: decodedId}},
         );
 
         if (response.data === 'true') {
           const cs_token = await EncryptedStorage.getItem('cs_token');
           await axios.post(
-            'http://192.168.55.102:5000/api/user/action',
+            'https://backend.clicksolver.com/api/user/action',
             {
               encodedId: encodedData,
               screen: 'worktimescreen',
@@ -381,12 +389,13 @@ const Navigation = () => {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        'http://192.168.55.102:5000/api/user/location/navigation',
+        'https://backend.clicksolver.com/api/user/location/navigation',
         {params: {notification_id: decodedId}},
       );
 
       const {startPoint, endPoint} = response.data;
-      const reversedStart = startPoint.map(parseFloat).reverse(); // to [lng, lat]
+      // Reverse from [lat, lng] to [lng, lat] if necessary
+      const reversedStart = startPoint.map(parseFloat).reverse();
       const reversedEnd = endPoint.map(parseFloat).reverse();
 
       setLocationDetails({startPoint: reversedStart, endPoint: reversedEnd});
@@ -431,7 +440,7 @@ const Navigation = () => {
   const computeBoundingBox = (coords) => {
     let minX, minY, maxX, maxY;
     for (let coord of coords) {
-      const [x, y] = coord;
+      const [x, y] = coord; // x = lng, y = lat
       if (minX === undefined || x < minX) {
         minX = x;
       }
@@ -446,10 +455,50 @@ const Navigation = () => {
       }
     }
     return {
-      ne: [maxX, maxY],
-      sw: [minX, minY],
+      ne: [maxX, maxY], // [lng, lat]
+      sw: [minX, minY], // [lng, lat]
     };
   };
+
+  // Whenever cameraBounds changes, (re)fit the map if possible
+  useEffect(() => {
+    if (cameraBounds && cameraRef.current) {
+      cameraRef.current.fitBounds(
+        [cameraBounds.sw[0], cameraBounds.sw[1]],
+        [cameraBounds.ne[0], cameraBounds.ne[1]],
+        50 // padding in points
+      );
+    }
+  }, [cameraBounds]);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // NEW: Re‐fit the camera whenever the app returns from the background
+  // ─────────────────────────────────────────────────────────────────────────────
+  const appState = useRef(AppState.currentState);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      // If we were in background and now we're active, attempt to re‐fit the bounds
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        if (cameraBounds && cameraRef.current) {
+          cameraRef.current.fitBounds(
+            [cameraBounds.sw[0], cameraBounds.sw[1]],
+            [cameraBounds.ne[0], cameraBounds.ne[1]],
+            50
+          );
+        }
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [cameraBounds]);
+  // ─────────────────────────────────────────────────────────────────────────────
 
   // Cancel booking
   const handleCancelBooking = useCallback(async () => {
@@ -458,13 +507,13 @@ const Navigation = () => {
     try {
       setIsLoading(true);
       const response = await axios.post(
-        'http://192.168.55.102:5000/api/user/work/cancel',
+        'https://backend.clicksolver.com/api/user/work/cancel',
         {notification_id: decodedId},
       );
       if (response.status === 200) {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
-          'http://192.168.55.102:5000/api/user/action',
+          'https://backend.clicksolver.com/api/user/action',
           {
             encodedId: encodedData,
             screen: '',
@@ -502,7 +551,7 @@ const Navigation = () => {
   const phoneCall = async () => {
     try {
       const response = await axios.post(
-        'http://192.168.55.102:5000/api/worker/call',
+        'https://backend.clicksolver.com/api/worker/call',
         {decodedId},
       );
       if (response.status === 200 && response.data.mobile) {
@@ -549,7 +598,7 @@ const Navigation = () => {
     }
   };
 
-  // Markers
+  // Prepare markers
   let markers = null;
   if (locationDetails) {
     markers = {
@@ -588,21 +637,20 @@ const Navigation = () => {
         <View style={styles.mapContainer}>
           {/* Mapbox Map */}
           {locationDetails ? (
-            <Mapbox.MapView style={styles.map}>
-              <Mapbox.Camera
-                bounds={
-                  cameraBounds
-                    ? {
-                        ne: cameraBounds.ne,
-                        sw: cameraBounds.sw,
-                        paddingLeft: 50,
-                        paddingRight: 50,
-                        paddingTop: 50,
-                        paddingBottom: 50,
-                      }
-                    : null
+            <Mapbox.MapView
+              style={styles.map}
+              onDidFinishRenderingMapFully={() => {
+                if (cameraRef.current && cameraBounds) {
+                  cameraRef.current.fitBounds(
+                    [cameraBounds.sw[0], cameraBounds.sw[1]],
+                    [cameraBounds.ne[0], cameraBounds.ne[1]],
+                    50
+                  );
                 }
-              />
+              }}
+            >
+              {/* Use a camera ref instead of bounds prop */}
+              <Mapbox.Camera ref={cameraRef} />
 
               <Mapbox.Images
                 images={{
@@ -887,13 +935,11 @@ const Navigation = () => {
 };
 
 /**
- * 3) A helper function that returns a StyleSheet whose values depend on the device width/height.
- *    If `width >= 600`, we treat it as a tablet and scale up certain styles (font sizes, spacing, etc.).
+ * A helper function that returns a StyleSheet whose values depend on the device width/height.
+ * If `width >= 600`, we treat it as a tablet and scale up certain styles (font sizes, spacing, etc.).
  */
 const dynamicStyles = (width, height) => {
   const isTablet = width >= 600;
-
-  // Adjust bottom card height if on a tablet
   const bottomCardHeight = isTablet ? 380 : 330;
 
   return StyleSheet.create({
@@ -929,8 +975,6 @@ const dynamicStyles = (width, height) => {
       zIndex: 999,
       elevation: 3,
     },
-
-    /* Bottom Card */
     detailsContainer: {
       height: bottomCardHeight,
       backgroundColor: '#ffffff',
@@ -985,8 +1029,6 @@ const dynamicStyles = (width, height) => {
       fontFamily: 'RobotoSlab-Regular',
       color: '#212121',
     },
-
-    /* Service Details */
     serviceDetails: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -1034,8 +1076,6 @@ const dynamicStyles = (width, height) => {
       backgroundColor: 'rgba(255, 255, 255, 0.8)',
       zIndex: 1,
     },
-
-    /* PIN */
     pinContainer: {
       flexDirection: 'row',
       alignItems: 'flex-end',
@@ -1066,8 +1106,6 @@ const dynamicStyles = (width, height) => {
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 16 : 14,
     },
-
-    /* Cancel Button */
     cancelButton: {
       backgroundColor: '#FFFFFF',
       borderRadius: 10,
@@ -1082,8 +1120,6 @@ const dynamicStyles = (width, height) => {
       color: '#4a4a4a',
       fontFamily: 'RobotoSlab-Regular',
     },
-
-    /* Worker (Commander) Details */
     workerDetailsContainer: {
       flexDirection: 'column',
       gap: 5,
@@ -1105,8 +1141,6 @@ const dynamicStyles = (width, height) => {
       fontSize: isTablet ? 16 : 14,
       fontFamily: 'RobotoSlab-Medium',
     },
-
-    /* Rating Container */
     ratingContainer: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1140,8 +1174,6 @@ const dynamicStyles = (width, height) => {
       justifyContent: 'center',
       alignItems: 'center',
     },
-
-    /* Modals */
     modalOverlay: {
       flex: 1,
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
