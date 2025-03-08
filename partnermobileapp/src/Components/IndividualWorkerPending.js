@@ -111,7 +111,7 @@ const IndividualWorkerPending = () => {
 
   const handleApproved = async () => {
     const response = await axios.post(
-      `https://backend.clicksolver.com/api/worker/approved`,
+      `http://192.168.55.104:5000/api/worker/approved`,
       {
         workerId,
       },
@@ -125,7 +125,7 @@ const IndividualWorkerPending = () => {
   const submitAllIssues = async () => {
     setIsSubmittingIssues(true);
     try {
-      await axios.post(`https://backend.clicksolver.com/api/update/worker/issues`, {
+      await axios.post(`http://192.168.55.104:5000/api/update/worker/issues`, {
         workerId,
         issues,
       });
@@ -143,7 +143,7 @@ const IndividualWorkerPending = () => {
   const applyStatusChange = async newStatus => {
     try {
       await axios.post(
-        `https://backend.clicksolver.com/api/aprove/tracking/update/status`,
+        `http://192.168.55.104:5000/api/aprove/tracking/update/status`,
         {
           workerId,
           newStatus,
@@ -176,7 +176,7 @@ const IndividualWorkerPending = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.post(
-          `https://backend.clicksolver.com/api/individual/worker/pending/verification`,
+          `http://192.168.55.104:5000/api/individual/worker/pending/verification`,
           {workerId},
         );
         const {data} = response.data;

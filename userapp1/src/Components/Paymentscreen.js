@@ -52,7 +52,7 @@ const Payment = ({ route }) => {
   const fetchPaymentDetails = useCallback(async (decodedId) => {
     try {
       const response = await axios.post(
-        'https://backend.clicksolver.com/api/payment/details',
+        'http://192.168.55.102:5000/api/payment/details',
         { notification_id: decodedId }
       );
       const {

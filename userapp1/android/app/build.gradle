@@ -27,8 +27,8 @@ android {
         applicationId "com.userapp1"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 78
-        versionName "1.44"
+        versionCode 82
+        versionName "1.48"
     }
     signingConfigs {
         release {

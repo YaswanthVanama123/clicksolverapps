@@ -42,7 +42,7 @@ const AccountDelete = () => {
       const fcm_token = await EncryptedStorage.getItem('fcm_token');
 
       if (fcm_token) {
-        await axios.post('https://backend.clicksolver.com/api/userLogout', {
+        await axios.post('http://192.168.55.102:5000/api/userLogout', {
           fcm_token,
         });
       }
@@ -74,7 +74,7 @@ const AccountDelete = () => {
       }
 
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/user/details/delete`,
+        `http://192.168.55.102:5000/api/user/details/delete`,
         {name: fullName, email, phone},
         {
           headers: {Authorization: `Bearer ${jwtToken}`},

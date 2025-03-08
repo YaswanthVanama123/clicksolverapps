@@ -38,7 +38,7 @@ const TrackingConfirmation = ({route}) => {
     const enteredOtp = otp.join('');
     try {
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/service/tracking/delivery/verification`,
+        `http://192.168.55.104:5000/api/service/tracking/delivery/verification`,
         {trackingId, enteredOtp},
       );
       const {encodedId} = response.data;

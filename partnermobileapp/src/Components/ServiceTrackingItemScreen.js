@@ -74,7 +74,7 @@ const ServiceTrackingItemScreen = () => {
   const applyStatusChange = async (newStatus) => {
     try {
       await axios.post(
-        `https://backend.clicksolver.com/api/service/tracking/update/status`,
+        `http://192.168.55.104:5000/api/service/tracking/update/status`,
         {
           tracking_id,
           newStatus,
@@ -104,7 +104,7 @@ const ServiceTrackingItemScreen = () => {
   const phoneCall = async () => {
     try { 
       console.log("trac",tracking_id)
-      const response = await axios.post('https://backend.clicksolver.com/api/user/tracking/call', { tracking_id });
+      const response = await axios.post('http://192.168.55.104:5000/api/user/tracking/call', { tracking_id });
   
       if (response.status === 200 && response.data.mobile) {
         const phoneNumber = response.data.mobile;
@@ -139,13 +139,13 @@ const ServiceTrackingItemScreen = () => {
     const fetchBookings = async () => {
       try {
         const {
-          data: { data, paymentDetails },
+          data: { data },
         } = await axios.post(
-          `https://backend.clicksolver.com/api/service/tracking/worker/item/details`,
+          `http://192.168.55.104:5000/api/service/tracking/worker/item/details`,
           { tracking_id }
         );
         setDetails(data);
-        setPaymentDetails(paymentDetails);
+        // setPaymentDetails(paymentDetails);
         setServiceArray(data.service_booked);
       } catch (error) {
         console.error('Error fetching bookings data:', error);
@@ -277,13 +277,13 @@ const ServiceTrackingItemScreen = () => {
         </View>
         <View style={styles.sectionContainer}>
           <View style={styles.PaymentItemContainer}>
-            {serviceArray.map((service, index) => (
+            {/* {serviceArray.map((service, index) => (
               <View key={index} style={styles.paymentRow}>
                 <Text style={styles.paymentLabel}>{service.serviceName}</Text>
                 <Text style={styles.paymentValue}>₹{service.cost}.00</Text>
               </View>
-            ))}
-            <View style={styles.paymentRow}>
+            ))} */}
+            {/* <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>SGST (5%)</Text>
               <Text style={styles.paymentValue}>
                 ₹{paymentDetails.cgstAmount}.00
@@ -294,17 +294,18 @@ const ServiceTrackingItemScreen = () => {
               <Text style={styles.paymentValue}>
                 ₹{paymentDetails.gstAmount}.00
               </Text>
-            </View>
-            <View style={styles.paymentRow}>
+            </View> */}
+
+            {/* <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>Cashback (5%)</Text>
               <Text style={styles.paymentValue}>
-                ₹{paymentDetails.discountAmount}.00
+                ₹{details.discount}.00
               </Text>
-            </View>
+            </View> */}
             <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>Pay Via Scan</Text>
               <Text style={styles.paymentValue}>
-                Grand Total ₹{paymentDetails.fetchedFinalTotalAmount}.00
+                Grand Total ₹{details.total_cost}.00
               </Text>
             </View>
           </View>
@@ -417,7 +418,7 @@ function dynamicStyles(width) {
     },
     userName: {
       fontSize: isTablet ? 22 : 20,
-      fontFamily: 'RobotoSlab-Medium',
+      fontWeight: 'bold',
       color: '#1D2951',
     },
     userDesignation: { 

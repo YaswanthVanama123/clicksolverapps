@@ -229,7 +229,7 @@ const Navigation = () => {
       setIsLoading(true);
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       const response = await axios.post(
-        'https://backend.clicksolver.com/api/worker/navigation/details',
+        'http://192.168.55.102:5000/api/worker/navigation/details',
         {notificationId: decodedId},
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
@@ -283,14 +283,14 @@ const Navigation = () => {
     const checkVerificationStatus = async () => {
       try {
         const response = await axios.get(
-          'https://backend.clicksolver.com/api/worker/verification/status',
+          'http://192.168.55.102:5000/api/worker/verification/status',
           {params: {notification_id: decodedId}},
         );
 
         if (response.data === 'true') {
           const cs_token = await EncryptedStorage.getItem('cs_token');
           await axios.post(
-            'https://backend.clicksolver.com/api/user/action',
+            'http://192.168.55.102:5000/api/user/action',
             {
               encodedId: encodedData,
               screen: 'worktimescreen',
@@ -389,7 +389,7 @@ const Navigation = () => {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        'https://backend.clicksolver.com/api/user/location/navigation',
+        'http://192.168.55.102:5000/api/user/location/navigation',
         {params: {notification_id: decodedId}},
       );
 
@@ -507,13 +507,13 @@ const Navigation = () => {
     try {
       setIsLoading(true);
       const response = await axios.post(
-        'https://backend.clicksolver.com/api/user/work/cancel',
+        'http://192.168.55.102:5000/api/user/work/cancel',
         {notification_id: decodedId},
       );
       if (response.status === 200) {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
-          'https://backend.clicksolver.com/api/user/action',
+          'http://192.168.55.102:5000/api/user/action',
           {
             encodedId: encodedData,
             screen: '',
@@ -551,7 +551,7 @@ const Navigation = () => {
   const phoneCall = async () => {
     try {
       const response = await axios.post(
-        'https://backend.clicksolver.com/api/worker/call',
+        'http://192.168.55.102:5000/api/worker/call',
         {decodedId},
       );
       if (response.status === 200 && response.data.mobile) {

@@ -55,7 +55,7 @@ const BalanceScreen = () => {
       if (!pcs_token) throw new Error('User not authenticated');
   
       const response = await axios.post(
-        'http://192.168.55.103:5000/api/balance/ammount',
+        'http://192.168.55.104:5000/api/balance/ammount',
         {},
         { headers: { Authorization: `Bearer ${pcs_token}` } }
       );
@@ -132,7 +132,7 @@ const BalanceScreen = () => {
 
       // 1. Create an order on the backend
       const createResponse = await axios.post(
-        'http://192.168.55.103:5000/api/create-order',
+        'http://192.168.55.104:5000/api/create-order',
         { amount: amountToPay, currency: 'INR' },
         { headers: { Authorization: `Bearer ${pcs_token}` } }
       );
@@ -159,7 +159,7 @@ const BalanceScreen = () => {
         .then(async (paymentData) => {
           // 3. Payment completed – verify on the backend
           const verifyResponse = await axios.post(
-            'http://192.168.55.103:5000/api/verify-payment',
+            'http://192.168.55.104:5000/api/verify-payment',
             paymentData,
             { headers: { Authorization: `Bearer ${pcs_token}` } }
           );

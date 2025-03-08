@@ -69,7 +69,7 @@ const NotificationComponent = ({workerLocation}) => {
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/accept/request`,
+        `http://192.168.55.104:5000/api/accept/request`,
         {user_notification_id: decodedId},
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
@@ -82,7 +82,7 @@ const NotificationComponent = ({workerLocation}) => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `https://backend.clicksolver.com/api/worker/action`,
+          `http://192.168.55.104:5000/api/worker/action`,
           {
             encodedId: encodedNotificationId,
             screen: 'UserNavigation',
@@ -109,7 +109,7 @@ const NotificationComponent = ({workerLocation}) => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `https://backend.clicksolver.com/api/worker/action`,
+          `http://192.168.55.104:5000/api/worker/action`,
           {
             encodedId: '',
             screen: '',

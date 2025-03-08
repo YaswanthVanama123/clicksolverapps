@@ -62,7 +62,7 @@ const EarningsScreen = () => {
 
       const payload = endDate ? { startDate: date, endDate: endDate } : { date };
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/worker/earnings`,
+        `http://192.168.55.104:5000/api/worker/earnings`,
         payload,
         {
           headers: {

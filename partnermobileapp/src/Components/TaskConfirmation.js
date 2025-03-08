@@ -63,7 +63,7 @@ const TaskConfirmation = () => {
       const fetchPaymentDetails = async () => {
         try {
           const response = await axios.post(
-            `https://backend.clicksolver.com/api/worker/details`,
+            `http://192.168.55.104:5000/api/worker/details`,
             {
               notification_id: decodedId,
             },
@@ -96,7 +96,7 @@ const TaskConfirmation = () => {
     const encoded = btoa(decodedId);
     try {
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/worker/confirm/completed`,
+        `http://192.168.55.104:5000/api/worker/confirm/completed`,
         {
           notification_id: decodedId,
           encodedId: encoded,
@@ -107,7 +107,7 @@ const TaskConfirmation = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `https://backend.clicksolver.com/api/worker/action`,
+          `http://192.168.55.104:5000/api/worker/action`,
           {
             encodedId: encoded,
             screen: 'Paymentscreen',

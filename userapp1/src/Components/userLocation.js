@@ -241,7 +241,7 @@ const UserLocation = () => {
         return;
       }
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/user/location`,
+        `http://192.168.55.102:5000/api/user/location`,
         { longitude: String(longitude), latitude: String(latitude) },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -292,7 +292,7 @@ const UserLocation = () => {
         return;
       }
       const response = await axios.get(
-        `https://backend.clicksolver.com/api/get/user`,
+        `http://192.168.55.102:5000/api/get/user`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (response.status === 200) {
@@ -320,7 +320,7 @@ const UserLocation = () => {
         return;
       }
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/send/reminder`,
+        `http://192.168.55.102:5000/api/send/reminder`,
         { area, city },
         { headers: { Authorization: `Bearer ${token}` } }
       );

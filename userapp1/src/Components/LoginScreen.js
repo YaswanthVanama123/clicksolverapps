@@ -37,7 +37,7 @@ const LoginScreen = () => {
       setLoading(true);
       // Call your backend to send OTP
       const response = await axios.post(
-        'https://backend.clicksolver.com/api/otp/send',
+        'http://192.168.55.102:5000/api/otp/send',
         { mobileNumber: phoneNumber }
       );
       if (response.status === 200) {

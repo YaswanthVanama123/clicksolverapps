@@ -182,7 +182,7 @@ function App() {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         if (cs_token) {
           await axios.post(
-            `https://backend.clicksolver.com/api/user/store-fcm-token`,
+            `http://192.168.55.102:5000/api/user/store-fcm-token`,
             {fcmToken: token},
             {headers: {Authorization: `Bearer ${cs_token}`}},
           );
@@ -199,7 +199,7 @@ function App() {
       const pcs_token = await EncryptedStorage.getItem('cs_token');
       const fcmToken = await EncryptedStorage.getItem('fcm_token');
       await axios.post(
-        `https://backend.clicksolver.com/api/user/store-notification`,
+        `http://192.168.55.104:5000/api/user/store-notification`,
         {notification, fcmToken},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );

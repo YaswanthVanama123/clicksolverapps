@@ -96,7 +96,7 @@ const RecentServices = () => {
         if (!token) throw new Error('Token not found');
 
         const response = await axios.get(
-          'https://backend.clicksolver.com/api/worker/bookings',
+          'http://192.168.55.104:5000/api/worker/bookings',
           {
             headers: {
               Authorization: `Bearer ${token}`,

@@ -35,7 +35,7 @@ const UPIIdDetailsScreen = () => {
 
       // Call the combined validation and save endpoint
       const response = await axios.post(
-        'https://backend.clicksolver.com/api/upi/submit',
+        'http://192.168.55.104:5000/api/upi/submit',
         {upi_id: upiId},
         {headers: {Authorization: `Bearer ${pcsToken}`}},
       );

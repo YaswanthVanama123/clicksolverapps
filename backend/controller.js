@@ -1751,6 +1751,9 @@ const getServiceTrackingWorkerItemDetails = async (req, res) => {
         st.service_booked,
         st.service_status,
         st.created_at,
+        st.tracking_pin,
+        st.total_cost,
+        st.discount,  
         st.longitude,
         st.latitude,
         u.name,
@@ -1777,28 +1780,28 @@ const getServiceTrackingWorkerItemDetails = async (req, res) => {
         .json({ message: "Invalid service_booked data format" });
     }
 
-    const gstRate = 0.05;
-    const discountRate = 0.05;
+    // const gstRate = 0.05;
+    // const discountRate = 0.05;
 
-    const fetchedTotalAmount = service_booked.reduce(
-      (total, service) => total + (parseFloat(service.cost) || 0),
-      0
-    );
+    // const fetchedTotalAmount = service_booked.reduce(
+    //   (total, service) => total + (parseFloat(service.cost) || 0),
+    //   0
+    // );
 
-    const gstAmount = fetchedTotalAmount * gstRate;
-    const cgstAmount = fetchedTotalAmount * gstRate;
-    const discountAmount = fetchedTotalAmount * discountRate;
-    const fetchedFinalTotalAmount =
-      fetchedTotalAmount + gstAmount + cgstAmount - discountAmount;
+    // const gstAmount = fetchedTotalAmount * gstRate;
+    // const cgstAmount = fetchedTotalAmount * gstRate;
+    // const discountAmount = fetchedTotalAmount * discountRate;
+    // const fetchedFinalTotalAmount =
+    //   fetchedTotalAmount + gstAmount + cgstAmount - discountAmount;
 
-    const paymentDetails = {
-      gstAmount,
-      cgstAmount,
-      discountAmount,
-      fetchedFinalTotalAmount,
-    };
+    // const paymentDetails = {
+    //   gstAmount,
+    //   cgstAmount,
+    //   discountAmount,
+    //   fetchedFinalTotalAmount,
+    // };
 
-    return res.status(200).json({ data: result.rows[0], paymentDetails });
+    return res.status(200).json({ data: result.rows[0] });
   } catch (error) {
     console.error(
       `Error fetching details for tracking_id ${req.body.tracking_id}:`,
@@ -8071,12 +8074,15 @@ const getWorkersNearby = async (req, res) => {
       tipAmount
 
     } = req.body;
-    console.log(tipAmount)
+    // console.log(tipAmount)
     const created_at = getCurrentTimestamp();
     const serviceArray = JSON.stringify(serviceBooked);
     const serviceNames = serviceBooked.map((s) => s.serviceName);
     const totalCost =
       serviceBooked.reduce((acc, s) => acc + s.cost, 0) - discount + tipAmount;
+
+
+  console.log("data",discount,tipAmount,serviceBooked)
 
     /**
      *  ┌───────────────────────────────────────────────────────┐
@@ -8230,7 +8236,7 @@ const getWorkersNearby = async (req, res) => {
       return res.status(200).json("No workers found within 2 km radius");
     }
 
-    console.log("nearbyWorkers",nearbyWorkers)
+    // console.log("nearbyWorkers",nearbyWorkers)
 
     /**
      *  ┌───────────────────────────────────────────────────────┐
@@ -8285,7 +8291,7 @@ const getWorkersNearby = async (req, res) => {
 
     const result2 = await client.query(query2, query2Params);
     const tokens = result2.rows[0].tokens || [];
-    console.log("tok",tokens)
+    // console.log("tok",tokens)
 
     // 4) Send FCM notifications
     const encodedUserNotificationId = Buffer.from(
@@ -8315,11 +8321,11 @@ const getWorkersNearby = async (req, res) => {
       };
     
       try {
-        console.log("Sending FCM Notification:", JSON.stringify(normalNotificationMessage, null, 2));
+        // console.log("Sending FCM Notification:", JSON.stringify(normalNotificationMessage, null, 2));
     
         const fcmResponse = await getMessaging().sendEachForMulticast(normalNotificationMessage);
     
-        console.log("FCM Response:", JSON.stringify(fcmResponse, null, 2));
+        // console.log("FCM Response:", JSON.stringify(fcmResponse, null, 2));
     
         let successCount = 0;
         let failureCount = 0;
@@ -8334,7 +8340,7 @@ const getWorkersNearby = async (req, res) => {
           }
         });
     
-        console.log(`FCM Summary: ${successCount} success, ${failureCount} failure(s).`);
+        // console.log(`FCM Summary: ${successCount} success, ${failureCount} failure(s).`);
     
       } catch (err) {
         console.error("❌ Error sending FCM notifications:", err);
@@ -11134,7 +11140,7 @@ const processPayment = async (req, res) => {
   console.log("Payment Method:", paymentMethod);
   console.log("Decoded ID:", decodedId);
 
-  if (!totalAmount || !paymentMethod || !decodedId) {
+  if ( !paymentMethod || !decodedId) {
     return res.status(402).json({
       error: "Missing required fields: totalAmount, paymentMethod, and decodedId.",
     });

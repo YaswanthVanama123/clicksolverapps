@@ -28,7 +28,7 @@ const Profile = () => {
         }
 
         const response = await axios.get(
-          `https://backend.clicksolver.com/api/worker/profile/details`,
+          `http://192.168.55.104:5000/api/worker/profile/details`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

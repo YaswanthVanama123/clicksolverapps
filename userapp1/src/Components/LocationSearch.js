@@ -9,7 +9,7 @@ import {
   SafeAreaView,
   BackHandler,
   ActivityIndicator,
-  useWindowDimensions, // <-- For responsiveness
+  useWindowDimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
@@ -31,7 +31,10 @@ const LocationSearch = () => {
   const [serviceArray, setServiceArray] = useState([]);
   const route = useRoute();
   const navigation = useNavigation();
-  const {serviceName} = route.params;
+  
+  // Destructure route params
+  const { serviceName, savings, tipAmount } = route.params;
+
   const inputRef = useRef(null);
 
   // Autocomplete function
@@ -56,20 +59,31 @@ const LocationSearch = () => {
     }
   }, []);
 
+  // Navigate back to UserLocation including savings and tipAmount
+  const goBackToUserLocation = useCallback((extraParams = {}) => {
+    navigation.replace('UserLocation', {
+      serviceName,
+      savings,
+      tipAmount,
+      ...extraParams,
+    });
+  }, [navigation, serviceName, savings, tipAmount]);
+
   // On back press
   const onBackPress = () => {
-    navigation.replace('UserLocation', { serviceName });
+    goBackToUserLocation();
   };
 
   useFocusEffect(
     useCallback(() => {
       const handleBackPress = () => {
-        navigation.replace('UserLocation', { serviceName });
+        goBackToUserLocation();
         return true;
       };
       BackHandler.addEventListener('hardwareBackPress', handleBackPress);
-      return () => BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
-    }, [navigation])
+      return () =>
+        BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
+    }, [goBackToUserLocation])
   );
 
   // If query is not empty, fetch suggestions
@@ -97,10 +111,11 @@ const LocationSearch = () => {
   const handleSuggestionPress = useCallback(
     (item) => {
       setQuery(item.title);
-      navigation.replace('UserLocation', { serviceName, suggestion: item });
+      // Pass the selected suggestion along with the savings and tipAmount
+      goBackToUserLocation({ suggestion: item });
       setSuggestions([]);
     },
-    [navigation, serviceName]
+    [goBackToUserLocation]
   );
 
   // Render suggestion item
