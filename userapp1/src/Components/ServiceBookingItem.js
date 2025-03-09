@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useMemo, useCallback} from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,28 +8,30 @@ import {
   ScrollView,
   Animated,
   ActivityIndicator,
-  useWindowDimensions, // <-- 1) Import useWindowDimensions
+  useWindowDimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome6';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {useNavigation, CommonActions, useRoute} from '@react-navigation/native';
+import { useNavigation, CommonActions, useRoute } from '@react-navigation/native';
 import axios from 'axios';
 import Entypo from 'react-native-vector-icons/Entypo';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../context/ThemeContext'; // Import the theme hook
 
 const ServiceBookingItem = () => {
-  // 2) Get screen width & height
-  const {width, height} = useWindowDimensions();
-  // 3) Generate dynamic styles
-  const styles = dynamicStyles(width, height);
+  // Get screen dimensions
+  const { width, height } = useWindowDimensions();
+  // Get dark mode flag from context and pass it to dynamicStyles
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, height, isDarkMode);
 
   const [details, setDetails] = useState({});
   const [serviceArray, setServiceArray] = useState([]);
-  const {tracking_id} = useRoute().params;
+  const { tracking_id } = useRoute().params;
   const [paymentExpanded, setPaymentExpanded] = useState(false);
-  const [loading, setLoading] = useState(true); // Loading state
-  const [status, setStatus] = useState({}); // Status object with timestamps
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState({}); // Timestamps & status
 
   const navigation = useNavigation();
   const rotateAnimation = useMemo(() => new Animated.Value(0), []);
@@ -63,7 +65,6 @@ const ServiceBookingItem = () => {
   const getTimelineData = useMemo(() => {
     const statusKeys = Object.keys(status);
     const currentStatusIndex = statusKeys.findIndex((key) => status[key] === null);
-
     return statusKeys.map((statusKey, index) => ({
       title: statusDisplayNames[statusKey],
       time: status[statusKey],
@@ -84,10 +85,10 @@ const ServiceBookingItem = () => {
         setLoading(true);
         const response = await axios.post(
           `http://192.168.55.102:5000/api/service/booking/item/details`,
-          {tracking_id},
+          { tracking_id },
         );
-        const {data} = response.data;
-        console.log("data",data)
+        const { data } = response.data;
+        console.log("data", data);
         setStatus(data.time || {});
         setDetails(data);
         setServiceArray(data.service_booked);
@@ -100,7 +101,6 @@ const ServiceBookingItem = () => {
     fetchBookingDetails();
   }, [tracking_id]);
 
-  // If loading, show a full screen ActivityIndicator
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -119,7 +119,7 @@ const ServiceBookingItem = () => {
           <Icon
             name="arrow-left-long"
             size={20}
-            color="#212121"
+            color={isDarkMode ? '#fff' : '#212121'}
             style={styles.backIcon}
           />
           <Text style={styles.headerText}>Service Trackings</Text>
@@ -165,7 +165,7 @@ const ServiceBookingItem = () => {
             <View style={styles.innerContainerLine}>
               {getTimelineData.map((item, index) => (
                 <View key={index} style={styles.timelineItem}>
-                  <View style={{alignItems: 'center'}}>
+                  <View style={{ alignItems: 'center' }}>
                     <MaterialCommunityIcons
                       name="circle"
                       size={14}
@@ -177,8 +177,7 @@ const ServiceBookingItem = () => {
                         style={[
                           styles.lineSegment,
                           {
-                            backgroundColor:
-                              getTimelineData[index + 1].iconColor,
+                            backgroundColor: getTimelineData[index + 1].iconColor,
                           },
                         ]}
                       />
@@ -222,7 +221,7 @@ const ServiceBookingItem = () => {
               accessibilityLabel="Toggle Payment Details"
             >
               <Text style={styles.sectionPaymentTitle}>Payment Details</Text>
-              <Animated.View style={{transform: [{rotate: rotateInterpolate}]}}>
+              <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
                 <Entypo name="chevron-small-right" size={20} color="#ff4500" />
               </Animated.View>
             </TouchableOpacity>
@@ -234,9 +233,7 @@ const ServiceBookingItem = () => {
                 <View style={styles.PaymentItemContainer}>
                   {serviceArray.map((service, index) => (
                     <View key={index} style={styles.paymentRow}>
-                      <Text style={styles.paymentLabelHead}>
-                        {service.serviceName}
-                      </Text>
+                      <Text style={styles.paymentLabelHead}>{service.serviceName}</Text>
                       <Text style={styles.paymentValue}>
                         ₹{service.cost.toFixed(2)}
                       </Text>
@@ -245,16 +242,12 @@ const ServiceBookingItem = () => {
                   {details.discount > 0 && (
                     <View style={styles.paymentRow}>
                       <Text style={styles.paymentLabel}>Cashback (5%)</Text>
-                      <Text style={styles.paymentValue}>
-                        ₹{details.discount}
-                      </Text>
+                      <Text style={styles.paymentValue}>₹{details.discount}</Text>
                     </View>
                   )}
                   <View style={styles.paymentRow}>
                     <Text style={styles.paymentValue}>Grand Total</Text>
-                    <Text style={styles.paymentValue}>
-                      ₹{details.total_cost}
-                    </Text>
+                    <Text style={styles.paymentValue}>₹{details.total_cost}</Text>
                   </View>
                 </View>
               </>
@@ -272,21 +265,20 @@ const ServiceBookingItem = () => {
 };
 
 /**
- * 4) DYNAMIC STYLES:
- *    This function returns a StyleSheet whose values depend on the device width/height.
- *    If `width >= 600`, we treat it as a tablet and scale up certain styles.
+ * DYNAMIC STYLES:
+ * Returns a StyleSheet with values based on device dimensions and dark mode.
  */
-const dynamicStyles = (width, height) => {
+const dynamicStyles = (width, height, isDarkMode) => {
   const isTablet = width >= 600;
 
   return StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
     },
     container: {
       flex: 1,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
     },
     header: {
       flexDirection: 'row',
@@ -295,10 +287,10 @@ const dynamicStyles = (width, height) => {
       paddingBottom: isTablet ? 16 : 12,
       elevation: 2,
       shadowColor: '#1D2951',
-      shadowOffset: {width: 0, height: 2},
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,
       shadowRadius: 4,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#333' : '#ffffff',
     },
     backIcon: {
       marginRight: isTablet ? 15 : 10,
@@ -306,7 +298,7 @@ const dynamicStyles = (width, height) => {
     headerText: {
       fontSize: isTablet ? 20 : 18,
       fontFamily: 'RobotoSlab-SemiBold',
-      color: '#1D2951',
+      color: isDarkMode ? '#fff' : '#1D2951',
       paddingLeft: isTablet ? 40 : 30,
     },
     profileContainer: {
@@ -318,7 +310,6 @@ const dynamicStyles = (width, height) => {
     profileImage: {
       width: isTablet ? 70 : 60,
       height: isTablet ? 70 : 60,
-      flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: '#FF7A22',
@@ -340,16 +331,16 @@ const dynamicStyles = (width, height) => {
     userName: {
       fontSize: isTablet ? 22 : 20,
       fontFamily: 'RobotoSlab-Medium',
-      color: '#1D2951',
+      color: isDarkMode ? '#fff' : '#1D2951',
     },
-    userDesignation: { 
+    userDesignation: {
       fontSize: isTablet ? 16 : 14,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
       fontFamily: 'RobotoSlab-Regular',
     },
     horizantalLine: {
       height: 2,
-      backgroundColor: '#F5F5F5',
+      backgroundColor: isDarkMode ? '#333' : '#F5F5F5',
       marginBottom: isTablet ? 16 : 12,
     },
     sectionContainer: {
@@ -362,7 +353,7 @@ const dynamicStyles = (width, height) => {
     sectionBookedTitle: {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-SemiBold',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       marginBottom: 8,
     },
     innerContainer: {
@@ -371,13 +362,13 @@ const dynamicStyles = (width, height) => {
     sectionTitle: {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-SemiBold',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       marginBottom: 8,
       paddingBottom: isTablet ? 20 : 15,
     },
     serviceDetail: {
       fontSize: isTablet ? 16 : 14,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
       marginBottom: 4,
     },
@@ -401,12 +392,12 @@ const dynamicStyles = (width, height) => {
     },
     timelineText: {
       fontSize: isTablet ? 16 : 14,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Medium',
     },
     timelineTime: {
       fontSize: isTablet ? 12 : 10,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#bbb' : '#4a4a4a',
       fontFamily: 'RobotoSlab-Regular',
     },
     lineSegment: {
@@ -426,18 +417,18 @@ const dynamicStyles = (width, height) => {
     paymentLabel: {
       fontSize: isTablet ? 14 : 12,
       fontFamily: 'RobotoSlab-Regular',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     paymentLabelHead: {
       width: '80%',
       fontSize: isTablet ? 14 : 12,
       fontFamily: 'RobotoSlab-Regular',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     paymentValue: {
       fontSize: isTablet ? 16 : 14,
       fontFamily: 'RobotoSlab-SemiBold',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     addressContainer: {
       flexDirection: 'row',
@@ -455,11 +446,11 @@ const dynamicStyles = (width, height) => {
     address: {
       fontSize: isTablet ? 14 : 12,
       fontFamily: 'RobotoSlab-Regular',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     paymentInnerContainer: {
       padding: isTablet ? 15 : 10,
-      backgroundColor: '#f5f5f5',
+      backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
       marginTop: isTablet ? 15 : 10,
       marginBottom: isTablet ? 15 : 10,
     },
@@ -471,7 +462,7 @@ const dynamicStyles = (width, height) => {
     sectionPaymentTitle: {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-SemiBold',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       marginBottom: 8,
       paddingLeft: isTablet ? 15 : 10,
     },

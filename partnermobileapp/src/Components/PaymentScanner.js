@@ -51,7 +51,7 @@ const PaymentScanner = ({route}) => {
       if (decodedId) {
         try {
           const response = await axios.post(
-            'http://192.168.55.104:5000/api/worker/payment/scanner/details',
+            'http://192.168.55.102:5000/api/worker/payment/scanner/details',
             { notification_id: decodedId }
           );
           const { totalAmount: amount, name, service } = response.data;
@@ -90,14 +90,14 @@ const PaymentScanner = ({route}) => {
     try {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       const numberAmmount = Number(totalAmount);
-      await axios.post('http://192.168.55.104:5000/api/user/payed', {
+      await axios.post('http://192.168.55.102:5000/api/user/payed', {
         totalAmount: numberAmmount,
         paymentMethod,
         decodedId,
       });
 
       await axios.post(
-        'http://192.168.55.104:5000/api/worker/action',
+        'http://192.168.55.102:5000/api/worker/action',
         { encodedId, screen: '' },
         { headers: { Authorization: `Bearer ${pcs_token}` } }
       );
@@ -127,7 +127,7 @@ const PaymentScanner = ({route}) => {
     </View>
   );
 
-  return (
+  return ( 
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>

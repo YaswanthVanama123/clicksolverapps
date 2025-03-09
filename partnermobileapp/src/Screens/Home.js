@@ -122,7 +122,7 @@ const HomeScreen = () => {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       if (pcs_token) {
         const response = await axios.get(
-          `http://192.168.55.104:5000/api/worker/track/details`,
+          `http://192.168.55.102:5000/api/worker/track/details`,
           {
             headers: { Authorization: `Bearer ${pcs_token}` },
           }
@@ -225,7 +225,7 @@ const HomeScreen = () => {
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const response = await axios.post(
-        `http://192.168.55.104:5000/api/accept/request`,
+        `http://192.168.55.102:5000/api/accept/request`,
         { user_notification_id: decodedId },
         { headers: { Authorization: `Bearer ${jwtToken}` } },
       );
@@ -248,7 +248,7 @@ const HomeScreen = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `http://192.168.55.104:5000/api/worker/action`,
+          `http://192.168.55.102:5000/api/worker/action`,
           { encodedId: encodedNotificationId, screen: 'UserNavigation' },
           { headers: { Authorization: `Bearer ${pcs_token}` } },
         );
@@ -266,7 +266,7 @@ const HomeScreen = () => {
       } else {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         await axios.post(
-          `http://192.168.55.104:5000/api/worker/action`,
+          `http://192.168.55.102:5000/api/worker/action`,
           { encodedId: '', screen: '' },
           { headers: { Authorization: `Bearer ${pcs_token}` } },
         );
@@ -362,7 +362,7 @@ const HomeScreen = () => {
       }
 
       await axios.post(
-        `http://192.168.55.104:5000/api/worker/store-fcm-token`,
+        `http://192.168.55.102:5000/api/worker/store-fcm-token`,
         { fcmToken: newToken },
         { headers: { Authorization: `Bearer ${pcs_token}` } },
       );

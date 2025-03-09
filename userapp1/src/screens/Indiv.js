@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useCallback} from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Alert,
   Platform,
   Linking,
-  useWindowDimensions, // <-- Import useWindowDimensions
+  useWindowDimensions,
 } from 'react-native';
 import {
   useNavigation,
@@ -19,22 +19,20 @@ import {
   useFocusEffect,
 } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import axios from 'axios';
 import uuid from 'react-native-uuid';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import LottieView from 'lottie-react-native';
 import PushNotification from 'react-native-push-notification';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../context/ThemeContext'; // Theme hook
 
 const PaintingServices = () => {
   const navigation = useNavigation();
   const route = useRoute();
-
-  // 1) Get screen dimensions
-  const {width, height} = useWindowDimensions();
-  // 2) Generate dynamic styles based on dimensions
-  const styles = dynamicStyles(width, height);
+  const { width, height } = useWindowDimensions();
+  const { isDarkMode } = useTheme(); // Get dark mode state
+  const styles = dynamicStyles(width, height, isDarkMode);
 
   const [subservice, setSubServices] = useState([]);
   const [name, setName] = useState('');
@@ -54,29 +52,25 @@ const PaintingServices = () => {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
           }),
         );
         return true;
       };
 
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
-
-      return () =>
-        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
     }, [navigation]),
   );
 
-  const fetchServices = useCallback(async serviceObject => {
+  const fetchServices = useCallback(async (serviceObject) => {
     setLoading(true);
     try {
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/individual/service`,
-        {
-          serviceObject: serviceObject,
-        },
+        'http://192.168.55.102:5000/api/individual/service',
+        { serviceObject },
       );
-      const servicesWithIds = response.data.map(service => ({
+      const servicesWithIds = response.data.map((service) => ({
         ...service,
         id: uuid.v4(),
       }));
@@ -88,10 +82,10 @@ const PaintingServices = () => {
     }
   }, []);
 
-  const handleBookCommander = useCallback(async serviceId => {
+  const handleBookCommander = useCallback(async (serviceId) => {
     try {
       // Check if notifications are enabled
-      PushNotification.checkPermissions(permissions => {
+      PushNotification.checkPermissions((permissions) => {
         if (!permissions.alert) {
           Alert.alert(
             'Notifications Required',
@@ -113,7 +107,7 @@ const PaintingServices = () => {
                 },
               },
             ],
-            {cancelable: false},
+            { cancelable: false },
           );
         } else {
           proceedToBookCommander(serviceId);
@@ -125,7 +119,7 @@ const PaintingServices = () => {
   }, []);
 
   const proceedToBookCommander = useCallback(
-    async serviceId => {
+    async (serviceId) => {
       navigation.push('ServiceBooking', {
         serviceName: serviceId,
       });
@@ -137,7 +131,7 @@ const PaintingServices = () => {
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+        routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
       }),
     );
   }, [navigation]);
@@ -153,11 +147,11 @@ const PaintingServices = () => {
         {/* Header with back arrow, title, and search icon */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.iconContainer}>
-            <Icon name="arrow-back" size={24} color="#000" />
+            <Icon name="arrow-back" size={24} color={isDarkMode ? '#fff' : '#000'} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{name}</Text>
           <TouchableOpacity onPress={handleSearch} style={styles.iconContainer}>
-            <Icon name="search" size={24} color="#000" />
+            <Icon name="search" size={24} color={isDarkMode ? '#fff' : '#000'} />
           </TouchableOpacity>
         </View>
 
@@ -191,13 +185,14 @@ const PaintingServices = () => {
 
         {/* Services List */}
         <ScrollView style={styles.services}>
-          {subservice.map(service => (
+          {subservice.map((service) => (
             <ServiceItem
               key={service.id}
               title={service.service_name}
               imageUrl={service.service_urls}
               handleBookCommander={handleBookCommander}
               serviceId={service.service_name}
+              isDarkMode={isDarkMode}  // Pass the isDarkMode flag here
             />
           ))}
         </ScrollView>
@@ -207,16 +202,16 @@ const PaintingServices = () => {
 };
 
 const ServiceItem = React.memo(
-  ({title, imageUrl, handleBookCommander, serviceId}) => {
-    // We'll need the same dynamic styles here if we want the items to respond to device size:
-    const {width} = useWindowDimensions();
-    const itemStyles = dynamicStyles(width); // We only need width for these small adjustments
+  ({ title, imageUrl, handleBookCommander, serviceId, isDarkMode }) => {
+    const { width } = useWindowDimensions();
+    // Pass isDarkMode to dynamicStyles so the card background also adapts to dark mode.
+    const itemStyles = dynamicStyles(width, undefined, isDarkMode);
 
     return (
       <View style={itemStyles.serviceItem}>
         <View style={itemStyles.serviceImageContainer}>
           <Image
-            source={{uri: imageUrl}}
+            source={{ uri: imageUrl }}
             style={itemStyles.serviceImage}
             resizeMode="stretch"
           />
@@ -225,7 +220,8 @@ const ServiceItem = React.memo(
           <Text style={itemStyles.serviceTitle}>{title}</Text>
           <TouchableOpacity
             style={itemStyles.bookNow}
-            onPress={() => handleBookCommander(serviceId)}>
+            onPress={() => handleBookCommander(serviceId)}
+          >
             <Text style={itemStyles.bookNowText}>Book Now ➔</Text>
           </TouchableOpacity>
         </View>
@@ -236,19 +232,19 @@ const ServiceItem = React.memo(
 
 /**
  * DYNAMIC STYLES:
- * Adjusts layout based on width to accommodate tablets (width >= 600).
+ * Adjusts layout based on width (to accommodate tablets) and dark mode.
  */
-const dynamicStyles = (width, height) => {
+const dynamicStyles = (width, height, isDarkMode) => {
   const isTablet = width >= 600;
 
   return StyleSheet.create({
     safeArea: {
-      flex: 1, 
-      backgroundColor: '#FFFFFF',
+      flex: 1,
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
     },
     container: {
       flex: 1,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
       paddingHorizontal: isTablet ? 20 : 10,
     },
     header: {
@@ -265,7 +261,7 @@ const dynamicStyles = (width, height) => {
       flex: 1,
       textAlign: 'center',
       marginHorizontal: 10,
-      color: '#1D2951',
+      color: isDarkMode ? '#fff' : '#1D2951',
       fontFamily: 'RobotoSlab-Bold',
       lineHeight: 23.44,
     },
@@ -276,7 +272,7 @@ const dynamicStyles = (width, height) => {
     banner: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#FFF4E6',
+      backgroundColor: isDarkMode ? '#333' : '#FFF4E6',
       borderRadius: 15,
       marginVertical: isTablet ? 20 : 10,
       marginBottom: isTablet ? 40 : 30,
@@ -286,7 +282,6 @@ const dynamicStyles = (width, height) => {
       padding: isTablet ? 20 : 15,
     },
     bannerDetails: {
-      // Extra spacing on tablets
       marginBottom: isTablet ? 10 : 0,
     },
     bannerPrice: {
@@ -296,14 +291,14 @@ const dynamicStyles = (width, height) => {
       lineHeight: 34,
     },
     bannerDescription: {
-      color: '#808080',
+      color: isDarkMode ? '#ccc' : '#808080',
       fontSize: isTablet ? 16 : 14,
       marginTop: 5,
       fontFamily: 'NotoSerif-SemiBold',
       lineHeight: 16.41,
     },
     bannerInfo: {
-      color: '#808080',
+      color: isDarkMode ? '#ccc' : '#808080',
       fontFamily: 'RobotoSlab-Regular',
       opacity: 0.8,
       fontSize: isTablet ? 14 : 12,
@@ -314,7 +309,6 @@ const dynamicStyles = (width, height) => {
       width: isTablet ? 120 : 100,
       height: isTablet ? 120 : 100,
       resizeMode: 'cover',
-      transform: [{rotate: '0deg'}],
     },
     services: {
       flex: 1,
@@ -327,11 +321,11 @@ const dynamicStyles = (width, height) => {
       gap: 10,
       padding: isTablet ? 15 : 10,
       borderRadius: 10,
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#333' : '#fff', // Card background in dark mode
       marginBottom: isTablet ? 15 : 10,
     },
     serviceImageContainer: {
-      // Example: Could also add different styling for tablets
+      // Additional styling if needed
     },
     serviceImage: {
       width: isTablet ? 200 : 165,
@@ -346,7 +340,7 @@ const dynamicStyles = (width, height) => {
     serviceTitle: {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Bold',
-      color: '#333',
+      color: isDarkMode ? '#fff' : '#333',
     },
     bookNow: {
       flexDirection: 'row',

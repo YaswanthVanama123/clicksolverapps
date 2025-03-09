@@ -9,12 +9,14 @@ import {
   Platform,
   Image,
   ActivityIndicator,
-  useWindowDimensions, // <-- 1) Import useWindowDimensions
+  useWindowDimensions,
 } from 'react-native';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { useNavigation, CommonActions, useRoute } from '@react-navigation/native';
 import Entypo from 'react-native-vector-icons/Entypo';
+// Import theme hook for dark mode support
+import { useTheme } from '../context/ThemeContext';
 
 const VerificationScreen = () => {
   const navigation = useNavigation();
@@ -23,8 +25,9 @@ const VerificationScreen = () => {
 
   // 1) Grab width & height from useWindowDimensions
   const { width, height } = useWindowDimensions();
-  // 2) Dynamically generate styles
-  const styles = dynamicStyles(width, height);
+  // 2) Dynamically generate styles using dark mode flag
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, height, isDarkMode);
 
   const [timer, setTimer] = useState(120); // 2 minutes timer
   const [code, setCode] = useState(['', '', '', '']);
@@ -108,7 +111,6 @@ const VerificationScreen = () => {
   // Handle key press for backspace to navigate between inputs
   const handleKeyPress = ({ nativeEvent }, index) => {
     if (nativeEvent.key === 'Backspace' && code[index] === '' && index > 0) {
-      // Move focus to the previous input and clear it
       inputs.current[index - 1]?.focus();
       const newCode = [...code];
       newCode[index - 1] = '';
@@ -147,7 +149,7 @@ const VerificationScreen = () => {
                 keyboardType="numeric"
                 maxLength={1}
                 value={digit}
-                autoFocus={index === 0} // Focus first input on mount
+                autoFocus={index === 0}
                 ref={(ref) => (inputs.current[index] = ref)}
                 onChangeText={(value) => handleChangeText(value, index)}
                 onKeyPress={(e) => handleKeyPress(e, index)}
@@ -172,9 +174,9 @@ const VerificationScreen = () => {
           <View style={styles.contactContainer}>
             <Text style={styles.contactText}>Contact us:</Text>
             <View style={styles.socialIcons}>
-              <Entypo name="mail" size={15} color="#9e9e9e" />
-              <Entypo name="facebook" size={15} color="#9e9e9e" />
-              <Entypo name="instagram" size={15} color="#9e9e9e" />
+              <Entypo name="mail" size={15} color={isDarkMode ? '#fff' : "#9e9e9e"} />
+              <Entypo name="facebook" size={15} color={isDarkMode ? '#fff' : "#9e9e9e"} />
+              <Entypo name="instagram" size={15} color={isDarkMode ? '#fff' : "#9e9e9e"} />
             </View>
             <Text style={styles.email}>Clicksolver@yahoo.com</Text>
           </View>
@@ -185,12 +187,10 @@ const VerificationScreen = () => {
 };
 
 /**
- * A helper function that returns a StyleSheet based on screen width/height.
- * If width >= 600, we assume it’s a tablet and scale up certain styles.
+ * DYNAMIC STYLES with Dark Mode Support
  */
-const dynamicStyles = (width, height) => {
+const dynamicStyles = (width, height, isDarkMode) => {
   const isTablet = width >= 600;
-
   return StyleSheet.create({
     keyboardAvoidingView: {
       flex: 1,
@@ -208,18 +208,18 @@ const dynamicStyles = (width, height) => {
       fontSize: isTablet ? 26 : 22,
       fontWeight: 'bold',
       marginBottom: isTablet ? 25 : 20,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     instruction: {
       fontSize: isTablet ? 18 : 16,
       textAlign: 'center',
-      color: '#9e9e9e',
+      color: isDarkMode ? '#ccc' : '#9e9e9e',
     },
     number: {
       fontSize: isTablet ? 18 : 16,
       textAlign: 'center',
       marginBottom: isTablet ? 35 : 30,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontWeight: 'bold',
     },
     codeContainer: {
@@ -231,19 +231,19 @@ const dynamicStyles = (width, height) => {
     },
     codeInput: {
       borderWidth: 1,
-      borderColor: '#ccc',
+      borderColor: isDarkMode ? '#fff' : '#ccc',
       borderRadius: 10,
       width: isTablet ? 55 : 45,
       height: isTablet ? 55 : 45,
       textAlign: 'center',
       fontSize: isTablet ? 20 : 18,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     timer: {
       fontSize: isTablet ? 20 : 18,
       fontWeight: '800',
       marginBottom: isTablet ? 25 : 20,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     submitButton: {
       backgroundColor: '#ff6c37',
@@ -266,6 +266,7 @@ const dynamicStyles = (width, height) => {
     contactText: {
       fontSize: isTablet ? 18 : 16,
       marginBottom: isTablet ? 15 : 10,
+      color: isDarkMode ? '#fff' : '#212121',
     },
     socialIcons: {
       flexDirection: 'row',
@@ -275,8 +276,8 @@ const dynamicStyles = (width, height) => {
     },
     email: {
       fontSize: isTablet ? 14 : 12,
-      color: '#9e9e9e',
-      paddingBottom: isTablet ? 40 : 30, 
+      color: isDarkMode ? '#fff' : '#9e9e9e',
+      paddingBottom: isTablet ? 40 : 30,
     },
   });
 };

@@ -53,7 +53,7 @@ const CashbackScreen1 = () => {
     const fetchData = async () => {
       try {
         const response = await axios.post(
-          `http://192.168.55.104:5000/api/worker/pending/cashback`,
+          `http://192.168.55.102:5000/api/worker/pending/cashback`,
           {
             worker_id: worker_id,
           },
@@ -115,7 +115,7 @@ const CashbackScreen1 = () => {
     const cashbackCount = pendingAmount / 100;
     try {
       await axios.post(
-        `http://192.168.55.104:5000/api/worker/cashback/payed`,
+        `http://192.168.55.102:5000/api/worker/cashback/payed`,
         {
           worker_id,
           cashbackPayed: pendingAmount,

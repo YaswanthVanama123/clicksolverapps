@@ -151,7 +151,10 @@ const {
   UserPhoneCall,
   accountDelete,
   userTrackingCall,
-  workerTrackingCall
+  workerTrackingCall,
+  getUserOngoingBookings,
+  getServiceOngoingItemDetails,
+  userProfileUpdate
 } = require("./controller.js");
 
 const router = express.Router();
@@ -252,7 +255,11 @@ router.post(
 
 router.post("/service/booking/item/details", getServiceBookingItemDetails);
 
+router.post("/service/ongoing/booking/item/details", getServiceOngoingItemDetails);
+
 router.post("/user/coupons", authenticateToken, userCoupons);
+
+router.post("/user/updateProfileImage",authenticateToken,userProfileUpdate)
 
 // Define the route for processing payment
 router.post("/user/payed", processPayment);
@@ -674,7 +681,7 @@ router.post("/worker/message", workerMessage);
 router.get("/pending/balance/workers", pendingBalanceWorkers);
 
 router.get(
-  "/user/tracking/services",
+  "/user/tracking/services", 
   authenticateToken,
   getUserTrackingServices
 );
@@ -689,6 +696,8 @@ router.post("/send-sms", sendSMSVerification);
 router.get("/worker/bookings", authenticateWorkerToken, getWorkerBookings);
 
 router.get("/user/bookings", authenticateToken, getUserAllBookings);
+
+router.get("/user/ongoingBookings",authenticateToken, getUserOngoingBookings)
 
 router.get(
   "/worker/profile/details",

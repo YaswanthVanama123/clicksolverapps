@@ -16,10 +16,13 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
+// Import the theme hook
+import { useTheme } from '../context/ThemeContext';
 
 const OrderScreen = () => {
   const { width } = useWindowDimensions();
-  const styles = dynamicStyles(width);
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, isDarkMode);
   const navigation = useNavigation();
   const route = useRoute();
   const { serviceName } = route.params || [];
@@ -32,11 +35,7 @@ const OrderScreen = () => {
   const [totalPrice, setTotalPrice] = useState(0);
   const [discountedPrice, setDiscountedPrice] = useState(0);
   const [savings, setSavings] = useState(0);
-
-  // For tip selection
   const [selectedTip, setSelectedTip] = useState(0);
-
-  // Modal for error messages
   const [errorModalVisible, setErrorModalVisible] = useState(false);
   const [errorModalContent, setErrorModalContent] = useState({ title: '', message: '' });
 
@@ -182,17 +181,15 @@ const OrderScreen = () => {
 
   const isCouponDisabled = (couponCode) => !COUPONS[couponCode].isAvailable();
 
-  // Final price after coupon
+  // Final price after coupon and tip
   const finalPrice = appliedCoupon ? discountedPrice : totalPrice;
-  // Add tip to final price
   const finalPriceWithTip = finalPrice + selectedTip;
 
-  // 7) Address Handling - pass tipAmount as a separate parameter
+  // 7) Address Handling
   const addAddress = async () => {
     try {
       const cs_token = await EncryptedStorage.getItem('cs_token');
       if (cs_token) {
-        // Pass the services array along with tipAmount and savings
         navigation.push('UserLocation', {
           serviceName: services,
           tipAmount: selectedTip,
@@ -215,7 +212,7 @@ const OrderScreen = () => {
       {/* Header */}
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={handleBackPress} style={styles.backArrow}>
-          <Icon name="arrow-left-long" size={24} color="#333" />
+          <Icon name="arrow-left-long" size={24} color={isDarkMode ? '#fff' : "#333"} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Cart</Text>
       </View>
@@ -243,7 +240,6 @@ const OrderScreen = () => {
                     <Text style={styles.quantityBtnText}>+</Text>
                   </TouchableOpacity>
                 </View>
-                {/* <Text style={styles.itemPrice}>₹{service.totalCost}</Text> */}
               </View>
             </View>
             <View style={styles.sectionDivider} />
@@ -265,7 +261,7 @@ const OrderScreen = () => {
             <MaterialIcons name="local-offer" size={20} color="#fff" style={styles.couponIcon} />
             <Text style={styles.applyCouponText}>Apply Coupon</Text>
           </View>
-          <Entypo name={showCoupons ? 'chevron-up' : 'chevron-down'} size={20} color="#333" />
+          <Entypo name={showCoupons ? 'chevron-up' : 'chevron-down'} size={20} color={isDarkMode ? '#fff' : "#333"} />
         </TouchableOpacity>
 
         {showCoupons && (
@@ -343,9 +339,9 @@ const OrderScreen = () => {
                 style={[styles.tipOption, selectedTip === amount && styles.tipOptionSelected]}
                 onPress={() => {
                   if (selectedTip === amount) {
-                    setSelectedTip(0); // remove tip if tapped again
+                    setSelectedTip(0);
                   } else {
-                    setSelectedTip(amount); // set new tip
+                    setSelectedTip(amount);
                   }
                 }}
               >
@@ -434,81 +430,100 @@ const OrderScreen = () => {
 
 export default OrderScreen;
 
-const dynamicStyles = (width) => {
+const dynamicStyles = (width, isDarkMode) => {
   const isTablet = width >= 600;
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
+    container: { flex: 1, backgroundColor: isDarkMode ? '#121212' : '#fff' },
     contentContainer: { paddingBottom: 80 },
-    headerContainer: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#fff' },
+    headerContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      backgroundColor: isDarkMode ? '#121212' : '#fff',
+    },
     backArrow: { marginRight: 12 },
-    headerTitle: { fontSize: isTablet ? 22 : 20, fontWeight: '600', color: '#212121' },
-    sectionDivider: { height: 8, backgroundColor: '#f5f5f5', width: '100%' },
-    membershipBanner: { backgroundColor: '#fff7f2', padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+    headerTitle: { fontSize: isTablet ? 22 : 20, fontWeight: '600', color: isDarkMode ? '#fff' : '#212121' },
+    sectionDivider: { height: 8, backgroundColor: isDarkMode ? '#333' : '#f5f5f5', width: '100%' },
+    membershipBanner: { backgroundColor: isDarkMode ? '#1e1e1e' : '#fff7f2', padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
     membershipTextContainer: { flex: 1, alignItems: 'center' },
     membershipPlusText: { fontSize: isTablet ? 16 : 14, fontWeight: '800', textTransform: 'uppercase', color: '#ff6f00', marginBottom: 4 },
-    membershipPlan: { fontSize: isTablet ? 15 : 13, fontWeight: '600', color: '#333', marginBottom: 2 },
-    membershipBenefits: { fontSize: isTablet ? 14 : 12, color: '#666', marginBottom: 4, textAlign: 'center' },
+    membershipPlan: { fontSize: isTablet ? 15 : 13, fontWeight: '600', color: isDarkMode ? '#fff' : '#333', marginBottom: 2 },
+    membershipBenefits: { fontSize: isTablet ? 14 : 12, color: isDarkMode ? '#ccc' : '#666', marginBottom: 4, textAlign: 'center' },
     membershipViewLink: { fontSize: isTablet ? 14 : 12, color: '#ff6f00', fontWeight: '600' },
-    itemRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#fff' },
+    itemRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: isDarkMode ? '#1e1e1e' : '#fff' },
     itemImage: { width: 60, height: 60, borderRadius: 8 },
     itemInfoContainer: { flex: 1, marginLeft: 12, justifyContent: 'center' },
-    itemName: { fontSize: isTablet ? 18 : 16, fontWeight: '500', color: '#212121', marginBottom: 4 },
-    itemSubtitle: { fontSize: isTablet ? 14 : 12, color: '#777' },
+    itemName: { fontSize: isTablet ? 18 : 16, fontWeight: '500', color: isDarkMode ? '#fff' : '#212121', marginBottom: 4 },
+    itemSubtitle: { fontSize: isTablet ? 14 : 12, color: isDarkMode ? '#ccc' : '#777' },
     quantityPriceContainer: { alignItems: 'flex-end', justifyContent: 'center' },
     quantityControls: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-    quantityBtn: { backgroundColor: '#e0e0e0', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 },
-    quantityBtnText: { fontSize: isTablet ? 18 : 16, fontWeight: 'bold', color: '#333' },
-    quantityValue: { marginHorizontal: 8, fontSize: isTablet ? 16 : 14, fontWeight: '600', color: '#333' },
-    itemPrice: { fontSize: isTablet ? 16 : 14, fontWeight: '600', color: '#000' },
-    addMoreContainer: { backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 12 },
+    quantityBtn: { backgroundColor: isDarkMode ? '#444' : '#e0e0e0', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 },
+    quantityBtnText: { fontSize: isTablet ? 18 : 16, fontWeight: 'bold', color: isDarkMode ? '#fff' : '#333' },
+    quantityValue: { marginHorizontal: 8, fontSize: isTablet ? 16 : 14, fontWeight: '600', color: isDarkMode ? '#fff' : '#333' },
+    itemPrice: { fontSize: isTablet ? 16 : 14, fontWeight: '600', color: isDarkMode ? '#fff' : '#000' },
+    addMoreContainer: { backgroundColor: isDarkMode ? '#121212' : '#fff', paddingHorizontal: 16, paddingVertical: 12 },
     addMoreText: { fontSize: isTablet ? 16 : 14, color: '#ff6f00', fontWeight: '600' },
-    frequentlyContainer: { backgroundColor: '#fff', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14 },
-    frequentlyTitle: { fontSize: isTablet ? 16 : 14, fontWeight: '700', color: '#333' },
-    frequentlyItem: { width: 120, backgroundColor: '#f9f9f9', borderRadius: 8, marginRight: 12, alignItems: 'center', padding: 8 },
+    frequentlyContainer: { backgroundColor: isDarkMode ? '#1e1e1e' : '#fff', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14 },
+    frequentlyTitle: { fontSize: isTablet ? 16 : 14, fontWeight: '700', color: isDarkMode ? '#fff' : '#333' },
+    frequentlyItem: { width: 120, backgroundColor: isDarkMode ? '#333' : '#f9f9f9', borderRadius: 8, marginRight: 12, alignItems: 'center', padding: 8 },
     frequentlyItemImage: { width: 80, height: 80, borderRadius: 8, marginBottom: 6 },
-    frequentlyItemName: { fontSize: isTablet ? 14 : 12, fontWeight: '600', color: '#333', marginBottom: 4, textAlign: 'center' },
-    frequentlyItemPrice: { fontSize: isTablet ? 14 : 12, color: '#777', marginBottom: 6 },
+    frequentlyItemName: { fontSize: isTablet ? 14 : 12, fontWeight: '600', color: isDarkMode ? '#fff' : '#333', marginBottom: 4, textAlign: 'center' },
+    frequentlyItemPrice: { fontSize: isTablet ? 14 : 12, color: isDarkMode ? '#ccc' : '#777', marginBottom: 6 },
     frequentlyItemAddBtn: { backgroundColor: '#ff6f00', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 6 },
     frequentlyItemAddBtnText: { color: '#fff', fontSize: isTablet ? 14 : 12, fontWeight: '600' },
-    applyCouponHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 14 },
+    applyCouponHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: isDarkMode ? '#121212' : '#fff', paddingHorizontal: 16, paddingVertical: 14 },
     couponLeft: { flexDirection: 'row', alignItems: 'center' },
     couponIcon: { backgroundColor: '#ff6f00', padding: 4, borderRadius: 4, marginRight: 8 },
-    applyCouponText: { fontSize: isTablet ? 16 : 14, fontWeight: '700', color: '#333' },
-    couponListContainer: { backgroundColor: '#fff', paddingHorizontal: 16, paddingBottom: 12 },
+    applyCouponText: { fontSize: isTablet ? 16 : 14, fontWeight: '700', color: isDarkMode ? '#fff' : '#333' },
+    couponListContainer: { backgroundColor: isDarkMode ? '#121212' : '#fff', paddingHorizontal: 16, paddingBottom: 12 },
     couponRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
-    couponLabel: { flex: 1, fontSize: isTablet ? 15 : 13, fontWeight: '600', color: '#333', marginRight: 8 },
-    couponDescription: { fontSize: isTablet ? 13 : 11, color: '#777', marginBottom: 8, marginTop: 2 },
+    couponLabel: { flex: 1, fontSize: isTablet ? 15 : 13, fontWeight: '600', color: isDarkMode ? '#fff' : '#333', marginRight: 8 },
+    couponDescription: { fontSize: isTablet ? 13 : 11, color: isDarkMode ? '#ccc' : '#777', marginBottom: 8, marginTop: 2 },
     applyBtn: { backgroundColor: '#f36c21', paddingVertical: 6, paddingHorizontal: 14, borderRadius: 6 },
     applyBtnText: { color: '#fff', fontSize: isTablet ? 14 : 12, fontWeight: '600' },
     disabledBtn: { backgroundColor: '#ccc' },
     appliedContainer: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 14, borderRadius: 6, borderWidth: 1, borderColor: '#ff4500' },
     appliedText: { color: '#ff4500', marginLeft: 6, fontSize: isTablet ? 14 : 12, fontWeight: '600' },
-    tipContainer: { backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 14 },
-    tipTitle: { fontSize: isTablet ? 16 : 14, fontWeight: '700', color: '#333', marginBottom: 10 },
+    tipContainer: { backgroundColor: isDarkMode ? '#121212' : '#fff', paddingHorizontal: 16, paddingVertical: 14 },
+    tipTitle: { fontSize: isTablet ? 16 : 14, fontWeight: '700', color: isDarkMode ? '#fff' : '#333', marginBottom: 10 },
     tipOptions: { flexDirection: 'row', flexWrap: 'wrap' },
-    tipOption: { backgroundColor: '#f1f1f1', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 6, marginRight: 8, marginBottom: 8 },
-    tipOptionText: { color: '#333', fontSize: isTablet ? 14 : 12, fontWeight: '600' },
+    tipOption: { backgroundColor: isDarkMode ? '#444' : '#f1f1f1', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 6, marginRight: 8, marginBottom: 8 },
+    tipOptionText: { color: isDarkMode ? '#fff' : '#333', fontSize: isTablet ? 14 : 12, fontWeight: '600' },
     tipOptionSelected: { backgroundColor: '#ff6f00' },
     tipOptionTextSelected: { color: '#fff' },
-    paymentSummaryContainer: { backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 14 },
-    paymentSummaryTitle: { fontSize: isTablet ? 17 : 15, fontWeight: '700', color: '#333', marginBottom: 10 },
+    paymentSummaryContainer: { backgroundColor: isDarkMode ? '#121212' : '#fff', paddingHorizontal: 16, paddingVertical: 14 },
+    paymentSummaryTitle: { fontSize: isTablet ? 17 : 15, fontWeight: '700', color: isDarkMode ? '#fff' : '#333', marginBottom: 10 },
     summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-    summaryLabel: { fontSize: isTablet ? 15 : 13, color: '#555' },
-    summaryValue: { fontSize: isTablet ? 15 : 13, fontWeight: '700', color: '#333' },
-    strikeThrough: { textDecorationLine: 'line-through', color: '#888' },
+    summaryLabel: { fontSize: isTablet ? 15 : 13, color: isDarkMode ? '#ccc' : '#555' },
+    summaryValue: { fontSize: isTablet ? 15 : 13, fontWeight: '700', color: isDarkMode ? '#fff' : '#333' },
+    strikeThrough: { textDecorationLine: 'line-through', color: isDarkMode ? '#aaa' : '#888' },
     savingsText: { marginTop: 6, fontSize: isTablet ? 14 : 12, color: 'green', fontWeight: '600' },
-    addressSection: { backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 14 },
-    addressQuestion: { fontSize: isTablet ? 15 : 13, fontWeight: '600', color: '#333', marginBottom: 10 },
+    addressSection: { backgroundColor: isDarkMode ? '#121212' : '#fff', paddingHorizontal: 16, paddingVertical: 14 },
+    addressQuestion: { fontSize: isTablet ? 15 : 13, fontWeight: '600', color: isDarkMode ? '#fff' : '#333', marginBottom: 10 },
     addressBtn: { backgroundColor: '#ff6f00', paddingVertical: 12, borderRadius: 6, alignItems: 'center' },
     addressBtnText: { color: '#fff', fontSize: isTablet ? 15 : 13, fontWeight: '700' },
-    bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', paddingVertical: 14, paddingHorizontal: 16, borderTopWidth: 1, borderTopColor: '#f5f5f5' },
-    bottomBarTotal: { fontSize: isTablet ? 18 : 16, fontWeight: '700', color: '#333' },
+    bottomBar: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: isDarkMode ? '#121212' : '#fff',
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      borderTopWidth: 1,
+      borderTopColor: isDarkMode ? '#333' : '#f5f5f5'
+    },
+    bottomBarTotal: { fontSize: isTablet ? 18 : 16, fontWeight: '700', color: isDarkMode ? '#fff' : '#333' },
     bottomBarButton: { backgroundColor: '#ff6f00', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6 },
     bottomBarButtonText: { color: '#fff', fontSize: isTablet ? 16 : 14, fontWeight: '700' },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-    modalContent: { backgroundColor: '#fff', padding: 20, borderRadius: 8, width: '80%', alignItems: 'center' },
-    modalTitle: { fontSize: isTablet ? 18 : 16, fontWeight: 'bold', marginBottom: 10 },
-    modalMessage: { fontSize: isTablet ? 16 : 14, textAlign: 'center', marginBottom: 20 },
+    modalContent: { backgroundColor: isDarkMode ? '#333' : '#fff', padding: 20, borderRadius: 8, width: '80%', alignItems: 'center' },
+    modalTitle: { fontSize: isTablet ? 18 : 16, fontWeight: 'bold', marginBottom: 10, color: isDarkMode ? '#fff' : '#000' },
+    modalMessage: { fontSize: isTablet ? 16 : 14, textAlign: 'center', marginBottom: 20, color: isDarkMode ? '#ccc' : '#000' },
     modalButton: { backgroundColor: '#ff6f00', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 6 },
     modalButtonText: { color: '#fff', fontSize: isTablet ? 16 : 14, fontWeight: '600' },
   });

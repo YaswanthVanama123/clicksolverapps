@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useMemo, useCallback} from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,25 +9,28 @@ import {
   Linking,
   Animated, 
   ActivityIndicator,
-  useWindowDimensions, // <-- 1) Import useWindowDimensions
+  useWindowDimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome6';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Entypo from 'react-native-vector-icons/Entypo';
 import axios from 'axios';
-import {useRoute} from '@react-navigation/native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { useRoute } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+// Import the theme hook
+import { useTheme } from '../context/ThemeContext';
 
 const ServiceTrackingItemScreen = () => {
   // 1) Get screen width & height
-  const {width, height} = useWindowDimensions();
-  // 2) Generate dynamic styles
-  const styles = dynamicStyles(width, height);
+  const { width, height } = useWindowDimensions();
+  // 2) Get dark mode flag and generate dynamic styles
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, height, isDarkMode);
 
   const [details, setDetails] = useState({});
   const [serviceArray, setServiceArray] = useState([]);
-  const {tracking_id} = useRoute().params;
+  const { tracking_id } = useRoute().params;
   const [pin, setPin] = useState('4567');
   const [paymentExpanded, setPaymentExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -39,12 +42,11 @@ const ServiceTrackingItemScreen = () => {
     setPaymentExpanded(!paymentExpanded);
   };
 
-  
   const phoneCall = async () => {
     try {
       const response = await axios.post(
         'http://192.168.55.102:5000/api/worker/tracking/call',
-        {tracking_id},
+        { tracking_id },
       );
       if (response.status === 200 && response.data.mobile) {
         const phoneNumber = response.data.mobile;
@@ -69,7 +71,7 @@ const ServiceTrackingItemScreen = () => {
     const currentStatusIndex = statuses.indexOf(details.service_status);
     return statuses.map((status, index) => ({
       title: status,
-      time: '',
+      time: '', // You can update this if needed
       iconColor: index <= currentStatusIndex ? '#ff4500' : '#a1a1a1',
       lineColor: index <= currentStatusIndex ? '#ff4500' : '#a1a1a1',
     }));
@@ -95,10 +97,10 @@ const ServiceTrackingItemScreen = () => {
         setLoading(true);
         const response = await axios.post(
           `http://192.168.55.102:5000/api/service/tracking/user/item/details`,
-          {tracking_id},
+          { tracking_id },
         );
-        const {data} = response.data;
-        console.log("dat",data)
+        const { data } = response.data;
+        console.log("dat", data);
         setPin(data.tracking_pin);
         setDetails(data);
         setServiceArray(data.service_booked);
@@ -139,7 +141,7 @@ const ServiceTrackingItemScreen = () => {
           <Icon
             name="arrow-left-long"
             size={20}
-            color="#212121"
+            color={isDarkMode ? '#fff' : "#212121"}
             style={styles.backIcon}
           />
           <Text style={styles.headerText}>Service Trackings</Text>
@@ -201,7 +203,7 @@ const ServiceTrackingItemScreen = () => {
             <View style={styles.innerContainerLine}>
               {getTimelineData.map((item, index) => (
                 <View key={index} style={styles.timelineItem}>
-                  <View style={{alignItems: 'center'}}>
+                  <View style={{ alignItems: 'center' }}>
                     <MaterialCommunityIcons
                       name="circle"
                       size={14}
@@ -255,7 +257,7 @@ const ServiceTrackingItemScreen = () => {
               accessibilityLabel="Toggle Payment Details"
             >
               <Text style={styles.sectionPaymentTitle}>Payment Details</Text>
-              <Animated.View style={{transform: [{rotate: rotateInterpolate}]}}>
+              <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
                 <Entypo name="chevron-small-right" size={20} color="#ff4500" />
               </Animated.View>
             </TouchableOpacity>
@@ -264,34 +266,32 @@ const ServiceTrackingItemScreen = () => {
           <View style={styles.sectionContainer}>
             {/* Payment Summary with Toggle */}
             {paymentExpanded && (
-              <>
-                <View style={styles.PaymentItemContainer}>
-                  {serviceArray.map((service, index) => (
-                    <View key={index} style={styles.paymentRow}>
-                      <Text style={styles.paymentLabelHead}>
-                        {service.serviceName}
-                      </Text>
-                      <Text style={styles.paymentValue}>
-                        ₹{service.cost.toFixed(2)}
-                      </Text>
-                    </View>
-                  ))}
-                  {details.discount > 0 && (
-                    <View style={styles.paymentRow}>
-                      <Text style={styles.paymentLabel}>Discount</Text>
-                      <Text style={styles.paymentValue}>
-                        ₹{details.discount}
-                      </Text>
-                    </View>
-                  )}
-                  <View style={styles.paymentRow}>
-                    <Text style={styles.paymentLabel}>Grand Total</Text>
+              <View style={styles.PaymentItemContainer}>
+                {serviceArray.map((service, index) => (
+                  <View key={index} style={styles.paymentRow}>
+                    <Text style={styles.paymentLabelHead}>
+                      {service.serviceName}
+                    </Text>
                     <Text style={styles.paymentValue}>
-                      ₹{details.total_cost}
+                      ₹{service.cost.toFixed(2)}
                     </Text>
                   </View>
+                ))}
+                {details.discount > 0 && (
+                  <View style={styles.paymentRow}>
+                    <Text style={styles.paymentLabel}>Discount</Text>
+                    <Text style={styles.paymentValue}>
+                      ₹{details.discount}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.paymentRow}>
+                  <Text style={styles.paymentLabel}>Grand Total</Text>
+                  <Text style={styles.paymentValue}>
+                    ₹{details.total_cost}
+                  </Text>
                 </View>
-              </>
+              </View>
             )}
           </View>
 
@@ -305,20 +305,18 @@ const ServiceTrackingItemScreen = () => {
 };
 
 /**
- * 3) A helper function that returns a StyleSheet whose values depend on the device width/height.
- *    If `width >= 600`, we treat it as a tablet and scale up certain styles.
+ * DYNAMIC STYLES with Dark Theme Support
  */
-const dynamicStyles = (width, height) => {
-  const isTablet = width >= 600; // Tweak as needed
-
+function dynamicStyles(width, height, isDarkMode) {
+  const isTablet = width >= 600;
   return StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
     },
     container: {
       flex: 1,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
     },
     header: {
       flexDirection: 'row',
@@ -326,11 +324,11 @@ const dynamicStyles = (width, height) => {
       padding: isTablet ? 20 : 16,
       paddingBottom: isTablet ? 16 : 12,
       elevation: 2,
-      shadowColor: '#1D2951',
-      shadowOffset: {width: 0, height: 2},
+      shadowColor: isDarkMode ? '#000' : '#1D2951',
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,
       shadowRadius: 4,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
     },
     backIcon: {
       marginRight: isTablet ? 15 : 10,
@@ -338,7 +336,7 @@ const dynamicStyles = (width, height) => {
     headerText: {
       fontSize: isTablet ? 20 : 16,
       fontFamily: 'RobotoSlab-Medium',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     profileContainer: {
       flexDirection: 'row',
@@ -370,12 +368,12 @@ const dynamicStyles = (width, height) => {
       paddingRight: isTablet ? 20 : 16,
     },
     callIconContainer: {
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#121212' : '#fff',
       borderRadius: 50,
       padding: isTablet ? 10 : 8,
-      elevation: 4,
+      // elevation: 4,
       shadowColor: '#000',
-      shadowOffset: {width: 0, height: 2},
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.3,
       shadowRadius: 4,
     },
@@ -387,7 +385,7 @@ const dynamicStyles = (width, height) => {
       paddingLeft: isTablet ? 20 : 16,
     },
     pinText: {
-      color: '#1D2951',
+      color: isDarkMode ? '#fff' : '#1D2951',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 18 : 16,
       paddingTop: isTablet ? 12 : 10,
@@ -402,17 +400,17 @@ const dynamicStyles = (width, height) => {
       justifyContent: 'center',
       alignItems: 'center',
       borderWidth: 1,
-      borderColor: '#212121',
+      borderColor: isDarkMode ? '#fff' : '#212121',
       borderRadius: 5,
     },
     pinNumber: {
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 16 : 14,
     },
     horizantalLine: {
       height: 2,
-      backgroundColor: '#F5F5F5',
+      backgroundColor: isDarkMode ? '#333' : '#F5F5F5',
       marginBottom: isTablet ? 16 : 12,
     },
     sectionContainer: {
@@ -424,7 +422,7 @@ const dynamicStyles = (width, height) => {
     sectionBookedTitle: {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Medium',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       marginBottom: 8,
     },
     innerContainer: {
@@ -432,7 +430,7 @@ const dynamicStyles = (width, height) => {
     },
     serviceDetail: {
       fontSize: isTablet ? 16 : 14,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
       marginBottom: 4,
     },
@@ -443,7 +441,7 @@ const dynamicStyles = (width, height) => {
     sectionTitle: {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Medium',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       marginBottom: 8,
       paddingBottom: isTablet ? 20 : 15,
     },
@@ -463,12 +461,12 @@ const dynamicStyles = (width, height) => {
     },
     timelineText: {
       fontSize: isTablet ? 16 : 14,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
     },
     timelineTime: {
       fontSize: isTablet ? 12 : 10,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
       fontFamily: 'RobotoSlab-Regular',
     },
     lineSegment: {
@@ -490,12 +488,12 @@ const dynamicStyles = (width, height) => {
     },
     address: {
       fontSize: isTablet ? 14 : 12,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
     },
     paymentInnerContainer: {
       padding: isTablet ? 15 : 10,
-      backgroundColor: '#f5f5f5',
+      backgroundColor: isDarkMode ? '#121212' : '#f5f5f5',
       marginTop: isTablet ? 15 : 10,
       marginBottom: isTablet ? 15 : 10,
     },
@@ -507,7 +505,7 @@ const dynamicStyles = (width, height) => {
     sectionPaymentTitle: {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Medium',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       marginBottom: 8,
       paddingLeft: isTablet ? 15 : 10,
     },
@@ -524,16 +522,16 @@ const dynamicStyles = (width, height) => {
       width: '80%',
       fontSize: isTablet ? 14 : 12,
       fontFamily: 'RobotoSlab-Regular',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     paymentLabel: {
       fontSize: isTablet ? 14 : 12,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
     },
     paymentValue: {
       fontSize: isTablet ? 16 : 14,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Medium',
     },
     payButton: {
@@ -553,12 +551,12 @@ const dynamicStyles = (width, height) => {
     userName: {
       fontSize: isTablet ? 19 : 16,
       fontFamily: 'RobotoSlab-Bold',
-      color: '#4A4A4A',
+      color: isDarkMode ? '#fff' : '#4A4A4A',
       lineHeight: 21.09,
     },
     userDesignation: {
       fontSize: isTablet ? 18 : 15,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
       fontFamily: 'RobotoSlab-Regular',
     },
     loadingContainer: {
@@ -567,6 +565,6 @@ const dynamicStyles = (width, height) => {
       alignItems: 'center',
     },
   });
-};
+}
 
 export default ServiceTrackingItemScreen;

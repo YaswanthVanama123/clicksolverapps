@@ -22,6 +22,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import LottieView from 'lottie-react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../context/ThemeContext';  // Import the global theme context
 
 const SingleService = () => {
   const navigation = useNavigation();
@@ -30,7 +31,12 @@ const SingleService = () => {
 
   // 1) Grab width from useWindowDimensions for 16:9 aspect ratio
   const { width } = useWindowDimensions();
-  const styles = dynamicStyles(width);
+  
+  // 2) Extract theme info
+  const { isDarkMode } = useTheme();
+  
+  // 3) Generate dynamic styles
+  const styles = dynamicStyles(width, isDarkMode);
 
   // State
   const [services, setServices] = useState([]);
@@ -199,13 +205,13 @@ const SingleService = () => {
           {/* Icons absolutely on top of the carousel */}
           <View style={styles.carouselIconsContainer}>
             <TouchableOpacity style={styles.iconButton} onPress={handleBackPress}>
-              <Icon name="arrow-back" size={24} color="#000" />
+              <Icon name="arrow-back" size={24} color={isDarkMode ? '#fff' : '#000'} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.iconButton}
               onPress={() => navigation.push('SearchItem')}
             >
-              <Icon name="search" size={24} color="#000" />
+              <Icon name="search" size={24} color={isDarkMode ? '#fff' : '#000'} />
             </TouchableOpacity>
           </View>
 
@@ -282,11 +288,9 @@ const SingleService = () => {
                   </Text>
                   <View style={styles.addButton}>
                     <TouchableOpacity
-                      onPress={() =>
-                        handleQuantityChange(srv.main_service_id, -1)
-                      }
+                      onPress={() => handleQuantityChange(srv.main_service_id, -1)}
                     >
-                      <Entypo name="minus" size={20} color="#4a4a4a" />
+                      <Entypo name="minus" size={20} color={isDarkMode ? '#ddd' : '#4a4a4a'} />
                     </TouchableOpacity>
                     <Text style={styles.addButtonText}>
                       {quantities[srv.main_service_id] > 0
@@ -294,11 +298,9 @@ const SingleService = () => {
                         : 'Add'}
                     </Text>
                     <TouchableOpacity
-                      onPress={() =>
-                        handleQuantityChange(srv.main_service_id, 1)
-                      }
+                      onPress={() => handleQuantityChange(srv.main_service_id, 1)}
                     >
-                      <Entypo name="plus" size={20} color="#4a4a4a" />
+                      <Entypo name="plus" size={20} color={isDarkMode ? '#ddd' : '#4a4a4a'} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -338,7 +340,7 @@ const SingleService = () => {
             onPress={() => setModalVisible(false)}
           >
             <View style={styles.crossIcon}>
-              <Entypo name="cross" size={20} color="#4a4a4a" />
+              <Entypo name="cross" size={20} color={isDarkMode ? '#fff' : '#4a4a4a'} />
             </View>
           </TouchableOpacity>
           <View style={styles.modalContent}>
@@ -375,21 +377,17 @@ const SingleService = () => {
                       </Text>
                       <View style={styles.addButton}>
                         <TouchableOpacity
-                          onPress={() =>
-                            handleQuantityChange(srv.main_service_id, -1)
-                          }
+                          onPress={() => handleQuantityChange(srv.main_service_id, -1)}
                         >
-                          <Entypo name="minus" size={20} color="#4a4a4a" />
+                          <Entypo name="minus" size={20} color={isDarkMode ? '#ddd' : '#4a4a4a'} />
                         </TouchableOpacity>
                         <Text style={styles.addButtonText}>
                           {quantities[srv.main_service_id]}
                         </Text>
                         <TouchableOpacity
-                          onPress={() =>
-                            handleQuantityChange(srv.main_service_id, 1)
-                          }
+                          onPress={() => handleQuantityChange(srv.main_service_id, 1)}
                         >
-                          <Entypo name="plus" size={20} color="#4a4a4a" />
+                          <Entypo name="plus" size={20} color={isDarkMode ? '#ddd' : '#4a4a4a'} />
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -448,30 +446,22 @@ const SingleService = () => {
   );
 };
 
-/**
- * DYNAMIC STYLES
- * --------------
- * This time, the icons are absolutely positioned on top of the carousel
- * so there's no big gap at the top. The header is integrated with the carousel container.
- */
-function dynamicStyles(width) {
+// 4) DYNAMIC STYLES
+function dynamicStyles(width, isDarkMode) {
   const isTablet = width >= 600;
-
-  // 16:9 ratio
   const aspectRatio = 16 / 9;
-  // Compute the carousel height from the screen width
   const carouselHeight = Math.round(width / aspectRatio);
 
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
     },
     carouselContainer: {
       width: '100%',
       height: carouselHeight,
-      backgroundColor: '#f5f5f5',
-      position: 'relative', // For absolute-positioned icons
+      backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
+      position: 'relative',
     },
     carouselIconsContainer: {
       position: 'absolute',
@@ -487,7 +477,7 @@ function dynamicStyles(width) {
       width: isTablet ? 45 : 40,
       height: isTablet ? 45 : 40,
       borderRadius: isTablet ? 22 : 20,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#444' : '#ffffff',
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -511,7 +501,7 @@ function dynamicStyles(width) {
       resizeMode: 'cover',
     },
     serviceHeader: {
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#333' : '#fff',
     },
     serviceDetails: {
       padding: isTablet ? 25 : 20,
@@ -519,7 +509,7 @@ function dynamicStyles(width) {
     },
     serviceTitle: {
       fontSize: isTablet ? 24 : 22,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-SemiBold',
       width: '90%',
       lineHeight: 25,
@@ -528,7 +518,7 @@ function dynamicStyles(width) {
       marginTop: 5,
     },
     Sparetext: {
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
       opacity: 0.8,
       fontSize: isTablet ? 16 : 14,
       width: '90%',
@@ -537,11 +527,11 @@ function dynamicStyles(width) {
     horizantalLine: {
       width: '100%',
       height: isTablet ? 6 : 5,
-      backgroundColor: '#f5f5f5',
+      backgroundColor: isDarkMode ? '#555' : '#f5f5f5',
     },
     recomendedContainer: {
       padding: isTablet ? 25 : 20,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
     },
     recommendedLoaderContainer: {
       height: isTablet ? 250 : 200,
@@ -564,19 +554,19 @@ function dynamicStyles(width) {
       width: isTablet ? '60%' : '55%',
     },
     recomendedCardDetailsHead: {
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Medium',
       fontSize: isTablet ? 17 : 15,
       paddingBottom: 5,
     },
     recomendedCardDetailsDescription: {
-      color: '#4a4a4a',
+      color: isDarkMode ? '#bbb' : '#4a4a4a',
       fontSize: isTablet ? 12 : 10,
       lineHeight: isTablet ? 18 : 15,
       fontFamily: 'RobotoSlab-Regular',
     },
     recomendedCardDetailsRating: {
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontSize: isTablet ? 17 : 15,
       paddingBottom: 10,
       paddingTop: 5,
@@ -589,8 +579,8 @@ function dynamicStyles(width) {
     addButton: {
       padding: isTablet ? 8 : 5,
       borderWidth: 1,
-      borderColor: '#1D2951',
-      backgroundColor: '#ffffff',
+      borderColor: isDarkMode ? '#bbb' : '#1D2951',
+      backgroundColor: isDarkMode ? '#333' : '#ffffff',
       width: isTablet ? 110 : 100,
       borderRadius: 10,
       alignItems: 'center',
@@ -601,7 +591,7 @@ function dynamicStyles(width) {
       paddingHorizontal: 5,
     },
     addButtonText: {
-      color: '#4a4a4a',
+      color: isDarkMode ? '#fff' : '#4a4a4a',
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Medium',
     },
@@ -612,7 +602,7 @@ function dynamicStyles(width) {
       right: 0,
       flexDirection: 'row',
       justifyContent: 'space-between',
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#333' : '#FFFFFF',
       paddingVertical: isTablet ? 20 : 15,
       paddingHorizontal: isTablet ? 30 : 25,
       alignItems: 'center',
@@ -639,7 +629,7 @@ function dynamicStyles(width) {
     },
     amount: {
       fontSize: isTablet ? 17 : 15,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Medium',
     },
     // Modals
@@ -656,13 +646,13 @@ function dynamicStyles(width) {
     },
     crossIcon: {
       padding: 10,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#444' : '#FFFFFF',
       borderRadius: 50,
     },
     modalContent: {
       width: '100%',
       flex: 1,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
       padding: isTablet ? 25 : 20,
@@ -672,14 +662,14 @@ function dynamicStyles(width) {
       fontSize: isTablet ? 22 : 20,
       fontFamily: 'RobotoSlab-SemiBold',
       marginBottom: 20,
-      color: '#1D2951',
+      color: isDarkMode ? '#fff' : '#1D2951',
     },
     modalTotal: {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Regular',
       paddingBottom: 10,
       paddingTop: 10,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
     },
     bookButton: {
       backgroundColor: '#ff4500',
@@ -723,7 +713,7 @@ function dynamicStyles(width) {
     },
     loginModalContent: {
       width: isTablet ? '60%' : '80%',
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#333' : '#ffffff',
       borderRadius: 20,
       padding: isTablet ? 25 : 20,
       alignItems: 'center',
@@ -731,13 +721,13 @@ function dynamicStyles(width) {
     loginModalTitle: {
       fontSize: isTablet ? 20 : 18,
       fontFamily: 'RobotoSlab-Medium',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       marginBottom: 10,
       textAlign: 'center',
     },
     loginModalMessage: {
       fontSize: isTablet ? 16 : 14,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
       textAlign: 'center',
       marginBottom: 20,
       fontFamily: 'RobotoSlab-Regular',

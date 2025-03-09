@@ -275,7 +275,7 @@ const verifyPayment = async (req, res) => {
 
     // 2) Update workerlife: compute new balance + append to balance_payment_history
     //    ALSO set no_due = TRUE if payment is "success"
-    const updateWorkerLifeCombinedQuery = `
+    const updateCombinedQuery = `
       WITH order_amt AS (
         SELECT amount::numeric AS amt
         FROM orders
@@ -290,28 +290,32 @@ const verifyPayment = async (req, res) => {
         SELECT curr_balance + order_amt.amt AS computed_balance
         FROM current_balance, order_amt
       ),
-      update_no_due AS (
+      update_workerlife AS (
         UPDATE workerlife
-        SET
-          balance_amount = new_balance.computed_balance,
-          no_due = CASE WHEN $3::text = 'success' THEN true ELSE no_due END,
-          balance_payment_history = COALESCE(balance_payment_history, '[]'::jsonb) ||
-            jsonb_build_array(
-              jsonb_build_object(
-                'order_id', $1::text,
-                'amount', (SELECT amt FROM order_amt),
-                'time', TO_CHAR(NOW(), 'YYYY-MM-DD HH24:MI:SS'),
-                'status', $3::text,
-                'paid', 'Paid to Click Solver'::text
+        SET balance_amount = new_balance.computed_balance,
+            balance_payment_history = COALESCE(balance_payment_history, '[]'::jsonb) ||
+              jsonb_build_array(
+                jsonb_build_object(
+                  'order_id', $1::text,
+                  'amount', (SELECT amt FROM order_amt),
+                  'time', TO_CHAR(NOW(), 'YYYY-MM-DD HH24:MI:SS'),
+                  'status', $3::text,
+                  'paid', 'Paid to Click Solver'
+                )
               )
-            )
         FROM new_balance
         WHERE workerlife.worker_id = $2::int
         RETURNING workerlife.*
+      ),
+      update_workersverified AS (
+        UPDATE workersverified
+        SET no_due = CASE WHEN $3::text = 'success' THEN true ELSE no_due END
+        WHERE worker_id = $2::int
+        RETURNING *
       )
-      SELECT * FROM update_no_due;
+      SELECT * FROM update_workersverified;
     `;
-    await client.query(updateWorkerLifeCombinedQuery, [
+    await client.query(updateCombinedQuery, [
       razorpay_order_id,
       worker_id,
       paymentStatus,
@@ -1966,6 +1970,53 @@ const getServiceBookingItemDetails = async (req, res) => {
   }
 };
 
+const getServiceOngoingItemDetails = async (req, res) => {
+  try {
+    const { tracking_id } = req.body;
+    console.log(tracking_id);
+    // console.log(tracking_id)
+    const query = `
+    SELECT
+      st.service_booked,
+      st.total_cost,
+      st.discount,
+      st.time,
+      st.created_at,
+      w.name,
+      w.phone_number,
+      un.area,
+      ws.profile,
+      ws.service
+    FROM accepted st
+    JOIN workersverified w ON st.worker_id = w.worker_id
+    JOIN usernotifications un ON st.user_notification_id = un.user_notification_id
+    JOIN workerskills ws ON w.worker_id = ws.worker_id
+    WHERE st.notification_id = $1;
+  `;
+
+    const values = [tracking_id];
+
+    const result = await client.query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(305).json({
+        message: "No service tracking details found for the given accepted ID",
+      });
+    }
+
+    res.status(200).json({ data: result.rows[0] });
+  } catch (error) {
+    console.error(
+      "Error fetching service tracking worker item details: ",
+      error
+    );
+    res.status(500).json({
+      message: "Failed to fetch service tracking worker item details",
+      error: error.message,
+    });
+  }
+};
+
 const serviceTrackingUpdateStatus = async (req, res) => {
   const { tracking_id, newStatus } = req.body;
 
@@ -2088,7 +2139,7 @@ const userProfileDetails = async (req, res) => {
 
   try {
     const query = `
-      SELECT name, email, phone_number
+      SELECT name, email, phone_number, profile
       FROM "user"
       WHERE user_id = $1;  -- Use $1 as a placeholder for the userId
     `;
@@ -2102,10 +2153,10 @@ const userProfileDetails = async (req, res) => {
         .json({ message: "No worker details found for the provided user ID." });
     }
 
-    const { name, email, phone_number } = result.rows[0];
+    const { name, email, phone_number, profile } = result.rows[0];
 
     // Return the result
-    return res.json({ name, email, phone_number });
+    return res.json({ name, email, phone_number, profile });
   } catch (error) {
     console.error("Error fetching worker details:", error);
     res
@@ -4521,7 +4572,8 @@ const getUserAllBookings = async (req, res) => {
         n.notification_id,
         n.service_booked,
         n.created_at,
-        s.payment,
+        n.complete_status,
+        n.total_cost,
         s.payment_type,
         w.name AS provider
     FROM completenotifications n
@@ -4541,6 +4593,36 @@ const getUserAllBookings = async (req, res) => {
       .json({ error: "An error occurred while fetching user bookings" });
   }
 };
+
+const getUserOngoingBookings = async (req, res) => {
+  console.log("called id")
+  const userId = req.user.id;
+
+  try {
+
+    const query = `
+    SELECT 
+        n.notification_id,
+        n.service_booked,
+        n.created_at,
+        n.total_cost,
+        w.name AS provider
+    FROM accepted n
+    JOIN "user" w ON n.user_id = w.user_id
+    WHERE n.user_id = $1
+    ORDER BY n.created_at DESC
+    `;
+
+    const { rows } = await client.query(query, [userId]);
+    console.log("=roes ",rows[0])
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error("Error fetching user bookings:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching user bookings" });
+  }
+}
 
 const workerAuthentication = async (req, res) => {
   const workerId = req.worker.id;
@@ -5634,6 +5716,45 @@ const userCoupons = async (req, res) => {
 };
 
 
+const userProfileUpdate = async (req, res) => {
+    const user_id = req.user.id;
+    const {  profileImage } = req.body;
+
+    // Check if both parameters are provided
+    if (!user_id || !profileImage) {
+        return res.status(400).json({ error: "user_id and profileImage are required." });
+    }
+
+    try {
+        // Update the user's profile image
+        const query = `
+            UPDATE "user"
+            SET profile = $1
+            WHERE user_id = $2
+            RETURNING *;
+        `;
+        
+        const values = [profileImage, user_id];
+
+        const result = await client.query(query, values);
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: "User not found." });
+        }
+
+        res.status(200).json({
+            message: "Profile updated successfully.",
+            updatedUser: result.rows[0]
+        });
+    } catch (error) {
+        console.error("Error updating profile:", error);
+        res.status(500).json({ error: "Internal server error." });
+    }
+};
+
+
+
+
 
 // Check cancellation status
 const checkCancellationStatus = async (req, res) => {
@@ -6633,7 +6754,9 @@ const userNavigationCancel = async (req, res) => {
   try {
     // Begin transaction
     await client.query("BEGIN");
+    console.log("Transaction started for notification_id:", notification_id);
 
+    // Combined query: verification, update, and insert
     const combinedQuery = await client.query(
       `
       WITH verification AS (
@@ -6657,15 +6780,9 @@ const userNavigationCancel = async (req, res) => {
         SELECT 
           accepted_id, notification_id, user_id, user_notification_id,
           longitude, latitude, created_at, worker_id, 'cancel',
-          to_jsonb('service_booked'::text), time, discount, total_cost, tip_amount
+          service_booked, time, discount, total_cost, tip_amount
         FROM updated
         RETURNING worker_id, notification_id
-      ),
-      deleted AS (
-        DELETE FROM accepted
-        WHERE notification_id = $1
-          AND EXISTS (SELECT 1 FROM updated)
-        RETURNING *
       )
       SELECT 
         v.verification_status AS verified,
@@ -6678,9 +6795,20 @@ const userNavigationCancel = async (req, res) => {
       `,
       [notification_id]
     );
+    console.log("Combined query executed. Returned rows:", combinedQuery.rows);
+
+    // Separate DELETE query on accepted table
+    const deleteResult = await client.query(
+      `DELETE FROM accepted
+       WHERE notification_id = $1
+       RETURNING *`,
+      [notification_id]
+    );
+    console.log("Deleted rows from accepted:", deleteResult.rowCount);
 
     // Commit transaction
     await client.query("COMMIT");
+    console.log("Transaction committed successfully for notification_id:", notification_id);
 
     // If no row is returned, then the notification doesn't exist in accepted
     if (combinedQuery.rows.length === 0) {
@@ -6688,9 +6816,9 @@ const userNavigationCancel = async (req, res) => {
     }
 
     const { verified, worker_id, fcm_token } = combinedQuery.rows[0];
-    console.log("data", combinedQuery.rows);
+    console.log("Data:", combinedQuery.rows);
 
-    // If the notification is verified, return 205
+    // If the notification is verified, block cancellation
     if (verified) {
       return res.status(205).json({
         message: "Cancellation blocked - verification already completed"
@@ -6746,6 +6874,7 @@ const userNavigationCancel = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 
 
@@ -13541,5 +13670,8 @@ module.exports = {
   UserPhoneCall,
   accountDelete,
   userTrackingCall,
-  workerTrackingCall
+  workerTrackingCall,
+  getUserOngoingBookings,
+  getServiceOngoingItemDetails,
+  userProfileUpdate
 };

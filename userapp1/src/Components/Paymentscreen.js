@@ -11,7 +11,7 @@ import {
   BackHandler,
   Alert,
   ActivityIndicator,
-  useWindowDimensions, // for responsiveness
+  useWindowDimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
@@ -24,10 +24,13 @@ import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import Entypo from 'react-native-vector-icons/Entypo';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
+// Import the theme hook
+import { useTheme } from '../context/ThemeContext';
 
 const Payment = ({ route }) => {
   const { width } = useWindowDimensions();
-  const styles = dynamicStyles(width);
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, isDarkMode);
 
   const [paymentMethod, setPaymentMethod] = useState('');
   const [couponCode, setCouponCode] = useState('');
@@ -42,7 +45,6 @@ const Payment = ({ route }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [discount, setDiscount] = useState(0);
   const [totalCost, setTotalCost] = useState(0);
-
   const [value, setValue] = useState('');
   const [paymentDetails, setPaymentDetails] = useState({});
   const navigation = useNavigation();
@@ -116,10 +118,20 @@ const Payment = ({ route }) => {
     setPaymentModal(!paymentModal);
   };
 
-  // Example if you want to do something with coupon
+  // Example coupon logic
   const applyCoupon = () => {
     console.log('Apply coupon code: ', value);
-    // Implement your logic
+    // Implement your coupon logic here
+  };
+
+  const onBackPress = () => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
+      })
+    );
+    return true;
   };
 
   const openPhonePeScanner = () => {
@@ -134,7 +146,7 @@ const Payment = ({ route }) => {
       <View style={styles.mainContainer}>
         <ScrollView style={styles.container}>
           {/* Header */}
-          <View style={styles.header}>
+          {/* <View style={styles.header}>
             <TouchableOpacity
               onPress={() =>
                 navigation.dispatch(
@@ -145,9 +157,15 @@ const Payment = ({ route }) => {
                 )
               }
             >
-              <FontAwesome6 name="arrow-left-long" size={20} color="#212121" />
+              <FontAwesome6 name="arrow-left-long" size={20} color={isDarkMode ? '#fff' : "#212121"} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Payment Screen</Text>
+          </View> */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.leftIcon} onPress={onBackPress}>
+              <FontAwesome6 name="arrow-left-long" size={20} color="#9e9e9e" />
+            </TouchableOpacity>
+            <Text style={styles.screenName}>Payment Screen</Text>
           </View>
 
           {/* Service Summary Section */}
@@ -300,7 +318,7 @@ const Payment = ({ route }) => {
           </View>
 
           <View style={styles.noticeTextContainer}>
-            <Icon name="alert-circle-outline" size={16} color="#212121" />
+            <Icon name="alert-circle-outline" size={16} color={isDarkMode ? '#fff' : "#212121"} />
             <Text style={styles.noticeText}>
               Spare parts are not included in this payment
             </Text>
@@ -320,55 +338,73 @@ const Payment = ({ route }) => {
       </View>
     </SafeAreaView>
   );
-};
+}
 
 /**
- * DYNAMIC STYLES
+ * DYNAMIC STYLES with Dark Theme Support
  */
-function dynamicStyles(width) {
+function dynamicStyles(width, isDarkMode) {
   const isTablet = width >= 600;
 
   return StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
     },
     mainContainer: {
       flex: 1,
+      backgroundColor: isDarkMode ? '#121212' : '#F5F5F5',
     },
     container: {
       flex: 1,
-      backgroundColor: '#F5F5F5',
+      backgroundColor: isDarkMode ? '#121212' : '#F5F5F5',
     },
-
     /* Header */
+    // header: {
+    //   padding: isTablet ? 15 : 10,
+    //   flexDirection: 'row',
+    //   gap: 15,
+    //   alignItems: 'center',
+    //   backgroundColor: isDarkMode ? '#121212' : '#fff',
+    //   elevation: 1,
+    //   marginBottom: 4,
+    //   borderBottomWidth: 1,
+    //   borderBottomColor: isDarkMode ? '#333' : '#EEE',
+    // },
+    // headerTitle: {
+    //   color: isDarkMode ? '#fff' : '#212121',
+    //   fontSize: isTablet ? 18 : 16,
+    //   fontFamily: 'RobotoSlab-SemiBold',
+    //   textAlign: 'center',
+    // },
     header: {
-      padding: isTablet ? 15 : 10,
+      paddingTop:20,
       flexDirection: 'row',
-      gap: 15,
       alignItems: 'center',
-      backgroundColor: '#fff',
-      elevation: 1,
-      marginBottom: 4,
+      justifyContent: 'center',
+      position: 'relative',
+      marginBottom: isTablet ? 30 : 20,
     },
-    headerTitle: {
-      color: '#212121',
-      fontSize: isTablet ? 18 : 16,
-      fontFamily: 'RobotoSlab-SemiBold',
-      textAlign: 'center',
+    leftIcon: {
+      position: 'absolute',
+      left: 10,
     },
-
+    screenName: {
+      color: isDarkMode ? '#FFFFFF' : '#1e1e1e',
+      fontSize: isTablet ? 20 : 17,
+      fontWeight: 'bold',
+    },
     /* Service Summary */
     serviceSummary: {
       padding: isTablet ? 20 : 16,
-      backgroundColor: '#FFF',
+      backgroundColor: isDarkMode ? '#1e1e1e' : '#FFF',
       margin: isTablet ? 20 : 16,
       borderRadius: 10,
     },
     summaryTitle: {
       fontFamily: 'RobotoSlab-Medium',
       fontSize: isTablet ? 17 : 16,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#fff' : '#4a4a4a',
       marginBottom: 10,
     },
     profileContainer: {
@@ -385,15 +421,15 @@ function dynamicStyles(width) {
       fontSize: isTablet ? 19 : 18,
       fontFamily: 'RobotoSlab-Medium',
       marginTop: 8,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     dateText: {
-      color: '#6E6E6E',
+      color: isDarkMode ? '#ccc' : '#6E6E6E',
       marginBottom: 16,
       fontFamily: 'RobotoSlab-Regular',
     },
     detailsBox: {
-      backgroundColor: '#F9F9F9',
+      backgroundColor: isDarkMode ? '#2c2c2c' : '#F9F9F9',
       padding: 10,
       borderRadius: 8,
       width: '100%',
@@ -408,17 +444,17 @@ function dynamicStyles(width) {
     },
     detailsTitle: {
       fontFamily: 'RobotoSlab-Medium',
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
       marginTop: 10,
       fontSize: isTablet ? 14 : 13,
     },
     commanderName: {
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 14 : 13,
     },
     serviceName: {
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       flexShrink: 1,
       flexWrap: 'wrap',
       fontSize: isTablet ? 14 : 13,
@@ -428,19 +464,17 @@ function dynamicStyles(width) {
       fontFamily: 'RobotoSlab-Regular',
     },
     locationText: {
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 14 : 13,
       marginTop: 6,
     },
-
     /* Payment Summary */
     paymentSummary: {
-      backgroundColor: '#FFF',
+      backgroundColor: isDarkMode ? '#1e1e1e' : '#FFF',
       margin: isTablet ? 20 : 16,
       padding: isTablet ? 20 : 16,
       borderRadius: 10,
-      fontFamily: 'RobotoSlab-Medium',
     },
     paymentSummaryContainer: {
       flexDirection: 'row',
@@ -456,19 +490,19 @@ function dynamicStyles(width) {
       marginBottom: 8,
     },
     breakdownItem: {
-      color: '#6E6E6E',
+      color: isDarkMode ? '#ccc' : '#6E6E6E',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 13 : 12,
     },
     breakdownPrice: {
       fontWeight: 'bold',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Medium',
       fontSize: isTablet ? 14 : 13,
     },
     separatorLine: {
       height: 1,
-      backgroundColor: '#EEE',
+      backgroundColor: isDarkMode ? '#333' : '#EEE',
       marginVertical: 10,
     },
     grandTotalContainer: {
@@ -476,14 +510,14 @@ function dynamicStyles(width) {
       justifyContent: 'space-between',
     },
     paidViaText: {
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
       fontFamily: 'RobotoSlab-Medium',
       fontSize: isTablet ? 15 : 14,
     },
     grandTotalText: {
       fontFamily: 'RobotoSlab-Medium',
       fontSize: isTablet ? 15 : 14,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     HideContainer: {
       flexDirection: 'row',
@@ -500,16 +534,15 @@ function dynamicStyles(width) {
       borderRadius: isTablet ? 16 : 15,
     },
     payText: {
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
     },
     payTextTotal: {
       fontFamily: 'RobotoSlab-Medium',
     },
-
     /* Voucher Section */
     voucherContainer: {
-      backgroundColor: '#FFF',
+      backgroundColor: isDarkMode ? '#1e1e1e' : '#FFF',
       padding: isTablet ? 20 : 16,
       margin: isTablet ? 20 : 16,
       borderRadius: 10,
@@ -525,7 +558,7 @@ function dynamicStyles(width) {
     },
     voucherText: {
       marginLeft: 8,
-      color: '#6E6E6E',
+      color: isDarkMode ? '#ccc' : '#6E6E6E',
       fontFamily: 'RobotoSlab-Medium',
       fontSize: isTablet ? 15 : 14,
     },
@@ -536,7 +569,7 @@ function dynamicStyles(width) {
       flexDirection: 'row',
       alignItems: 'center',
       borderWidth: 1,
-      borderColor: '#E0E0E0',
+      borderColor: isDarkMode ? '#444' : '#E0E0E0',
       borderRadius: 5,
       overflow: 'hidden',
     },
@@ -544,13 +577,13 @@ function dynamicStyles(width) {
       height: isTablet ? 45 : 40,
       flex: 1,
       paddingHorizontal: 10,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     inputFocused: {
       borderColor: '#ff4500',
     },
     inputUnfocused: {
-      borderColor: '#E0E0E0',
+      borderColor: isDarkMode ? '#444' : '#E0E0E0',
     },
     applyButton: {
       paddingVertical: 8,
@@ -564,7 +597,7 @@ function dynamicStyles(width) {
       backgroundColor: '#ff4500',
     },
     applyButtonInactive: {
-      backgroundColor: '#f0f0f0',
+      backgroundColor: isDarkMode ? '#444' : '#f0f0f0',
     },
     applyButtonText: {
       fontFamily: 'RobotoSlab-Medium',
@@ -576,7 +609,6 @@ function dynamicStyles(width) {
     applyButtonTextInactive: {
       color: '#9e9e9e',
     },
-
     /* Notice Section */
     noticeTextContainer: {
       flexDirection: 'row',
@@ -585,14 +617,13 @@ function dynamicStyles(width) {
       margin: isTablet ? 20 : 15,
     },
     noticeText: {
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Medium',
       fontSize: isTablet ? 14 : 12,
     },
-
     /* Bottom Payment Bar */
     buttonAmmountContainer: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#1e1e1e' : '#FFFFFF',
       width: '100%',
       flexDirection: 'row',
       padding: isTablet ? 20 : 16,
@@ -602,12 +633,12 @@ function dynamicStyles(width) {
       elevation: 2,
     },
     serviceCostText: {
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontSize: isTablet ? 15 : 14,
       fontFamily: 'RobotoSlab-Regular',
     },
     cost: {
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Medium',
       fontSize: isTablet ? 16 : 15,
     },
@@ -628,4 +659,3 @@ function dynamicStyles(width) {
 }
 
 export default Payment;
-  

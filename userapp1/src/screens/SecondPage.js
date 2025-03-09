@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState, useMemo, useCallback} from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,25 +10,26 @@ import {
   TextInput,
   useWindowDimensions,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Feather from 'react-native-vector-icons/Feather';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Foundation from 'react-native-vector-icons/Foundation';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-
 import axios from 'axios';
 import uuid from 'react-native-uuid';
 import LottieView from 'lottie-react-native';
 import crashlytics from '@react-native-firebase/crashlytics';
 import EncryptedStorage from 'react-native-encrypted-storage';
-
 import QuickSearch from '../Components/QuickSearch';
-import {useFocusEffect} from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
+// Import global theme hook
+import { useTheme } from '../context/ThemeContext';
 
-function ServiceApp({navigation, route}) {
-  const {width, height} = useWindowDimensions();
-  const styles = dynamicStyles(width, height);
+function ServiceApp({ navigation, route }) {
+  const { width, height } = useWindowDimensions();
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, height, isDarkMode);
 
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -65,7 +66,7 @@ function ServiceApp({navigation, route}) {
           'Get a 50% discount on all services booked during the summer season.',
         imageBACKENDAP:
           'https://i.postimg.cc/rwtnJ3vB/b08a4579e19f4587bc9915bc0f7502ee.png',
-        backgroundColor: '#E8F5E9',
+        backgroundColor: isDarkMode ? '#FFFFFF' : '#E8F5E9',
         color: '#4CAF50',
       },
       {
@@ -88,7 +89,7 @@ function ServiceApp({navigation, route}) {
   }, []);
 
   useEffect(() => {
-    const {encodedId} = route.params || {};
+    const { encodedId } = route.params || {};
     if (encodedId) {
       try {
         const decoded = atob(encodedId);
@@ -113,18 +114,16 @@ function ServiceApp({navigation, route}) {
 
   const fetchTrackDetails = async () => {
     try {
-      const cs_token = await EncryptedStorage.getItem('cs_token');
+      const cs_token = await EncryptedStorage.getItem('cs_token'); 
       if (cs_token) {
         const response = await axios.get(
           'http://192.168.55.102:5000/api/user/track/details',
           {
-            headers: {Authorization: `Bearer ${cs_token}`},
+            headers: { Authorization: `Bearer ${cs_token}` },
           },
         );
-
         const track = response?.data?.track || [];
-        const {user} = response.data;
-
+        const { user } = response.data;
         setName(user || response.data);
         setMessageBoxDisplay(track.length > 0);
         setTrackScreen(track);
@@ -138,17 +137,15 @@ function ServiceApp({navigation, route}) {
     try {
       setLoading(true);
       crashlytics().log('Attempting to fetch services from API');
-
       const response = await axios.get(
         'http://192.168.55.102:5000/api/servicecategories'
       );
-
       crashlytics().log('Services fetched successfully');
       const servicesWithIds = response.data.map(service => ({
         ...service,
         id: uuid.v4(),
       }));
-      setServices(servicesWithIds); 
+      setServices(servicesWithIds);
     } catch (error) {
       crashlytics().recordError(error);
       console.error('Detailed Error:', error.toJSON ? error.toJSON() : error);
@@ -166,14 +163,13 @@ function ServiceApp({navigation, route}) {
   };
 
   const handleBookCommander = serviceId => {
-    navigation.push('serviceCategory', {serviceObject: serviceId});
+    navigation.push('serviceCategory', { serviceObject: serviceId });
   };
 
   const setGreetingBasedOnTime = () => {
     const currentHour = new Date().getHours();
     let greetingMessage = 'Good Day';
     let icon = <Icon name="sunny-sharp" size={14} color="#F24E1E" />;
-
     if (currentHour < 12) {
       greetingMessage = 'Good Morning';
       icon = <Icon name="sunny-sharp" size={16} color="#F24E1E" />;
@@ -182,9 +178,8 @@ function ServiceApp({navigation, route}) {
       icon = <Feather name="sunset" size={16} color="#F24E1E" />;
     } else {
       greetingMessage = 'Good Evening';
-      icon = <MaterialIcons name="nights-stay" size={16} color="#000" />;
+      icon = <MaterialIcons name="nights-stay" size={16} color={isDarkMode ? "#fff" : "#000"} />;
     }
-
     setGreeting(greetingMessage);
     setGreetingIcon(icon);
   };
@@ -193,19 +188,19 @@ function ServiceApp({navigation, route}) {
     return specialOffers.map(offer => (
       <View
         key={offer.id}
-        style={[styles.offerCard, {backgroundColor: offer.backgroundColor}]}>
+        style={[styles.offerCard, { backgroundColor: offer.backgroundColor }]}>
         <View style={styles.offerDetails}>
-          <Text style={[styles.offerTitle, {color: '#ff4500'}]}>
+          <Text style={[styles.offerTitle, { color: '#ff4500' }]}>
             {offer.title}
           </Text>
-          <Text style={[styles.offerSubtitle, {color: '#4a4a4a'}]}>
+          <Text style={[styles.offerSubtitle, { color: isDarkMode ? '#ccc' : '#4a4a4a' }]}>
             {offer.subtitle}
           </Text>
-          <Text style={[styles.offerDescription, {color: '#4a4a4a'}]}>
+          <Text style={[styles.offerDescription, { color: isDarkMode ? '#ccc' : '#4a4a4a' }]}>
             {offer.description}
           </Text>
         </View>
-        <Image source={{uri: offer.imageBACKENDAP}} style={styles.offerImg} />
+        <Image source={{ uri: offer.imageBACKENDAP }} style={styles.offerImg} />
       </View>
     ));
   };
@@ -223,8 +218,6 @@ function ServiceApp({navigation, route}) {
         </View>
       );
     }
-    
-
     return services.map(service => (
       <View key={service.id} style={styles.serviceCard}>
         <Image
@@ -296,10 +289,10 @@ function ServiceApp({navigation, route}) {
           </View>
           <View style={styles.headerIcons}>
             <TouchableOpacity onPress={handleNotification}>
-              <Icon name="notifications-outline" size={23} color="#212121" />
+              <Icon name="notifications-outline" size={23} color={isDarkMode ? '#fff' : "#212121"} />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleHelp}>
-              <Feather name="help-circle" size={23} color="#212121" />
+              <Feather name="help-circle" size={23} color={isDarkMode ? '#fff' : "#212121"} />
             </TouchableOpacity>
           </View>
         </View>
@@ -384,7 +377,7 @@ function ServiceApp({navigation, route}) {
                           color="#ffffff"
                         />
                       ) : (
-                        <Feather name="alert-circle" size={24} color="#000" />
+                        <Feather name="alert-circle" size={24} color={isDarkMode ? "#fff" : "#000"} />
                       )}
                     </View>
                     <View>
@@ -449,20 +442,16 @@ function ServiceApp({navigation, route}) {
               <TextInput
                 style={styles.commentBox}
                 placeholder="Write your comment here..."
-                placeholderTextColor="#A9A9A9"
+                placeholderTextColor={isDarkMode ? '#A9A9A9' : '#A9A9A9'}
                 multiline
                 value={comment}
                 onChangeText={setComment}
               />
               <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  onPress={closeModal}
-                  style={styles.notNowButton}>
+                <TouchableOpacity onPress={closeModal} style={styles.notNowButton}>
                   <Text style={styles.notNowText}>Not now</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={submitFeedback}
-                  style={styles.submitButton}>
+                <TouchableOpacity onPress={submitFeedback} style={styles.submitButton}>
                   <Text style={styles.submitText}>Submit</Text>
                 </TouchableOpacity>
               </View>
@@ -471,19 +460,19 @@ function ServiceApp({navigation, route}) {
         </Modal>
       </View>
     </SafeAreaView>
-  );       
+  );
 }
 
-const dynamicStyles = (width, height) => {
+const dynamicStyles = (width, height, isDarkMode) => {
   const isTablet = width > 600;
   return StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
     },
     container: {
       flex: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
       padding: isTablet ? 30 : 20,
       paddingBottom: 0,
     },
@@ -501,25 +490,24 @@ const dynamicStyles = (width, height) => {
       width: isTablet ? 50 : 40,
       height: isTablet ? 50 : 40,
       borderRadius: 25,
-      backgroundColor: '#f0f0f0',
+      backgroundColor: isDarkMode ? '#333' : '#f0f0f0',
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: 10,
     },
     userInitialText: {
       fontSize: isTablet ? 20 : 18,
-      color: '#333',
+      color: isDarkMode ? '#fff' : '#333',
       fontFamily: 'RobotoSlab-Bold',
     },
     greeting: {
       flexDirection: 'column',
-      color: '#333',
     },
     greetingText: {
       fontSize: isTablet ? 16 : 14,
       lineHeight: 18.75,
       fontStyle: 'italic',
-      color: '#808080',
+      color: isDarkMode ? '#ccc' : '#808080',
       fontFamily: 'RobotoSlab-ExtraBold',
     },
     greetingIcon: {
@@ -528,7 +516,7 @@ const dynamicStyles = (width, height) => {
     userName: {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Bold',
-      color: '#4A4A4A',
+      color: isDarkMode ? '#ddd' : '#4A4A4A',
       lineHeight: 21.09,
     },
     headerIcons: {
@@ -549,7 +537,7 @@ const dynamicStyles = (width, height) => {
     },
     sectionTitle: {
       fontSize: isTablet ? 18 : 16,
-      color: '#1D2951',
+      color: isDarkMode ? '#fff' : '#1D2951',
       fontFamily: 'RobotoSlab-Bold',
     },
     offersScrollView: {
@@ -569,11 +557,13 @@ const dynamicStyles = (width, height) => {
     offerTitle: {
       fontSize: isTablet ? 34 : 30,
       fontFamily: 'RobotoSlab-Bold',
+      color: '#ff4500',
     },
     offerSubtitle: {
       fontSize: isTablet ? 16 : 14,
       lineHeight: 16.41,
       fontFamily: 'RobotoSlab-SemiBold',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
     },
     offerDescription: {
       fontSize: isTablet ? 14 : 12,
@@ -581,6 +571,7 @@ const dynamicStyles = (width, height) => {
       opacity: 0.8,
       lineHeight: 14.06,
       fontWeight: '400',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
     },
     offerImg: {
       width: isTablet ? 140 : 119,
@@ -589,9 +580,6 @@ const dynamicStyles = (width, height) => {
     },
     fullScreenLoader: {
       flex: 1,
-      // justifyContent: 'center',
-      // alignItems: 'center',
-      // backgroundColor: '#FFFFFF',
     },
     serviceCard: {
       flexDirection: 'row',
@@ -599,7 +587,7 @@ const dynamicStyles = (width, height) => {
       gap: 10,
       padding: 10,
       borderRadius: 10,
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#333' : '#fff',
       marginBottom: 10,
     },
     serviceImg: {
@@ -615,7 +603,7 @@ const dynamicStyles = (width, height) => {
     serviceTitle: {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Bold',
-      color: '#333',
+      color: isDarkMode ? '#fff' : '#333',
     },
     bookButton: {
       flexDirection: 'row',
@@ -638,7 +626,7 @@ const dynamicStyles = (width, height) => {
       marginTop: 10,
     },
     messageBoxContainer: {
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#333' : '#ffffff',
       borderRadius: 10,
       flexDirection: 'row',
       padding: 15,
@@ -668,13 +656,13 @@ const dynamicStyles = (width, height) => {
     textContainerText: {
       fontSize: isTablet ? 15 : 13,
       fontFamily: 'RobotoSlab-Bold',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       marginLeft: 10,
       width: '80%',
     },
     textContainerTextCommander: {
       fontSize: isTablet ? 14 : 12,
-      color: '#9e9e9e',
+      color: isDarkMode ? '#ccc' : '#9e9e9e',
       fontFamily: 'RobotoSlab-Regular',
       marginLeft: 10,
     },
@@ -687,7 +675,7 @@ const dynamicStyles = (width, height) => {
       justifyContent: 'flex-end',
     },
     modalContent: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#333' : '#FFFFFF',
       borderTopLeftRadius: 15,
       borderTopRightRadius: 15,
       padding: 20,
@@ -702,13 +690,13 @@ const dynamicStyles = (width, height) => {
     modalTitle: {
       fontSize: isTablet ? 20 : 18,
       fontFamily: 'RobotoSlab-Medium',
-      color: '#212121', 
+      color: isDarkMode ? '#fff' : '#212121',
       marginTop: 10,
       textAlign: 'center',
     },
     modalSubtitle: {
       fontSize: isTablet ? 15 : 13,
-      color: '#9e9e9e',
+      color: isDarkMode ? '#ccc' : '#9e9e9e',
       marginVertical: 10,
       textAlign: 'center',
       fontFamily: 'RobotoSlab-Regular',
@@ -727,9 +715,9 @@ const dynamicStyles = (width, height) => {
       borderWidth: 1,
       borderColor: '#A9A9A9',
       borderRadius: 10,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#444' : '#FFFFFF',
       padding: 10,
-      color: '#000000',
+      color: isDarkMode ? '#fff' : '#000',
       fontSize: 14,
       fontFamily: 'RobotoSlab-Regular',
       marginBottom: 20,
@@ -762,7 +750,7 @@ const dynamicStyles = (width, height) => {
     loadingAnimation: {
       width: 150,
       height: 150,
-    }, 
+    },
   });
 };
 

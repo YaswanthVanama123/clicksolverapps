@@ -125,7 +125,7 @@
 		00E356F21AD99517003FC87E /* userapp1Tests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = userapp1Tests.m; sourceTree = "<group>"; };
 		012CF7F58DA645219035646D /* NotoSerif_SemiCondensed-MediumItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "NotoSerif_SemiCondensed-MediumItalic.ttf"; path = "../src/assets/fonts/NotoSerif_SemiCondensed-MediumItalic.ttf"; sourceTree = "<group>"; };
 		01428886E0C1405E99FA32EA /* NotoSerif-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "NotoSerif-Italic.ttf"; path = "../src/assets/fonts/NotoSerif-Italic.ttf"; sourceTree = "<group>"; };
-		05389104B12663B6700B96E5 /* Pods-userapp1.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-userapp1.debug.xcconfig"; path = "Target Support Files/Pods-userapp1/Pods-userapp1.debug.xcconfig"; sourceTree = "<group>"; };
+		05389102B12663B6700B96E5 /* Pods-userapp1.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-userapp1.debug.xcconfig"; path = "Target Support Files/Pods-userapp1/Pods-userapp1.debug.xcconfig"; sourceTree = "<group>"; };
 		0B6139B4AF3F4DAE86656CA9 /* Lato-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Lato-Italic.ttf"; path = "../src/assets/fonts/Lato-Italic.ttf"; sourceTree = "<group>"; };
 		0DDB7E3E4F53423B84FFA54A /* NotoSerif-Light.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "NotoSerif-Light.ttf"; path = "../src/assets/fonts/NotoSerif-Light.ttf"; sourceTree = "<group>"; };
 		0ECE3B35553645009786D700 /* NotoSerif-BoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "NotoSerif-BoldItalic.ttf"; path = "../src/assets/fonts/NotoSerif-BoldItalic.ttf"; sourceTree = "<group>"; };
@@ -431,7 +431,7 @@
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				05389104B12663B6700B96E5 /* Pods-userapp1.debug.xcconfig */,
+				05389102B12663B6700B96E5 /* Pods-userapp1.debug.xcconfig */,
 				4C8D0C8BCF91DCF3F4B5FDEA /* Pods-userapp1.release.xcconfig */,
 				C3A5938E1AD62CE61B07C83F /* Pods-userapp1-userapp1Tests.debug.xcconfig */,
 				60E47819260EAAB29AE1F79F /* Pods-userapp1-userapp1Tests.release.xcconfig */,
@@ -874,7 +874,7 @@
 		};
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 05389104B12663B6700B96E5 /* Pods-userapp1.debug.xcconfig */;
+			baseConfigurationReference = 05389102B12663B6700B96E5 /* Pods-userapp1.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;

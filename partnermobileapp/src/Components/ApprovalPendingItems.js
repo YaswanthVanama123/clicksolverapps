@@ -66,7 +66,7 @@ const ApprovalPendingItems = () => {
       console.log(process.env.BackendAPI17);
       try {
         const response = await axios.get(
-          `http://192.168.55.104:5000/api/workers/pending/verification`,
+          `http://192.168.55.102:5000/api/workers/pending/verification`,
         );
         const data = response.data.data; // Assuming the response structure is { data: [...] }
         console.log(JSON.stringify(data, null, 2));

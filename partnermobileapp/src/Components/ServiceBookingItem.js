@@ -59,7 +59,7 @@ const ServiceBookingItem = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.post(
-          'http://192.168.55.104:5000/api/service/booking/item/details',
+          'http://192.168.55.102:5000/api/service/booking/item/details',
           { tracking_id },
         );
         const { data } = response.data;

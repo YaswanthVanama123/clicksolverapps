@@ -1,17 +1,15 @@
-import React, {useEffect, useRef, useState} from 'react';
-import {Platform, View, ActivityIndicator} from 'react-native';
-import {NavigationContainer, CommonActions} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import React, { useEffect, useRef, useState } from 'react';
+import { Platform, View, ActivityIndicator } from 'react-native';
+import { NavigationContainer, CommonActions } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import axios from 'axios';
 import messaging from '@react-native-firebase/messaging';
 import PushNotification from 'react-native-push-notification';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import SplashScreen from 'react-native-splash-screen';
 import {
-  check,
   checkMultiple,
-  request,
   requestMultiple,
   requestNotifications,
   PERMISSIONS,
@@ -20,7 +18,9 @@ import {
 import Feather from 'react-native-vector-icons/Feather';
 import Entypo from 'react-native-vector-icons/Entypo';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Config from 'react-native-config';
+
+// Import ThemeProvider and useTheme hook from our global context
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 
 // Import all screens and components
 import UserLocation from './Components/userLocation';
@@ -53,15 +53,19 @@ import Help from './Components/Help';
 import VerificationScreen from './Components/VerificationScreen';
 import PaymentScreenRazor from './Components/PaymentScreenRazor';
 import AboutCS from './Components/AboutCS';
+import ServiceBookingOngoingItem from './Components/ServiceBookingOngoingItem';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function TabNavigator() {
+  // Use global theme to update tab styles dynamically
+  const { isDarkMode } = useTheme();
+
   return (
     <Tab.Navigator
-      screenOptions={({route}) => ({
-        tabBarIcon: ({focused, color, size}) => {
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
           size = focused ? 28 : 24;
           let iconName;
           if (route.name === 'Home') {
@@ -79,51 +83,38 @@ function TabNavigator() {
           } else if (route.name === 'Account') {
             iconName = 'account-outline';
             return (
-              <MaterialCommunityIcons
-                name={iconName}
-                size={size}
-                color={color}
-              />
+              <MaterialCommunityIcons name={iconName} size={size} color={color} />
             );
           }
         },
         tabBarActiveTintColor: '#ff4500',
-        tabBarInactiveTintColor: 'gray',
-        tabBarLabelStyle: {fontSize: 12},
-        tabBarStyle: {height: 60, paddingBottom: 5, paddingTop: 5},
-      })}>
-      <Tab.Screen
-        name="Home"
-        component={ServiceApp}
-        options={{headerShown: false}}
-      />
-      <Tab.Screen
-        name="Bookings"
-        component={RecentServices}
-        options={{headerShown: false}}
-      />
-      <Tab.Screen
-        name="Tracking"
-        component={ServiceTrackingListScreen}
-        options={{headerShown: false}}
-      />
-      <Tab.Screen
-        name="Account"
-        component={ProfileScreen}
-        options={{headerShown: false}}
-      />
+        // Update inactive tint based on theme (e.g., light mode: gray, dark mode: lightgray)
+        tabBarInactiveTintColor: isDarkMode ? 'lightgray' : 'gray',
+        tabBarLabelStyle: { fontSize: 12 },
+        // Update the tab bar background color based on the active theme
+        tabBarStyle: {
+          height: 60,
+          paddingBottom: 5,
+          paddingTop: 5,
+          backgroundColor: isDarkMode ? '#222' : '#fff',
+        },
+      })}
+    >
+      <Tab.Screen name="Home" component={ServiceApp} options={{ headerShown: false }} />
+      <Tab.Screen name="Bookings" component={RecentServices} options={{ headerShown: false }} />
+      <Tab.Screen name="Tracking" component={ServiceTrackingListScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Account" component={ProfileScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
   );
 }
 
 function App() {
-  const navigationRef = useRef(null);
+  const navigationRef = useRef<any>(null);
   const [initialRoute, setInitialRoute] = useState<string | null>(null);
 
   // Request all required permissions
   async function requestAllPermissions() {
     if (Platform.OS === 'android') {
-      // Android foreground permissions (location & contacts)
       const androidPermissions = [
         PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
         PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION,
@@ -133,7 +124,7 @@ function App() {
       const currentStatuses = await checkMultiple(androidPermissions);
       console.log('Current Android Permission Statuses:', currentStatuses);
       const permissionsToRequest = androidPermissions.filter(
-        perm => currentStatuses[perm] !== RESULTS.GRANTED,
+        perm => currentStatuses[perm] !== RESULTS.GRANTED
       );
       if (permissionsToRequest.length > 0) {
         const newStatuses = await requestMultiple(permissionsToRequest);
@@ -141,13 +132,11 @@ function App() {
       } else {
         console.log('All necessary Android permissions are already granted.');
       }
-      // Request notification permission on Android 13+ separately
       if (Platform.Version >= 33) {
-        const {status} = await requestNotifications(['alert', 'sound', 'badge']);
+        const { status } = await requestNotifications(['alert', 'sound', 'badge']);
         console.log('Notification permission status:', status);
       }
     } else if (Platform.OS === 'ios') {
-      // iOS permissions (location, notifications, contacts)
       const iosPermissions = [
         PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
         PERMISSIONS.IOS.LOCATION_ALWAYS,
@@ -157,10 +146,10 @@ function App() {
       const currentStatuses = await checkMultiple(iosPermissions);
       console.log('Current iOS Permission Statuses:', currentStatuses);
       const permissionsToRequest = iosPermissions.filter(
-        perm => currentStatuses[perm] !== RESULTS.GRANTED,
+        perm => currentStatuses[perm] !== RESULTS.GRANTED
       );
       if (permissionsToRequest.length > 0) {
-        const newStatuses = await requestMultiple(permissionsToRequest);
+        const newStatuses = await requestMultiple(iosPermissions);
         console.log('Updated iOS Permission Statuses:', newStatuses);
       } else {
         console.log('All necessary iOS permissions are already granted.');
@@ -172,19 +161,19 @@ function App() {
   async function getTokens() {
     try {
       const token = await messaging().getToken();
-      console.log("token",token)
+      console.log("token", token);
       const fcm = await EncryptedStorage.getItem('fcm_token');
       const cs_token = await EncryptedStorage.getItem('cs_token');
       console.log('Stored FCM token:', fcm);
-      if (!fcm && cs_token) { 
+      if (!fcm && cs_token) {
         const token = await messaging().getToken();
         await EncryptedStorage.setItem('fcm_token', token);
         const cs_token = await EncryptedStorage.getItem('cs_token');
         if (cs_token) {
           await axios.post(
             `http://192.168.55.102:5000/api/user/store-fcm-token`,
-            {fcmToken: token},
-            {headers: {Authorization: `Bearer ${cs_token}`}},
+            { fcmToken: token },
+            { headers: { Authorization: `Bearer ${cs_token}` } }
           );
         }
       }
@@ -199,9 +188,9 @@ function App() {
       const pcs_token = await EncryptedStorage.getItem('cs_token');
       const fcmToken = await EncryptedStorage.getItem('fcm_token');
       await axios.post(
-        `http://192.168.55.104:5000/api/user/store-notification`,
-        {notification, fcmToken},
-        {headers: {Authorization: `Bearer ${pcs_token}`}},
+        `http://192.168.55.102:5000/api/user/store-notification`,
+        { notification, fcmToken },
+        { headers: { Authorization: `Bearer ${pcs_token}` } }
       );
       console.log('Notification stored in backend:', notification);
     } catch (error) {
@@ -238,19 +227,19 @@ function App() {
         navigationRef.current.dispatch(
           CommonActions.navigate('UserNavigation', {
             encodedId: encodedNotificationId,
-          }),
+          })
         ),
       worktimescreen: () =>
         navigationRef.current.dispatch(
           CommonActions.navigate('ServiceInProgress', {
             encodedId: encodedNotificationId,
-          }),
+          })
         ),
       Paymentscreen: () =>
         navigationRef.current.dispatch(
           CommonActions.navigate('Paymentscreen', {
             encodedId: encodedNotificationId,
-          }),
+          })
         ),
       Home: () => {
         if (encodedNotificationId) {
@@ -264,15 +253,13 @@ function App() {
                     routes: [
                       {
                         name: 'Home',
-                        params: {
-                          encodedId: encodedNotificationId,
-                        },
+                        params: { encodedId: encodedNotificationId },
                       },
                     ],
                   },
                 },
               ],
-            }),
+            })
           );
         } else {
           navigationRef.current.dispatch(
@@ -282,15 +269,11 @@ function App() {
                 {
                   name: 'Tabs',
                   state: {
-                    routes: [
-                      {
-                        name: 'Home',
-                      },
-                    ],
+                    routes: [{ name: 'Home' }],
                   },
                 },
               ],
-            }),
+            })
           );
         }
       },
@@ -301,20 +284,17 @@ function App() {
   }
 
   useEffect(() => {
-    // Configure push notifications
     PushNotification.configure({
       onNotification: function (notification) {
         if (notification.userInteraction) {
-          handleNotificationNavigation({data: notification.data});
+          handleNotificationNavigation({ data: notification.data });
         }
       },
     });
 
-    // Request permissions and get tokens
     requestAllPermissions();
     getTokens();
 
-    // Create notification channel for Android
     PushNotification.createChannel(
       {
         channelId: 'default-channel-id',
@@ -324,10 +304,9 @@ function App() {
         importance: 4,
         vibrate: true,
       },
-      created => console.log(`createChannel returned '${created}'`),
+      created => console.log(`createChannel returned '${created}'`)
     );
 
-    // Foreground message handler
     const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
       console.log('A new FCM message arrived!', JSON.stringify(remoteMessage));
       await handleNotificationNavigation(remoteMessage);
@@ -359,7 +338,6 @@ function App() {
       });
     });
 
-    // Background and quit state message handler
     messaging().setBackgroundMessageHandler(async remoteMessage => {
       console.log('Message handled in the background!', JSON.stringify(remoteMessage));
       await handleNotificationNavigation(remoteMessage);
@@ -380,7 +358,6 @@ function App() {
       storeNotificationLocally(notification);
     });
 
-    // When the app is opened from a quit state
     messaging()
       .getInitialNotification()
       .then(async remoteMessage => {
@@ -405,7 +382,6 @@ function App() {
         }
       });
 
-    // When a notification is opened from the background state
     const unsubscribeOnNotificationOpenedApp = messaging().onNotificationOpenedApp(async remoteMessage => {
       console.log('Notification opened from background state:', JSON.stringify(remoteMessage));
       await handleNotificationNavigation(remoteMessage);
@@ -443,45 +419,47 @@ function App() {
 
   if (!initialRoute) {
     return (
-      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#0000ff" />
       </View>
     );
   }
 
-  return ( 
-    <NavigationContainer ref={navigationRef}>
-      <Stack.Navigator initialRouteName={initialRoute}>
-        <Stack.Screen name="Tabs" component={TabNavigator} options={{headerShown: false}} />
-        <Stack.Screen name="UserLocation" component={UserLocation} options={{headerShown: false}} />
-        <Stack.Screen name="OnboardingScreen" component={OnboardingScreen} options={{headerShown: false}} />
-        <Stack.Screen name="Login" component={LoginScreen} options={{headerShown: false}} />
-        <Stack.Screen name="VerificationScreen" component={VerificationScreen} options={{headerShown: false}} />
-        <Stack.Screen name="OrderScreen" component={OrderScreen} options={{headerShown: false}} />
-        <Stack.Screen name="DeleteAccount" component={AccountDelete} options={{headerShown: false}} />
-        <Stack.Screen name="ReferralScreen" component={ReferralScreen} options={{headerShown: false}} />
-        <Stack.Screen name="Myrefferals" component={Myrefferals} options={{headerShown: false}} />
-        <Stack.Screen name="userwaiting" component={WaitingUser} options={{headerShown: false}} />
-        <Stack.Screen name="UserNavigation" component={Navigation} options={{headerShown: false}} />
-        <Stack.Screen name="worktimescreen" component={ServiceInProgress} options={{headerShown: false}} />
-        <Stack.Screen name="Paymentscreen" component={Payment} options={{headerShown: false}} />
-        <Stack.Screen name="Rating" component={Rating} options={{headerShown: false}} />
-        <Stack.Screen name="ServiceBooking" component={SingleService} options={{headerShown: false}} />
-        <Stack.Screen name="RecentServices" component={RecentServices} options={{headerShown: false}} />
-        <Stack.Screen name="serviceCategory" component={PaintingServices} options={{headerShown: false}} />
-        <Stack.Screen name="SearchItem" component={SearchItem} options={{headerShown: false}} />
-        <Stack.Screen name="SignupDetails" component={SignUpScreen} options={{headerShown: false}} />
-        <Stack.Screen name="LocationSearch" component={LocationSearch} options={{headerShown: false}} />
-        <Stack.Screen name="EditProfile" component={EditProfile} options={{headerShown: false}} />
-        <Stack.Screen name="ServiceTrackingItem" component={ServiceTrackingItemScreen} options={{headerShown: false}} />
-        <Stack.Screen name="serviceBookingItem" component={ServiceBookingItem} options={{headerShown: false}} />
-        <Stack.Screen name="Notifications" component={UserNotifications} options={{headerShown: false}} />
-        <Stack.Screen name="Help" component={HelpScreen} options={{headerShown: false}} />
-        <Stack.Screen name="ServiceInProgress" component={ServiceInProgress} options={{headerShown: false}} />
-        <Stack.Screen name="AboutCS" component={AboutCS} options={{headerShown: false}} />
-        
-      </Stack.Navigator>
-    </NavigationContainer>
+  return (
+    <ThemeProvider>
+      <NavigationContainer ref={navigationRef}>
+        <Stack.Navigator initialRouteName={initialRoute}>
+          <Stack.Screen name="Tabs" component={TabNavigator} options={{ headerShown: false }} />
+          <Stack.Screen name="UserLocation" component={UserLocation} options={{ headerShown: false }} />
+          <Stack.Screen name="OnboardingScreen" component={OnboardingScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="VerificationScreen" component={VerificationScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="OrderScreen" component={OrderScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="DeleteAccount" component={AccountDelete} options={{ headerShown: false }} />
+          <Stack.Screen name="ReferralScreen" component={ReferralScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Myrefferals" component={Myrefferals} options={{ headerShown: false }} />
+          <Stack.Screen name="userwaiting" component={WaitingUser} options={{ headerShown: false }} />
+          <Stack.Screen name="UserNavigation" component={Navigation} options={{ headerShown: false }} />
+          <Stack.Screen name="worktimescreen" component={ServiceInProgress} options={{ headerShown: false }} />
+          <Stack.Screen name="Paymentscreen" component={Payment} options={{ headerShown: false }} />
+          <Stack.Screen name="Rating" component={Rating} options={{ headerShown: false }} />
+          <Stack.Screen name="ServiceBooking" component={SingleService} options={{ headerShown: false }} />
+          <Stack.Screen name="RecentServices" component={RecentServices} options={{ headerShown: false }} />
+          <Stack.Screen name="serviceCategory" component={PaintingServices} options={{ headerShown: false }} />
+          <Stack.Screen name="SearchItem" component={SearchItem} options={{ headerShown: false }} />
+          <Stack.Screen name="SignupDetails" component={SignUpScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="LocationSearch" component={LocationSearch} options={{ headerShown: false }} />
+          <Stack.Screen name="EditProfile" component={EditProfile} options={{ headerShown: false }} />
+          <Stack.Screen name="ServiceTrackingItem" component={ServiceTrackingItemScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="serviceBookingItem" component={ServiceBookingItem} options={{ headerShown: false }} />
+          <Stack.Screen name="Notifications" component={UserNotifications} options={{ headerShown: false }} />
+          <Stack.Screen name="Help" component={HelpScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="ServiceInProgress" component={ServiceInProgress} options={{ headerShown: false }} />
+          <Stack.Screen name="AboutCS" component={AboutCS} options={{ headerShown: false }} />
+          <Stack.Screen name="ServiceBookingOngoingItem" component={ServiceBookingOngoingItem} options={{ headerShown: false }} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </ThemeProvider>
   );
 }
 

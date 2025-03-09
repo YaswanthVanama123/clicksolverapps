@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,10 +9,12 @@ import {
   Linking,
   ActivityIndicator,
   Alert,
-  useWindowDimensions, // <-- 1) Import useWindowDimensions
+  useWindowDimensions,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
+// Import theme hook
+import { useTheme } from '../context/ThemeContext';
 
 const steps = [
   {
@@ -49,9 +51,10 @@ const steps = [
 
 const HelpScreen = () => {
   // 1) Get screen dimensions
-  const {width, height} = useWindowDimensions();
-  // 2) Generate dynamic styles
-  const styles = dynamicStyles(width, height);
+  const { width, height } = useWindowDimensions();
+  // 2) Get dark mode flag and generate dynamic styles accordingly
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, height, isDarkMode);
 
   const [showSupportMenu, setShowSupportMenu] = useState(false);
   const [loadingCall, setLoadingCall] = useState(false);
@@ -91,11 +94,11 @@ const HelpScreen = () => {
       {/* Top Header Container */}
       <View style={styles.topHeader}>
         <TouchableOpacity onPress={() => { /* Implement back navigation if needed */ }}>
-          <Ionicons name="arrow-back" size={24} color="#212121" />
+          <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#fff' : "#212121"} />
         </TouchableOpacity>
         <Text style={styles.topHeaderTitle}>Help & Support</Text>
         <TouchableOpacity onPress={() => setShowSupportMenu(prev => !prev)}>
-          <Ionicons name="headset-outline" size={24} color="#212121" />
+          <Ionicons name="headset-outline" size={24} color={isDarkMode ? '#fff' : "#212121"} />
         </TouchableOpacity>
       </View>
 
@@ -152,21 +155,19 @@ const HelpScreen = () => {
       </ScrollView>
     </View>
   );
-};
+}
 
 /**
- * DYNAMIC STYLES
- * --------------
- * A helper function that returns a StyleSheet whose values depend on screen width/height.
- * If `width >= 600`, we treat it as a tablet and scale up certain styles (fonts, spacing, etc.).
+ * DYNAMIC STYLES with Dark Mode Support
+ * If `width >= 600`, we treat it as a tablet and scale up certain styles.
  */
-function dynamicStyles(width, height) {
-  const isTablet = width >= 600; // Adjust breakpoint as needed
+function dynamicStyles(width, height, isDarkMode) {
+  const isTablet = width >= 600;
 
   return StyleSheet.create({
     wrapper: {
       flex: 1,
-      backgroundColor: '#f5f7fa',
+      backgroundColor: isDarkMode ? '#121212' : '#f5f7fa',
     },
     topHeader: {
       flexDirection: 'row',
@@ -174,8 +175,8 @@ function dynamicStyles(width, height) {
       justifyContent: 'space-between',
       paddingHorizontal: isTablet ? 25 : 20,
       paddingVertical: isTablet ? 14 : 10,
-      backgroundColor: '#ffffff',
-      shadowColor: '#000',
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
+      shadowColor: isDarkMode ? '#000' : '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 2,
@@ -184,16 +185,16 @@ function dynamicStyles(width, height) {
     topHeaderTitle: {
       fontSize: isTablet ? 20 : 18,
       fontWeight: '600',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     supportMenu: {
       position: 'absolute',
       top: isTablet ? 70 : 60,
       right: isTablet ? 25 : 20,
       width: isTablet ? 180 : 150,
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#1e1e1e' : '#fff',
       borderWidth: 1,
-      borderColor: '#FFFFFF',
+      borderColor: isDarkMode ? '#1e1e1e' : '#FFFFFF',
       borderRadius: 8,
       paddingVertical: 10,
       shadowColor: '#000',
@@ -224,7 +225,7 @@ function dynamicStyles(width, height) {
     container: {
       width: isTablet ? '80%' : '90%',
       alignSelf: 'center',
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff',
       borderRadius: 10,
       padding: isTablet ? 25 : 20,
       shadowColor: '#000',
@@ -238,17 +239,17 @@ function dynamicStyles(width, height) {
     },
     headerSubtitle: {
       fontSize: isTablet ? 16 : 14,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
       textAlign: 'center',
     },
     step: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      backgroundColor: '#f9f9f9',
+      backgroundColor: isDarkMode ? '#2c2c2c' : '#f9f9f9',
       padding: isTablet ? 20 : 15,
       borderRadius: 8,
       marginBottom: isTablet ? 25 : 20,
-      shadowColor: '#000',
+      shadowColor: isDarkMode ? '#000' : '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.05,
       shadowRadius: 5,
@@ -284,12 +285,12 @@ function dynamicStyles(width, height) {
     },
     stepTitle: {
       fontSize: isTablet ? 18 : 16,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontWeight: '500',
     },
     stepDescription: {
       fontSize: isTablet ? 16 : 14,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
       marginTop: 4,
     },
     ctaButton: {

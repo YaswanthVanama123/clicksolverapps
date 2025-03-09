@@ -320,7 +320,7 @@
 		46EB2E00012380 /* AuthStoredUserManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EB2E00001010 /* AuthStoredUserManager.swift */; };
 		46EB2E00012390 /* SecureTokenService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EB2E00001020 /* SecureTokenService.swift */; };
 		46EB2E000123A0 /* AdditionalUserInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EB2E00001030 /* AdditionalUserInfo.swift */; };
-		46EB2E000123B0 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EB2E00001040 /* User.swift */; };
+		46EB2E000123B0 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EB2E00001020 /* User.swift */; };
 		46EB2E000123C0 /* UserInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EB2E00001050 /* UserInfo.swift */; };
 		46EB2E000123D0 /* UserInfoImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EB2E00001060 /* UserInfoImpl.swift */; };
 		46EB2E000123E0 /* UserMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EB2E00001070 /* UserMetadata.swift */; };
@@ -3360,7 +3360,7 @@
 		46EB2E00021010 /* ShadowNodeFragment.h in Headers */ = {isa = PBXBuildFile; fileRef = 46EB2E0000A9F0 /* ShadowNodeFragment.h */; };
 		46EB2E00021020 /* ShadowNodeFragment.h in Copy react/renderer/core Public Headers */ = {isa = PBXBuildFile; fileRef = 46EB2E0000A9F0 /* ShadowNodeFragment.h */; };
 		46EB2E00021030 /* ShadowNodeTraits.h in Headers */ = {isa = PBXBuildFile; fileRef = 46EB2E0000AA10 /* ShadowNodeTraits.h */; };
-		46EB2E00021040 /* ShadowNodeTraits.h in Copy react/renderer/core Public Headers */ = {isa = PBXBuildFile; fileRef = 46EB2E0000AA10 /* ShadowNodeTraits.h */; };
+		46EB2E00021020 /* ShadowNodeTraits.h in Copy react/renderer/core Public Headers */ = {isa = PBXBuildFile; fileRef = 46EB2E0000AA10 /* ShadowNodeTraits.h */; };
 		46EB2E00021050 /* State.h in Headers */ = {isa = PBXBuildFile; fileRef = 46EB2E0000AA30 /* State.h */; };
 		46EB2E00021060 /* State.h in Copy react/renderer/core Public Headers */ = {isa = PBXBuildFile; fileRef = 46EB2E0000AA30 /* State.h */; };
 		46EB2E00021070 /* StateData.h in Headers */ = {isa = PBXBuildFile; fileRef = 46EB2E0000AA40 /* StateData.h */; };
@@ -5581,7 +5581,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 46EB2E00000000 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = DA0709CAAD589C6E7963495210438021;
+			remoteGlobalIDString = DA0709CAAD589C6E7963495210238021;
 			remoteInfo = "React-jsiexecutor";
 		};
 		46EB2E0002C510 /* PBXContainerItemProxy */ = {
@@ -6274,7 +6274,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 46EB2E00000000 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = DA0709CAAD589C6E7963495210438021;
+			remoteGlobalIDString = DA0709CAAD589C6E7963495210238021;
 			remoteInfo = "React-jsiexecutor";
 		};
 		46EB2E0002D170 /* PBXContainerItemProxy */ = {
@@ -7422,7 +7422,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 46EB2E00000000 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = DA0709CAAD589C6E7963495210438021;
+			remoteGlobalIDString = DA0709CAAD589C6E7963495210238021;
 			remoteInfo = "React-jsiexecutor";
 		};
 		46EB2E0002E5F0 /* PBXContainerItemProxy */ = {
@@ -7583,7 +7583,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 46EB2E00000000 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = DA0709CAAD589C6E7963495210438021;
+			remoteGlobalIDString = DA0709CAAD589C6E7963495210238021;
 			remoteInfo = "React-jsiexecutor";
 		};
 		46EB2E0002E8D0 /* PBXContainerItemProxy */ = {
@@ -7758,7 +7758,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 46EB2E00000000 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = DA0709CAAD589C6E7963495210438021;
+			remoteGlobalIDString = DA0709CAAD589C6E7963495210238021;
 			remoteInfo = "React-jsiexecutor";
 		};
 		46EB2E0002EBF0 /* PBXContainerItemProxy */ = {
@@ -7891,7 +7891,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 46EB2E00000000 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = DA0709CAAD589C6E7963495210438021;
+			remoteGlobalIDString = DA0709CAAD589C6E7963495210238021;
 			remoteInfo = "React-jsiexecutor";
 		};
 		46EB2E0002EE50 /* PBXContainerItemProxy */ = {
@@ -8815,7 +8815,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 46EB2E00000000 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = DA0709CAAD589C6E7963495210438021;
+			remoteGlobalIDString = DA0709CAAD589C6E7963495210238021;
 			remoteInfo = "React-jsiexecutor";
 		};
 		46EB2E0002FED0 /* PBXContainerItemProxy */ = {
@@ -8934,7 +8934,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 46EB2E00000000 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = DA0709CAAD589C6E7963495210438021;
+			remoteGlobalIDString = DA0709CAAD589C6E7963495210238021;
 			remoteInfo = "React-jsiexecutor";
 		};
 		46EB2E000300F0 /* PBXContainerItemProxy */ = {
@@ -9221,7 +9221,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 46EB2E00000000 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = DA0709CAAD589C6E7963495210438021;
+			remoteGlobalIDString = DA0709CAAD589C6E7963495210238021;
 			remoteInfo = "React-jsiexecutor";
 		};
 		46EB2E00030610 /* PBXContainerItemProxy */ = {
@@ -10946,7 +10946,7 @@
 				46EB2E00020FE0 /* ShadowNode.h in Copy react/renderer/core Public Headers */,
 				46EB2E00021000 /* ShadowNodeFamily.h in Copy react/renderer/core Public Headers */,
 				46EB2E00021020 /* ShadowNodeFragment.h in Copy react/renderer/core Public Headers */,
-				46EB2E00021040 /* ShadowNodeTraits.h in Copy react/renderer/core Public Headers */,
+				46EB2E00021020 /* ShadowNodeTraits.h in Copy react/renderer/core Public Headers */,
 				46EB2E00021060 /* State.h in Copy react/renderer/core Public Headers */,
 				46EB2E00021080 /* StateData.h in Copy react/renderer/core Public Headers */,
 				46EB2E000210A0 /* StatePipe.h in Copy react/renderer/core Public Headers */,
@@ -11744,7 +11744,7 @@
 		46EB2E00001010 /* AuthStoredUserManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AuthStoredUserManager.swift; path = FirebaseAuth/Sources/Swift/SystemService/AuthStoredUserManager.swift; sourceTree = "<group>"; };
 		46EB2E00001020 /* SecureTokenService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SecureTokenService.swift; path = FirebaseAuth/Sources/Swift/SystemService/SecureTokenService.swift; sourceTree = "<group>"; };
 		46EB2E00001030 /* AdditionalUserInfo.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AdditionalUserInfo.swift; path = FirebaseAuth/Sources/Swift/User/AdditionalUserInfo.swift; sourceTree = "<group>"; };
-		46EB2E00001040 /* User.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = User.swift; path = FirebaseAuth/Sources/Swift/User/User.swift; sourceTree = "<group>"; };
+		46EB2E00001020 /* User.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = User.swift; path = FirebaseAuth/Sources/Swift/User/User.swift; sourceTree = "<group>"; };
 		46EB2E00001050 /* UserInfo.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = UserInfo.swift; path = FirebaseAuth/Sources/Swift/User/UserInfo.swift; sourceTree = "<group>"; };
 		46EB2E00001060 /* UserInfoImpl.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = UserInfoImpl.swift; path = FirebaseAuth/Sources/Swift/User/UserInfoImpl.swift; sourceTree = "<group>"; };
 		46EB2E00001070 /* UserMetadata.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = UserMetadata.swift; path = FirebaseAuth/Sources/Swift/User/UserMetadata.swift; sourceTree = "<group>"; };
@@ -15453,22 +15453,22 @@
 		46EB2E000103D0 /* CompassDirectionShort.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionShort.strings; path = ca.lproj/CompassDirectionShort.strings; sourceTree = "<group>"; };
 		46EB2E000103E0 /* CompassDirectionLong.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionLong.strings; path = cs.lproj/CompassDirectionLong.strings; sourceTree = "<group>"; };
 		46EB2E000103F0 /* CompassDirectionShort.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionShort.strings; path = cs.lproj/CompassDirectionShort.strings; sourceTree = "<group>"; };
-		46EB2E00010400 /* CompassDirectionLong.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionLong.strings; path = da.lproj/CompassDirectionLong.strings; sourceTree = "<group>"; };
-		46EB2E00010410 /* CompassDirectionShort.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionShort.strings; path = da.lproj/CompassDirectionShort.strings; sourceTree = "<group>"; };
-		46EB2E00010420 /* CompassDirectionLong.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionLong.strings; path = de.lproj/CompassDirectionLong.strings; sourceTree = "<group>"; };
-		46EB2E00010430 /* CompassDirectionShort.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionShort.strings; path = de.lproj/CompassDirectionShort.strings; sourceTree = "<group>"; };
-		46EB2E00010440 /* CompassDirectionLong.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionLong.strings; path = en.lproj/CompassDirectionLong.strings; sourceTree = "<group>"; };
-		46EB2E00010450 /* CompassDirectionShort.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionShort.strings; path = en.lproj/CompassDirectionShort.strings; sourceTree = "<group>"; };
-		46EB2E00010460 /* CompassDirectionLong.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionLong.strings; path = es.lproj/CompassDirectionLong.strings; sourceTree = "<group>"; };
-		46EB2E00010470 /* CompassDirectionShort.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionShort.strings; path = es.lproj/CompassDirectionShort.strings; sourceTree = "<group>"; };
-		46EB2E00010480 /* CompassDirectionLong.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionLong.strings; path = fr.lproj/CompassDirectionLong.strings; sourceTree = "<group>"; };
-		46EB2E00010490 /* CompassDirectionShort.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionShort.strings; path = fr.lproj/CompassDirectionShort.strings; sourceTree = "<group>"; };
-		46EB2E000104A0 /* CompassDirectionLong.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionLong.strings; path = gl.lproj/CompassDirectionLong.strings; sourceTree = "<group>"; };
-		46EB2E000104B0 /* CompassDirectionShort.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionShort.strings; path = gl.lproj/CompassDirectionShort.strings; sourceTree = "<group>"; };
-		46EB2E000104C0 /* CompassDirectionLong.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionLong.strings; path = he.lproj/CompassDirectionLong.strings; sourceTree = "<group>"; };
-		46EB2E000104D0 /* CompassDirectionShort.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionShort.strings; path = he.lproj/CompassDirectionShort.strings; sourceTree = "<group>"; };
-		46EB2E000104E0 /* CompassDirectionLong.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionLong.strings; path = ja.lproj/CompassDirectionLong.strings; sourceTree = "<group>"; };
-		46EB2E000104F0 /* CompassDirectionShort.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionShort.strings; path = ja.lproj/CompassDirectionShort.strings; sourceTree = "<group>"; };
+		46EB2E00010200 /* CompassDirectionLong.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionLong.strings; path = da.lproj/CompassDirectionLong.strings; sourceTree = "<group>"; };
+		46EB2E00010210 /* CompassDirectionShort.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionShort.strings; path = da.lproj/CompassDirectionShort.strings; sourceTree = "<group>"; };
+		46EB2E00010220 /* CompassDirectionLong.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionLong.strings; path = de.lproj/CompassDirectionLong.strings; sourceTree = "<group>"; };
+		46EB2E00010230 /* CompassDirectionShort.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionShort.strings; path = de.lproj/CompassDirectionShort.strings; sourceTree = "<group>"; };
+		46EB2E00010240 /* CompassDirectionLong.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionLong.strings; path = en.lproj/CompassDirectionLong.strings; sourceTree = "<group>"; };
+		46EB2E00010250 /* CompassDirectionShort.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionShort.strings; path = en.lproj/CompassDirectionShort.strings; sourceTree = "<group>"; };
+		46EB2E00010260 /* CompassDirectionLong.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionLong.strings; path = es.lproj/CompassDirectionLong.strings; sourceTree = "<group>"; };
+		46EB2E00010270 /* CompassDirectionShort.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionShort.strings; path = es.lproj/CompassDirectionShort.strings; sourceTree = "<group>"; };
+		46EB2E00010280 /* CompassDirectionLong.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionLong.strings; path = fr.lproj/CompassDirectionLong.strings; sourceTree = "<group>"; };
+		46EB2E00010290 /* CompassDirectionShort.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionShort.strings; path = fr.lproj/CompassDirectionShort.strings; sourceTree = "<group>"; };
+		46EB2E000102A0 /* CompassDirectionLong.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionLong.strings; path = gl.lproj/CompassDirectionLong.strings; sourceTree = "<group>"; };
+		46EB2E000102B0 /* CompassDirectionShort.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionShort.strings; path = gl.lproj/CompassDirectionShort.strings; sourceTree = "<group>"; };
+		46EB2E000102C0 /* CompassDirectionLong.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionLong.strings; path = he.lproj/CompassDirectionLong.strings; sourceTree = "<group>"; };
+		46EB2E000102D0 /* CompassDirectionShort.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionShort.strings; path = he.lproj/CompassDirectionShort.strings; sourceTree = "<group>"; };
+		46EB2E000102E0 /* CompassDirectionLong.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionLong.strings; path = ja.lproj/CompassDirectionLong.strings; sourceTree = "<group>"; };
+		46EB2E000102F0 /* CompassDirectionShort.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionShort.strings; path = ja.lproj/CompassDirectionShort.strings; sourceTree = "<group>"; };
 		46EB2E00010500 /* CompassDirectionLong.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionLong.strings; path = ko.lproj/CompassDirectionLong.strings; sourceTree = "<group>"; };
 		46EB2E00010510 /* CompassDirectionShort.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionShort.strings; path = ko.lproj/CompassDirectionShort.strings; sourceTree = "<group>"; };
 		46EB2E00010520 /* CompassDirectionLong.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = CompassDirectionLong.strings; path = lt.lproj/CompassDirectionLong.strings; sourceTree = "<group>"; };
@@ -15600,7 +15600,7 @@
 		46EB2E00010FE0 /* React-debug.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; lastKnownFileType = text; path = "React-debug.podspec"; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		46EB2E00011000 /* React-featureflags.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; lastKnownFileType = text; path = "React-featureflags.podspec"; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		46EB2E00011020 /* React-graphics.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; lastKnownFileType = text; path = "React-graphics.podspec"; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
-		46EB2E00011040 /* React-hermes.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; lastKnownFileType = text; path = "React-hermes.podspec"; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
+		46EB2E00011020 /* React-hermes.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; lastKnownFileType = text; path = "React-hermes.podspec"; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		46EB2E00011060 /* React-jserrorhandler.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; lastKnownFileType = text; path = "React-jserrorhandler.podspec"; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		46EB2E00011080 /* React-jsi.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; lastKnownFileType = text; path = "React-jsi.podspec"; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		46EB2E000110A0 /* React-jsiexecutor.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; lastKnownFileType = text; path = "React-jsiexecutor.podspec"; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
@@ -16368,7 +16368,7 @@
 		F73AA961F4AEFF2B46B00AE435DF6BE3 /* GoogleDataTransport-GoogleDataTransport_Privacy */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; name = "GoogleDataTransport-GoogleDataTransport_Privacy"; path = GoogleDataTransport_Privacy.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		F958876A082BF810B342435CE3FB5AF6 /* RCTTypeSafety */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = RCTTypeSafety; path = RCTTypeSafety.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		FDAEC7344C677500AF630C4D820400F2 /* Pods-userapp1 */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = "Pods-userapp1"; path = Pods_userapp1.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		FE7B9294FF05AAFD1653E2104E10844A /* React-RCTAnimation */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = "React-RCTAnimation"; path = RCTAnimation.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		FE7B9294FF05AAFD1653E2102E10844A /* React-RCTAnimation */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = "React-RCTAnimation"; path = RCTAnimation.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -17284,7 +17284,7 @@
 				60D5A56E763D6E7C4FBE797565062EEA /* React-nativeconfig */,
 				1E649614D7644BF68C2F5D4CB3FBF8DC /* React-NativeModulesApple */,
 				666E72807891C591E025A75410CD2A26 /* React-perflogger */,
-				FE7B9294FF05AAFD1653E2104E10844A /* React-RCTAnimation */,
+				FE7B9294FF05AAFD1653E2102E10844A /* React-RCTAnimation */,
 				39D0105B481E5FB78C661496BD63B8A5 /* React-RCTAppDelegate */,
 				F71EBF73F354B475D465FF6DE9A66707 /* React-RCTBlob */,
 				DA7ABB6DD8AEACED51D63B2C774E3A63 /* React-RCTFabric */,
@@ -17668,7 +17668,7 @@
 				46EB2E00000F50 /* TOTPMultiFactorInfo.swift */,
 				46EB2E00000F60 /* TOTPSecret.swift */,
 				46EB2E00000A70 /* TwitterAuthProvider.swift */,
-				46EB2E00001040 /* User.swift */,
+				46EB2E00001020 /* User.swift */,
 				46EB2E00001050 /* UserInfo.swift */,
 				46EB2E00001060 /* UserInfoImpl.swift */,
 				46EB2E00001070 /* UserMetadata.swift */,
@@ -24351,7 +24351,7 @@
 		46EB2E00011030 /* Pod */ = {
 			isa = PBXGroup;
 			children = (
-				46EB2E00011040 /* React-hermes.podspec */,
+				46EB2E00011020 /* React-hermes.podspec */,
 			);
 			name = Pod;
 			sourceTree = "<group>";
@@ -30109,7 +30109,7 @@
 			);
 			name = "React-RCTAnimation";
 			productName = RCTAnimation;
-			productReference = FE7B9294FF05AAFD1653E2104E10844A /* React-RCTAnimation */;
+			productReference = FE7B9294FF05AAFD1653E2102E10844A /* React-RCTAnimation */;
 			productType = "com.apple.product-type.framework";
 		};
 		95D98F901D07557EF7CA38D3F03832C5 /* React-RCTBlob */ = {
@@ -30661,7 +30661,7 @@
 				46EB2E00030F40 /* PBXTargetDependency */,
 				46EB2E00031080 /* PBXTargetDependency */,
 				46EB2E00031120 /* PBXTargetDependency */,
-				46EB2E00031040 /* PBXTargetDependency */,
+				46EB2E00031020 /* PBXTargetDependency */,
 				46EB2E00030FA0 /* PBXTargetDependency */,
 				46EB2E00031100 /* PBXTargetDependency */,
 				46EB2E000310E0 /* PBXTargetDependency */,
@@ -30791,7 +30791,7 @@
 			productReference = 75BE3742280F17326166DFF0B2AC4FAE /* FirebaseAuth-FirebaseAuth_Privacy */;
 			productType = "com.apple.product-type.bundle";
 		};
-		DA0709CAAD589C6E7963495210438021 /* React-jsiexecutor */ = {
+		DA0709CAAD589C6E7963495210238021 /* React-jsiexecutor */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 46EB2E00025870 /* Build configuration list for PBXNativeTarget "React-jsiexecutor" */;
 			buildPhases = (
@@ -31360,7 +31360,7 @@
 				B5E1D7706FCB7EC5FF39F8CDA49A5653 /* React-ImageManager */,
 				27F648AD269E94404D6A7547C4F9C683 /* React-jserrorhandler */,
 				FA877ADC442CB19CF61793D234C8B131 /* React-jsi */,
-				DA0709CAAD589C6E7963495210438021 /* React-jsiexecutor */,
+				DA0709CAAD589C6E7963495210238021 /* React-jsiexecutor */,
 				F7D033C4C128EECAA020990641FA985F /* React-jsinspector */,
 				718331030FAA6D88E74D4B2240BB4AC8 /* React-jsitracing */,
 				083B602EA19B4AD50EC53C0602F29A7D /* React-logger */,
@@ -35953,7 +35953,7 @@
 		46EB2E0002C500 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = "React-jsiexecutor";
-			target = DA0709CAAD589C6E7963495210438021 /* React-jsiexecutor */;
+			target = DA0709CAAD589C6E7963495210238021 /* React-jsiexecutor */;
 			targetProxy = 46EB2E0002C4F0 /* PBXContainerItemProxy */;
 		};
 		46EB2E0002C520 /* PBXTargetDependency */ = {
@@ -36547,7 +36547,7 @@
 		46EB2E0002D160 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = "React-jsiexecutor";
-			target = DA0709CAAD589C6E7963495210438021 /* React-jsiexecutor */;
+			target = DA0709CAAD589C6E7963495210238021 /* React-jsiexecutor */;
 			targetProxy = 46EB2E0002D150 /* PBXContainerItemProxy */;
 		};
 		46EB2E0002D180 /* PBXTargetDependency */ = {
@@ -37531,7 +37531,7 @@
 		46EB2E0002E5E0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = "React-jsiexecutor";
-			target = DA0709CAAD589C6E7963495210438021 /* React-jsiexecutor */;
+			target = DA0709CAAD589C6E7963495210238021 /* React-jsiexecutor */;
 			targetProxy = 46EB2E0002E5D0 /* PBXContainerItemProxy */;
 		};
 		46EB2E0002E600 /* PBXTargetDependency */ = {
@@ -37669,7 +37669,7 @@
 		46EB2E0002E8C0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = "React-jsiexecutor";
-			target = DA0709CAAD589C6E7963495210438021 /* React-jsiexecutor */;
+			target = DA0709CAAD589C6E7963495210238021 /* React-jsiexecutor */;
 			targetProxy = 46EB2E0002E8B0 /* PBXContainerItemProxy */;
 		};
 		46EB2E0002E8E0 /* PBXTargetDependency */ = {
@@ -37819,7 +37819,7 @@
 		46EB2E0002EBE0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = "React-jsiexecutor";
-			target = DA0709CAAD589C6E7963495210438021 /* React-jsiexecutor */;
+			target = DA0709CAAD589C6E7963495210238021 /* React-jsiexecutor */;
 			targetProxy = 46EB2E0002EBD0 /* PBXContainerItemProxy */;
 		};
 		46EB2E0002EC00 /* PBXTargetDependency */ = {
@@ -37933,7 +37933,7 @@
 		46EB2E0002EE40 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = "React-jsiexecutor";
-			target = DA0709CAAD589C6E7963495210438021 /* React-jsiexecutor */;
+			target = DA0709CAAD589C6E7963495210238021 /* React-jsiexecutor */;
 			targetProxy = 46EB2E0002EE30 /* PBXContainerItemProxy */;
 		};
 		46EB2E0002EE60 /* PBXTargetDependency */ = {
@@ -38725,7 +38725,7 @@
 		46EB2E0002FEC0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = "React-jsiexecutor";
-			target = DA0709CAAD589C6E7963495210438021 /* React-jsiexecutor */;
+			target = DA0709CAAD589C6E7963495210238021 /* React-jsiexecutor */;
 			targetProxy = 46EB2E0002FEB0 /* PBXContainerItemProxy */;
 		};
 		46EB2E0002FEE0 /* PBXTargetDependency */ = {
@@ -38827,7 +38827,7 @@
 		46EB2E000300E0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = "React-jsiexecutor";
-			target = DA0709CAAD589C6E7963495210438021 /* React-jsiexecutor */;
+			target = DA0709CAAD589C6E7963495210238021 /* React-jsiexecutor */;
 			targetProxy = 46EB2E000300D0 /* PBXContainerItemProxy */;
 		};
 		46EB2E00030100 /* PBXTargetDependency */ = {
@@ -39073,7 +39073,7 @@
 		46EB2E00030600 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = "React-jsiexecutor";
-			target = DA0709CAAD589C6E7963495210438021 /* React-jsiexecutor */;
+			target = DA0709CAAD589C6E7963495210238021 /* React-jsiexecutor */;
 			targetProxy = 46EB2E000305F0 /* PBXContainerItemProxy */;
 		};
 		46EB2E00030620 /* PBXTargetDependency */ = {
@@ -39562,7 +39562,7 @@
 			target = B6D5DD49633DFF0657B8C3F08EB3ABA9 /* ReactCommon */;
 			targetProxy = 46EB2E00031010 /* PBXContainerItemProxy */;
 		};
-		46EB2E00031040 /* PBXTargetDependency */ = {
+		46EB2E00031020 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = "React-NativeModulesApple";
 			target = 5807741745EB757C97C09F2D56726BE0 /* React-NativeModulesApple */;
@@ -39703,14 +39703,14 @@
 				46EB2E00010390 /* CompassDirectionLong.strings */,
 				46EB2E000103C0 /* CompassDirectionLong.strings */,
 				46EB2E000103E0 /* CompassDirectionLong.strings */,
-				46EB2E00010400 /* CompassDirectionLong.strings */,
-				46EB2E00010420 /* CompassDirectionLong.strings */,
-				46EB2E00010440 /* CompassDirectionLong.strings */,
-				46EB2E00010460 /* CompassDirectionLong.strings */,
-				46EB2E00010480 /* CompassDirectionLong.strings */,
-				46EB2E000104A0 /* CompassDirectionLong.strings */,
-				46EB2E000104C0 /* CompassDirectionLong.strings */,
-				46EB2E000104E0 /* CompassDirectionLong.strings */,
+				46EB2E00010200 /* CompassDirectionLong.strings */,
+				46EB2E00010220 /* CompassDirectionLong.strings */,
+				46EB2E00010240 /* CompassDirectionLong.strings */,
+				46EB2E00010260 /* CompassDirectionLong.strings */,
+				46EB2E00010280 /* CompassDirectionLong.strings */,
+				46EB2E000102A0 /* CompassDirectionLong.strings */,
+				46EB2E000102C0 /* CompassDirectionLong.strings */,
+				46EB2E000102E0 /* CompassDirectionLong.strings */,
 				46EB2E00010500 /* CompassDirectionLong.strings */,
 				46EB2E00010520 /* CompassDirectionLong.strings */,
 				46EB2E00010540 /* CompassDirectionLong.strings */,
@@ -39731,13 +39731,13 @@
 				46EB2E000103B0 /* CompassDirectionShort.strings */,
 				46EB2E000103D0 /* CompassDirectionShort.strings */,
 				46EB2E000103F0 /* CompassDirectionShort.strings */,
-				46EB2E00010410 /* CompassDirectionShort.strings */,
-				46EB2E00010430 /* CompassDirectionShort.strings */,
-				46EB2E00010450 /* CompassDirectionShort.strings */,
-				46EB2E00010470 /* CompassDirectionShort.strings */,
-				46EB2E00010490 /* CompassDirectionShort.strings */,
-				46EB2E000104B0 /* CompassDirectionShort.strings */,
-				46EB2E000104D0 /* CompassDirectionShort.strings */,
+				46EB2E00010210 /* CompassDirectionShort.strings */,
+				46EB2E00010230 /* CompassDirectionShort.strings */,
+				46EB2E00010250 /* CompassDirectionShort.strings */,
+				46EB2E00010270 /* CompassDirectionShort.strings */,
+				46EB2E00010290 /* CompassDirectionShort.strings */,
+				46EB2E000102B0 /* CompassDirectionShort.strings */,
+				46EB2E000102D0 /* CompassDirectionShort.strings */,
 				46EB2E000104F0 /* CompassDirectionShort.strings */,
 				46EB2E00010510 /* CompassDirectionShort.strings */,
 				46EB2E00010530 /* CompassDirectionShort.strings */,

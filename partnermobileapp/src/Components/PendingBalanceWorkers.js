@@ -45,7 +45,7 @@ const PendingBalanceWorkers = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.get(
-          `http://192.168.55.104:5000/api/pending/balance/workers`,
+          `http://192.168.55.102:5000/api/pending/balance/workers`,
           {},
         );
         console.log(response.data);

@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,58 +9,58 @@ import {
   Image,
   ActivityIndicator,
   useWindowDimensions,
-  Modal, // <-- Import Modal
+  Modal,
 } from 'react-native';
-import {useRoute, useNavigation, CommonActions} from '@react-navigation/native';
+import { useRoute, useNavigation, CommonActions } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
+// Import the theme hook for dark mode support
+import { useTheme } from '../context/ThemeContext';
 
 const EditProfile = () => {
-  const {width, height} = useWindowDimensions();
-  const styles = dynamicStyles(width, height);
+  const { width, height } = useWindowDimensions();
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, height, isDarkMode);
 
   const navigation = useNavigation();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [updateLoading, setUpdateLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false); // <-- Modal visibility state
+  const [modalVisible, setModalVisible] = useState(false); // Modal visibility state
 
   const route = useRoute();
 
   const fetchProfileDetails = async () => {
-    const {details} = route.params;
+    const { details } = route.params;
     setEmail(details.email);
     setPhone(details.phoneNumber);
     setFullName(details.name);
   };
 
-  // Function that actually updates the profile
+  // Function to update the profile
   const updateProfile = async () => {
     try {
       setUpdateLoading(true);
       const jwtToken = await EncryptedStorage.getItem('cs_token');
-
       if (!jwtToken) {
         console.error('No JWT token found');
         return;
       }
-
       const response = await axios.post(
         `http://192.168.55.102:5000/api/user/details/update`,
-        {name: fullName, email, phone},
+        { name: fullName, email, phone },
         {
-          headers: {Authorization: `Bearer ${jwtToken}`},
-        },
+          headers: { Authorization: `Bearer ${jwtToken}` },
+        }
       );
-
       if (response.status === 200) {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{name: 'Tabs', state: {routes: [{name: 'Account'}]}}],
-          }),
+            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Account' }] } }],
+          })
         );
       } else {
         console.error('Failed to update profile. Status: ', response.status);
@@ -93,12 +93,13 @@ const EditProfile = () => {
         <Icon
           name="arrow-back"
           size={24}
-          color="#000"
+          color={isDarkMode ? '#fff' : '#000'}
           onPress={() => navigation.goBack()}
         />
         <Text style={styles.headerText}>Edit Profile</Text>
       </View>
 
+      {/* The form section remains the same */}
       <View style={styles.form}>
         <View>
           <Text style={styles.label}>Full Name</Text>
@@ -143,11 +144,15 @@ const EditProfile = () => {
             />
           </View>
         </View>
+      </View>
 
+      {/* The button is now placed at the bottom */}
+      <View style={styles.bottomButtonContainer}>
         <TouchableOpacity
           style={styles.button}
           onPress={openConfirmationModal}
-          disabled={updateLoading}>
+          disabled={updateLoading}
+        >
           {updateLoading ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
@@ -161,7 +166,12 @@ const EditProfile = () => {
         animationType="slide"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}>
+        onRequestClose={() => setModalVisible(false)}
+      >
+        {/* 
+          The modal container is now anchored to the bottom 
+          (flex-end), and the content has top-radius. 
+        */}
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Confirm Update</Text>
@@ -170,13 +180,15 @@ const EditProfile = () => {
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={[styles.modalButton, {backgroundColor: '#ccc'}]}
-                onPress={() => setModalVisible(false)}>
+                style={[styles.modalButton, { backgroundColor: '#ccc' }]}
+                onPress={() => setModalVisible(false)}
+              >
                 <Text style={styles.modalButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, {backgroundColor: '#FF4500'}]}
-                onPress={handleUpdate}>
+                style={[styles.modalButton, { backgroundColor: '#FF4500' }]}
+                onPress={handleUpdate}
+              >
                 <Text style={styles.modalButtonText}>Update</Text>
               </TouchableOpacity>
             </View>
@@ -187,13 +199,12 @@ const EditProfile = () => {
   );
 };
 
-const dynamicStyles = (width, height) => {
+const dynamicStyles = (width, height, isDarkMode) => {
   const isTablet = width >= 600;
-
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#121212' : '#fff',
       paddingHorizontal: isTablet ? 30 : 20,
     },
     header: {
@@ -205,7 +216,7 @@ const dynamicStyles = (width, height) => {
       fontSize: isTablet ? 24 : 20,
       fontFamily: 'RobotoSlab-SemiBold',
       marginLeft: isTablet ? 15 : 10,
-      color: '#1D2951',
+      color: isDarkMode ? '#fff' : '#1D2951',
       textAlign: 'center',
     },
     form: {
@@ -216,18 +227,18 @@ const dynamicStyles = (width, height) => {
     label: {
       fontSize: isTablet ? 16 : 14,
       fontFamily: 'RobotoSlab-Medium',
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
       marginBottom: 5,
       marginTop: isTablet ? 20 : 15,
     },
     input: {
       height: isTablet ? 55 : 50,
       borderWidth: 1,
-      borderColor: '#ddd',
+      borderColor: isDarkMode ? '#444' : '#ddd',
       borderRadius: 8,
       paddingHorizontal: 10,
-      backgroundColor: '#f9f9f9',
-      color: '#212121',
+      backgroundColor: isDarkMode ? '#1e1e1e' : '#f9f9f9',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 18 : 16,
     },
@@ -235,15 +246,15 @@ const dynamicStyles = (width, height) => {
       flexDirection: 'row',
       alignItems: 'center',
       borderWidth: 1,
-      borderColor: '#ddd',
+      borderColor: isDarkMode ? '#444' : '#ddd',
       borderRadius: 8,
       paddingHorizontal: 10,
-      backgroundColor: '#f9f9f9',
+      backgroundColor: isDarkMode ? '#1e1e1e' : '#f9f9f9',
     },
     inputText: {
       flex: 1,
       marginLeft: isTablet ? 15 : 10,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 18 : 16,
     },
@@ -251,10 +262,10 @@ const dynamicStyles = (width, height) => {
       flexDirection: 'row',
       alignItems: 'center',
       borderWidth: 1,
-      borderColor: '#ddd',
+      borderColor: isDarkMode ? '#444' : '#ddd',
       borderRadius: 8,
       paddingHorizontal: 10,
-      backgroundColor: '#f9f9f9',
+      backgroundColor: isDarkMode ? '#1e1e1e' : '#f9f9f9',
     },
     flagIcon: {
       width: isTablet ? 30 : 24,
@@ -264,53 +275,61 @@ const dynamicStyles = (width, height) => {
     callingCode: {
       marginRight: 10,
       fontSize: isTablet ? 18 : 16,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
     },
     phoneInput: {
       flex: 1,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 18 : 16,
+    },
+    bottomButtonContainer: {
+      position: 'absolute',
+      left: isTablet ? 30 : 20,
+      right: isTablet ? 30 : 20,
+      bottom: isTablet ? 30 : 20,
     },
     button: {
       backgroundColor: '#FF4500',
       height: isTablet ? 55 : 50,
-      borderRadius: 8,
+      borderRadius: isTablet ? 27.5 : 25,
       justifyContent: 'center',
       alignItems: 'center',
-      marginTop: isTablet ? 50 : 40,
     },
     buttonText: {
       color: '#fff',
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Medium',
     },
+    /* 
+      Updated modal container to appear at the bottom 
+    */
     modalContainer: {
       flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: 'flex-end', // anchor to bottom
       backgroundColor: 'rgba(0,0,0,0.5)',
     },
     modalContent: {
-      width: isTablet ? '40%' : '80%',
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#1e1e1e' : '#fff',
       padding: 20,
-      borderRadius: 10,
+      borderTopLeftRadius: 20, // top round corners
+      borderTopRightRadius: 20,
       alignItems: 'center',
+      width: '100%',
     },
     modalTitle: {
       fontSize: isTablet ? 20 : 18,
       fontFamily: 'RobotoSlab-Medium',
       marginBottom: 10,
-      color: '#1D2951',
+      color: isDarkMode ? '#fff' : '#1D2951',
     },
     modalMessage: {
       fontSize: isTablet ? 16 : 14,
       fontFamily: 'RobotoSlab-Regular',
       marginBottom: 20,
       textAlign: 'center',
-      color: '#212121',
+      color: isDarkMode ? '#ccc' : '#212121',
     },
     modalButtons: {
       flexDirection: 'row',

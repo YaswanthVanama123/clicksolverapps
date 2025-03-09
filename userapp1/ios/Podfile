@@ -28,8 +28,13 @@ target 'userapp1' do
     'LocationWhenInUse',    # Foreground location access
     'LocationAlways',       # Background location access
     'Notifications',        # Push notifications
-    'Contacts'              # Access to user contacts
+    'Contacts',             # Access to user contacts
+    'PhotoLibrary',         # Access to photo library (for image picker)
+    'Camera'               # Access to camera (for capturing images)
   ])
+
+  # ✅ Add dependency for react-native-image-picker
+  pod 'react-native-image-picker', :path => '../node_modules/react-native-image-picker'
 
   # If you have a test target:
   target 'userapp1Tests' do

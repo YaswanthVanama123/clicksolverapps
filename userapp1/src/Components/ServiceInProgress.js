@@ -9,7 +9,7 @@ import {
   BackHandler,
   Modal,
   ActivityIndicator,
-  useWindowDimensions, // for responsive styling
+  useWindowDimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LottieView from 'lottie-react-native';
@@ -19,16 +19,18 @@ import { useNavigation, useRoute, CommonActions, useFocusEffect } from '@react-n
 import axios from 'axios';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+// Import theme hook
+import { useTheme } from '../context/ThemeContext';
 
 const ServiceInProgressScreen = () => {
   // For dynamic styling
   const { width } = useWindowDimensions();
-  const styles = dynamicStyles(width);
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, isDarkMode);
 
   const [details, setDetails] = useState({});
   const [services, setServices] = useState([]);
   const [decodedId, setDecodedId] = useState(null);
-
   const [confirmationModalVisible, setConfirmationModalVisible] = useState(false);
 
   const route = useRoute();
@@ -38,7 +40,7 @@ const ServiceInProgressScreen = () => {
   // 1) Decode `encodedId`
   useEffect(() => {
     if (encodedId) {
-      setDecodedId(atob(encodedId)); 
+      setDecodedId(atob(encodedId));
     }
   }, [encodedId]);
 
@@ -157,7 +159,7 @@ const ServiceInProgressScreen = () => {
           <FontAwesome6
             name="arrow-left-long"
             size={20}
-            color="#212121"
+            color={isDarkMode ? '#fff' : "#212121"}
             style={styles.leftIcon}
             onPress={() => {
               navigation.dispatch(
@@ -189,8 +191,7 @@ const ServiceInProgressScreen = () => {
             </View>
             <Text style={styles.estimatedCompletion}>Estimated Completion: 2 hours</Text>
             <Text style={styles.statusText}>
-              Status: Working on{' '}
-              {services.map((service) => service.name).join(', ')} ...
+              Status: Working on {services.map((service) => service.name).join(', ')} ...
             </Text>
           </View>
 
@@ -265,7 +266,7 @@ const ServiceInProgressScreen = () => {
                         <Text style={styles.sectionTitle}>Service Timeline</Text>
                       </View>
                       <View style={styles.innerContainerLine}>
-                        {timelineData.map((item, idx2) => (
+                        {timelineData.map((item) => (
                           <View key={item.key} style={styles.timelineItem}>
                             <View style={styles.iconAndLineContainer}>
                               <MaterialCommunityIcons
@@ -273,11 +274,12 @@ const ServiceInProgressScreen = () => {
                                 size={14}
                                 color={item.iconColor}
                               />
-                              {idx2 !== timelineData.length - 1 && (
+                              { /* Draw a line if not the last item */}
+                              {item.key !== 'workCompleted' && (
                                 <View
                                   style={[
                                     styles.lineSegment,
-                                    { backgroundColor: timelineData[idx2 + 1].iconColor },
+                                    { backgroundColor: item.lineColor },
                                   ]}
                                 />
                               )}
@@ -338,34 +340,33 @@ const ServiceInProgressScreen = () => {
 };
 
 /**
- * DYNAMIC STYLES
+ * DYNAMIC STYLES with Dark Theme Support
  */
-function dynamicStyles(width) {
+function dynamicStyles(width, isDarkMode) {
   const isTablet = width >= 600;
 
   return StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
     },
     mainContainer: {
       flex: 1,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
     },
     scrollContainer: {
       flex: 1,
     },
-
     /* Header */
     headerContainer: {
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
       paddingVertical: isTablet ? 20 : 15,
       paddingHorizontal: isTablet ? 24 : 20,
       alignItems: 'center',
       elevation: 1,
       zIndex: 1,
       borderBottomWidth: 1,
-      borderBottomColor: '#EEE',
+      borderBottomColor: isDarkMode ? '#333' : '#EEE',
     },
     leftIcon: {
       position: 'absolute',
@@ -373,20 +374,19 @@ function dynamicStyles(width) {
       top: isTablet ? 20 : 15,
     },
     headerText: {
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontSize: isTablet ? 20 : 18,
       fontFamily: 'RobotoSlab-SemiBold',
     },
-
     /* Technician / Profile Container */
     profileContainer: {
       flexDirection: 'column',
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#1e1e1e' : '#fff',
       padding: isTablet ? 24 : 20,
       marginVertical: isTablet ? 16 : 10,
       marginHorizontal: isTablet ? 28 : 20,
       borderRadius: 10,
-      elevation: 1,
+      // elevation: 1,
     },
     technicianContainer: {
       flexDirection: 'row',
@@ -405,28 +405,27 @@ function dynamicStyles(width) {
     technicianName: {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Medium',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     technicianTitle: {
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 14 : 12,
     },
     estimatedCompletion: {
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontWeight: '500',
       fontFamily: 'RobotoSlab-Medium',
       marginTop: 8,
       fontSize: isTablet ? 14 : 12,
     },
     statusText: {
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
       marginTop: 4,
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 14 : 12,
     },
-
-    /* Lottie / House Image Container */
+    /* Lottie Container */
     lottieContainer: {
       alignItems: 'center',
       marginVertical: isTablet ? 24 : 20,
@@ -435,7 +434,6 @@ function dynamicStyles(width) {
       width: '100%',
       height: isTablet ? 250 : 200,
     },
-
     /* Complete Button */
     button: {
       backgroundColor: '#ff4500',
@@ -450,16 +448,15 @@ function dynamicStyles(width) {
       fontSize: isTablet ? 16 : 14,
       fontFamily: 'RobotoSlab-Medium',
     },
-
     /* Service Details Container */
     serviceDetailsContainer: {
       flexDirection: 'column',
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#1e1e1e' : '#fff',
       padding: isTablet ? 24 : 20,
       marginTop: isTablet ? 24 : 20,
       marginHorizontal: isTablet ? 28 : 20,
       borderRadius: 10,
-      elevation: 1,
+      // elevation: 1,
       marginBottom: isTablet ? 16 : 10,
     },
     serviceDetailsHeaderContainer: {
@@ -470,7 +467,7 @@ function dynamicStyles(width) {
     serviceDetailsTitle: {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Medium',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     iconDetailsContainer: {
       marginVertical: 10,
@@ -484,25 +481,23 @@ function dynamicStyles(width) {
     },
     detailText: {
       marginLeft: 10,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 14 : 12,
     },
     highlight: {
       fontFamily: 'RobotoSlab-Medium',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
-
-    /* Each Service Card */
+    /* Service Card */
     ServiceCardsContainer: {
       flexDirection: 'column',
       marginVertical: isTablet ? 12 : 10,
-      backgroundColor: '#f9f9f9',
+      backgroundColor: isDarkMode ? '#2c2c2c' : '#f9f9f9',
       padding: isTablet ? 18 : 15,
       borderRadius: 10,
-      elevation: 1,
+      // elevation: 1,
     },
-
     /* Timeline Section */
     sectionContainer: {
       marginTop: 10,
@@ -516,7 +511,7 @@ function dynamicStyles(width) {
     sectionTitle: {
       fontSize: isTablet ? 16 : 14,
       fontFamily: 'RobotoSlab-SemiBold',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     innerContainerLine: {
       marginTop: 5,
@@ -545,15 +540,14 @@ function dynamicStyles(width) {
     },
     timelineText: {
       fontSize: isTablet ? 14 : 12,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Medium',
     },
     timelineTime: {
       fontSize: isTablet ? 12 : 10,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
       fontFamily: 'RobotoSlab-Regular',
     },
-
     /* Confirmation Modal */
     modalOverlay: {
       flex: 1,
@@ -563,7 +557,7 @@ function dynamicStyles(width) {
     },
     confirmationModalContainer: {
       width: isTablet ? '60%' : '80%',
-      backgroundColor: 'white',
+      backgroundColor: isDarkMode ? '#2c2c2c' : 'white',
       borderRadius: 20,
       padding: isTablet ? 25 : 20,
       alignItems: 'center',
@@ -572,13 +566,13 @@ function dynamicStyles(width) {
       fontSize: isTablet ? 20 : 18,
       fontFamily: 'RobotoSlab-Medium',
       marginBottom: 10,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       textAlign: 'center',
     },
     confirmationSubtitle: {
       fontSize: isTablet ? 14 : 13,
       fontFamily: 'RobotoSlab-Regular',
-      color: '#666',
+      color: isDarkMode ? '#ccc' : '#666',
       textAlign: 'center',
       marginBottom: 20,
     },

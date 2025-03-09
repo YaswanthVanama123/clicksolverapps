@@ -1,135 +1,121 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
+  SafeAreaView,
   FlatList,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
-  TouchableWithoutFeedback,
-  useWindowDimensions,
   Image,
+  ActivityIndicator,
+  useWindowDimensions,
+  TextInput,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons'; 
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'; 
-import Feather from 'react-native-vector-icons/Feather';
+import Icon from 'react-native-vector-icons/Ionicons';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import Entypo from 'react-native-vector-icons/Entypo';
 import axios from 'axios';
-import {useNavigation} from '@react-navigation/native';
-import LottieView from 'lottie-react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext';
 
-const ServiceItem = ({ item, formatDate, styles }) => {
+/** 
+ * Example item structure:
+ * item = {
+ *   notification_id: "...",
+ *   created_at: "2023-08-20T10:00:00Z",
+ *   payment: 100,
+ *   payment_type: "cash",
+ *   service_booked: [
+ *     {
+ *       serviceName: "Parking in Downtown",
+ *       imageUrl: "https://example.com/image.jpg"
+ *     }
+ *   ]
+ * }
+ */
+
+// Helper: format the date
+const formatDate = (created_at) => {
+  const date = new Date(created_at);
+  const monthNames = [
+    'January','February','March','April','May','June',
+    'July','August','September','October','November','December',
+  ];
+  return `${monthNames[date.getMonth()]} ${String(date.getDate()).padStart(2, '0')}, ${date.getFullYear()}`;
+};
+
+// Card component for a single service item
+const ServiceItemCard = ({ item, styles, tab }) => {
   const navigation = useNavigation();
-
-  // Determine if the service is canceled (assuming payment === null means canceled)
-  const isCancelled = item.payment === null;
-
+  const isCancelled = item.total_cost === null;
+  let buttonLabel = 'View Details';
+  let disabled = false;
+  if (isCancelled) {
+    buttonLabel = 'Cancelled';
+    disabled = true;
+  }
+  const serviceName =
+    item.service_booked && item.service_booked.length > 0
+      ? item.service_booked[0]?.serviceName
+      : 'Unknown Service';
+  const imageUrl =
+    item.service_booked && item.service_booked.length > 0
+      ? item.service_booked[0].imageUrl
+      : item.service_booked[0]?.url;
   return (
-    <TouchableOpacity
-      style={[
-        styles.itemContainer,
-        isCancelled && styles.cancelledItemContainer,
-      ]}
-      onPress={() => {
-        navigation.push('serviceBookingItem', {
-          tracking_id: item.notification_id,
-        });
-      }}
-    >
-      <View style={styles.itemMainContainer}>
-        {/* Example icon usage if needed:
-        <View style={styles.iconContainer}>
-          {item.payment_type === 'cash' ? (
-            <Entypo name="wallet" size={20} color="white" />
-          ) : (
-            <MaterialCommunityIcons name="bank" size={20} color="white" />
-          )}
-        </View>
-        */}
-        
-        <View style={styles.imageContainer1}>
-          <Image
-            style={styles.imageContainer} 
-            source={
-              item.service_booked &&
-              item.service_booked.length > 0 &&
-              item.service_booked[0]?.imageUrl
-                ? { uri: item.service_booked[0].imageUrl }
-                : { uri: item.service_booked[0].url } // <-- Fallback image
-            }
-            resizeMode="cover"
-          />
-        </View>
-
-        <View style={styles.itemDetails}>
-          <Text
-            style={[
-              styles.title,
-              isCancelled && styles.cancelledTitle,
-            ]}
-            numberOfLines={2}
-          >
-            {item.service_booked && item.service_booked.length > 0
-              ? item.service_booked[0]?.serviceName
-              : item.service}
-          </Text>
-          <Text
-            style={[
-              styles.schedule,
-              isCancelled && styles.cancelledSchedule,
-            ]}
-          >
-            {formatDate(item.created_at)}
-          </Text>
-        </View>
-
-        <View>
-          <Text
-            style={[
-              styles.price,
-              isCancelled && styles.cancelledPrice,
-            ]}
-          >
-            ₹{item.payment}
-          </Text>
-          <Text
-            style={[
-              styles.paymentDetails,
-              isCancelled && styles.cancelledPaymentDetails,
-            ]}
-          >
-            {item.payment_type === 'cash'
-              ? 'Paid to you'
-              : 'Paid to Click Solver'}
-          </Text>
-        </View>
+    <View style={styles.cardContainer}>
+      <Image
+        style={styles.cardImage}
+        source={ imageUrl ? { uri: imageUrl } : null }
+      />
+      <View style={styles.cardInfo}>
+        <Text style={styles.cardTitle} numberOfLines={1}>
+          {serviceName}
+        </Text>
+        <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
+        <Text style={styles.cardPrice}>
+          {isCancelled ? '₹0' : `₹${item.total_cost}`}
+        </Text>
       </View>
-
-      {isCancelled && (
-        <Text style={styles.cancelledMessage}>Service Cancelled</Text>
-      )}
-    </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.cardButton, disabled && styles.cardButtonDisabled]}
+        onPress={() => {
+          if (!disabled) {
+            if (tab === 'Ongoing') {
+              navigation.push('ServiceBookingOngoingItem', {
+                tracking_id: item.notification_id,
+              });
+            } else {
+              navigation.push('serviceBookingItem', {
+                tracking_id: item.notification_id,
+              });
+            }
+          }
+        }}
+        disabled={disabled}
+      >
+        <Text style={[styles.cardButtonText, disabled && styles.cardButtonTextDisabled]}>
+          {buttonLabel}
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const RecentServices = () => {
-  // 1) Get screen dimensions
-  const {width, height} = useWindowDimensions();
-  // 2) Generate dynamic styles
-  const styles = dynamicStyles(width, height);
-
+  const { width, height } = useWindowDimensions();
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, height, isDarkMode);
+  const TABS = ['Ongoing', 'Completed', 'Cancelled'];
+  const [selectedTab, setSelectedTab] = useState('Ongoing');
   const [bookingsData, setBookingsData] = useState([]);
-  const [isFilterVisible, setIsFilterVisible] = useState(false);
-  const [selectedFilters, setSelectedFilters] = useState([]);
-  const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false); // <-- NEW: track network error
+  const [error, setError] = useState(false);
+  const [searchActive, setSearchActive] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const navigation = useNavigation();
 
-  const filterOptions = ['Completed', 'Cancelled'];
-
-  // Extracted API call into a function so we can call it on Retry
+  // Fetch data based on the selected tab
   const fetchBookings = async () => {
     setLoading(true);
     setError(false);
@@ -137,265 +123,238 @@ const RecentServices = () => {
       const token = await EncryptedStorage.getItem('cs_token');
       if (!token) throw new Error('Token not found');
 
-      const response = await axios.get(
-        `http://192.168.55.102:5000/api/user/bookings`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-      console.log(response.data[0])
+      let response;
+      if (selectedTab === 'Ongoing') {
+        // Call a different API endpoint for Ongoing services
+        response = await axios.get(
+          `http://192.168.55.102:5000/api/user/ongoingBookings`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } else {
+        // For Completed and Cancelled, use the default endpoint
+        response = await axios.get( 
+          `http://192.168.55.102:5000/api/user/bookings`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      }
       setBookingsData(response.data);
-      setFilteredData(response.data); // Initially display all data
     } catch (err) {
       console.error('Error fetching bookings data:', err);
-      setError(true); // <-- if there's an error, set error to true
+      setError(true);
     } finally {
       setLoading(false);
     }
   };
 
+  // Re-fetch data when selectedTab changes
   useEffect(() => {
     fetchBookings();
-  }, []);
+  }, [selectedTab]);
 
-  const formatDate = created_at => {
-    const date = new Date(created_at);
-    const monthNames = [
-      'January','February','March','April','May','June',
-      'July','August','September','October','November','December',
-    ];
-    return `${monthNames[date.getMonth()]} ${String(date.getDate()).padStart(
-      2,
-      '0',
-    )}, ${date.getFullYear()}`;
-  };
-
-  const toggleFilter = status => {
-    const updatedFilters = selectedFilters.includes(status)
-      ? selectedFilters.filter(s => s !== status)
-      : [...selectedFilters, status];
-
-    setSelectedFilters(updatedFilters);
-
-    // Apply filter immediately
-    const filtered =
-      updatedFilters.length > 0
-        ? bookingsData.filter(item => {
-            const itemStatus = item.payment !== null ? 'Completed' : 'Cancelled';
-            return updatedFilters.includes(itemStatus);
-          })
-        : bookingsData;
-
-    setFilteredData(filtered);
-  };
-
-  const handleOutsidePress = () => {
-    if (isFilterVisible) {
-      setIsFilterVisible(false);
+  const getFilteredData = () => {
+    // Filter based on the selected tab.
+    let data = [];
+    if (selectedTab === 'Completed') {
+      // Only include bookings that are not cancelled.
+      data = bookingsData.filter(item => item.total_cost !== null);
+    } else if (selectedTab === 'Cancelled') {
+      // Only include cancelled bookings.
+      data = bookingsData.filter(item => item.total_cost === null);
+    } else {
+      // Ongoing tab: no additional filtering is needed as the API already returns ongoing items.
+      data = bookingsData;
     }
+    
+    // Then, if search is active, filter by service name.
+    if (searchActive && searchText.trim()) {
+      const lowerSearch = searchText.toLowerCase();
+      data = data.filter(item => {
+        if (
+          item.service_booked &&
+          item.service_booked.length > 0 &&
+          item.service_booked[0].serviceName
+        ) {
+          return item.service_booked[0].serviceName.toLowerCase().includes(lowerSearch);
+        }
+        return false;
+      });
+    }
+    
+    // Sort the data in descending order by creation date.
+    data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    return data;
   };
+  
+  const filteredData = getFilteredData();
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <TouchableWithoutFeedback onPress={handleOutsidePress}>
-        <SafeAreaView style={styles.screenContainer}>
-          <View style={styles.headerContainer}>
-            <View style={styles.sortContainerLeft}>
-              <Feather name="shopping-cart" size={18} color="#212121" />
-              <Text style={styles.headerTitle}>My services</Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => setIsFilterVisible(!isFilterVisible)}
-              style={styles.sortContainerRight}
-            >
-              <Text style={styles.sortText}>Sort by Status</Text>
-              <Icon name="filter-list" size={24} color="#000" />
+      {/* TOP BAR */}
+      <View style={styles.topBar}>
+        <Text style={styles.topBarTitle}>My Services</Text>
+        <TouchableOpacity
+          onPress={() => {
+            setSearchActive(!searchActive);
+            setSearchText('');
+          }}
+        >
+          <Icon name="search" size={24} color={isDarkMode ? '#fff' : '#000'} />
+        </TouchableOpacity>
+      </View>
+
+      {/* SEARCH BOX or TAB BAR */}
+      {searchActive ? (
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search services..."
+            placeholderTextColor="#999"
+            value={searchText}
+            onChangeText={setSearchText}
+          />
+        </View>
+      ) : (
+        <View style={styles.tabContainer}>
+          {TABS.map((tab) => {
+            const active = tab === selectedTab;
+            return (
+              <TouchableOpacity
+                key={tab}
+                style={[styles.tabButton, active && styles.tabButtonActive]}
+                onPress={() => setSelectedTab(tab)}
+              >
+                <Text style={[styles.tabButtonText, active && styles.tabButtonTextActive]}>
+                  {tab}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+
+      {/* CONTENT */}
+      <View style={styles.contentContainer}>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#ff5722" />
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <MaterialIcons name="error-outline" size={48} color="#FF0000" />
+            <Text style={styles.errorText}>Something went wrong. Please try again.</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={fetchBookings}>
+              <Text style={styles.retryButtonText}>Retry</Text>
             </TouchableOpacity>
           </View>
-
-          {/* Filter Dropdown */}
-          {isFilterVisible && (
-            <View style={styles.dropdownContainer}>
-              <Text style={styles.dropdownTitle}>SORT BY STATUS</Text>
-              {filterOptions.map((option, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.dropdownOption}
-                  onPress={() => toggleFilter(option)}
-                >
-                  <Icon
-                    name={
-                      selectedFilters.includes(option)
-                        ? 'check-box'
-                        : 'check-box-outline-blank'
-                    }
-                    size={20}
-                    color="#4a4a4a"
-                  />
-                  <Text style={styles.dropdownText}>{option}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-
-          <View style={styles.serviceContainer}>
-            {loading ? (
-              // LOADING VIEW (unchanged)
-              <View style={styles.loadingContainer}>
-                <LottieView
-                  source={require('../assets/searchLoading.json')}
-                  autoPlay
-                  loop
-                  style={styles.loadingAnimation}
-                />
-              </View>
-            ) : error ? (
-              // ERROR VIEW with Retry button
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>
-                  Something went wrong. Please try again.
-                </Text>
-                <TouchableOpacity
-                  style={styles.retryButton}
-                  onPress={fetchBookings}
-                >
-                  <Text style={styles.retryButtonText}>Retry</Text>
-                </TouchableOpacity>
-              </View>
-            ) : filteredData.length === 0 ? (
-              // NO-DATA VIEW (unchanged)
-              <View style={styles.noResultsContainer}>
-                <MaterialIcons name="search-off" size={45} color="#000" />
-                <Text style={styles.noResultsText}>No results found</Text>
-                <Text style={styles.noResultsSubText}>
-                  We couldn't find what you were looking for. Please check your
-                  keywords again!
-                </Text>
-              </View>
-            ) : (
-              // FLATLIST (unchanged)
-              <FlatList
-                data={filteredData}
-                renderItem={({item}) => (
-                  <ServiceItem
-                    item={item}
-                    formatDate={formatDate}
-                    styles={styles} // Pass dynamic styles to child
-                  />
-                )}
-                keyExtractor={(item, index) => index.toString()}
-              />
-            )}
+        ) : filteredData.length === 0 ? (
+          <View style={styles.noDataContainer}>
+            <MaterialIcons name="search-off" size={48} color="#888" />
+            <Text style={styles.noDataText}>No results found</Text>
           </View>
-        </SafeAreaView>
-      </TouchableWithoutFeedback>
+        ) : (
+          <FlatList
+            data={filteredData}
+            keyExtractor={(item, index) => `${item.notification_id}_${index}`}
+            renderItem={({ item }) => <ServiceItemCard item={item} styles={styles} tab={selectedTab} />}
+            contentContainerStyle={styles.listContent}
+          />
+        )}
+      </View>
     </SafeAreaView>
   );
 };
 
-/**
- * 3) DYNAMIC STYLES:
- *    This function returns a StyleSheet whose values depend on the device width/height.
- *    If `width >= 600`, we treat it as a tablet and scale up certain styles.
- */
-const dynamicStyles = (width, height) => {
+const dynamicStyles = (width, height, isDarkMode) => {
   const isTablet = width >= 600;
-
   return StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#121212' : '#fff',
     },
-    screenContainer: {
-      flex: 1,
-      backgroundColor: '#FFFFFF',
-    },
-    headerContainer: {
+    /* TOP BAR */
+    topBar: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      backgroundColor: isDarkMode ? '#222' : '#fff',
+      paddingVertical: isTablet ? 16 : 12,
       paddingHorizontal: isTablet ? 24 : 16,
-      paddingVertical: isTablet ? 20 : 16,
-      elevation: 1,
+      elevation: 2,
       shadowColor: '#000',
-      shadowOffset: {width: 0, height: 2},
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      backgroundColor: '#ffffff',
-      zIndex: 1,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
     },
-    sortContainerLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
+    topBarTitle: {
+      fontSize: isTablet ? 22 : 18,
+      fontFamily: 'RobotoSlab-Bold',
+      color: isDarkMode ? '#fff' : '#212121',
     },
-    sortContainerRight: {
-      flexDirection: 'row',
-      alignItems: 'center',
+
+    /* SEARCH BOX */
+    searchContainer: {
+      backgroundColor: isDarkMode ? '#333' : '#F8F8F8',
+      paddingVertical: isTablet ? 12 : 8,
+      paddingHorizontal: isTablet ? 24 : 16,
     },
-    headerTitle: {
-      fontSize: isTablet ? 20 : 18,
-      fontFamily: 'RobotoSlab-SemiBold',
-      color: '#000',
-      marginLeft: 7,
-    },
-    sortText: {
-      fontSize: isTablet ? 18 : 16,
-      marginRight: 8,
-      fontFamily: 'RobotoSlab-SemiBold',
-      color: '#212121',
-    },
-    dropdownContainer: {
-      position: 'absolute',
-      top: isTablet ? 90 : 70,
-      right: isTablet ? 24 : 16,
-      width: isTablet ? 220 : 200,
-      backgroundColor: '#ffffff',
+    searchInput: {
+      backgroundColor: isDarkMode ? '#444' : '#fff',
       borderRadius: 8,
-      padding: isTablet ? 12 : 10,
-      elevation: 5,
-      shadowColor: '#000',
-      shadowOffset: {width: 0, height: 2},
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-      zIndex: 10,
-    },
-    dropdownTitle: {
-      fontSize: isTablet ? 16 : 14,
-      fontFamily: 'RobotoSlab-SemiBold',
-      color: '#212121',
-      marginBottom: 8,
-    },
-    dropdownOption: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: isDarkMode ? '#666' : '#ccc',
       paddingVertical: isTablet ? 10 : 8,
-    },
-    dropdownText: {
-      marginLeft: 8,
+      paddingHorizontal: isTablet ? 14 : 10,
       fontSize: isTablet ? 16 : 14,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#fff' : '#333',
+      fontFamily: 'RobotoSlab-Regular',
+    },
+
+    /* TABS */
+    tabContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: isDarkMode ? '#333' : '#F8F8F8',
+      paddingVertical: isTablet ? 14 : 10,
+    },
+    tabButton: {
+      paddingVertical: isTablet ? 10 : 8,
+      paddingHorizontal: isTablet ? 20 : 14,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: isDarkMode ? '#666' : '#ccc',
+      marginHorizontal: 5,
+    },
+    tabButtonActive: {
+      backgroundColor: '#ff5722',
+      borderColor: '#ff5722',
+    },
+    tabButtonText: {
+      fontSize: isTablet ? 16 : 14,
+      color: isDarkMode ? '#fff' : '#333',
       fontFamily: 'RobotoSlab-Medium',
     },
-    serviceContainer: {
+    tabButtonTextActive: {
+      color: '#fff',
+    },
+
+    /* CONTENT */
+    contentContainer: {
       flex: 1,
       paddingHorizontal: isTablet ? 24 : 16,
-      paddingTop: isTablet ? 15 : 10,
+      paddingTop: isTablet ? 16 : 12,
     },
-    // LOADING
+    listContent: {
+      paddingBottom: isTablet ? 30 : 20,
+    },
+
+    // Loading / Error / No Data
     loadingContainer: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
     },
-    loadingAnimation: {
-      flex: 1,
-      width: '100%',
-      height: '100%',
-    },
-
-    // ERROR
     errorContainer: {
       flex: 1,
       justifyContent: 'center',
@@ -404,130 +363,95 @@ const dynamicStyles = (width, height) => {
     },
     errorText: {
       fontSize: isTablet ? 18 : 16,
-      color: '#000',
-      marginBottom: 10,
+      color: '#FF0000',
+      marginVertical: 10,
       fontFamily: 'RobotoSlab-Medium',
       textAlign: 'center',
     },
     retryButton: {
-      backgroundColor: '#ffffff',
-      borderColor:'#f7f7f7',
-      borderWidth:1,
-      paddingHorizontal: 20,
-      paddingVertical: 10,
-      borderRadius: 5,
+      backgroundColor: isDarkMode ? '#444' : '#FFF',
+      borderWidth: 1,
+      borderColor: '#ff5722',
+      borderRadius: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      marginTop: 10,
     },
     retryButtonText: {
-      color: '#ff4500',
+      color: '#ff5722',
+      fontFamily: 'RobotoSlab-Medium',
       fontSize: isTablet ? 16 : 14,
-      fontFamily: 'RobotoSlab-Medium',
     },
-
-    // NO RESULTS
-    noResultsContainer: {
-      alignItems: 'center',
-      marginTop: isTablet ? 40 : 30,
-      paddingHorizontal: isTablet ? 30 : 20,
-    },
-    noResultsText: {
-      fontSize: isTablet ? 22 : 20,
-      color: '#555555',
-      fontFamily: 'RobotoSlab-Medium',
-    },
-    noResultsSubText: {
-      fontSize: isTablet ? 16 : 14,
-      color: '#777777',
-      textAlign: 'center',
-      marginVertical: isTablet ? 24 : 20,
-      padding: 6,
-      fontFamily: 'RobotoSlab-Medium',
-    },
-
-    // Service Item Styles
-    itemContainer: {
-      backgroundColor: '#ffffff',
-      marginHorizontal: 5,
-      padding: isTablet ? 20 : 18,
-      borderRadius: 10,
-      marginBottom: isTablet ? 14 : 12,
-      shadowColor: '#000',
-      elevation: 1,
-      shadowOffset: {width: 0, height: 2},
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-    },
-    itemMainContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    iconContainer: {
-      width: isTablet ? 50 : 45,
-      height: isTablet ? 50 : 45,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#ff4500',
-      borderRadius: isTablet ? 25 : 22.5,
-      marginRight: 5,
-    },
-    imageContainer:{
-      width: isTablet ? 65 : 60,
-      height: isTablet ? 65 : 60,
-      alignItems: 'center',
-      justifyContent: 'center',
-      // backgroundColor: '#ff4500',
-      borderRadius: isTablet ? 10: 5,
-      marginRight: 5,
-    },
-    itemDetails: {
+    noDataContainer: {
       flex: 1,
-      marginLeft: 5,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
-    title: {
+    noDataText: {
+      marginTop: 8,
+      fontSize: isTablet ? 18 : 16,
+      color: '#888',
+      fontFamily: 'RobotoSlab-Regular',
+    },
+
+    /* CARD LAYOUT */
+    cardContainer: {
+      flexDirection: 'row',
+      backgroundColor: isDarkMode ? '#333' : '#fff',
+      borderRadius: 12,
+      marginBottom: isTablet ? 16 : 12,
+      padding: isTablet ? 16 : 12,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    },
+    cardImage: {
+      width: isTablet ? 80 : 60,
+      height: isTablet ? 80 : 60,
+      borderRadius: 8,
+      marginRight: isTablet ? 14 : 10,
+      backgroundColor: '#eee',
+    },
+    cardInfo: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    cardTitle: {
+      fontSize: isTablet ? 16 : 14,
+      fontFamily: 'RobotoSlab-SemiBold',
+      color: isDarkMode ? '#fff' : '#212121',
+      marginBottom: 4,
+    },
+    cardDate: {
+      fontSize: isTablet ? 14 : 12,
+      fontFamily: 'RobotoSlab-Regular',
+      color: isDarkMode ? '#bbb' : '#777',
+      marginBottom: 4,
+    },
+    cardPrice: {
       fontSize: isTablet ? 16 : 14,
       fontFamily: 'RobotoSlab-Medium',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#333',
     },
-    schedule: {
-      fontSize: isTablet ? 14 : 13,
-      color: '#9e9e9e',
-      fontFamily: 'RobotoSlab-Regular',
+    cardButton: {
+      paddingVertical: isTablet ? 10 : 8,
+      paddingHorizontal: isTablet ? 12 : 10,
+      backgroundColor: '#ff5722',
+      borderRadius: 8,
+      marginLeft: isTablet ? 12 : 8,
     },
-    price: {
-      fontSize: isTablet ? 18 : 16,
-      fontFamily: 'RobotoSlab-Medium',
-      color: '#212121',
-      textAlign: 'right',
-    },
-    paymentDetails: {
+    cardButtonText: {
       fontSize: isTablet ? 14 : 12,
-      color: '#9e9e9e',
-      fontFamily: 'RobotoSlab-Regular',
-      textAlign: 'right',
+      fontFamily: 'RobotoSlab-Medium',
+      color: '#fff',
     },
-    // Cancelled service styles
-    cancelledItemContainer: {
-      backgroundColor: '#f8d7da',
+    cardButtonDisabled: {
+      backgroundColor: '#ccc',
     },
-    cancelledTitle: {
-      textDecorationLine: 'line-through',
-      color: '#a94442',
-    },
-    cancelledSchedule: {
-      color: '#a94442',
-    },
-    cancelledPrice: {
-      textDecorationLine: 'line-through',
-      color: '#a94442',
-    },
-    cancelledPaymentDetails: {
-      color: '#a94442',
-    },
-    cancelledMessage: {
-      marginTop: 8,
-      color: '#a94442',
-      fontSize: isTablet ? 13 : 12,
-      textAlign: 'center',
+    cardButtonTextDisabled: {
+      color: '#888',
     },
   });
 };

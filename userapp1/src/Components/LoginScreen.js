@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -21,10 +21,15 @@ const BG_IMAGE_URL = 'https://i.postimg.cc/rFFQLGRh/Picsart-24-10-01-15-38-43-20
 const LOGO_URL = 'https://i.postimg.cc/hjjpy2SW/Button-1.png';
 const FLAG_ICON_URL = 'https://i.postimg.cc/C1hkm5sR/india-flag-icon-29.png';
 
+// Import theme hook for dark mode support
+import { useTheme } from '../context/ThemeContext';
+
 const LoginScreen = () => {
-  // Grab screen width & height for “media-query–like” logic
+  // Grab screen dimensions for responsiveness
   const { width, height } = useWindowDimensions();
-  const styles = dynamicStyles(width, height);
+  // Extract dark mode flag and generate dynamic styles
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, height, isDarkMode);
 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
@@ -102,7 +107,7 @@ const LoginScreen = () => {
               <TextInput
                 style={styles.input}
                 placeholder="Enter Mobile Number"
-                placeholderTextColor="#9e9e9e"
+                placeholderTextColor={isDarkMode ? "#ccc" : "#9e9e9e"}
                 keyboardType="phone-pad"
                 value={phoneNumber}
                 onChangeText={setPhoneNumber}
@@ -136,19 +141,20 @@ const LoginScreen = () => {
 };
 
 // ------------------------------------------
-// "Dynamic" styles with dimension-based logic
+// Dynamic styles with dark mode support
 // ------------------------------------------
-const dynamicStyles = (width, height) => {
+const dynamicStyles = (width, height, isDarkMode) => {
   const isTablet = width >= 600;
 
   return StyleSheet.create({
     root: {
       flex: 1,
     },
-    // This ensures the background fills the entire screen.
+    // Ensure the background fills the entire screen
     backgroundImage: {
       ...StyleSheet.absoluteFillObject,
       zIndex: -1,
+      opacity: isDarkMode ? 0.8 : 1, // Optionally adjust background opacity for dark mode
     },
     container: {
       flex: 1,
@@ -157,16 +163,16 @@ const dynamicStyles = (width, height) => {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      // Increase side padding on bigger screens
       paddingHorizontal: isTablet ? 40 : 20,
     },
     solverText: {
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontWeight: 'bold',
     },
     description: {
       flexDirection: 'column',
       marginLeft: isTablet ? 20 : 10,
+      marginBottom: isTablet ? 30 : 20,
     },
     logoContainer: {
       flexDirection: 'row',
@@ -183,17 +189,18 @@ const dynamicStyles = (width, height) => {
       fontSize: isTablet ? 30 : 26,
       lineHeight: isTablet ? 32 : 26,
       fontFamily: 'RobotoSlab-Bold',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       width: isTablet ? 120 : 100,
     },
     subheading: {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-SemiBold',
-      color: '#333',
+      color: isDarkMode ? '#ccc' : '#333',
+      textAlign: 'center',
     },
     tagline: {
       fontSize: isTablet ? 16 : 14,
-      color: '#666',
+      color: isDarkMode ? '#aaa' : '#666',
       textAlign: 'center',
       paddingBottom: isTablet ? 80 : 70,
       fontFamily: 'RobotoSlab-Regular',
@@ -201,7 +208,7 @@ const dynamicStyles = (width, height) => {
     inputContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#333' : '#fff',
       borderRadius: 10,
       paddingHorizontal: isTablet ? 15 : 10,
       marginBottom: 20,
@@ -213,7 +220,7 @@ const dynamicStyles = (width, height) => {
       flexDirection: 'row',
       alignItems: 'center',
       borderRightWidth: 1,
-      borderColor: '#ccc',
+      borderColor: isDarkMode ? '#555' : '#ccc',
       paddingRight: 10,
       width: isTablet ? 90 : 80,
     },
@@ -223,7 +230,7 @@ const dynamicStyles = (width, height) => {
     },
     picker: {
       fontSize: isTablet ? 19 : 17,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       padding: 10,
       fontFamily: 'RobotoSlab-Medium',
     },
@@ -231,7 +238,7 @@ const dynamicStyles = (width, height) => {
       flex: 1,
       height: isTablet ? 60 : 56,
       paddingLeft: 10,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Medium',
     },

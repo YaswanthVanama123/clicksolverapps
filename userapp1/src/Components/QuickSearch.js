@@ -1,9 +1,12 @@
-import React, {useState, useEffect, useCallback} from 'react';
-import {View, TextInput, StyleSheet} from 'react-native';
-import {useNavigation} from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, TextInput, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext'; // Import theme hook
 
 const QuickSearch = () => {
+  const { isDarkMode } = useTheme(); // Get dark mode state
+  const styles = dynamicStyles(isDarkMode);
+
   const initialPlaceholder = 'Search for ';
   const additionalTexts = [
     'electrician',
@@ -49,43 +52,41 @@ const QuickSearch = () => {
   }, [navigation]);
 
   return (
-      
-        <View style={styles.container}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder={placeholderText}
-            placeholderTextColor="#000"
-            fontFamily="RobotoSlab-Medium"
-            value={searchQuery}
-            onChangeText={handleInputChange}
-            onFocus={handleFocus}
-            onBlur={() => setTimeout(() => setIsFocused(false), 100)}
-          />
-        </View>
-      
+    <View style={styles.container}>
+      <TextInput
+        style={styles.searchInput}
+        placeholder={placeholderText}
+        placeholderTextColor={isDarkMode ? "#aaa" : "#000"}
+        fontFamily="RobotoSlab-Medium"
+        value={searchQuery}
+        onChangeText={handleInputChange}
+        onFocus={handleFocus}
+        onBlur={() => setTimeout(() => setIsFocused(false), 100)}
+      />
+    </View>
   );
 };
 
-const styles = StyleSheet.create({
-
+// 🎨 **Dynamic Styles for Light & Dark Mode**
+const dynamicStyles = (isDarkMode) => StyleSheet.create({
   container: {
     width: '100%',
     padding: 10,
-    backgroundColor: '#fff',
+    backgroundColor: isDarkMode ? '#121212' : '#fff',
     position: 'sticky',
     top: 0,
     zIndex: 1,
   },
   searchInput: {
     height: 40,
-    borderColor: '#ccc',
+    borderColor: isDarkMode ? '#444' : '#ccc',
     borderWidth: 1,
     borderRadius: 5,
     paddingLeft: 10,
-    backgroundColor: '#ffffff',
+    backgroundColor: isDarkMode ? '#222' : '#ffffff',
     fontWeight: '500',
-    color: '#555555',
-    opacity: 0.5,
+    color: isDarkMode ? '#fff' : '#555',
+    opacity: 0.9,
   },
 });
 

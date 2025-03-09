@@ -7,27 +7,66 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
-  useWindowDimensions,
+  Modal,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import Entypo from 'react-native-vector-icons/Entypo';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import EvilIcons from 'react-native-vector-icons/EvilIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import AntDesign from 'react-native-vector-icons/AntDesign';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LottieView from 'lottie-react-native';
+import { launchImageLibrary } from 'react-native-image-picker';
+// Import global theme hook
+import { useTheme } from '../context/ThemeContext';
+
+const uploadImage = async (uri) => {
+  const apiKey = '287b4ba48139a6a59e75b5a8266bbea2'; // Replace with your ImgBB API key
+  const apiUrl = 'https://api.imgbb.com/1/upload';
+
+  const formData = new FormData();
+  formData.append('key', apiKey);
+  formData.append('image', {
+    uri,
+    type: 'image/jpeg',
+    name: 'photo.jpg',
+  });
+
+  try {
+    const response = await axios.post(apiUrl, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    if (response.status === 200) {
+      return response.data.data.url;
+    } else {
+      throw new Error(`Upload failed with status ${response.status}`);
+    }
+  } catch (error) {
+    console.error('Image upload failed:', error.message);
+    throw error;
+  }
+};
 
 const ProfileScreen = () => {
-  // 1) Get screen width & height
-  const { width, height } = useWindowDimensions();
-  // 2) Generate dynamic styles
-  const styles = dynamicStyles(width, height);
-
   const navigation = useNavigation();
   const [account, setAccount] = useState({});
+  const [image, setImage] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false); // error state
+  const [error, setError] = useState(false);
+
+  // Global theme state
+  const { isDarkMode, toggleTheme } = useTheme();
+
+  // State to control the bottom-sheet modal
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+
+  const styles = dynamicStyles(isDarkMode);
 
   const fetchProfileDetails = async () => {
     try {
@@ -42,21 +81,20 @@ const ProfileScreen = () => {
       setIsLoggedIn(true);
 
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/user/profile`,
+        'http://192.168.55.102:5000/api/user/profile',
         {},
-        {
-          headers: { Authorization: `Bearer ${jwtToken}` },
-        },
+        { headers: { Authorization: `Bearer ${jwtToken}` } },
       );
-
-      const { name, email, phone_number } = response.data;
+      const { name, email, phone_number, profile } = response.data;
+      setImage(profile);
       setAccount({
         name,
         email,
         phoneNumber: phone_number,
+        profile,
       });
-    } catch (error) {
-      console.error('Error fetching profile details:', error);
+    } catch (err) {
+      console.error('Error fetching profile details:', err);
       setError(true);
     } finally {
       setLoading(false);
@@ -67,69 +105,78 @@ const ProfileScreen = () => {
     fetchProfileDetails();
   }, []);
 
+  // Edit / Upload profile image
+  const handleEditImage = async () => {
+    const options = { mediaType: 'photo', quality: 0.8 };
+    launchImageLibrary(options, async (response) => {
+      if (response.didCancel) {
+        console.log('User cancelled image picker');
+      } else if (response.errorMessage) {
+        console.error('ImagePicker Error: ', response.errorMessage);
+      } else if (response.assets && response.assets.length > 0) {
+        const uri = response.assets[0].uri;
+        try {
+          const uploadedUrl = await uploadImage(uri);
+          setImage(uploadedUrl);
+          const jwtToken = await EncryptedStorage.getItem('cs_token');
+          if (jwtToken) {
+            await axios.post(
+              'http://192.168.55.102:5000/api/user/updateProfileImage',
+              { profileImage: uploadedUrl },
+              { headers: { Authorization: `Bearer ${jwtToken}` } }
+            );
+            setAccount((prev) => ({ ...prev, profileImage: uploadedUrl }));
+          }
+        } catch (error) {
+          console.error('Error uploading image: ', error);
+        }
+      }
+    });
+  };
+
+  // Actual logout function
   const handleLogout = async () => {
     try {
       const fcm_token = await EncryptedStorage.getItem('fcm_token');
-
       if (fcm_token) {
-        await axios.post('http://192.168.55.102:5000/api/userLogout', {
-          fcm_token,
-        });
+        await axios.post('http://192.168.55.102:5000/api/userLogout', { fcm_token });
       }
-
       await EncryptedStorage.removeItem('cs_token');
       await EncryptedStorage.removeItem('fcm_token');
       await EncryptedStorage.removeItem('notifications');
       await EncryptedStorage.removeItem('messageBox');
       setIsLoggedIn(false);
-    } catch (error) {
-      console.error('Error logging out:', error);
+      setLogoutModalVisible(false);
+    } catch (err) {
+      console.error('Error logging out:', err);
     }
   };
 
-  const MenuItem = ({ icon, text, onPress }) => (
-    <TouchableOpacity style={styles.menuItem} onPress={onPress}>
-      <MaterialIcons name={icon} size={22} color="#4a4a4a" />
-      <Text style={styles.menuText}>{text}</Text>
-      <Entypo name="chevron-right" size={20} color="#4a4a4a" />
-    </TouchableOpacity>
-  );
+  // Show the bottom-sheet logout modal
+  const confirmLogout = () => {
+    setLogoutModalVisible(true);
+  };
 
-  // Not logged in UI
+  // Hide the bottom-sheet logout modal
+  const closeModal = () => {
+    setLogoutModalVisible(false);
+  };
+
   if (!isLoggedIn) {
     return (
       <View style={styles.loginContainer}>
-        <View style={styles.head}>
-          <Text style={styles.profileTitle}>Profile</Text>
-        </View>
-        <View style={styles.loginInnerContainer}>
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={styles.loginButton}
-              onPress={() => navigation.push('Login')}
-            >
-              <Text style={styles.loginButtonText}>Login or Sign up</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.separator} />
-          <View style={styles.optionsContainer}>
-            <MenuItem
-              icon="help"
-              text="Help & Support"
-              onPress={() => navigation.push('Help')}
-            />
-            <MenuItem
-              icon="info"
-              text="About CS"
-              onPress={() => console.log('Navigate to About CS')}
-            />
-          </View>
+        <Text style={styles.profileTitle}>Profile</Text>
+        <TouchableOpacity style={styles.loginButton} onPress={() => navigation.push('Login')}>
+          <Text style={styles.loginButtonText}>Login or Sign up</Text>
+        </TouchableOpacity>
+        <View style={styles.optionsContainer}>
+          <HelpMenuItem styles={styles} text="Help & Support" onPress={() => navigation.push('Help')} />
+          <AboutCSMenuItem styles={styles} text="About CS" onPress={() => console.log('Navigate to About CS')} />
         </View>
       </View>
     );
   }
 
-  // Loading state UI with Lottie animation at the top, full width, fixed height
   if (isLoggedIn && loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -141,13 +188,10 @@ const ProfileScreen = () => {
             style={styles.loadingAnimation}
           />
         </View>
-        {/* If you want a scrollable area or other content below the animation,
-            you could place more Views or ScrollViews here. */}
       </SafeAreaView>
     );
   }
 
-  // Error state UI with Retry button
   if (isLoggedIn && error) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -164,267 +208,360 @@ const ProfileScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
+        {/* Profile Header */}
         <View style={styles.detailsContainer}>
           <View style={styles.profileContainer}>
-            <View style={styles.profileImage}>
-              <MaterialIcons name="person" size={40} color="#FFFFFF" />
+            <View style={styles.profileImageContainer}>
+              {image ? (
+                <Image source={{ uri: image }} style={styles.profileImage} />
+              ) : (
+                <View style={[styles.profileImage, styles.profilePlaceholder]}>
+                  <MaterialIcons name="person" size={40} color="#FFFFFF" />
+                </View>
+              )}
+              <TouchableOpacity style={styles.editIconContainer} onPress={handleEditImage}>
+                <MaterialIcons name="edit" size={18} color="#FFF" />
+              </TouchableOpacity>
             </View>
             <Text style={styles.profileName}>{account.name}</Text>
           </View>
 
+          {/* Email Field */}
           <View style={styles.inputContainer}>
             <MaterialIcons name="email" size={24} color="#4a4a4a" />
-            <TextInput
-              value={account.email}
-              editable={false}
-              style={styles.input}
-            />
+            <TextInput value={account.email} editable={false} style={styles.input} />
           </View>
 
+          {/* Phone Field */}
           <View style={styles.phoneContainer}>
             <View style={styles.flagAndCode}>
-              <Image
-                source={{ uri: 'https://flagcdn.com/w40/in.png' }}
-                style={styles.flagIcon}
-              />
+              <Image source={{ uri: 'https://flagcdn.com/w40/in.png' }} style={styles.flagIcon} />
               <Text style={styles.countryCode}>+91</Text>
             </View>
-            <TextInput
-              value={account.phoneNumber}
-              editable={false}
-              style={styles.phoneInput}
-            />
+            <TextInput value={account.phoneNumber} editable={false} style={styles.phoneInput} />
           </View>
         </View>
 
         <View style={styles.divider} />
 
         <View style={styles.optionsContainer}>
-          <MenuItem
-            icon="book"
+          {/* Dark/Light Theme Toggle with custom toggle */}
+          <View style={styles.menuItem}>
+            <Ionicons
+              name={isDarkMode ? 'moon-outline' : 'sunny-outline'}
+              size={22}
+              color={styles.iconColor}
+            />
+            <Text style={[styles.menuText, { marginLeft: 12 }]}>
+              {isDarkMode ? 'Dark Theme' : 'Light Theme'}
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.toggleTrack,
+                isDarkMode ? styles.toggleTrackEnabled : styles.toggleTrackDisabled,
+              ]}
+              onPress={toggleTheme}
+            >
+              <View
+                style={[
+                  styles.toggleThumb,
+                  isDarkMode ? styles.toggleThumbEnabled : styles.toggleThumbDisabled,
+                ]}
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Menu Items */}
+          <ProfileMenuItem
+            styles={styles}
             text="My Services"
             onPress={() => navigation.push('RecentServices')}
           />
-          <MenuItem
-            icon="help"
+          <HelpMenuItem
+            styles={styles}
             text="Help & Support"
             onPress={() => navigation.push('Help')}
           />
-          <MenuItem
-            icon="star"
+          <DeleteAccountMenuItem
+            styles={styles}
             text="Account Delete"
             onPress={() => navigation.push('DeleteAccount', { details: account })}
           />
-          <MenuItem
-            icon="mode-edit-outline"
+          <EditProfileMenuItem
+            styles={styles}
             text="Edit Profile"
             onPress={() => navigation.push('EditProfile', { details: account })}
           />
-          <MenuItem
-            icon="mode-edit-outline"
+          <ReferEarnMenuItem
+            styles={styles}
             text="Refer & Earn"
             onPress={() => navigation.push('ReferralScreen')}
           />
-          <MenuItem
-            icon="info"
+          <AboutCSMenuItem
+            styles={styles}
             text="About CS"
-            onPress={() => navigation.push('AboutCS')}
+            onPress={() => navigation.push('OnboardingScreen')}
           />
-
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
+          <LogoutMenuItem styles={styles} text="Logout" onPress={confirmLogout} />
         </View>
       </ScrollView>
+
+      {/* BOTTOM-SHEET LOGOUT CONFIRMATION MODAL */}
+      <Modal
+        visible={logoutModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={closeModal}
+      >
+        <TouchableOpacity
+          style={styles.bottomSheetOverlay}
+          activeOpacity={1}
+          onPress={closeModal}
+        >
+          <View style={styles.bottomSheetContainer}>
+            <View style={styles.bottomSheetCard}>
+              <Text style={styles.bottomSheetTitle}>Logout</Text>
+              <Text style={styles.bottomSheetMessage}>
+                Are you sure you want to log out?
+              </Text>
+              <TouchableOpacity
+                style={styles.logoutConfirmButton}
+                onPress={handleLogout}
+              >
+                <Text style={styles.logoutConfirmButtonText}>Yes, Logout</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.logoutCancelButton}
+                onPress={closeModal}
+              >
+                <Text style={styles.logoutCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 };
 
-const dynamicStyles = (width, height) => {
-  const isTablet = width >= 600;
+/* Menu Item Components */
+const ProfileMenuItem = ({ text, onPress, styles }) => (
+  <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+    <Ionicons name="bookmarks-outline" size={22} color={styles.iconColor} />
+    <Text style={styles.menuText}>{text}</Text>
+  </TouchableOpacity>
+);
 
-  return StyleSheet.create({
+const HelpMenuItem = ({ text, onPress, styles }) => (
+  <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+    <Ionicons name="help-circle-outline" size={22} color={styles.iconColor} />
+    <Text style={styles.menuText}>{text}</Text>
+  </TouchableOpacity>
+);
+
+const DeleteAccountMenuItem = ({ text, onPress, styles }) => (
+  <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+    <MaterialCommunityIcons name="delete-outline" size={22} color={styles.iconColor} />
+    <Text style={styles.menuText}>{text}</Text>
+  </TouchableOpacity>
+);
+
+const EditProfileMenuItem = ({ text, onPress, styles }) => (
+  <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+    <MaterialCommunityIcons name="account-outline" size={22} color={styles.iconColor} />
+    <Text style={styles.menuText}>{text}</Text>
+  </TouchableOpacity>
+);
+
+const ReferEarnMenuItem = ({ text, onPress, styles }) => (
+  <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+    <EvilIcons name="share-apple" size={22} color={styles.iconColor} />
+    <Text style={styles.menuText}>{text}</Text>
+  </TouchableOpacity>
+);
+
+const AboutCSMenuItem = ({ text, onPress, styles }) => (
+  <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+    <AntDesign name="info" size={22} color={styles.iconColor} />
+    <Text style={styles.menuText}>{text}</Text>
+  </TouchableOpacity>
+);
+
+const LogoutMenuItem = ({ text, onPress, styles }) => (
+  <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+    <MaterialIcons name="logout" size={22} color="#FF0000" />
+    <Text style={styles.menuLogoutText}>{text}</Text>
+  </TouchableOpacity>
+);
+
+const dynamicStyles = (isDarkMode) => {
+  const backgroundColor = isDarkMode ? '#121212' : '#fff';
+  const textColor = isDarkMode ? '#fff' : '#333';
+  const inputBackground = isDarkMode ? '#333' : '#F7F7F7';
+  const borderColor = isDarkMode ? '#444' : '#E0E0E0';
+  const iconColor = isDarkMode ? '#fff' : '#4a4a4a';
+
+  const styles = StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: '#fff',
+      backgroundColor,
     },
     container: {
       paddingBottom: 20,
-      backgroundColor: '#fff',
+      backgroundColor,
     },
-    head: {},
     profileTitle: {
-      fontSize: isTablet ? 22 : 20,
-      color: '#212121',
-      fontFamily: 'RobotoSlab-SemiBold',
+      fontSize: 20,
       textAlign: 'center',
+      marginVertical: 20,
+      color: textColor,
     },
     detailsContainer: {
-      padding: isTablet ? 30 : 20,
+      padding: 20,
     },
     profileContainer: {
       alignItems: 'center',
-      marginBottom: isTablet ? 40 : 30,
+      marginBottom: 30,
+    },
+    profileImageContainer: {
+      position: 'relative',
+      width: 80,
+      height: 80,
+      marginBottom: 10,
     },
     profileImage: {
-      width: isTablet ? 100 : 80,
-      height: isTablet ? 100 : 80,
-      borderRadius: isTablet ? 50 : 40,
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+    },
+    profilePlaceholder: {
       backgroundColor: '#FF7043',
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: 10,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 3 },
       shadowOpacity: 0.3,
       shadowRadius: 4,
       elevation: 4,
     },
+    editIconContainer: {
+      position: 'absolute',
+      bottom: 0,
+      right: 0,
+      backgroundColor: '#FF7043',
+      borderRadius: 5,
+      padding: 4,
+    },
     profileName: {
-      fontSize: isTablet ? 24 : 22,
+      fontSize: 22,
+      color: textColor,
       fontFamily: 'RobotoSlab-Medium',
-      color: '#333',
     },
     inputContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#F7F7F7',
-      borderColor: '#E0E0E0',
-      height: isTablet ? 60 : 50,
-      paddingHorizontal: isTablet ? 20 : 15,
-      borderRadius: isTablet ? 14 : 12,
-      marginVertical: isTablet ? 10 : 8,
+      backgroundColor: inputBackground,
+      borderColor,
+      height: 50,
+      paddingHorizontal: 15,
+      borderRadius: 12,
+      marginVertical: 8,
       borderWidth: 1,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 3,
-      elevation: 1,
     },
     input: {
       flex: 1,
-      fontSize: isTablet ? 18 : 16,
+      fontSize: 16,
       fontFamily: 'RobotoSlab-Regular',
       marginLeft: 10,
-      color: '#333',
+      color: textColor,
     },
     phoneContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#F7F7F7',
-      borderColor: '#E0E0E0',
-      height: isTablet ? 60 : 50,
-      paddingHorizontal: isTablet ? 20 : 15,
-      borderRadius: isTablet ? 14 : 12,
-      marginVertical: isTablet ? 10 : 8,
+      backgroundColor: inputBackground,
+      borderColor,
+      height: 50,
+      paddingHorizontal: 15,
+      borderRadius: 12,
+      marginVertical: 8,
       borderWidth: 1,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 3,
-      elevation: 1,
     },
     flagAndCode: {
       flexDirection: 'row',
       alignItems: 'center',
     },
     flagIcon: {
-      width: isTablet ? 28 : 22,
-      height: isTablet ? 22 : 17,
+      width: 22,
+      height: 17,
       marginRight: 8,
     },
     countryCode: {
-      fontSize: isTablet ? 18 : 16,
+      fontSize: 16,
       fontFamily: 'RobotoSlab-Regular',
-      color: '#333',
+      color: textColor,
     },
     phoneInput: {
-      fontSize: isTablet ? 18 : 16,
-      fontFamily: 'RobotoSlab-Regular',
-      color: '#333',
       flex: 1,
       marginLeft: 10,
+      fontSize: 16,
+      fontFamily: 'RobotoSlab-Regular',
+      color: textColor,
     },
     divider: {
-      height: isTablet ? 4 : 3,
-      backgroundColor: '#EDEDED',
+      height: 3,
+      backgroundColor: borderColor,
     },
     optionsContainer: {
-      paddingHorizontal: isTablet ? 30 : 20,
+      paddingHorizontal: 20,
+      marginTop: 10,
     },
     menuItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: isTablet ? 16 : 14,
-      borderBottomColor: '#EDEDED',
-      borderBottomWidth: 1,
+      paddingVertical: 14,
     },
     menuText: {
       flex: 1,
-      fontSize: isTablet ? 18 : 16,
       marginLeft: 12,
-      color: '#333',
+      fontSize: 16,
       fontFamily: 'RobotoSlab-Regular',
+      color: textColor,
     },
-    logoutButton: {
-      backgroundColor: '#fff',
-      paddingVertical: isTablet ? 14 : 12,
-      borderRadius: isTablet ? 14 : 12,
-      alignItems: 'center',
-      marginTop: isTablet ? 40 : 30,
-      borderWidth: 1,
-      borderColor: '#ccc',
-    },
-    logoutText: {
-      color: '#212121',
-      fontFamily: 'RobotoSlab-Medium',
-      fontSize: isTablet ? 18 : 16,
+    menuLogoutText: {
+      flex: 1,
+      marginLeft: 12,
+      fontSize: 16,
+      fontFamily: 'RobotoSlab-Regular',
+      color: '#FF0000',
     },
     loginContainer: {
       flex: 1,
-      backgroundColor: '#fff',
-      paddingTop: isTablet ? 60 : 40,
-      paddingHorizontal: isTablet ? 30 : 20,
-    },
-    loginInnerContainer: {
-      marginTop: isTablet ? 60 : 40,
-      width: '100%',
-    },
-    buttonContainer: {
-      flexDirection: 'row',
-      justifyContent: 'center',
+      backgroundColor,
+      paddingTop: 40,
+      paddingHorizontal: 20,
     },
     loginButton: {
       backgroundColor: '#FF4500',
-      paddingVertical: isTablet ? 14 : 12,
-      borderRadius: isTablet ? 14 : 12,
+      paddingVertical: 12,
+      borderRadius: 12,
       alignItems: 'center',
-      width: isTablet ? 220 : 180,
+      marginVertical: 20,
     },
     loginButtonText: {
       color: '#fff',
-      fontSize: isTablet ? 18 : 16,
+      fontSize: 16,
       fontFamily: 'RobotoSlab-Medium',
     },
-    separator: {
-      height: 12,
-      backgroundColor: '#F0F0F0',
-      marginVertical: isTablet ? 30 : 20,
-    },
-    // LOADING & ERROR
     loadingContainer: {
-      // remove flex: 1 to avoid filling entire screen
       width: '100%',
-      height: 300,        // fixed height for the top portion
-      backgroundColor: '#fff',
+      height: 300,
+      backgroundColor,
       alignItems: 'center',
       justifyContent: 'flex-start',
     },
     loadingAnimation: {
       width: '100%',
       height: '100%',
-      // optional: 'cover' so the animation scales properly
-      // resizeMode: 'cover',
     },
     errorContainer: {
       flex: 1,
@@ -433,8 +570,8 @@ const dynamicStyles = (width, height) => {
       paddingHorizontal: 16,
     },
     errorText: {
-      fontSize: isTablet ? 18 : 16,
-      color: '#000',
+      fontSize: 16,
+      color: textColor,
       marginBottom: 10,
       fontFamily: 'RobotoSlab-Medium',
       textAlign: 'center',
@@ -447,10 +584,103 @@ const dynamicStyles = (width, height) => {
     },
     retryButtonText: {
       color: '#fff',
-      fontSize: isTablet ? 16 : 14,
+      fontSize: 14,
+      fontFamily: 'RobotoSlab-Medium',
+    },
+    /* --- Custom Toggle Styles --- */
+    toggleTrack: {
+      width: 50,
+      height: 30,
+      borderRadius: 15,
+      padding: 2,
+      justifyContent: 'center',
+      marginLeft: 'auto',
+    },
+    toggleTrackEnabled: {
+      backgroundColor: '#FF4500',
+    },
+    toggleTrackDisabled: {
+      backgroundColor: '#E1DAD2',
+    },
+    toggleThumb: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: '#fff',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+      elevation: 3,
+    },
+    toggleThumbEnabled: {
+      alignSelf: 'flex-end',
+    },
+    toggleThumbDisabled: {
+      alignSelf: 'flex-start',
+    },
+    bottomSheetOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.3)',
+      justifyContent: 'flex-end',
+    },
+    bottomSheetContainer: {
+      width: '100%',
+      alignItems: 'center',
+    },
+    bottomSheetCard: {
+      width: '100%',
+      backgroundColor: '#fff',
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingBottom: 30,
+      alignItems: 'center',
+    },
+    bottomSheetTitle: {
+      fontSize: 18,
+      fontFamily: 'RobotoSlab-SemiBold',
+      color: '#D9534F',
+      marginBottom: 10,
+    },
+    bottomSheetMessage: {
+      fontSize: 16,
+      fontFamily: 'RobotoSlab-Regular',
+      color: '#333',
+      marginBottom: 25,
+      textAlign: 'center',
+    },
+    logoutConfirmButton: {
+      width: '100%',
+      backgroundColor: '#ff4500',
+      borderRadius: 8,
+      paddingVertical: 12,
+      alignItems: 'center',
+      marginBottom: 10,
+    },
+    logoutConfirmButtonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontFamily: 'RobotoSlab-Medium',
+    },
+    logoutCancelButton: {
+      width: '100%',
+      backgroundColor: '#fff',
+      borderRadius: 8,
+      paddingVertical: 12,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: '#ccc',
+    },
+    logoutCancelButtonText: {
+      color: '#333',
+      fontSize: 16,
       fontFamily: 'RobotoSlab-Medium',
     },
   });
+
+  return { ...styles, iconColor };
 };
 
 export default ProfileScreen;

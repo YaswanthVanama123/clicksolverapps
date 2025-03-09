@@ -228,7 +228,7 @@ struct tcp_zerocopy_receive {
 #endif
 
 #ifndef UDP_GRO
-#define UDP_GRO 104
+#define UDP_GRO 102
 #endif
 
 #ifndef UDP_MAX_SEGMENTS

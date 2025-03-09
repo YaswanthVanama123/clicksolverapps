@@ -20,7 +20,7 @@ import {
   Easing,
   Linking,
   useWindowDimensions,
-  AppState, // <-- import AppState
+  AppState,
 } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import EncryptedStorage from 'react-native-encrypted-storage';
@@ -36,21 +36,23 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
 import Entypo from 'react-native-vector-icons/Entypo';
 import polyline from '@mapbox/polyline';
 import {SafeAreaView} from 'react-native-safe-area-context';
+// Import your theme hook
+import {useTheme} from '../context/ThemeContext';
 
 // Local images
 const startMarker = require('../assets/start-marker.png');
 const endMarker = require('../assets/end-marker.png');
 
-// Mapbox Access Token
+// Set Mapbox Access Token
 Mapbox.setAccessToken(
   'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw',
 );
 
 const Navigation = () => {
-  // 1) Get screen dimensions
   const {width, height} = useWindowDimensions();
-  // 2) Generate dynamic styles
-  const styles = dynamicStyles(width, height);
+  // Get dark mode flag from theme context and pass it to dynamic styles
+  const {isDarkMode} = useTheme();
+  const styles = dynamicStyles(width, height, isDarkMode);
 
   const route = useRoute();
   const navigation = useNavigation();
@@ -64,8 +66,7 @@ const Navigation = () => {
   const [pin, setPin] = useState('');
   const [serviceArray, setServiceArray] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [confirmationModalVisible, setConfirmationModalVisible] =
-    useState(false);
+  const [confirmationModalVisible, setConfirmationModalVisible] = useState(false);
   const [cameraBounds, setCameraBounds] = useState(null);
   const [showUpArrowService, setShowUpArrowService] = useState(false);
   const [showDownArrowService, setShowDownArrowService] = useState(false);
@@ -171,7 +172,7 @@ const Navigation = () => {
    */
   const renderFractionalStars = (ratingValue = 0) => {
     const totalStars = 5;
-    const starSize = 16; // icon + ratingNumber size
+    const starSize = 16;
     const stars = [];
 
     for (let i = 1; i <= totalStars; i++) {
@@ -195,14 +196,10 @@ const Navigation = () => {
           <AntDesign
             name="star"
             size={starSize}
-            color="#ccc"
-            style={{
-              position: 'absolute',
-              left: 0,
-              top: 0,
-            }}
+            color={isDarkMode ? "#555" : "#ccc"}
+            style={{position: 'absolute', left: 0, top: 0}}
           />
-          {/* Orange star in front, clipped by fraction */}
+          {/* Colored star in front */}
           <View
             style={{
               position: 'absolute',
@@ -321,6 +318,8 @@ const Navigation = () => {
    */
   const fetchOlaRoute = useCallback(async (startPoint, endPoint, waypoints = []) => {
     try {
+      console.log('Ola route start/end (lng, lat) =>', startPoint, endPoint);
+
       const apiKey = 'iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT';
       let url = `https://api.olamaps.io/routing/v1/directions?origin=${startPoint[1]},${startPoint[0]}&destination=${endPoint[1]},${endPoint[0]}&api_key=${apiKey}`;
 
@@ -341,10 +340,24 @@ const Navigation = () => {
         },
       );
 
+      console.log('Ola route raw response:', response.data);
+
+      if (!response.data.routes || response.data.routes.length === 0) {
+        console.log('No routes returned by Ola Maps');
+        return null;
+      }
+
       const routeEncoded = response.data.routes[0].overview_polyline;
+      if (!routeEncoded) {
+        console.log('No overview_polyline in Ola route');
+        return null;
+      }
+
       const decodedCoordinates = polyline
         .decode(routeEncoded)
         .map((coord) => [coord[1], coord[0]]); // [lng, lat]
+
+      console.log('Decoded polyline coordinates:', decodedCoordinates);
 
       return {
         type: 'Feature',
@@ -365,6 +378,9 @@ const Navigation = () => {
   const fetchRoute = useCallback(
     async (startPoint, endPoint) => {
       try {
+        // Log your final points
+        console.log('Fetch route with start:', startPoint, 'end:', endPoint);
+
         const olaRouteData = await fetchOlaRoute(startPoint, endPoint);
         if (
           olaRouteData &&
@@ -373,7 +389,7 @@ const Navigation = () => {
         ) {
           setRouteData(olaRouteData);
         } else {
-          console.error('Route data has empty coordinates:', olaRouteData);
+          console.error('Route data has empty coordinates or is null:', olaRouteData);
         }
       } catch (error) {
         console.error('Error fetching route:', error);
@@ -393,10 +409,17 @@ const Navigation = () => {
         {params: {notification_id: decodedId}},
       );
 
+      console.log('Location details from backend:', response.data);
+
       const {startPoint, endPoint} = response.data;
+      // Check what the server is returning
+      console.log('Raw start/end from server =>', startPoint, endPoint);
+
       // Reverse from [lat, lng] to [lng, lat] if necessary
       const reversedStart = startPoint.map(parseFloat).reverse();
       const reversedEnd = endPoint.map(parseFloat).reverse();
+
+      console.log('Reversed start =>', reversedStart, 'Reversed end =>', reversedEnd);
 
       setLocationDetails({startPoint: reversedStart, endPoint: reversedEnd});
       await fetchRoute(reversedStart, reversedEnd);
@@ -455,30 +478,27 @@ const Navigation = () => {
       }
     }
     return {
-      ne: [maxX, maxY], // [lng, lat]
-      sw: [minX, minY], // [lng, lat]
+      ne: [maxX, maxY],
+      sw: [minX, minY],
     };
   };
 
-  // Whenever cameraBounds changes, (re)fit the map if possible
+  // Fit the camera bounds when they change
   useEffect(() => {
     if (cameraBounds && cameraRef.current) {
+      console.log('Fitting bounds =>', cameraBounds);
       cameraRef.current.fitBounds(
         [cameraBounds.sw[0], cameraBounds.sw[1]],
         [cameraBounds.ne[0], cameraBounds.ne[1]],
-        50 // padding in points
+        50
       );
     }
   }, [cameraBounds]);
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // NEW: Re‐fit the camera whenever the app returns from the background
-  // ─────────────────────────────────────────────────────────────────────────────
+  // Re‐fit the camera when app returns from background
   const appState = useRef(AppState.currentState);
-
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
-      // If we were in background and now we're active, attempt to re‐fit the bounds
       if (
         appState.current.match(/inactive|background/) &&
         nextAppState === 'active'
@@ -498,7 +518,6 @@ const Navigation = () => {
       subscription.remove();
     };
   }, [cameraBounds]);
-  // ─────────────────────────────────────────────────────────────────────────────
 
   // Cancel booking
   const handleCancelBooking = useCallback(async () => {
@@ -639,6 +658,7 @@ const Navigation = () => {
           {locationDetails ? (
             <Mapbox.MapView
               style={styles.map}
+              styleURL={Mapbox.StyleURL.Street} // Optionally ensure a known style
               onDidFinishRenderingMapFully={() => {
                 if (cameraRef.current && cameraBounds) {
                   cameraRef.current.fitBounds(
@@ -649,7 +669,12 @@ const Navigation = () => {
                 }
               }}
             >
-              {/* Use a camera ref instead of bounds prop */}
+              {/* If you want to test ignoring the bounding box, set a fixed camera
+                <Mapbox.Camera
+                  zoomLevel={14}
+                  centerCoordinate={[80.6, 16.8]}
+                />
+              */}
               <Mapbox.Camera ref={cameraRef} />
 
               <Mapbox.Images
@@ -659,7 +684,6 @@ const Navigation = () => {
                 }}
               />
 
-              {/* Marker Layer */}
               {markers && (
                 <Mapbox.ShapeSource id="markerSource" shape={markers}>
                   <Mapbox.SymbolLayer
@@ -674,17 +698,26 @@ const Navigation = () => {
                   />
                 </Mapbox.ShapeSource>
               )}
-
-              {/* Route Layer */}
               {routeData && (
                 <Mapbox.ShapeSource id="routeSource" shape={routeData}>
-                  <Mapbox.LineLayer id="routeLine" style={styles.routeLine} />
+                  <Mapbox.LineLayer
+                    id="routeLine"
+                    style={{
+                      // For debugging, make it bright red and thick
+                      lineColor: 'red',
+                      lineWidth: 6,
+                      lineCap: 'round',
+                      lineJoin: 'round',
+                    }}
+                  />
                 </Mapbox.ShapeSource>
               )}
             </Mapbox.MapView>
           ) : (
             <View style={styles.loadingContainer}>
-              <Text>Loading Map...</Text>
+              <Text style={{color: isDarkMode ? '#fff' : '#000'}}>
+                Loading Map...
+              </Text>
             </View>
           )}
 
@@ -695,9 +728,12 @@ const Navigation = () => {
             disabled={isLoading}
             activeOpacity={0.7}
           >
-            {/* Rotate this view when isLoading is true */}
             <Animated.View style={{transform: [{rotate: spin}]}}>
-              <MaterialIcons name="refresh" size={22} color="#212121" />
+              <MaterialIcons
+                name="refresh"
+                size={22}
+                color={isDarkMode ? '#fff' : '#212121'}
+              />
             </Animated.View>
           </TouchableOpacity>
         </View>
@@ -709,7 +745,6 @@ const Navigation = () => {
           </View>
 
           <View style={styles.firstContainer}>
-            {/* Location */}
             <View style={styles.locationContainer}>
               <Image
                 source={{
@@ -725,14 +760,17 @@ const Navigation = () => {
             </View>
           </View>
 
-          {/* Service & Commander Details */}
           <View style={styles.serviceDetails}>
             <View>
               <Text style={styles.serviceType}>Service</Text>
               <View style={{position: 'relative'}}>
                 {showUpArrowService && (
                   <View style={styles.arrowUpContainer}>
-                    <Entypo name="chevron-small-up" size={20} color="#9e9e9e" />
+                    <Entypo
+                      name="chevron-small-up"
+                      size={20}
+                      color={isDarkMode ? '#ccc' : '#9e9e9e'}
+                    />
                   </View>
                 )}
 
@@ -756,7 +794,7 @@ const Navigation = () => {
                     <Entypo
                       name="chevron-small-down"
                       size={20}
-                      color="#9e9e9e"
+                      color={isDarkMode ? '#ccc' : '#9e9e9e'}
                     />
                   </View>
                 )}
@@ -773,7 +811,6 @@ const Navigation = () => {
                 </View>
               </View>
 
-              {/* Cancel Button */}
               <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={handleCancelModal}
@@ -782,7 +819,6 @@ const Navigation = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Commander/Worker Details with Rating */}
             <View style={styles.workerDetailsContainer}>
               <View style={styles.profileImage}>
                 {addressDetails.profile && (
@@ -796,11 +832,9 @@ const Navigation = () => {
 
               {addressDetails.rating !== undefined && (
                 <View style={styles.ratingContainer}>
-                  {/* Numeric rating (e.g. 4.3) */}
                   <Text style={styles.ratingNumber}>
                     {Number(addressDetails.rating).toFixed(1)}
                   </Text>
-                  {/* Fractional stars */}
                   {renderFractionalStars(Number(addressDetails.rating))}
                 </View>
               )}
@@ -842,7 +876,11 @@ const Navigation = () => {
               onPress={closeModal}
               style={styles.backButtonContainer}
             >
-              <AntDesign name="arrowleft" size={20} color="black" />
+              <AntDesign
+                name="arrowleft"
+                size={20}
+                color={isDarkMode ? '#fff' : 'black'}
+              />
             </TouchableOpacity>
 
             <View style={styles.modalContainer}>
@@ -858,21 +896,33 @@ const Navigation = () => {
                 onPress={openConfirmationModal}
               >
                 <Text style={styles.reasonText}>Found a better price</Text>
-                <AntDesign name="right" size={16} color="#4a4a4a" />
+                <AntDesign
+                  name="right"
+                  size={16}
+                  color={isDarkMode ? '#fff' : '#4a4a4a'}
+                />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.reasonButton}
                 onPress={openConfirmationModal}
               >
                 <Text style={styles.reasonText}>Wrong work location</Text>
-                <AntDesign name="right" size={16} color="#4a4a4a" />
+                <AntDesign
+                  name="right"
+                  size={16}
+                  color={isDarkMode ? '#fff' : '#4a4a4a'}
+                />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.reasonButton}
                 onPress={openConfirmationModal}
               >
                 <Text style={styles.reasonText}>Wrong service booked</Text>
-                <AntDesign name="right" size={16} color="#4a4a4a" />
+                <AntDesign
+                  name="right"
+                  size={16}
+                  color={isDarkMode ? '#fff' : '#4a4a4a'}
+                />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.reasonButton}
@@ -881,14 +931,22 @@ const Navigation = () => {
                 <Text style={styles.reasonText}>
                   More time to assign a commander
                 </Text>
-                <AntDesign name="right" size={16} color="#4a4a4a" />
+                <AntDesign
+                  name="right"
+                  size={16}
+                  color={isDarkMode ? '#fff' : '#4a4a4a'}
+                />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.reasonButton}
                 onPress={openConfirmationModal}
               >
                 <Text style={styles.reasonText}>Others</Text>
-                <AntDesign name="right" size={16} color="#4a4a4a" />
+                <AntDesign
+                  name="right"
+                  size={16}
+                  color={isDarkMode ? '#fff' : '#4a4a4a'}
+                />
               </TouchableOpacity>
             </View>
           </View>
@@ -907,7 +965,11 @@ const Navigation = () => {
                 onPress={closeConfirmationModal}
                 style={styles.backButtonContainer}
               >
-                <Entypo name="cross" size={20} color="black" />
+                <Entypo
+                  name="cross"
+                  size={20}
+                  color={isDarkMode ? '#fff' : 'black'}
+                />
               </TouchableOpacity>
             </View>
 
@@ -916,8 +978,7 @@ const Navigation = () => {
                 Are you sure you want to cancel this Service?
               </Text>
               <Text style={styles.confirmationSubtitle}>
-                Please avoid canceling – we’re working to connect you with
-                the best expert to solve your problem.
+                Please avoid canceling – we’re working to connect you with the best expert to solve your problem.
               </Text>
 
               <TouchableOpacity
@@ -934,21 +995,18 @@ const Navigation = () => {
   );
 };
 
-/**
- * A helper function that returns a StyleSheet whose values depend on the device width/height.
- * If `width >= 600`, we treat it as a tablet and scale up certain styles (font sizes, spacing, etc.).
- */
-const dynamicStyles = (width, height) => {
+const dynamicStyles = (width, height, isDarkMode) => {
   const isTablet = width >= 600;
   const bottomCardHeight = isTablet ? 380 : 330;
 
   return StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
     },
     container: {
       flex: 1,
+      backgroundColor: isDarkMode ? '#121212' : '#f5f5f5',
     },
     mapContainer: {
       flex: 1,
@@ -956,9 +1014,12 @@ const dynamicStyles = (width, height) => {
     map: {
       flex: 1,
     },
+    // For debugging, let's make lineColor red, lineWidth 6
     routeLine: {
-      lineColor: '#212121',
-      lineWidth: isTablet ? 4 : 3,
+      lineColor: 'red',
+      lineWidth: isTablet ? 6 : 6,
+      lineCap: 'round',
+      lineJoin: 'round',
     },
     loadingContainer: {
       flex: 1,
@@ -969,7 +1030,7 @@ const dynamicStyles = (width, height) => {
       position: 'absolute',
       top: isTablet ? 40 : 30,
       right: isTablet ? 30 : 20,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#333' : '#ffffff',
       borderRadius: 25,
       padding: isTablet ? 10 : 7,
       zIndex: 999,
@@ -977,7 +1038,7 @@ const dynamicStyles = (width, height) => {
     },
     detailsContainer: {
       height: bottomCardHeight,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#333' : '#ffffff',
       padding: isTablet ? 20 : 15,
       paddingHorizontal: isTablet ? 30 : 20,
       borderTopLeftRadius: 20,
@@ -990,7 +1051,7 @@ const dynamicStyles = (width, height) => {
     },
     minimumChargesContainer: {
       height: isTablet ? 50 : 46,
-      backgroundColor: '#f6f6f6',
+      backgroundColor: isDarkMode ? '#444' : '#f6f6f6',
       borderRadius: 32,
       flexDirection: 'row',
       justifyContent: 'center',
@@ -1003,7 +1064,7 @@ const dynamicStyles = (width, height) => {
       marginBottom: 10,
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Bold',
-      color: '#1D2951',
+      color: isDarkMode ? '#fff' : '#1D2951',
     },
     firstContainer: {
       flexDirection: 'row',
@@ -1027,7 +1088,7 @@ const dynamicStyles = (width, height) => {
     locationAddress: {
       fontSize: isTablet ? 15 : 13,
       fontFamily: 'RobotoSlab-Regular',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     serviceDetails: {
       flexDirection: 'row',
@@ -1039,7 +1100,7 @@ const dynamicStyles = (width, height) => {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Medium',
       marginTop: 10,
-      color: '#9e9e9e',
+      color: isDarkMode ? '#aaa' : '#9e9e9e',
     },
     servicesNamesContainer: {
       width: '90%',
@@ -1053,7 +1114,7 @@ const dynamicStyles = (width, height) => {
       marginBottom: 5,
     },
     serviceText: {
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Medium',
       fontSize: isTablet ? 15 : 14,
       marginTop: 5,
@@ -1064,7 +1125,7 @@ const dynamicStyles = (width, height) => {
       left: 0,
       right: 0,
       alignItems: 'center',
-      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+      backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)',
       zIndex: 1,
     },
     arrowDownContainer: {
@@ -1073,7 +1134,7 @@ const dynamicStyles = (width, height) => {
       left: 0,
       right: 0,
       alignItems: 'center',
-      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+      backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)',
       zIndex: 1,
     },
     pinContainer: {
@@ -1083,7 +1144,7 @@ const dynamicStyles = (width, height) => {
       paddingVertical: 10,
     },
     pinText: {
-      color: '#9e9e9e',
+      color: isDarkMode ? '#ccc' : '#9e9e9e',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 20 : 18,
       paddingTop: 10,
@@ -1098,16 +1159,16 @@ const dynamicStyles = (width, height) => {
       justifyContent: 'center',
       alignItems: 'center',
       borderWidth: 1,
-      borderColor: '#212121',
+      borderColor: isDarkMode ? '#fff' : '#212121',
       borderRadius: 5,
     },
     pinNumber: {
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 16 : 14,
     },
     cancelButton: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#333' : '#FFFFFF',
       borderRadius: 10,
       justifyContent: 'center',
       alignItems: 'center',
@@ -1117,7 +1178,7 @@ const dynamicStyles = (width, height) => {
     },
     cancelText: {
       fontSize: isTablet ? 15 : 13,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
       fontFamily: 'RobotoSlab-Regular',
     },
     workerDetailsContainer: {
@@ -1135,7 +1196,7 @@ const dynamicStyles = (width, height) => {
       borderRadius: 50,
     },
     workerName: {
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       textAlign: 'center',
       marginTop: 5,
       fontSize: isTablet ? 16 : 14,
@@ -1153,13 +1214,13 @@ const dynamicStyles = (width, height) => {
     ratingNumber: {
       marginRight: 5,
       fontSize: isTablet ? 18 : 16,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
     },
     ServiceNumber: {
       fontSize: isTablet ? 16 : 15,
       fontFamily: 'RobotoSlab-Regular',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     iconsContainer: {
       flexDirection: 'row',
@@ -1167,7 +1228,7 @@ const dynamicStyles = (width, height) => {
       marginTop: 10,
     },
     actionButton: {
-      backgroundColor: '#EFDCCB',
+      backgroundColor: isDarkMode ? '#555' : '#EFDCCB',
       height: isTablet ? 40 : 35,
       width: isTablet ? 40 : 35,
       borderRadius: 50,
@@ -1180,7 +1241,7 @@ const dynamicStyles = (width, height) => {
       justifyContent: 'flex-end',
     },
     modalContainer: {
-      backgroundColor: 'white',
+      backgroundColor: isDarkMode ? '#333' : 'white',
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
       padding: isTablet ? 30 : 20,
@@ -1191,16 +1252,16 @@ const dynamicStyles = (width, height) => {
       fontFamily: 'RobotoSlab-Medium',
       textAlign: 'center',
       marginBottom: 5,
-      color: '#000',
+      color: isDarkMode ? '#fff' : '#000',
     },
     modalSubtitle: {
       fontSize: isTablet ? 16 : 14,
       fontFamily: 'RobotoSlab-Regular',
-      color: '#666',
+      color: isDarkMode ? '#ccc' : '#666',
       textAlign: 'center',
       marginBottom: 10,
       borderBottomWidth: 1,
-      borderBottomColor: '#eee',
+      borderBottomColor: isDarkMode ? '#555' : '#eee',
       paddingBottom: 10,
     },
     reasonButton: {
@@ -1209,12 +1270,12 @@ const dynamicStyles = (width, height) => {
       alignItems: 'center',
       paddingVertical: isTablet ? 18 : 15,
       borderBottomWidth: 1,
-      borderBottomColor: '#eee',
+      borderBottomColor: isDarkMode ? '#555' : '#eee',
     },
     reasonText: {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Regular',
-      color: '#333',
+      color: isDarkMode ? '#fff' : '#333',
     },
     backButtonContainer: {
       width: isTablet ? 45 : 40,
@@ -1222,7 +1283,7 @@ const dynamicStyles = (width, height) => {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: 'white',
+      backgroundColor: isDarkMode ? '#333' : 'white',
       borderRadius: 50,
       elevation: 5,
       shadowColor: '#000',
@@ -1238,7 +1299,7 @@ const dynamicStyles = (width, height) => {
       justifyContent: 'flex-end',
     },
     confirmationModalContainer: {
-      backgroundColor: 'white',
+      backgroundColor: isDarkMode ? '#333' : 'white',
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
       paddingTop: isTablet ? 50 : 40,
@@ -1252,14 +1313,14 @@ const dynamicStyles = (width, height) => {
       textAlign: 'center',
       paddingBottom: 10,
       marginBottom: 5,
-      color: '#000',
+      color: isDarkMode ? '#fff' : '#000',
       borderBottomWidth: 1,
-      borderBottomColor: '#eee',
+      borderBottomColor: isDarkMode ? '#555' : '#eee',
     },
     confirmationSubtitle: {
       fontSize: isTablet ? 16 : 14,
       fontFamily: 'RobotoSlab-Regular',
-      color: '#666',
+      color: isDarkMode ? '#ccc' : '#666',
       textAlign: 'center',
       marginBottom: 20,
       paddingBottom: 10,

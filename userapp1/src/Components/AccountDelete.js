@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,59 +10,37 @@ import {
   ActivityIndicator,
   useWindowDimensions,
   Modal,
-  ScrollView, // <-- Import Modal
+  ScrollView,
 } from 'react-native';
-import {useRoute, useNavigation, CommonActions} from '@react-navigation/native';
+import { useRoute, useNavigation, CommonActions } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
+// Import theme hook for dark mode support
+import { useTheme } from '../context/ThemeContext';
 
 const AccountDelete = () => {
-  const {width, height} = useWindowDimensions();
-  const styles = dynamicStyles(width, height);
+  const { width, height } = useWindowDimensions();
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, height, isDarkMode);
 
   const navigation = useNavigation();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [updateLoading, setUpdateLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false); // <-- Modal visibility state
+  const [modalVisible, setModalVisible] = useState(false); // Modal visibility state
 
   const route = useRoute();
 
   const fetchProfileDetails = async () => {
-    const {details} = route.params;
+    const { details } = route.params;
     setEmail(details.email);
     setPhone(details.phoneNumber);
     setFullName(details.name);
   };
 
-  const handleLogout = async () => {
-    try {
-      const fcm_token = await EncryptedStorage.getItem('fcm_token');
-
-      if (fcm_token) {
-        await axios.post('http://192.168.55.102:5000/api/userLogout', {
-          fcm_token,
-        });
-      }
-
-      await EncryptedStorage.removeItem('cs_token');
-      await EncryptedStorage.removeItem('fcm_token');
-      await EncryptedStorage.removeItem('notifications');
-      await EncryptedStorage.removeItem('messageBox');
-
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
-      });
-    
-    } catch (error) {
-      console.error('Error logging out:', error);
-    }
-  };
-
-  // Function that actually updates the profile
+  // Function that actually updates the profile (in this case, deletes the account)
   const updateProfile = async () => {
     try {
       setUpdateLoading(true);
@@ -75,17 +53,15 @@ const AccountDelete = () => {
 
       const response = await axios.post(
         `http://192.168.55.102:5000/api/user/details/delete`,
-        {name: fullName, email, phone},
+        { name: fullName, email, phone },
         {
-          headers: {Authorization: `Bearer ${jwtToken}`},
-        },
+          headers: { Authorization: `Bearer ${jwtToken}` },
+        }
       );
 
       if (response.status === 200) {
-
-        handleLogout()
-
-        
+        // On successful account deletion, perform logout
+        handleLogout();
       } else {
         console.error('Failed to update profile. Status: ', response.status);
       }
@@ -96,12 +72,33 @@ const AccountDelete = () => {
     }
   };
 
-  // Open the confirmation modal when Update Profile is pressed
+  // Logout function: clear tokens and navigate to Login
+  const handleLogout = async () => {
+    try {
+      const fcm_token = await EncryptedStorage.getItem('fcm_token');
+      if (fcm_token) {
+        await axios.post('http://192.168.55.102:5000/api/userLogout', { fcm_token });
+      }
+      await EncryptedStorage.removeItem('cs_token');
+      await EncryptedStorage.removeItem('fcm_token');
+      await EncryptedStorage.removeItem('notifications');
+      await EncryptedStorage.removeItem('messageBox');
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
+
+  // Open the confirmation modal when Delete Account is pressed
   const openConfirmationModal = () => {
     setModalVisible(true);
   };
 
-  // Close modal and then proceed with update
+  // Close modal and then proceed with update (delete)
   const handleUpdate = () => {
     setModalVisible(false);
     updateProfile();
@@ -113,82 +110,89 @@ const AccountDelete = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-
-      <View style={styles.header}>
-        <Icon
-          name="arrow-back"
-          size={24}
-          color="#000"
-          onPress={() => navigation.goBack()}
-        />
-        <Text style={styles.headerText}>Account Delete</Text>
-      </View>
       <ScrollView>
-      <View style={styles.form}>
-        <View>
-          <Text style={styles.label}>Full Name</Text>
-          <TextInput
-            style={styles.input}
-            value={fullName}
-            editable={false}
-            onChangeText={setFullName}
-            testID="fullName-input"
+        <View style={styles.header}>
+          <Icon
+            name="arrow-back"
+            size={24}
+            color={isDarkMode ? '#fff' : '#000'}
+            onPress={() => navigation.goBack()}
           />
+          <Text style={styles.headerText}>Account Delete</Text>
         </View>
 
-        <View>
-          <Text style={styles.label}>Email Address</Text>
-          <View style={styles.inputWithIcon}>
-            <Icon name="email" size={20} color="gray" />
+        <View style={styles.form}>
+          <View>
+            <Text style={styles.label}>Full Name</Text>
             <TextInput
-              style={styles.inputText}
-              value={email}
+              style={styles.input}
+              value={fullName}
               editable={false}
-              onChangeText={setEmail}
-              keyboardType="email-address"
+              onChangeText={setFullName}
+              testID="fullName-input"
             />
           </View>
-        </View>
 
-        <View>
-          <Text style={styles.label}>Phone Number</Text>
-          <View style={styles.phoneInputContainer}>
-            <Image
-              source={{
-                uri: 'https://upload.wikimedia.org/wikipedia/en/thumb/4/41/Flag_of_India.svg/1200px-Flag_of_India.svg.png',
-              }}
-              style={styles.flagIcon}
-            />
-            <Text style={styles.callingCode}>+ 91</Text>
-            <TextInput
-              style={styles.phoneInput}
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              editable={false}
-              selectTextOnFocus={false}
-            />
+          <View>
+            <Text style={styles.label}>Email Address</Text>
+            <View style={styles.inputWithIcon}>
+              <Icon name="email" size={20} color="gray" />
+              <TextInput
+                style={styles.inputText}
+                value={email}
+                editable={false}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+              />
+            </View>
           </View>
-        </View>
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={openConfirmationModal}
-          disabled={updateLoading}>
-          {updateLoading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Delete Account</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+          <View>
+            <Text style={styles.label}>Phone Number</Text>
+            <View style={styles.phoneInputContainer}>
+              <Image
+                source={{
+                  uri: 'https://upload.wikimedia.org/wikipedia/en/thumb/4/41/Flag_of_India.svg/1200px-Flag_of_India.svg.png',
+                }}
+                style={styles.flagIcon}
+              />
+              <Text style={styles.callingCode}>+ 91</Text>
+              <TextInput
+                style={styles.phoneInput}
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                editable={false}
+                selectTextOnFocus={false}
+              />
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={openConfirmationModal}
+            disabled={updateLoading}
+          >
+            {updateLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Delete Account</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
 
       {/* Modal for confirmation */}
       <Modal
         animationType="slide"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}>
+        onRequestClose={() => setModalVisible(false)}
+      >
+        {/* 
+          The modal container is anchored to the bottom 
+          (flex-end), and the content has top-radius. 
+        */}
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Confirm Delete</Text>
@@ -197,31 +201,32 @@ const AccountDelete = () => {
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={[styles.modalButton, {backgroundColor: '#ccc'}]}
-                onPress={() => setModalVisible(false)}>
+                style={[styles.modalButton, { backgroundColor: '#ccc' }]}
+                onPress={() => setModalVisible(false)}
+              >
                 <Text style={styles.modalButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, {backgroundColor: '#FF4500'}]}
-                onPress={handleUpdate}>
+                style={[styles.modalButton, { backgroundColor: '#FF4500' }]}
+                onPress={handleUpdate}
+              >
                 <Text style={styles.modalButtonText}>Delete</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-      </ScrollView>
     </SafeAreaView>
   );
 };
 
-const dynamicStyles = (width, height) => {
+const dynamicStyles = (width, height, isDarkMode) => {
   const isTablet = width >= 600;
 
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#121212' : '#fff',
       paddingHorizontal: isTablet ? 30 : 20,
     },
     header: {
@@ -233,7 +238,7 @@ const dynamicStyles = (width, height) => {
       fontSize: isTablet ? 24 : 20,
       fontFamily: 'RobotoSlab-SemiBold',
       marginLeft: isTablet ? 15 : 10,
-      color: '#1D2951',
+      color: isDarkMode ? '#fff' : '#1D2951',
       textAlign: 'center',
     },
     form: {
@@ -244,18 +249,18 @@ const dynamicStyles = (width, height) => {
     label: {
       fontSize: isTablet ? 16 : 14,
       fontFamily: 'RobotoSlab-Medium',
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
       marginBottom: 5,
       marginTop: isTablet ? 20 : 15,
     },
     input: {
       height: isTablet ? 55 : 50,
       borderWidth: 1,
-      borderColor: '#ddd',
+      borderColor: isDarkMode ? '#444' : '#ddd',
       borderRadius: 8,
       paddingHorizontal: 10,
-      backgroundColor: '#f9f9f9',
-      color: '#212121',
+      backgroundColor: isDarkMode ? '#1e1e1e' : '#f9f9f9',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 18 : 16,
     },
@@ -263,15 +268,15 @@ const dynamicStyles = (width, height) => {
       flexDirection: 'row',
       alignItems: 'center',
       borderWidth: 1,
-      borderColor: '#ddd',
+      borderColor: isDarkMode ? '#444' : '#ddd',
       borderRadius: 8,
       paddingHorizontal: 10,
-      backgroundColor: '#f9f9f9',
+      backgroundColor: isDarkMode ? '#1e1e1e' : '#f9f9f9',
     },
     inputText: {
       flex: 1,
       marginLeft: isTablet ? 15 : 10,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 18 : 16,
     },
@@ -279,10 +284,10 @@ const dynamicStyles = (width, height) => {
       flexDirection: 'row',
       alignItems: 'center',
       borderWidth: 1,
-      borderColor: '#ddd',
+      borderColor: isDarkMode ? '#444' : '#ddd',
       borderRadius: 8,
       paddingHorizontal: 10,
-      backgroundColor: '#f9f9f9',
+      backgroundColor: isDarkMode ? '#1e1e1e' : '#f9f9f9',
     },
     flagIcon: {
       width: isTablet ? 30 : 24,
@@ -292,19 +297,19 @@ const dynamicStyles = (width, height) => {
     callingCode: {
       marginRight: 10,
       fontSize: isTablet ? 18 : 16,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
     },
     phoneInput: {
       flex: 1,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 18 : 16,
     },
     button: {
       backgroundColor: '#FF4500',
       height: isTablet ? 55 : 50,
-      borderRadius: 8,
+      borderRadius: isTablet ? 27.5 : 25,
       justifyContent: 'center',
       alignItems: 'center',
       marginTop: isTablet ? 50 : 40,
@@ -314,31 +319,34 @@ const dynamicStyles = (width, height) => {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Medium',
     },
+    /* 
+      Updated modal container to appear at the bottom 
+    */
     modalContainer: {
       flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: 'flex-end', // anchor to bottom
       backgroundColor: 'rgba(0,0,0,0.5)',
     },
     modalContent: {
-      width: isTablet ? '40%' : '80%',
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#1e1e1e' : '#fff',
       padding: 20,
-      borderRadius: 10,
+      borderTopLeftRadius: 20, // top round corners
+      borderTopRightRadius: 20,
       alignItems: 'center',
+      width: '100%',
     },
     modalTitle: {
       fontSize: isTablet ? 20 : 18,
       fontFamily: 'RobotoSlab-Medium',
       marginBottom: 10,
-      color: '#1D2951',
+      color: isDarkMode ? '#fff' : '#1D2951',
     },
     modalMessage: {
       fontSize: isTablet ? 16 : 14,
       fontFamily: 'RobotoSlab-Regular',
       marginBottom: 20,
       textAlign: 'center',
-      color: '#212121',
+      color: isDarkMode ? '#ccc' : '#212121',
     },
     modalButtons: {
       flexDirection: 'row',

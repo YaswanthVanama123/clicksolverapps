@@ -17,24 +17,24 @@ import uuid from 'react-native-uuid';
 import {useNavigation} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import LottieView from 'lottie-react-native';
+import { useTheme } from '../context/ThemeContext'; // <-- Import the theme hook
 
 const ServiceTrackingListScreen = () => {
-  // 1) Get screen dimensions
-  const {width, height} = useWindowDimensions();
-  // 2) Generate dynamic styles
-  const styles = dynamicStyles(width, height);
+  const { width, height } = useWindowDimensions();
+  const { isDarkMode } = useTheme(); // Get dark mode state
+  const styles = dynamicStyles(width, height, isDarkMode);
 
   const [serviceData, setServiceData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false); // <-- NEW: track network error
+  const [error, setError] = useState(false); 
   const navigation = useNavigation();
 
   const filterOptions = ['Collected Item', 'Work started', 'Work Completed'];
 
-  // Extracted API call into a function so we can call it on Retry
+  // Fetch Bookings
   const fetchBookings = async () => {
     setLoading(true);
     setError(false);
@@ -43,7 +43,7 @@ const ServiceTrackingListScreen = () => {
       if (!token) throw new Error('Token not found');
 
       const response = await axios.get(
-        `http://192.168.55.102:5000/api/user/tracking/services`,
+        'http://192.168.55.102:5000/api/user/tracking/services',
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -54,7 +54,7 @@ const ServiceTrackingListScreen = () => {
       setFilteredData(response.data); // Initially display all data
     } catch (err) {
       console.error('Error fetching bookings data:', err);
-      setError(true); // <-- if there's an error, set error to true
+      setError(true); 
     } finally {
       setLoading(false);
     }
@@ -64,45 +64,29 @@ const ServiceTrackingListScreen = () => {
     fetchBookings();
   }, []);
 
-  const formatDate = created_at => {
+  const formatDate = (created_at) => {
     const date = new Date(created_at);
     const monthNames = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
+      'January','February','March','April','May','June',
+      'July','August','September','October','November','December',
     ];
-    return `${monthNames[date.getMonth()]} ${String(date.getDate()).padStart(
-      2,
-      '0',
-    )}, ${date.getFullYear()}`;
+    return `${monthNames[date.getMonth()]} ${String(date.getDate()).padStart(2, '0')}, ${date.getFullYear()}`;
   };
 
-  const handleCardPress = trackingId => {
-    navigation.push('ServiceTrackingItem', {tracking_id: trackingId});
+  const handleCardPress = (trackingId) => {
+    navigation.push('ServiceTrackingItem', { tracking_id: trackingId });
   };
 
-  const toggleFilter = status => {
+  const toggleFilter = (status) => {
     const updatedFilters = selectedFilters.includes(status)
-      ? selectedFilters.filter(s => s !== status)
+      ? selectedFilters.filter((s) => s !== status)
       : [...selectedFilters, status];
 
     setSelectedFilters(updatedFilters);
 
-    // Apply filter immediately
     const filtered =
       updatedFilters.length > 0
-        ? serviceData.filter(item =>
-            updatedFilters.includes(item.service_status),
-          )
+        ? serviceData.filter((item) => updatedFilters.includes(item.service_status))
         : serviceData;
 
     setFilteredData(filtered);
@@ -114,7 +98,7 @@ const ServiceTrackingListScreen = () => {
     }
   };
 
-  const renderItem = ({item}) => (
+  const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.itemContainer}
       onPress={() => handleCardPress(item.tracking_id)}
@@ -166,12 +150,10 @@ const ServiceTrackingListScreen = () => {
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.headerContainer}>
-            <Icon name="arrow-back" size={24} color="#000" />
+            <Icon name="arrow-back" size={24} color={isDarkMode ? '#fff' : '#000'} />
             <Text style={styles.headerTitle}>Service Tracking</Text>
-            <TouchableOpacity
-              onPress={() => setIsFilterVisible(!isFilterVisible)}
-            >
-              <Icon name="filter-list" size={24} color="#000" />
+            <TouchableOpacity onPress={() => setIsFilterVisible(!isFilterVisible)}>
+              <Icon name="filter-list" size={24} color={isDarkMode ? '#fff' : '#000'} />
             </TouchableOpacity>
           </View>
 
@@ -218,10 +200,7 @@ const ServiceTrackingListScreen = () => {
                 <Text style={styles.errorText}>
                   Something went wrong. Please try again.
                 </Text>
-                <TouchableOpacity
-                  style={styles.retryButton}
-                  onPress={fetchBookings}
-                >
+                <TouchableOpacity style={styles.retryButton} onPress={fetchBookings}>
                   <Text style={styles.retryButtonText}>Retry</Text>
                 </TouchableOpacity>
               </View>
@@ -246,21 +225,17 @@ const ServiceTrackingListScreen = () => {
   );
 };
 
-/**
- * A helper function that returns a StyleSheet based on screen width/height.
- * If width >= 600, we assume it’s a tablet and scale up certain styles.
- */
-const dynamicStyles = (width, height) => {
+const dynamicStyles = (width, height, isDarkMode) => {
   const isTablet = width >= 600;
 
   return StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
     },
     container: {
       flex: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
     },
     headerContainer: {
       flexDirection: 'row',
@@ -270,28 +245,28 @@ const dynamicStyles = (width, height) => {
       paddingVertical: isTablet ? 20 : 16,
       elevation: 2,
       shadowColor: '#000',
-      shadowOffset: {width: 0, height: 2},
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,
       shadowRadius: 4,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#333' : '#ffffff',
       zIndex: 1,
     },
     headerTitle: {
       fontSize: isTablet ? 20 : 18,
       fontFamily: 'RobotoSlab-Medium',
-      color: '#000',
+      color: isDarkMode ? '#fff' : '#000',
     },
     dropdownContainer: {
       position: 'absolute',
       top: isTablet ? 90 : 70,
       right: isTablet ? 24 : 16,
       width: isTablet ? 220 : 200,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#333' : '#ffffff',
       borderRadius: 8,
       padding: isTablet ? 12 : 10,
       elevation: 5,
       shadowColor: '#000',
-      shadowOffset: {width: 0, height: 2},
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.3,
       shadowRadius: 4,
       zIndex: 10,
@@ -299,7 +274,7 @@ const dynamicStyles = (width, height) => {
     dropdownTitle: {
       fontSize: isTablet ? 16 : 14,
       fontFamily: 'RobotoSlab-SemiBold',
-      color: '#212121',
+      color: isDarkMode ? '#ccc' : '#212121',
       marginBottom: 8,
     },
     dropdownOption: {
@@ -328,7 +303,6 @@ const dynamicStyles = (width, height) => {
       width: '100%',
       height: '100%',
     },
-
     // ERROR
     errorContainer: {
       flex: 1,
@@ -338,7 +312,7 @@ const dynamicStyles = (width, height) => {
     },
     errorText: {
       fontSize: isTablet ? 18 : 16,
-      color: '#000',
+      color: isDarkMode ? '#fff' : '#000',
       marginBottom: 10,
       fontFamily: 'RobotoSlab-Medium',
       textAlign: 'center',
@@ -354,7 +328,6 @@ const dynamicStyles = (width, height) => {
       fontSize: isTablet ? 16 : 14,
       fontFamily: 'RobotoSlab-Medium',
     },
-
     listContainer: {
       paddingHorizontal: isTablet ? 24 : 16,
     },
@@ -362,13 +335,12 @@ const dynamicStyles = (width, height) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#333' : '#fff',
       borderRadius: 10,
       padding: isTablet ? 20 : 16,
       marginBottom: isTablet ? 20 : 16,
-      elevation: 2,
       shadowColor: '#000',
-      shadowOffset: {width: 0, height: 2},
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,
       shadowRadius: 4,
     },
@@ -388,11 +360,11 @@ const dynamicStyles = (width, height) => {
     itemTitle: {
       fontSize: isTablet ? 16 : 14,
       fontFamily: 'RobotoSlab-Medium',
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     itemDate: {
       fontSize: isTablet ? 14 : 12,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#bbb' : '#4a4a4a',
       fontFamily: 'RobotoSlab-Regular',
     },
     statusLabel: {
@@ -416,7 +388,6 @@ const dynamicStyles = (width, height) => {
       fontFamily: 'RobotoSlab-Medium',
       color: '#212121',
     },
-
     // NO DATA
     noDataContainer: {
       alignItems: 'center',
@@ -424,7 +395,7 @@ const dynamicStyles = (width, height) => {
     },
     noDataText: {
       fontSize: isTablet ? 18 : 16,
-      color: '#212121',
+      color: isDarkMode ? '#fff' : '#212121',
     },
   });
 };

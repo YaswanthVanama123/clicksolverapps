@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   StyleSheet,
   View,
-  Dimensions,
   PermissionsAndroid,
   Platform,
   TextInput,
@@ -12,26 +11,38 @@ import {
   Modal,
   ActivityIndicator,
   BackHandler,
+  Dimensions,
 } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import Geolocation from 'react-native-geolocation-service';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CommonActions, useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
+import {
+  CommonActions,
+  useNavigation,
+  useFocusEffect,
+  useRoute,
+} from '@react-navigation/native';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import EvilIcons from 'react-native-vector-icons/AntDesign';
 import Octicons from 'react-native-vector-icons/Octicons';
 import { Places } from 'ola-maps';
+import { useTheme } from '../context/ThemeContext'; // <-- import theme hook
 
-Mapbox.setAccessToken('pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw');
+Mapbox.setAccessToken(
+  'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw'
+);
 const placesClient = new Places('iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT');
 
 const UserLocation = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { serviceName, suggestion, savings, tipAmount } = route.params;
-  
+
+  const { isDarkMode } = useTheme(); // get isDarkMode
+  const styles = dynamicStyles(isDarkMode); // pass into our style function
+
   const [service, setService] = useState([]);
   const [discount, setDiscount] = useState(0);
   const [location, setLocation] = useState(null);
@@ -43,8 +54,8 @@ const UserLocation = () => {
   const [pincode, setPincode] = useState('');
   const [alternatePhoneNumber, setAlternatePhoneNumber] = useState('');
   const [alternateName, setAlternateName] = useState('');
-  
-  // Errors for the complete address modal (unchanged)
+
+  // Errors for complete address modal
   const [cityError, setCityError] = useState('');
   const [areaError, setAreaError] = useState('');
   const [pincodeError, setPincodeError] = useState('');
@@ -52,12 +63,13 @@ const UserLocation = () => {
   const [nameError, setNameError] = useState('');
   const [inputText, setInputText] = useState(suggestion ? suggestion.title : '');
   const [showMessageBox, setShowMessageBox] = useState(false);
+
   // New state for the out-of-geofence modal
   const [showOutOfPolygonModal, setShowOutOfPolygonModal] = useState(false);
 
   const mapRef = useRef(null);
 
-  // Define two example polygon geofences
+  // Define example polygon geofences
   const polygonGeofences = [
     {
       id: 'zone1',
@@ -97,7 +109,7 @@ const UserLocation = () => {
         [16.703383261743355, 81.13502168775335],
         [16.696706590762375, 81.11606570973981],
         [16.690277614635917, 81.11161284859327],
-        [16.690514707521203, 81.10419147444412],
+        [16.690514707521203, 81.10219147444412],
         [16.682222407654322, 81.09411194809388],
         [16.680443872924542, 81.08526753004003],
         [16.681096564850336, 81.08063131598783],
@@ -118,10 +130,13 @@ const UserLocation = () => {
     const y = point[0];
     let inside = false;
     for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const xi = polygon[i][0], yi = polygon[i][1];
-      const xj = polygon[j][0], yj = polygon[j][1];
-      const intersect = ((yi > y) !== (yj > y)) &&
-                        (x < ((xj - xi) * (y - yi)) / (yj - yi) + xi);
+      const xi = polygon[i][0],
+        yi = polygon[i][1];
+      const xj = polygon[j][0],
+        yj = polygon[j][1];
+      const intersect =
+        yi > y !== yj > y &&
+        x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
       if (intersect) inside = !inside;
     }
     return inside;
@@ -159,7 +174,9 @@ const UserLocation = () => {
         }
         Geolocation.getCurrentPosition(
           position => {
-            const { latitude, longitude } = suggestion ? suggestion : position.coords;
+            const { latitude, longitude } = suggestion
+              ? suggestion
+              : position.coords;
             fetchAndSetPlaceDetails(latitude, longitude);
             setLocation([longitude, latitude]);
             sendDataToServer(longitude, latitude);
@@ -187,41 +204,46 @@ const UserLocation = () => {
         return true;
       };
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      return () =>
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
     }, [])
   );
 
   const fetchAndSetPlaceDetails = useCallback(async (latitude, longitude) => {
     try {
       const response = await placesClient.reverse_geocode(latitude, longitude);
-  
+
       if (response && response.body && response.body.results.length > 0) {
         const place = response.body.results[0];
         const addressComponents = place.address_components;
-  
-        const pincode = addressComponents.find(component =>
-          component.types.includes('postal_code')
-        )?.long_name || '';
-  
-        let city = addressComponents.find(component =>
-          component.types.includes('locality')
-        )?.long_name || '';
-  
-        if (!city) {
-          city = addressComponents.find(component =>
-            component.types.includes('administrative_area_level_3')
+
+        const pincode =
+          addressComponents.find(component =>
+            component.types.includes('postal_code')
           )?.long_name || '';
+
+        let city =
+          addressComponents.find(component =>
+            component.types.includes('locality')
+          )?.long_name || '';
+
+        if (!city) {
+          city =
+            addressComponents.find(component =>
+              component.types.includes('administrative_area_level_3')
+            )?.long_name || '';
         }
         if (!city) {
-          city = addressComponents.find(component =>
-            component.types.includes('administrative_area_level_2')
-          )?.long_name || '';
+          city =
+            addressComponents.find(component =>
+              component.types.includes('administrative_area_level_2')
+            )?.long_name || '';
         }
-  
+
         let area = place.formatted_address || '';
-  
-        console.log("Extracted Location Details:", { city, area, pincode });
-  
+
+        console.log('Extracted Location Details:', { city, area, pincode });
+
         setCity(city);
         setArea(area);
         setPincode(pincode);
@@ -232,7 +254,7 @@ const UserLocation = () => {
       console.error('Failed to fetch place details:', error);
     }
   }, []);
-  
+
   const sendDataToServer = useCallback(async (longitude, latitude) => {
     try {
       const token = await EncryptedStorage.getItem('cs_token');
@@ -269,7 +291,6 @@ const UserLocation = () => {
     );
   };
 
-  // Updated Confirm Location handler
   const handleConfirmLocation = async () => {
     setConfirmLoading(true);
     if (location) {
@@ -277,7 +298,6 @@ const UserLocation = () => {
         isPointInPolygon(location, fence.coordinates)
       );
       if (!inAnyGeofence) {
-        // Instead of an Alert, show a modal informing the user
         setShowOutOfPolygonModal(true);
         setConfirmLoading(false);
         return;
@@ -291,10 +311,9 @@ const UserLocation = () => {
         setConfirmLoading(false);
         return;
       }
-      const response = await axios.get(
-        `http://192.168.55.102:5000/api/get/user`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await axios.get(`http://192.168.55.102:5000/api/get/user`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (response.status === 200) {
         const data = response.data;
         console.log('User data fetched:', data);
@@ -310,7 +329,6 @@ const UserLocation = () => {
     setConfirmLoading(false);
   };
 
-  // New handler for the "Remind Me" button in the out-of-polygon modal
   const handleRemindMe = async () => {
     try {
       const token = await EncryptedStorage.getItem('cs_token');
@@ -332,7 +350,6 @@ const UserLocation = () => {
     }
   };
 
-  // Handler for Cancel button in out-of-polygon modal
   const handleCancelOutModal = () => {
     setShowOutOfPolygonModal(false);
   };
@@ -392,7 +409,7 @@ const UserLocation = () => {
     }
   };
 
-  const handlePressLocation = (e) => {
+  const handlePressLocation = e => {
     const coordinates = e.geometry.coordinates;
     setLocation(coordinates);
     const [lon, lat] = coordinates;
@@ -403,13 +420,13 @@ const UserLocation = () => {
     navigation.goBack();
   };
 
-  // Calculate the total cost of all services
   const totalServiceCost = service.reduce((sum, s) => sum + s.totalCost, 0);
 
-  // Render each service item.
   const renderServiceItem = ({ item }) => {
     if (discount > 0) {
-      const allocatedDiscount = Math.round((item.totalCost / totalServiceCost) * discount);
+      const allocatedDiscount = Math.round(
+        (item.totalCost / totalServiceCost) * discount
+      );
       const finalCost = item.totalCost - allocatedDiscount;
       return (
         <View style={styles.serviceItem}>
@@ -448,7 +465,7 @@ const UserLocation = () => {
           <TextInput
             style={styles.searchBox}
             placeholder="Search location ..."
-            placeholderTextColor="#1D2951"
+            placeholderTextColor={isDarkMode ? '#ccc' : '#1D2951'}
             onFocus={() =>
               navigation.replace('LocationSearch', { serviceName, savings, tipAmount })
             }
@@ -515,7 +532,7 @@ const UserLocation = () => {
               keyExtractor={(item, index) => index.toString()}
             />
           </View>
-          <View style={styles.horizantalLine} />
+          {/* <View style={styles.horizantalLine} /> */}
           <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmLocation}>
             {confirmLoading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
@@ -528,7 +545,7 @@ const UserLocation = () => {
 
       {showOutOfPolygonModal && (
         <Modal
-          transparent={true}
+          transparent
           visible={showOutOfPolygonModal}
           animationType="slide"
           onRequestClose={() => setShowOutOfPolygonModal(false)}
@@ -537,7 +554,9 @@ const UserLocation = () => {
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Location Not Serviceable</Text>
               <Text style={styles.modalMessage}>
-                We are not in {city || 'this'} location. Please choose another location or tap "Remind Me" to get a notification when service is available.
+                We are not in {city || 'this'} location. Please choose another
+                location or tap "Remind Me" to get a notification when service
+                is available.
               </Text>
               <View style={{ flexDirection: 'row', justifyContent: 'space-around', width: '100%' }}>
                 <TouchableOpacity style={styles.modalCancelButton} onPress={handleCancelOutModal}>
@@ -554,7 +573,7 @@ const UserLocation = () => {
 
       {showMessageBox && (
         <Modal
-          transparent={true}
+          transparent
           visible={showMessageBox}
           animationType="slide"
           onRequestClose={() => setShowMessageBox(false)}
@@ -571,17 +590,35 @@ const UserLocation = () => {
                   <Text style={styles.completeAddressHead}>Enter complete address!</Text>
                   <Text style={styles.label}>City</Text>
                   <View style={styles.inputView}>
-                    <TextInput style={styles.input} placeholder="City" value={city} onChangeText={setCity} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="City"
+                      placeholderTextColor={isDarkMode ? '#aaa' : '#000'}
+                      value={city}
+                      onChangeText={setCity}
+                    />
                     {cityError ? <Text style={styles.errorText}>{cityError}</Text> : null}
                   </View>
                   <Text style={styles.label}>Area</Text>
                   <View style={styles.inputView}>
-                    <TextInput style={styles.input} placeholder="Area" value={area} onChangeText={setArea} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Area"
+                      placeholderTextColor={isDarkMode ? '#aaa' : '#000'}
+                      value={area}
+                      onChangeText={setArea}
+                    />
                     {areaError ? <Text style={styles.errorText}>{areaError}</Text> : null}
                   </View>
                   <Text style={styles.label}>Pincode</Text>
                   <View style={styles.inputView}>
-                    <TextInput style={styles.input} placeholder="Pincode" value={pincode} onChangeText={setPincode} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Pincode"
+                      placeholderTextColor={isDarkMode ? '#aaa' : '#000'}
+                      value={pincode}
+                      onChangeText={setPincode}
+                    />
                     {pincodeError ? <Text style={styles.errorText}>{pincodeError}</Text> : null}
                   </View>
                   <Text style={styles.label}>Phone number</Text>
@@ -589,6 +626,7 @@ const UserLocation = () => {
                     <TextInput
                       style={styles.input}
                       placeholder="Alternate phone number"
+                      placeholderTextColor={isDarkMode ? '#aaa' : '#000'}
                       keyboardType="phone-pad"
                       value={alternatePhoneNumber}
                       onChangeText={setAlternatePhoneNumber}
@@ -597,7 +635,13 @@ const UserLocation = () => {
                   </View>
                   <Text style={styles.label}>Name</Text>
                   <View style={styles.inputView}>
-                    <TextInput style={styles.input} placeholder="Alternate name" value={alternateName} onChangeText={setAlternateName} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Alternate name"
+                      placeholderTextColor={isDarkMode ? '#aaa' : '#000'}
+                      value={alternateName}
+                      onChangeText={setAlternateName}
+                    />
                     {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
                   </View>
                   <TouchableOpacity style={styles.bookButton} onPress={handleBookCommander}>
@@ -622,97 +666,242 @@ const UserLocation = () => {
   );
 };
 
-export default UserLocation;
+/** 
+ * Dynamic styles for Dark/Light Mode 
+ * Adjust it for device widths if needed.
+ */
+const dynamicStyles = (isDarkMode) =>
+  StyleSheet.create({
+    page: {
+      flex: 1,
+      backgroundColor: isDarkMode ? '#121212' : '#fff',
+    },
+    container: {
+      flex: 1,
+    },
+    searchBoxContainer: {
+      position: 'absolute',
+      top: 30,
+      left: 0,
+      right: 0,
+      zIndex: 1,
+      alignItems: 'center',
+    },
+    searchInnerContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: isDarkMode ? '#333' : '#fff',
+      borderRadius: 9,
+      width: '90%',
+      elevation: 10,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.8,
+      shadowRadius: 2,
+      paddingHorizontal: 10,
+      height: 55,
+    },
+    searchBox: {
+      flex: 1,
+      color: isDarkMode ? '#fff' : '#1D2951',
+      fontSize: 14,
+      paddingHorizontal: 5,
+    },
+    map: {
+      flex: 1,
+    },
+    markerContainer: {
+      backgroundColor: 'transparent',
+    },
+    marker: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: '#ff0000',
+    },
+    loadingContainer: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: isDarkMode ? 'rgba(18,18,18,0.8)' : 'rgba(255,255,255,0.7)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    bookingCard: {
+      padding: 10,
+      paddingHorizontal: 20,
+      position: 'absolute',
+      backgroundColor: isDarkMode ? '#333' : '#fff',
+      borderRadius: 20,
+      width: '100%',
+      bottom: 0,
+      elevation: 5,
+    },
+    flatContainer: {
+      height: '77%',
+    },
+    serviceItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 10,
+    },
+    serviceName: {
+      fontSize: 14,
+      color: isDarkMode ? '#fff' : '#212121',
+      width: 90,
+    },
+    cost: {
+      fontSize: 14,
+      color: isDarkMode ? '#fff' : '#212121',
+    },
+    strikeThrough: {
+      textDecorationLine: 'line-through',
+      color: '#888',
+    },
+    horizantalLine: {
+      width: '100%',
+      height: 4,
+      backgroundColor: isDarkMode ? '#555' : '#f5f5f5',
+    },
+    confirmButton: {
+      backgroundColor: '#FF4500',
+      padding: 10,
+      borderRadius: 5,
+    },
+    confirmButtonText: {
+      color: '#FFFFFF',
+      textAlign: 'center',
+      fontSize: 16,
+    },
+    messageBoxBackdrop: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    messageBox: {
+      width: '80%',
+      padding: 20,
+      backgroundColor: isDarkMode ? '#333' : '#fff',
+      borderRadius: 10,
+      elevation: 10,
+    },
+    completeAddressHead: {
+      fontSize: 18,
+      marginBottom: 10,
+      color: isDarkMode ? '#fff' : '#1D2951',
+    },
+    label: {
+      color: isDarkMode ? '#ccc' : '#808080',
+      fontSize: 12,
+      padding: 5,
+    },
+    inputView: {
+      marginBottom: 10,
+    },
+    input: {
+      height: 40,
+      borderColor: '#ddd',
+      borderWidth: 1,
+      borderRadius: 5,
+      paddingHorizontal: 10,
+      color: isDarkMode ? '#fff' : '#000',
+    },
+    bookButton: {
+      backgroundColor: '#ff4500',
+      padding: 10,
+      borderRadius: 6,
+      marginTop: 10,
+    },
+    bookButtonText: {
+      color: '#FFFFFF',
+      textAlign: 'center',
+      fontSize: 16,
+    },
+    closeButton: {
+      position: 'absolute',
+      top: 10,
+      right: 10,
+      backgroundColor: isDarkMode ? '#555' : '#f2f2f2',
+      borderRadius: 15,
+      width: 30,
+      height: 30,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    closeButtonText: {
+      color: '#fff',
+      fontSize: 20,
+    },
+    errorText: {
+      color: '#ff0000',
+      fontSize: 12,
+    },
+    crosshairsContainer: {
+      position: 'absolute',
+      right: 20,
+      bottom: 290,
+      backgroundColor: isDarkMode ? '#333' : '#fff',
+      borderRadius: 25,
+      padding: 10,
+      elevation: 5,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalContent: {
+      backgroundColor: isDarkMode ? '#333' : '#fff',
+      padding: 20,
+      borderRadius: 8,
+      width: '80%',
+      alignItems: 'center',
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 10,
+      color: isDarkMode ? '#fff' : '#212121',
+    },
+    modalMessage: {
+      fontSize: 16,
+      textAlign: 'center',
+      marginBottom: 20,
+      color: isDarkMode ? '#ccc' : '#212121',
+    },
+    modalCancelButton: {
+      backgroundColor: isDarkMode ? '#555' : '#f5f5f5',
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 6,
+      marginHorizontal: 5,
+    },
+    modalCancelButtonText: {
+      color: isDarkMode ? '#fff' : '#9e9e9e',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    modalButton: {
+      backgroundColor: '#ff6f00',
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 6,
+      marginHorizontal: 5,
+    },
+    modalButtonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    loadingContent: {
+      alignItems: 'center',
+    },
+    loadingText: {
+      marginTop: 10,
+      fontSize: 14,
+      color: isDarkMode ? '#fff' : '#000',
+    },
+  });
 
-const styles = StyleSheet.create({
-  page: { flex: 1 },
-  container: { flex: 1 },
-  contentContainer: { paddingBottom: 80 },
-  searchBoxContainer: {
-    position: 'absolute',
-    top: 30,
-    left: 0,
-    right: 0,
-    zIndex: 1,
-    alignItems: 'center',
-  },
-  searchInnerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    borderRadius: 9,
-    width: '90%',
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 2,
-    paddingHorizontal: 10,
-    height: 55,
-  },
-  searchBox: { flex: 1, color: '#1D2951', fontSize: 14, paddingHorizontal: 5 },
-  backArrow: { marginRight: 12 },
-  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#212121' },
-  horizantalLine: { width: '100%', height: 4, backgroundColor: '#f5f5f5' },
-  markerContainer: { backgroundColor: 'transparent' },
-  marker: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#ff0000' },
-  map: { flex: 1 },
-  loadingContainer: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.7)', justifyContent: 'center', alignItems: 'center' },
-  bookingCard: { padding: 10, paddingHorizontal: 20, position: 'absolute', backgroundColor: '#ffffff', borderRadius: 20, width: '100%', bottom: 0, elevation: 5 },
-  confirmButton: { backgroundColor: '#FF4500', padding: 10, borderRadius: 5 },
-  confirmButtonText: { color: '#FFFFFF', textAlign: 'center', fontSize: 16 },
-  messageBoxBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' },
-  messageBox: { width: '80%', padding: 20, backgroundColor: 'white', borderRadius: 10, elevation: 10 },
-  completeAddressHead: { fontSize: 18, marginBottom: 10, color: '#1D2951' },
-  label: { color: '#808080', fontSize: 12, padding: 5 },
-  input: { height: 40, borderColor: '#ddd', borderWidth: 1, borderRadius: 5, paddingHorizontal: 10, color: '#000' },
-  inputView: { marginBottom: 10 },
-  bookButton: { backgroundColor: '#ff4500', padding: 10, borderRadius: 6, marginTop: 10 },
-  bookButtonText: { color: '#FFFFFF', textAlign: 'center', fontSize: 16 },
-  closeButton: { position: 'absolute', top: 10, right: 10, backgroundColor: '#f2f2f2', borderRadius: 15, width: 30, height: 30, justifyContent: 'center', alignItems: 'center' },
-  closeButtonText: { color: 'white', fontSize: 20 },
-  serviceItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 },
-  serviceName: { fontSize: 14, color: '#212121', width: 90 },
-  cost: { fontSize: 14, color: '#212121' },
-  strikeThrough: { textDecorationLine: 'line-through', color: '#888' },
-  quantityContainer: {
-    backgroundColor: '#EFDCCB',
-    borderRadius: 8,
-    paddingVertical: 3,
-    paddingHorizontal: 15,
-    borderColor: '#FF4500',
-    borderWidth: 1,
-    width: 70,
-    alignItems: 'center',
-    marginHorizontal: 10,
-  },
-  quantity: { fontSize: 14, color: '#808080' },
-  crosshairsContainer: { position: 'absolute', right: 20, bottom: 290, backgroundColor: 'white', borderRadius: 25, padding: 10, elevation: 5 },
-  flatContainer: { height: '77%' },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#f5f5f5',
-  },
-  bottomBarTotal: { fontSize: 18, fontWeight: '700', color: '#333' },
-  bottomBarButton: { backgroundColor: '#ff6f00', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6 },
-  bottomBarButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { backgroundColor: '#fff', padding: 20, borderRadius: 8, width: '80%', alignItems: 'center' },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10, color:'#212121' },
-  modalMessage: { fontSize: 16, textAlign: 'center', marginBottom: 20,color:'#212121' },
-  modalCancelButton: { backgroundColor: '#f5f5f5', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 6, marginHorizontal: 5 },
-  modalButton: { backgroundColor: '#ff6f00', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 6, marginHorizontal: 5 },
-  modalButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  modalCancelButtonText: { color: '#9e9e9e', fontSize: 16, fontWeight: '600' },
-  
-});
+export default UserLocation;

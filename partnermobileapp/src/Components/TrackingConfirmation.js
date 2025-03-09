@@ -24,7 +24,9 @@ const TrackingConfirmation = ({route}) => {
       const newOtp = [...otp];
       newOtp[index] = text;
       setOtp(newOtp);
-      if (text && index < otp.length - 1) inputRefs.current[index + 1].focus();
+      if (text && index < otp.length - 1) {
+        inputRefs.current[index + 1].focus();
+      }
     }
   };
 
@@ -38,7 +40,7 @@ const TrackingConfirmation = ({route}) => {
     const enteredOtp = otp.join('');
     try {
       const response = await axios.post(
-        `http://192.168.55.104:5000/api/service/tracking/delivery/verification`,
+        `http://192.168.55.102:5000/api/service/tracking/delivery/verification`,
         {trackingId, enteredOtp},
       );
       const {encodedId} = response.data;
@@ -47,6 +49,7 @@ const TrackingConfirmation = ({route}) => {
       }
     } catch (error) {
       console.error('Error fetching bookings data:', error);
+      setError('Verification failed. Please try again.');
     }
   };
 
@@ -67,7 +70,7 @@ const TrackingConfirmation = ({route}) => {
             key={index}
             style={[
               styles.otpInput,
-              focusedIndex === index && {borderColor: '#ff4500'},
+              focusedIndex === index && styles.otpInputFocused,
             ]}
             value={value}
             onChangeText={text => handleChange(text, index)}
@@ -81,7 +84,7 @@ const TrackingConfirmation = ({route}) => {
         ))}
       </View>
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
         <Text style={styles.submitButtonText}>Submit</Text>
@@ -118,18 +121,23 @@ const styles = StyleSheet.create({
   },
   otpContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center', // centers the input boxes
     marginBottom: 32,
   },
   otpInput: {
-    width: 40,
-    height: 40,
+    width: 50,
+    height: 50,
+    marginHorizontal: 8,
     textAlign: 'center',
-    fontSize: 18,
-    borderBottomWidth: 2,
-    borderColor: '#1D2951', // Default color
-    marginHorizontal: 5,
+    fontSize: 20,
+    borderWidth: 1.5,
+    borderColor: '#1D2951', // default border color
+    borderRadius: 10,
+    backgroundColor: '#f9f9f9',
     color: '#212121',
+  },
+  otpInputFocused: {
+    borderColor: '#ff4500', // change border color on focus
   },
   error: {
     color: 'red',

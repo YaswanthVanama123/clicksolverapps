@@ -9,7 +9,7 @@ import {
   Dimensions,
   Image,
   BackHandler,
-  useWindowDimensions, // <-- 1) Import useWindowDimensions
+  useWindowDimensions,
 } from 'react-native';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Entypo from 'react-native-vector-icons/Entypo';
@@ -23,12 +23,15 @@ import {
 } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+// Import the theme hook
+import { useTheme } from '../context/ThemeContext';
 
 const SearchItem = () => {
-  // 1) Get screen width & height
+  // Get screen dimensions
   const { width, height } = useWindowDimensions();
-  // 2) Generate dynamic styles
-  const styles = dynamicStyles(width, height);
+  // Get dark mode flag from context and generate dynamic styles accordingly
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, height, isDarkMode);
 
   const initialPlaceholder = 'Search for ';
   const additionalTexts = [
@@ -48,7 +51,6 @@ const SearchItem = () => {
   const [isFocused, setIsFocused] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
 
-
   const navigation = useNavigation();
 
   const trendingSearches = [
@@ -64,17 +66,15 @@ const SearchItem = () => {
     'Microwave repair',
   ];
 
-  // -----------------------------------------
-  //  Placeholder animation logic
-  // -----------------------------------------
+  // Placeholder animation logic
   const updatePlaceholder = useCallback(() => {
     const word = additionalTexts[currentIndex];
     if (currentWordIndex < word.length) {
-      setPlaceholderText((prev) => prev + word[currentWordIndex]);
-      setCurrentWordIndex((prev) => prev + 1);
+      setPlaceholderText(prev => prev + word[currentWordIndex]);
+      setCurrentWordIndex(prev => prev + 1);
     } else {
       setPlaceholderText(initialPlaceholder);
-      setCurrentIndex((prev) => (prev + 1) % additionalTexts.length);
+      setCurrentIndex(prev => (prev + 1) % additionalTexts.length);
       setCurrentWordIndex(0);
     }
   }, [currentIndex, currentWordIndex, additionalTexts, initialPlaceholder]);
@@ -84,9 +84,7 @@ const SearchItem = () => {
     return () => clearInterval(interval);
   }, [updatePlaceholder]);
 
-  // -----------------------------------------
-  //  Fetch recent services from storage
-  // -----------------------------------------
+  // Fetch recent searches from storage
   useEffect(() => {
     const recentServicesList = async () => {
       try {
@@ -101,9 +99,6 @@ const SearchItem = () => {
     recentServicesList();
   }, []);
 
-  // -----------------------------------------
-  //  Input change handler
-  // -----------------------------------------
   const handleInputChange = async (query) => {
     setSearchQuery(query);
 
@@ -127,53 +122,34 @@ const SearchItem = () => {
     }
   };
 
-  // -----------------------------------------
-  //  Store a clicked service to recents
-  // -----------------------------------------
   const storeRecentService = useCallback(async (service) => {
     try {
-      const existingServicesJson = await EncryptedStorage.getItem(
-        'recentServices'
-      );
+      const existingServicesJson = await EncryptedStorage.getItem('recentServices');
       let updatedServices = [];
       if (existingServicesJson) {
         const existingServices = JSON.parse(existingServicesJson);
-        // Filter out any existing entry for the same service
         updatedServices = existingServices.filter(
           (existingService) =>
             existingService.main_service_id !== service.main_service_id
         );
-        // Add new service at the beginning
         updatedServices.unshift(service);
       } else {
         updatedServices = [service];
       }
-
-      // Keep only the latest 5
       updatedServices = updatedServices.slice(0, 5);
-
-      await EncryptedStorage.setItem(
-        'recentServices',
-        JSON.stringify(updatedServices)
-      );
+      await EncryptedStorage.setItem('recentServices', JSON.stringify(updatedServices));
       setRecentSearches(updatedServices);
     } catch (error) {
       console.error('Error storing recent service:', error);
     }
   }, []);
 
-  // -----------------------------------------
-  //  Clear the search box
-  // -----------------------------------------
   const handleClear = useCallback(() => {
     setSearchQuery('');
     setSuggestions([]);
     setIsFocused(false);
   }, []);
 
-  // -----------------------------------------
-  //  On suggestion click
-  // -----------------------------------------
   const handleServiceClick = useCallback(
     (item) => {
       storeRecentService(item);
@@ -184,9 +160,6 @@ const SearchItem = () => {
     [navigation, storeRecentService]
   );
 
-  // -----------------------------------------
-  //  Render a single suggestion item
-  // -----------------------------------------
   const renderSuggestionItem = (item, index) => (
     <TouchableOpacity
       key={index}
@@ -195,8 +168,7 @@ const SearchItem = () => {
     >
       <Image
         source={{
-          uri:
-            item.service_details?.urls || 'https://via.placeholder.com/150',
+          uri: item.service_details?.urls || 'https://via.placeholder.com/150',
         }}
         style={styles.suggestionImage}
       />
@@ -209,9 +181,6 @@ const SearchItem = () => {
     </TouchableOpacity>
   );
 
-  // -----------------------------------------
-  //  Render a single recent search item
-  // -----------------------------------------
   const renderRecentSearchItem = (item, index) => (
     <TouchableOpacity
       key={`${item.main_service_id}-${index}`}
@@ -229,9 +198,6 @@ const SearchItem = () => {
     </TouchableOpacity>
   );
 
-  // -----------------------------------------
-  //  Render trending searches
-  // -----------------------------------------
   const renderTrendingSearches = () =>
     trendingSearches.map((item, index) => (
       <TouchableOpacity key={index} style={styles.trendingItem}>
@@ -239,9 +205,6 @@ const SearchItem = () => {
       </TouchableOpacity>
     ));
 
-  // -----------------------------------------
-  //  Override back button
-  // -----------------------------------------
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -251,23 +214,15 @@ const SearchItem = () => {
         }
         return false;
       };
-
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () =>
-        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
     }, [navigation])
   );
 
-  // -----------------------------------------
-  //  Handle going back
-  // -----------------------------------------
   const handleHome = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
 
-  // -----------------------------------------
-  //  Focus the input whenever screen is in focus
-  // -----------------------------------------
   const inputRef = useRef(null);
   useFocusEffect(
     useCallback(() => {
@@ -286,7 +241,7 @@ const SearchItem = () => {
             <AntDesign
               name="arrowleft"
               size={isFocused ? 22 : 20}
-              color="#000"
+              color={isDarkMode ? '#fff' : '#000'}
               style={styles.icon}
             />
           </TouchableOpacity>
@@ -295,7 +250,7 @@ const SearchItem = () => {
               ref={inputRef}
               style={styles.searchInput}
               placeholder={placeholderText}
-              placeholderTextColor="#000"
+              placeholderTextColor={isDarkMode ? "#aaa" : "#000"}
               value={searchQuery}
               onChangeText={handleInputChange}
               onFocus={() => setIsFocused(true)}
@@ -303,37 +258,28 @@ const SearchItem = () => {
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={handleClear} style={styles.clearIcon}>
-                <Entypo name="circle-with-cross" size={20} color="#000" />
+                <Entypo name="circle-with-cross" size={20} color={isDarkMode ? '#fff' : '#000'} />
               </TouchableOpacity>
             )}
           </View>
         </View>
 
-        {/* If the user is typing and we have suggestions, show them */}
-        {/* Otherwise, show either no results or recents + trending */}
-        <ScrollView
-          style={styles.scrollContainer}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Show suggestions if there are any and user is focused */}
+        <ScrollView style={styles.scrollContainer} keyboardShouldPersistTaps="handled">
           {isFocused && suggestions.length > 0 && (
             <View style={styles.suggestionsList}>
               {suggestions.map((item, index) =>
                 renderSuggestionItem(item, index)
               )}
             </View>
-          )} 
-
-          {/* No results found scenario */}
+          )}
           {searchQuery.length > 0 &&
             suggestions.length === 0 &&
             !loading && (
               <View style={styles.noResultsContainer}>
-                <MaterialIcons name="search-off" size={45} color="#000" />
+                <MaterialIcons name="search-off" size={45} color={isDarkMode ? "#fff" : "#000"} />
                 <Text style={styles.noResultsText}>No results found</Text>
                 <Text style={styles.noResultsSubText}>
-                  We couldn't find what you were looking for. Please check your
-                  keywords again!
+                  We couldn't find what you were looking for. Please check your keywords again!
                 </Text>
                 <View style={[styles.horizontalLine, { width, height: 8 }]} />
                 <View style={styles.trendingSearchesContainer}>
@@ -344,22 +290,15 @@ const SearchItem = () => {
                 </View>
               </View>
             )}
-
-          {/* Show Recents + Trending only when there's no search query 
-              or no suggestions (i.e., user hasn't typed or has cleared the input) */}
           {!searchQuery && suggestions.length === 0 && (
             <View style={styles.searchSuggestionsContainer}>
-              {/* Recent Searches */}
               <View style={styles.recentSearchesContainer}>
                 <Text style={styles.sectionTitle}>Recents</Text>
                 {recentSearches.map((item, index) =>
                   renderRecentSearchItem(item, index)
                 )}
               </View>
-
               <View style={[styles.horizontalLine, { width, height: 8 }]} />
-
-              {/* Trending */}
               <View style={styles.trendingSearchesContainer}>
                 <Text style={styles.sectionTitle}>Trending searches</Text>
                 <View style={styles.trendingItemsContainer}>
@@ -368,8 +307,6 @@ const SearchItem = () => {
               </View>
             </View>
           )}
-
-          {/* Display loading indicator at the bottom if loading */}
           {loading && (
             <LottieView
               source={require('../assets/searchLoading.json')}
@@ -384,28 +321,24 @@ const SearchItem = () => {
   );
 };
 
-/**
- * 3) A helper function that returns a StyleSheet whose values depend on the device width/height.
- *    If `width >= 600`, we treat it as a tablet and scale up certain styles (font sizes, spacing, etc.).
- */
-function dynamicStyles(width, height) {
+function dynamicStyles(width, height, isDarkMode) {
   const isTablet = width >= 600;
 
   return StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
     },
     mainContainer: {
       flex: 1,
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#121212' : '#fff',
     },
     scrollContainer: {
       flex: 1,
     },
     container: {
       width: '100%',
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#121212' : '#fff',
     },
     noResultsContainer: {
       alignItems: 'center',
@@ -418,28 +351,28 @@ function dynamicStyles(width, height) {
     },
     noResultsText: {
       fontSize: isTablet ? 22 : 20,
-      color: '#555555',
+      color: isDarkMode ? '#fff' : '#555555',
       fontFamily: 'RobotoSlab-Medium',
     },
     noResultsSubText: {
       fontSize: isTablet ? 16 : 14,
-      color: '#777777',
+      color: isDarkMode ? '#ccc' : '#777777',
       textAlign: 'center',
       marginVertical: isTablet ? 24 : 20,
       padding: 6,
       fontFamily: 'RobotoSlab-Medium',
     },
     horizontalLine: {
-      backgroundColor: '#F0F0F0',
+      backgroundColor: isDarkMode ? '#333' : '#F0F0F0',
       marginVertical: 10,
     },
     searchBar: {
       flexDirection: 'row',
       alignItems: 'center',
-      borderColor: '#ccc',
+      borderColor: isDarkMode ? '#444' : '#ccc',
       borderWidth: 1,
       borderRadius: 5,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#333' : '#ffffff',
       margin: isTablet ? 15 : 10,
       paddingHorizontal: isTablet ? 10 : 5,
     },
@@ -456,7 +389,7 @@ function dynamicStyles(width, height) {
       flex: 1,
       height: isTablet ? 50 : 40,
       paddingLeft: 10,
-      color: '#1D2951',
+      color: isDarkMode ? '#fff' : '#1D2951',
       fontWeight: '600',
       fontSize: isTablet ? 16 : 14,
       fontFamily: 'RobotoSlab-Regular',
@@ -476,7 +409,7 @@ function dynamicStyles(width, height) {
       fontFamily: 'RobotoSlab-Medium',
       marginBottom: 10,
       fontSize: isTablet ? 18 : 16,
-      color: '#000',
+      color: isDarkMode ? '#fff' : '#000',
     },
     recentItem: {
       flexDirection: 'row',
@@ -485,11 +418,11 @@ function dynamicStyles(width, height) {
     },
     recentIcon: {
       padding: 5,
-      backgroundColor: '#F8F8F8',
+      backgroundColor: isDarkMode ? '#444' : '#F8F8F8',
       borderRadius: 10,
     },
     recentText: {
-      color: '#000',
+      color: isDarkMode ? '#fff' : '#000',
       alignSelf: 'center',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 16 : 14,
@@ -505,19 +438,19 @@ function dynamicStyles(width, height) {
     trendingItem: {
       padding: isTablet ? 12 : 10,
       borderRadius: 20,
-      borderColor: '#ccc',
+      borderColor: isDarkMode ? '#444' : '#ccc',
       borderWidth: 1,
       marginRight: 10,
       marginBottom: 10,
     },
     trendingText: {
-      color: '#000',
+      color: isDarkMode ? '#fff' : '#000',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 16 : 14,
     },
     suggestionsList: {
       marginTop: 5,
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#333' : '#fff',
       borderRadius: 5,
     },
     suggestionItem: {
@@ -526,7 +459,7 @@ function dynamicStyles(width, height) {
       gap: 15,
       padding: isTablet ? 12 : 10,
       borderBottomWidth: 1,
-      borderBottomColor: '#eee',
+      borderBottomColor: isDarkMode ? '#444' : '#eee',
     },
     suggestionImage: {
       width: isTablet ? 85 : 70,
@@ -538,14 +471,14 @@ function dynamicStyles(width, height) {
       flex: 1,
     },
     SuggestionText: {
-      color: '#1D2951',
+      color: isDarkMode ? '#fff' : '#1D2951',
       fontWeight: '500',
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Medium',
     },
     SuggestionDescription: {
       fontSize: isTablet ? 14 : 12,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
       fontFamily: 'RobotoSlab-Regular',
     },
   });
