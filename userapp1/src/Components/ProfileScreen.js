@@ -81,7 +81,7 @@ const ProfileScreen = () => {
       setIsLoggedIn(true);
 
       const response = await axios.post(
-        'http://192.168.55.102:5000/api/user/profile',
+        'http:192.168.243.71:5000/api/user/profile',
         {},
         { headers: { Authorization: `Bearer ${jwtToken}` } },
       );
@@ -121,7 +121,7 @@ const ProfileScreen = () => {
           const jwtToken = await EncryptedStorage.getItem('cs_token');
           if (jwtToken) {
             await axios.post(
-              'http://192.168.55.102:5000/api/user/updateProfileImage',
+              'http:192.168.243.71:5000/api/user/updateProfileImage',
               { profileImage: uploadedUrl },
               { headers: { Authorization: `Bearer ${jwtToken}` } }
             );
@@ -139,7 +139,7 @@ const ProfileScreen = () => {
     try {
       const fcm_token = await EncryptedStorage.getItem('fcm_token');
       if (fcm_token) {
-        await axios.post('http://192.168.55.102:5000/api/userLogout', { fcm_token });
+        await axios.post('http:192.168.243.71:5000/api/userLogout', { fcm_token });
       }
       await EncryptedStorage.removeItem('cs_token');
       await EncryptedStorage.removeItem('fcm_token');
@@ -280,7 +280,7 @@ const ProfileScreen = () => {
           <HelpMenuItem
             styles={styles}
             text="Help & Support"
-            onPress={() => navigation.push('Help')}
+            onPress={() => navigation.push('ChatScreen')}
           />
           <DeleteAccountMenuItem
             styles={styles}

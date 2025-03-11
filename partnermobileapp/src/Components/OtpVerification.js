@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect} from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,23 +7,33 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
-import {useNavigation, CommonActions} from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
+// Import our theme context hook
+import { useTheme } from '../context/ThemeContext';
 
-const OTPVerification = ({route}) => {
+const OTPVerification = ({ route }) => {
   const [otp, setOtp] = useState(Array(4).fill(''));
   const inputRefs = useRef([]);
-  const {encodedId} = route.params;
+  const { encodedId } = route.params;
   const navigation = useNavigation();
   const [decodedId, setDecodedId] = useState(null);
   const [error, setError] = useState('');
   const [focusedIndex, setFocusedIndex] = useState(-1); // To track the focused input
 
+  // Get current theme (isDarkMode) from our theme context
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(isDarkMode);
+
   useEffect(() => {
     if (encodedId) {
-      setDecodedId(atob(encodedId));
+      try {
+        setDecodedId(atob(encodedId));
+      } catch (error) {
+        console.error('Error decoding Base64:', error);
+      }
     }
   }, [encodedId]);
 
@@ -46,25 +56,25 @@ const OTPVerification = ({route}) => {
 
   const checkCancellationStatus = async () => {
     try {
-      const {data} = await axios.get(
-        `http://192.168.55.102:5000/api/worker/cancelled/status`,
+      const { data } = await axios.get(
+        `http:192.168.243.71:5000/api/worker/cancelled/status`,
         {
-          params: {notification_id: decodedId},
+          params: { notification_id: decodedId },
         },
       );
 
       if (data.notificationStatus === 'usercanceled') {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         await axios.post(
-          `http://192.168.55.102:5000/api/worker/action`,
-          {encodedId: '', screen: ''},
-          {headers: {Authorization: `Bearer ${pcs_token}`}},
+          `http:192.168.243.71:5000/api/worker/action`,
+          { encodedId: '', screen: '' },
+          { headers: { Authorization: `Bearer ${pcs_token}` } },
         );
 
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
           }),
         );
       }
@@ -91,10 +101,10 @@ const OTPVerification = ({route}) => {
 
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
-      const {data, status} = await axios.post(
-        `http://192.168.55.102:5000/api/pin/verification`,
-        {notification_id: decodedId, otp: enteredOtp},
-        {headers: {Authorization: `Bearer ${jwtToken}`}},
+      const { data, status } = await axios.post(
+        `http:192.168.243.71:5000/api/pin/verification`,
+        { notification_id: decodedId, otp: enteredOtp },
+        { headers: { Authorization: `Bearer ${jwtToken}` } },
       );
 
       if (status === 200) {
@@ -102,51 +112,41 @@ const OTPVerification = ({route}) => {
         await EncryptedStorage.setItem('start_time', data.timeResult);
 
         await axios.post(
-          `http://192.168.55.102:5000/api/worker/action`,
-          {encodedId, screen: 'worktimescreen'},
-          {headers: {Authorization: `Bearer ${pcs_token}`}},
+          `http:192.168.243.71:5000/api/worker/action`,
+          { encodedId, screen: 'worktimescreen' },
+          { headers: { Authorization: `Bearer ${pcs_token}` } },
         );
 
-        // Alert.alert('Success', 'OTP is correct');
         await EncryptedStorage.removeItem('workerInAction');
-        navigation.navigate('worktimescreen', {encodedId});
+        navigation.navigate('worktimescreen', { encodedId });
       } else if (status === 205) {
-        // Alert.alert('User Cancelled the service');
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
           }),
         );
       } else {
         setError('OTP is incorrect');
-        // Alert.alert('Error', 'OTP is incorrect');
       }
     } catch (error) {
       console.error('Error verifying OTP:', error);
       setError('OTP is incorrect');
-      // Alert.alert('Error', 'OTP is incorrect');
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Header at the top */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <FontAwesome6 name="arrow-left-long" size={20} color="#1D2951" />
+          <FontAwesome6 name="arrow-left-long" size={20} color={isDarkMode ? '#ffffff' : '#1D2951'} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Pin Verification</Text>
       </View>
 
       {/* Centered content */}
       <View style={styles.content}>
-        {/* Screen explanation text */}
-        {/* <Text style={styles.screenDescription}>
-          This screen is for pin verification for the worker. The user has sent a pin, which is displayed on the navigation screen.
-        </Text> */}
-
-        {/* Updated text explaining where the pin is displayed */}
         <Text style={styles.sentText}>
           Your pin is displayed on user navigation screen.
         </Text>
@@ -158,7 +158,7 @@ const OTPVerification = ({route}) => {
               key={index}
               style={[
                 styles.otpInput,
-                focusedIndex === index && {borderColor: '#ff4500'},
+                focusedIndex === index && { borderColor: '#ff4500' },
               ]}
               value={value}
               onChangeText={text => handleChange(text, index)}
@@ -172,7 +172,7 @@ const OTPVerification = ({route}) => {
           ))}
         </View>
 
-        {/* Optional error message */}
+        {/* Error message */}
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         {/* Resend timer text */}
@@ -189,83 +189,77 @@ const OTPVerification = ({route}) => {
 
 export default OTPVerification;
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    width: '100%', // full width for header
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: 18,
-    color: '#1D2951',
-    textAlign: 'center',
-    fontWeight: 'bold',
-    marginRight: 20, // keeps title centered despite back arrow
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center', // centers vertically
-    alignItems: 'center', // centers horizontally
-    paddingHorizontal: 16,
-  },
-  screenDescription: {
-    fontSize: 14,
-    color: '#555',
-    textAlign: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 20,
-  },
-  sentText: {
-    fontSize: 16,
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  otpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center', // center horizontally
-    marginBottom: 10,
-  },
-  otpInput: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: '#1D2951',
-    textAlign: 'center',
-    fontSize: 20,
-    color: '#000',
-    marginHorizontal: 5, // space between boxes
-  },
-  error: {
-    marginTop: 10,
-    color: 'red',
-    textAlign: 'center',
-  },
-  resendText: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
-    marginVertical: 20,
-  },
-  submitButton: {
-    backgroundColor: '#ff4500',
-    borderRadius: 8,
-    paddingVertical: 14,
-    width: '60%',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+const dynamicStyles = (isDarkMode) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: isDarkMode ? '#000000' : '#ffffff',
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 20,
+      width: '100%',
+    },
+    headerTitle: {
+      flex: 1,
+      fontSize: 18,
+      color: isDarkMode ? '#ffffff' : '#1D2951',
+      textAlign: 'center',
+      fontWeight: 'bold',
+      marginRight: 20,
+    },
+    content: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+    },
+    sentText: {
+      fontSize: 16,
+      color: isDarkMode ? '#dddddd' : '#333333',
+      textAlign: 'center',
+      marginBottom: 20,
+    },
+    otpContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginBottom: 10,
+    },
+    otpInput: {
+      width: 50,
+      height: 50,
+      borderRadius: 8,
+      borderWidth: 1.5,
+      borderColor: isDarkMode ? '#ffffff' : '#1D2951',
+      textAlign: 'center',
+      fontSize: 20,
+      color: isDarkMode ? '#ffffff' : '#000000',
+      marginHorizontal: 5,
+    },
+    error: {
+      marginTop: 10,
+      color: 'red',
+      textAlign: 'center',
+    },
+    resendText: {
+      fontSize: 14,
+      color: isDarkMode ? '#bbbbbb' : '#999999',
+      textAlign: 'center',
+      marginVertical: 20,
+    },
+    submitButton: {
+      backgroundColor: '#ff4500',
+      borderRadius: 8,
+      paddingVertical: 14,
+      width: '60%',
+      alignItems: 'center',
+      marginTop: 10,
+    },
+    submitButtonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  });

@@ -107,7 +107,7 @@ const SearchItem = () => {
       setLoading(true);
       try {
         const response = await axios.get(
-          `http://192.168.55.102:5000/api/services?search=${query}`
+          `http:192.168.243.71:5000/api/services?search=${query}`
         );
         setSuggestions(response.data);
       } catch (error) {

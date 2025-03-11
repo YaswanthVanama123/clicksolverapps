@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -24,11 +24,17 @@ import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { useNavigation } from '@react-navigation/native';
 import uuid from 'react-native-uuid';
+// Import the theme hook
+import { useTheme } from '../context/ThemeContext';
 
 const RegistrationScreen = () => {
   const { width } = useWindowDimensions();
-  const styles = dynamicStyles(width); // <-- dynamic style creation
+  // Get the dark/light mode flag from context
+  const { isDarkMode } = useTheme();
+  // Pass isDarkMode to our dynamic styles generator
+  const styles = dynamicStyles(width, isDarkMode);
 
+  // State declarations
   const [subServices, setSubServices] = useState([]);
   const [titleColor, setTitleColor] = useState('#FF5722');
   const [errorFields, setErrorFields] = useState({});
@@ -69,44 +75,46 @@ const RegistrationScreen = () => {
     subSkills: [],
   });
   const [isEditing, setIsEditing] = useState(false);
-
-  // Introduce `loading` state
   const [loading, setLoading] = useState(false);
 
+  // Helper: update formData and clear errors
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    setErrorFields((prev) => ({ ...prev, [field]: false }));
+  };
+
+  // Handle checkbox for subskills
   const handleCheckboxChange = (serviceName) => {
     const isChecked = formData.subSkills.includes(serviceName);
     const updatedSubSkills = isChecked
       ? formData.subSkills.filter((skill) => skill !== serviceName)
       : [...formData.subSkills, serviceName];
-
     setFormData({ ...formData, subSkills: updatedSubSkills });
   };
 
+  // Upload image helper using imgbb API
   const uploadImage = async (uri) => {
     const apiKey = '287b4ba48139a6a59e75b5a8266bbea2';
     const apiUrl = 'https://api.imgbb.com/1/upload';
-
-    const formData = new FormData();
-    formData.append('key', apiKey);
-    formData.append('image', {
+    const data = new FormData();
+    data.append('key', apiKey);
+    data.append('image', {
       uri,
       type: 'image/jpeg',
       name: 'photo.jpg',
     });
-
     const response = await fetch(apiUrl, {
       method: 'POST',
-      body: formData,
+      body: data,
     });
-
     if (!response.ok) {
       throw new Error('Failed to upload image.');
     }
-
-    const data = await response.json();
-    return data.data.url;
+    const resData = await response.json();
+    return resData.data.url;
   };
 
+  // Component for swipe button thumb
   const ThumbIcon = () => {
     if (swiped) {
       return (
@@ -123,8 +131,9 @@ const RegistrationScreen = () => {
     }
   };
 
+  // Submit form data
   const handleSubmit = async () => {
-    setLoading(true); // Show loader
+    setLoading(true);
     const errors = {};
     for (const key in formData) {
       if (
@@ -134,7 +143,6 @@ const RegistrationScreen = () => {
         errors[key] = true;
       }
     }
-
     if (Object.keys(errors).length > 0) {
       setErrorFields(errors);
       Alert.alert('Error', 'Please fill all the required fields.');
@@ -148,7 +156,7 @@ const RegistrationScreen = () => {
         navigation.replace('Login');
       }
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/registration/submit`,
+        `http:192.168.243.71:5000/api/registration/submit`,
         formData,
         {
           headers: {
@@ -162,10 +170,11 @@ const RegistrationScreen = () => {
     } catch (error) {
       console.error('Error fetching services:', error);
     } finally {
-      setLoading(false); // Hide loader
+      setLoading(false);
     }
   };
 
+  // Fetch available services for skill categories
   const fetchServices = async () => {
     try {
       const pcsToken = await EncryptedStorage.getItem('pcs_token');
@@ -174,14 +183,13 @@ const RegistrationScreen = () => {
         navigation.replace('Login');
       }
       const response = await axios.get(
-        `http://192.168.55.102:5000/api/service/categories`,
+        `http:192.168.243.71:5000/api/service/categories`,
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
           },
         }
       );
-
       if (response.data[0].phone_numbers) {
         setPhoneNumber(response.data[0].phone_numbers);
       }
@@ -211,14 +219,12 @@ const RegistrationScreen = () => {
         'start_work_time',
         'nullCoordinates',
       ];
-
       for (const key of keys) {
         const value = await EncryptedStorage.getItem(key);
         if (value !== null) {
           await EncryptedStorage.removeItem(key);
         }
       }
-
       console.log('Logout successful, all necessary storage items removed.');
       navigation.replace('Login');
     } catch (error) {
@@ -232,7 +238,6 @@ const RegistrationScreen = () => {
       quality: 1,
       selectionLimit: 1,
     };
-
     launchImageLibrary(options, async (response) => {
       if (response.didCancel) {
         console.log('User cancelled image picker'); 
@@ -253,32 +258,6 @@ const RegistrationScreen = () => {
     });
   };
 
-  const handleInputChange = async (field, value) => {
-    setFormData({ ...formData, [field]: value });
-    setErrorFields((prev) => ({ ...prev, [field]: false }));
-    if (field === 'skillCategory') {
-      try {
-        const response = await axios.post(
-          `http://192.168.55.102:5000/api/subservice/checkboxes`,
-          { selectedService: value }
-        );
-        const data = response.data;
-        console.log('selected service', data);
-
-        const mappedData = data.map((item) => ({
-          id: item.service_id,
-          label: item.service_tag,
-          category: item.service_category,
-        }));
-
-        setSubServices(mappedData);
-      } catch (error) {
-        console.error('Error calling the backend:', error);
-        Alert.alert('Error', 'Failed to fetch service category data.');
-      }
-    }
-  };
-
   const fetchDetails = async () => {
     try {
       const pcsToken = await EncryptedStorage.getItem('pcs_token');
@@ -287,18 +266,15 @@ const RegistrationScreen = () => {
         navigation.replace('Login');
         return;
       }
-
       const response = await axios.get(
-        `http://192.168.55.102:5000/api/profile/detsils`,
+        `http:192.168.243.71:5000/api/profile/detsils`,
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
           },
         }
       );
-
       const data = response.data;
-
       setFormData((prev) => ({
         ...prev,
         lastName: data.personaldetails.lastName,
@@ -318,11 +294,9 @@ const RegistrationScreen = () => {
         proofImageUri: data.proof,
         subSkills: data.subservices || [],
       }));
-
       setPhoneNumber(data.phone_number);
-
       const subserviceResponse = await axios.post(
-        `http://192.168.55.102:5000/api/subservice/checkboxes`,
+        `http:192.168.243.71:5000/api/subservice/checkboxes`,
         { selectedService: data.service },
         {
           headers: {
@@ -330,14 +304,12 @@ const RegistrationScreen = () => {
           },
         }
       );
-
       const subserviceData = subserviceResponse.data;
       const mappedData = subserviceData.map((item) => ({
         id: item.service_id,
         label: item.service_tag,
         category: item.service_category,
       }));
-
       setSubServices(mappedData);
     } catch (error) {
       console.error('Error fetching services:', error);
@@ -348,23 +320,24 @@ const RegistrationScreen = () => {
     setIsEditing((prev) => !prev);
   };
 
+  // Compute grouped sub-services by category
+  const groupedSubServices = useMemo(() => {
+    return subServices.reduce((acc, item) => {
+      if (!acc[item.category]) {
+        acc[item.category] = [];
+      }
+      acc[item.category].push(item);
+      return acc;
+    }, {});
+  }, [subServices]);
+
   useEffect(() => {
     fetchServices();
     fetchDetails();
   }, []);
 
-  // Group subServices by category
-  const groupedSubServices = subServices.reduce((acc, item) => {
-    if (!acc[item.category]) {
-      acc[item.category] = [];
-    }
-    acc[item.category].push(item);
-    return acc;
-  }, {});
-
   return (
     <View style={styles.container}>
-      {/* Activity Indicator Overlay */}
       {loading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#FF5722" />
@@ -373,12 +346,13 @@ const RegistrationScreen = () => {
 
       <View style={styles.header}>
         <TouchableOpacity onPress={handleEdit} style={styles.editContainer}>
-          <Feather name="edit" size={24} color="#333" />
+          <Feather name="edit" size={24} color={isDarkMode ? "#ffffff" : "#333"} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Profile</Text>
       </View>
 
       <ScrollView style={styles.scrollContainer}>
+        {/* Personal Details Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Details</Text>
           <Text style={styles.label}>First Name</Text>
@@ -417,7 +391,6 @@ const RegistrationScreen = () => {
                 />
                 <Text style={styles.radioText}>Male</Text>
               </View>
-
               <View style={[styles.genderRow, formData.gender === 'female' && styles.checked]}>
                 <RadioButton
                   value="female"
@@ -598,7 +571,7 @@ const RegistrationScreen = () => {
 
           <Text style={styles.label}>Select Service Category</Text>
           <Dropdown
-            style={[styles.dropdown, errorFields.skillCategory && styles.Service]}
+            style={[styles.dropdown, errorFields.skillCategory && styles.errorInput]}
             containerStyle={styles.dropdownContainer}
             data={skillCategoryItems}
             disable={true}
@@ -624,18 +597,10 @@ const RegistrationScreen = () => {
             <Text style={styles.errorText}>This field is required.</Text>
           )}
 
-          <View
-            style={[
-              styles.checkboxGrid,
-              formData.subSkills.length > 0 && styles.checked,
-            ]}
-          >
-            {/* Group subServices by category */}
+          <View style={[styles.checkboxGrid, formData.subSkills.length > 0 && styles.checked]}>
             {Object.keys(groupedSubServices).map((categoryName) => (
               <View key={categoryName} style={{ marginBottom: 16 }}>
-                <Text style={styles.checkboxCategoryTitle}>
-                  {categoryName}
-                </Text>
+                <Text style={styles.checkboxCategoryTitle}>{categoryName}</Text>
                 {groupedSubServices[categoryName].map((item) => (
                   <View key={item.id} style={styles.checkboxContainer}>
                     <Checkbox
@@ -661,7 +626,6 @@ const RegistrationScreen = () => {
 
         <View style={styles.horizantalLine} />
 
-        {/* If not editing, show logout. If editing, show the SwipeButton or loader */}
         <View style={{ marginBottom: 30 }}>
           {loading ? (
             <ActivityIndicator
@@ -672,7 +636,7 @@ const RegistrationScreen = () => {
           ) : isEditing ? (
             <SwipeButton
               forceReset={(reset) => {
-                // Optional: capture this reset if you want to reset swipe on error
+                // Optional: capture this reset if needed
               }}
               title="Submit to Commander"
               titleStyles={{ color: titleColor, fontSize: 16 }}
@@ -710,16 +674,26 @@ const RegistrationScreen = () => {
   );
 };
 
+// Compute grouped sub-services by category
+const groupedSubServices = (subServices) =>
+  subServices.reduce((acc, item) => {
+    if (!acc[item.category]) {
+      acc[item.category] = [];
+    }
+    acc[item.category].push(item);
+    return acc;
+  }, {});
+
 /**
- * DYNAMIC STYLES FOR RESPONSIVENESS
+ * Dynamic styles generator that accepts screen width and isDarkMode flag.
  */
-function dynamicStyles(width) {
+function dynamicStyles(width, isDarkMode) {
   const isTablet = width >= 600;
 
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
       paddingBottom: 0,
     },
     loadingOverlay: {
@@ -728,7 +702,7 @@ function dynamicStyles(width) {
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(255,255,255,0.7)',
+      backgroundColor: isDarkMode ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.7)',
       justifyContent: 'center',
       alignItems: 'center',
       zIndex: 999,
@@ -743,7 +717,7 @@ function dynamicStyles(width) {
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.5,
       shadowRadius: 5,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#1f1f1f' : '#FFFFFF',
       zIndex: 1,
     },
     editContainer: {
@@ -757,28 +731,29 @@ function dynamicStyles(width) {
       fontSize: isTablet ? 22 : 20,
       fontWeight: 'bold',
       marginLeft: 10,
-      color: '#1D2951',
+      color: isDarkMode ? '#ffffff' : '#1D2951',
       textAlign: 'center',
     },
     scrollContainer: {
       flex: 1,
       paddingBottom: 0,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
     },
     section: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#1f1f1f' : '#FFFFFF',
       padding: isTablet ? 24 : 20,
       borderRadius: 10,
+      marginBottom: 20,
     },
     sectionTitle: {
       fontSize: isTablet ? 20 : 18,
       fontWeight: 'bold',
       marginBottom: 10,
-      color: '#1D2951',
+      color: isDarkMode ? '#ffffff' : '#1D2951',
     },
     label: {
       marginBottom: 5,
-      color: '#666',
+      color: isDarkMode ? '#cccccc' : '#666',
       fontSize: isTablet ? 16 : 14,
     },
     input: {
@@ -788,7 +763,7 @@ function dynamicStyles(width) {
       borderRadius: 5,
       paddingHorizontal: 10,
       marginBottom: 15,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       fontSize: isTablet ? 16 : 14,
     },
     errorInput: {
@@ -800,7 +775,7 @@ function dynamicStyles(width) {
       marginBottom: 10,
     },
     placeholderStyle: {
-      color: '#212121',
+      color: isDarkMode ? '#cccccc' : '#212121',
     },
     dropdown: {
       height: isTablet ? 45 : 40,
@@ -809,10 +784,11 @@ function dynamicStyles(width) {
       borderRadius: 5,
       paddingHorizontal: 10,
       marginBottom: 15,
+      backgroundColor: isDarkMode ? '#333333' : '#FFFFFF',
     },
     dropdownContainer: {
       marginBottom: 20,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#1f1f1f' : '#FFFFFF',
       borderRadius: 5,
       elevation: 1,
       shadowColor: '#000',
@@ -821,7 +797,7 @@ function dynamicStyles(width) {
       shadowRadius: 2,
     },
     selectedTextStyle: {
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       fontSize: isTablet ? 16 : 14,
     },
     iconStyle: {
@@ -833,11 +809,11 @@ function dynamicStyles(width) {
     },
     dropdownItem: {
       padding: 10,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#1f1f1f' : '#FFFFFF',
     },
     dropdownItemText: {
       fontSize: 16,
-      color: '#333',
+      color: isDarkMode ? '#ffffff' : '#333',
     },
     row: {
       flexDirection: 'row',
@@ -851,7 +827,7 @@ function dynamicStyles(width) {
     radioText: {
       fontSize: isTablet ? 16 : 14,
       marginLeft: 2,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       fontWeight: 'bold',
     },
     phoneContainer: {
@@ -867,6 +843,7 @@ function dynamicStyles(width) {
       borderRadius: 5,
       padding: isTablet ? 12 : 10,
       marginRight: 10,
+      backgroundColor: isDarkMode ? '#333333' : '#FFFFFF',
     },
     flagIcon: {
       width: isTablet ? 24 : 20,
@@ -880,13 +857,14 @@ function dynamicStyles(width) {
       borderWidth: 1,
       borderRadius: 5,
       paddingHorizontal: 10,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       fontSize: isTablet ? 16 : 14,
+      backgroundColor: isDarkMode ? '#333333' : '#FFFFFF',
     },
     horizantalLine: {
       height: 2,
       width: '100%',
-      backgroundColor: '#F5F5F5',
+      backgroundColor: isDarkMode ? '#555555' : '#F5F5F5',
       marginVertical: isTablet ? 16 : 12,
     },
     checkboxGrid: {
@@ -896,14 +874,13 @@ function dynamicStyles(width) {
       fontWeight: 'bold',
       fontSize: isTablet ? 18 : 16,
       marginVertical: 8,
-      color: '#000',
+      color: isDarkMode ? '#ffffff' : '#000',
     },
     checkboxContainer: {
       flexDirection: 'row',
       alignItems: 'center',
     },
     uploadContainer: {
-      display: 'flex',
       flexDirection: 'column',
     },
     imagePreview: {
@@ -930,13 +907,13 @@ function dynamicStyles(width) {
     sectionPaymentTitle: {
       fontSize: isTablet ? 20 : 16,
       fontWeight: 'bold',
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       marginBottom: 8,
       paddingLeft: isTablet ? 14 : 10,
     },
     paymentInnerContainer: {
       padding: isTablet ? 12 : 10,
-      backgroundColor: '#f5f5f5',
+      backgroundColor: isDarkMode ? '#333333' : '#f5f5f5',
       marginTop: 10,
       marginBottom: 10,
     },
@@ -946,7 +923,6 @@ function dynamicStyles(width) {
       gap: 5,
     },
     buttonContainer: {
-      display: 'flex',
       flexDirection: 'row',
       justifyContent: 'center',
       marginBottom: 20,
@@ -954,7 +930,7 @@ function dynamicStyles(width) {
     doneButton: {
       borderWidth: 1,
       borderColor: '#FF5722',
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#333333' : '#ffffff',
       paddingVertical: isTablet ? 12 : 10,
       borderRadius: 10,
       alignItems: 'center',

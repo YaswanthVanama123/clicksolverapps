@@ -26,7 +26,8 @@ allprojects {
         google()
         mavenCentral()
         maven { url("${project(':react-native-background-geolocation').projectDir}/libs") }
-        
+        maven { url 'https://repo.maven.apache.org/maven2' }
+        maven { url 'https://jitpack.io' }
         maven { url 'https://developer.huawei.com/repo/' }
         maven { url("${project(':react-native-background-fetch').projectDir}/libs") }
        // Required for react-native-background-geolocation

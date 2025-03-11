@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useMemo, useCallback} from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   ScrollView,
   Alert,
   Linking,
-  useWindowDimensions, // <-- Import for responsiveness
+  useWindowDimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome6';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -17,19 +17,22 @@ import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import SwipeButton from 'rn-swipe-button';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Entypo from 'react-native-vector-icons/Entypo';
-import {useRoute, useNavigation} from '@react-navigation/native';
-import {RadioButton} from 'react-native-paper';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import { RadioButton } from 'react-native-paper';
 import axios from 'axios';
 import Geolocation from '@react-native-community/geolocation';
+// Import theme hook from our context
+import { useTheme } from '../context/ThemeContext';
 
 const ServiceTrackingItemScreen = () => {
-  const { width } = useWindowDimensions();         // <-- for screen width
-  const styles = dynamicStyles(width);             // <-- dynamic style creation
+  const { width } = useWindowDimensions();
+  const { isDarkMode } = useTheme();
+  // Pass both screen width and theme flag to dynamicStyles
+  const styles = dynamicStyles(width, isDarkMode);
 
   const [titleColor, setTitleColor] = useState('#FFFFFF');
   const [swiped, setSwiped] = useState(false);
   const [details, setDetails] = useState({});
-  const [paymentDetails, setPaymentDetails] = useState({});
   const [serviceArray, setServiceArray] = useState([]);
   const [isEditVisible, setEditVisible] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('');
@@ -37,7 +40,7 @@ const ServiceTrackingItemScreen = () => {
   const statuses = ['Collected Item', 'Work started', 'Work Completed', 'Delivered'];
   const navigation = useNavigation();
 
-  // A custom thumb icon for the swipe button
+  // Custom thumb icon for the swipe button
   const ThumbIcon = useMemo(
     () => () => (
       <View style={styles.thumbContainer}>
@@ -52,7 +55,7 @@ const ServiceTrackingItemScreen = () => {
   );
 
   const handleEditPress = () => {
-    setEditVisible((prev) => !prev);
+    setEditVisible(prev => !prev);
   };
 
   const handleStatusChange = (status) => {
@@ -74,7 +77,7 @@ const ServiceTrackingItemScreen = () => {
   const applyStatusChange = async (newStatus) => {
     try {
       await axios.post(
-        `http://192.168.55.102:5000/api/service/tracking/update/status`,
+        `http:192.168.243.71:5000/api/service/tracking/update/status`,
         {
           tracking_id,
           newStatus,
@@ -93,7 +96,9 @@ const ServiceTrackingItemScreen = () => {
       (position) => {
         const { latitude, longitude } = position.coords;
         const url = `https://www.google.com/maps/dir/?api=1&origin=${latitude},${longitude}&destination=${details.latitude},${details.longitude}&travelmode=driving`;
-        Linking.openURL(url).catch((err) => console.error('Error opening Google Maps:', err));
+        Linking.openURL(url).catch((err) =>
+          console.error('Error opening Google Maps:', err)
+        );
       },
       (error) => {
         console.error('Error getting current location:', error);
@@ -103,14 +108,9 @@ const ServiceTrackingItemScreen = () => {
 
   const phoneCall = async () => {
     try { 
-      console.log("trac",tracking_id)
-      const response = await axios.post('http://192.168.55.102:5000/api/user/tracking/call', { tracking_id });
-  
+      const response = await axios.post('http:192.168.243.71:5000/api/user/tracking/call', { tracking_id });
       if (response.status === 200 && response.data.mobile) {
         const phoneNumber = response.data.mobile;
-        console.log("Call initiated successfully:", phoneNumber);
-  
-        // Open phone dialer with the retrieved number
         const dialURL = `tel:${phoneNumber}`;
         Linking.openURL(dialURL).catch(err => 
           console.error("Error opening dialer:", err)
@@ -123,7 +123,7 @@ const ServiceTrackingItemScreen = () => {
     }
   };
 
-  // Generate timeline data
+  // Generate timeline data based on the current status
   const getTimelineData = useMemo(() => {
     const currentStatusIndex = statuses.indexOf(details.service_status);
     return statuses.map((status, index) => ({
@@ -137,15 +137,12 @@ const ServiceTrackingItemScreen = () => {
 
   useEffect(() => {
     const fetchBookings = async () => {
-      try {
-        const {
-          data: { data },
-        } = await axios.post(
-          `http://192.168.55.102:5000/api/service/tracking/worker/item/details`,
+      try { 
+        const { data: { data } } = await axios.post(
+          `http:192.168.243.71:5000/api/service/tracking/worker/item/details`,
           { tracking_id }
         );
         setDetails(data);
-        // setPaymentDetails(paymentDetails);
         setServiceArray(data.service_booked);
       } catch (error) {
         console.error('Error fetching bookings data:', error);
@@ -161,9 +158,10 @@ const ServiceTrackingItemScreen = () => {
         <Icon
           name="arrow-left-long"
           size={styles.headerIconSize}
-          color="#212121"
+          color={isDarkMode ? "#ffffff" : "#212121"}
           style={styles.backIcon}
           onPress={() => navigation.goBack()}
+          
         />
         <Text style={styles.headerText}>Service Trackings</Text>
       </View>
@@ -220,10 +218,7 @@ const ServiceTrackingItemScreen = () => {
                   />
                   {index !== getTimelineData.length - 1 && (
                     <View
-                      style={[
-                        styles.lineSegment,
-                        { backgroundColor: getTimelineData[index + 1].iconColor },
-                      ]}
+                      style={[styles.lineSegment, { backgroundColor: getTimelineData[index + 1].iconColor }]}
                     />
                   )}
                 </View>
@@ -277,40 +272,14 @@ const ServiceTrackingItemScreen = () => {
         </View>
         <View style={styles.sectionContainer}>
           <View style={styles.PaymentItemContainer}>
-            {/* {serviceArray.map((service, index) => (
-              <View key={index} style={styles.paymentRow}>
-                <Text style={styles.paymentLabel}>{service.serviceName}</Text>
-                <Text style={styles.paymentValue}>₹{service.cost}.00</Text>
-              </View>
-            ))} */}
-            {/* <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>SGST (5%)</Text>
-              <Text style={styles.paymentValue}>
-                ₹{paymentDetails.cgstAmount}.00
-              </Text>
-            </View>
-            <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>CGST (5%)</Text>
-              <Text style={styles.paymentValue}>
-                ₹{paymentDetails.gstAmount}.00
-              </Text>
-            </View> */}
-
-            {/* <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>Cashback (5%)</Text>
-              <Text style={styles.paymentValue}>
-                ₹{details.discount}.00
-              </Text>
-            </View> */}
             <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>Pay Via Scan</Text>
-              <Text style={styles.paymentValue}>
-                Grand Total ₹{details.total_cost}.00
-              </Text>
+              <Text style={styles.paymentValue}>Grand Total ₹{details.total_cost}.00</Text>
             </View>
           </View>
         </View>
 
+        {/* Swipe Button */}
         <View style={styles.swipeButton}>
           <SwipeButton
             title="Delivered"
@@ -348,22 +317,13 @@ const ServiceTrackingItemScreen = () => {
 
 export default ServiceTrackingItemScreen;
 
-/** 
- * STYLES
- * 
- * For responsiveness, we can use `useWindowDimensions` to scale 
- * fonts/margins for tablets vs. phones. 
- * Example below uses isTablet = width >= 600:
- */
-
-
-function dynamicStyles(width) {
+/* --------------------- Dynamic Styles Generator --------------------- */
+function dynamicStyles(width, isDarkMode) {
   const isTablet = width >= 600;
-
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
     },
     header: {
       flexDirection: 'row',
@@ -375,7 +335,7 @@ function dynamicStyles(width) {
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,
       shadowRadius: 4,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
     },
     headerIconSize: isTablet ? 24 : 20,
     backIcon: {
@@ -384,7 +344,7 @@ function dynamicStyles(width) {
     headerText: {
       fontSize: isTablet ? 20 : 18,
       fontWeight: 'bold',
-      color: '#1D2951',
+      color: isDarkMode ? '#ffffff' : '#1D2951',
       paddingLeft: isTablet ? 40 : 30,
     },
     profileContainer: {
@@ -419,12 +379,7 @@ function dynamicStyles(width) {
     userName: {
       fontSize: isTablet ? 22 : 20,
       fontWeight: 'bold',
-      color: '#1D2951',
-    },
-    userDesignation: { 
-      fontSize: isTablet ? 16 : 14,
-      color: '#4a4a4a',
-      fontFamily: 'RobotoSlab-Regular',
+      color: isDarkMode ? '#ffffff' : '#1D2951',
     },
     callIconContainer: {
       backgroundColor: '#fff',
@@ -435,7 +390,7 @@ function dynamicStyles(width) {
     callIconSize: isTablet ? 24 : 22,
     horizantalLine: {
       height: 2,
-      backgroundColor: '#F5F5F5',
+      backgroundColor: isDarkMode ? '#333333' : '#F5F5F5',
       marginBottom: isTablet ? 16 : 12,
     },
     sectionContainer: {
@@ -448,7 +403,7 @@ function dynamicStyles(width) {
     sectionBookedTitle: {
       fontSize: isTablet ? 18 : 16,
       fontWeight: 'bold',
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       marginBottom: 8,
     },
     innerContainer: {
@@ -462,7 +417,7 @@ function dynamicStyles(width) {
     sectionTitle: {
       fontSize: isTablet ? 18 : 16,
       fontWeight: '700',
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       marginBottom: 8,
       paddingBottom: 8,
     },
@@ -476,17 +431,14 @@ function dynamicStyles(width) {
     },
     serviceDetail: {
       fontSize: isTablet ? 15 : 14,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       marginBottom: 4,
     },
     timelineItem: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      // marginBottom: isTablet ? 12 : 8,
     },
-    timelineIcon: {
-      // marginBottom: 2,
-    },
+    timelineIcon: {},
     lineSegment: {
       width: 2,
       height: isTablet ? 50 : 40,
@@ -497,12 +449,12 @@ function dynamicStyles(width) {
     },
     timelineText: {
       fontSize: isTablet ? 15 : 14,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       fontWeight: 'bold',
     },
     timelineTime: {
       fontSize: isTablet ? 12 : 10,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#cccccc' : '#4a4a4a',
     },
     addressContainer: {
       flexDirection: 'row',
@@ -519,7 +471,7 @@ function dynamicStyles(width) {
     },
     address: {
       fontSize: isTablet ? 14 : 13,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
     },
     googleMapsButtonContainer: {
       flexDirection: 'row',
@@ -544,14 +496,14 @@ function dynamicStyles(width) {
     },
     paymentInnerContainer: {
       padding: isTablet ? 12 : 10,
-      backgroundColor: '#f5f5f5',
+      backgroundColor: isDarkMode ? '#212121' : '#f5f5f5',
       marginTop: 10,
       marginBottom: 10,
     },
     sectionPaymentTitle: {
       fontSize: isTablet ? 18 : 16,
-      fontWeight: 'bold',
-      color: '#212121',
+      fontWeight: 'bold', 
+      color: isDarkMode ? '#ffffff' : '#212121',
       marginBottom: 8,
       paddingLeft: isTablet ? 14 : 10,
     },
@@ -566,11 +518,11 @@ function dynamicStyles(width) {
     },
     paymentLabel: {
       fontSize: isTablet ? 15 : 14,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
     },
     paymentValue: {
       fontSize: isTablet ? 15 : 14,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       fontWeight: 'bold',
     },
     swipeButton: {

@@ -87,7 +87,7 @@ const ServiceBookingOngoingItem = () => {
         setLoading(true);
         console.log("track",tracking_id)
         const response = await axios.post(
-          `http://192.168.55.102:5000/api/service/ongoing/booking/item/details`,
+          `http:192.168.243.71:5000/api/service/ongoing/booking/item/details`,
           { tracking_id },
         );
         const { data } = response.data;
@@ -124,11 +124,19 @@ const ServiceBookingOngoingItem = () => {
             size={20}
             color={isDarkMode ? '#fff' : '#212121'}
             style={styles.backIcon}
+                                                onPress={() => {
+                                                  navigation.dispatch(
+                                                    CommonActions.reset({
+                                                      index: 0,
+                                                      routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
+                                                    })
+                                                  );
+                                                }} 
           />
           <Text style={styles.headerText}>Service Trackings</Text>
         </View>
 
-        <ScrollView>
+        <ScrollView> 
           {/* User Profile */}
           <View style={styles.profileContainer}>
             <View style={styles.profileImage}>

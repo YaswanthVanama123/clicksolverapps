@@ -1,4 +1,4 @@
-import React, {useEffect, useState, memo, useCallback} from 'react';
+import React, { useCallback, useEffect, useState, memo } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
 import uuid from 'react-native-uuid';
+// Import our theme hook
+import { useTheme } from '../context/ThemeContext';
 
 /* --------------------- formatDate Helper --------------------- */
 const formatDate = (created_at) => {
@@ -26,31 +28,26 @@ const formatDate = (created_at) => {
 };
 
 /* --------------------- PartialStarRating Component ---------------------
-   Renders up to 5 stars with partial fill for decimals (e.g., 4.6 => 4 full stars + 60% of 5th star).
+   Renders up to 5 stars with partial fill for decimals.
 ----------------------------------------------------------------------- */
 const PartialStarRating = ({ rating, size = 14, color = '#FF5722' }) => {
   const MAX_STARS = 5;
-  const fullStars = Math.floor(rating);         // e.g., 4 for 4.6
-  const decimalPart = rating - fullStars;       // e.g., 0.6
-  const remaining = MAX_STARS - Math.ceil(rating); // e.g., 0 if rating=4.6
-
-  // Array to hold the rendered stars
+  const fullStars = Math.floor(rating);
+  const decimalPart = rating - fullStars;
+  const remaining = MAX_STARS - Math.ceil(rating);
   const stars = [];
 
-  // Render full stars
+  // Full stars
   for (let i = 0; i < fullStars; i++) {
     stars.push(
       <FontAwesome key={`full-${i}`} name="star" size={size} color={color} />
     );
   }
-
-  // Render partial star if there's a decimal part
+  // Partial star if needed
   if (decimalPart > 0) {
     stars.push(
       <View key="partial-star" style={{ position: 'relative', width: size, marginRight: 2 }}>
-        {/* Outline star (gray or empty) behind */}
         <FontAwesome name="star-o" size={size} color={color} />
-        {/* Filled star portion in front */}
         <View
           style={{
             position: 'absolute',
@@ -65,62 +62,56 @@ const PartialStarRating = ({ rating, size = 14, color = '#FF5722' }) => {
       </View>
     );
   }
-
-  // Render empty stars if needed
+  // Empty stars
   for (let i = 0; i < remaining; i++) {
     stars.push(
       <FontAwesome key={`empty-${i}`} name="star-o" size={size} color={color} />
     );
   }
-
-  return (
-    <View style={{ flexDirection: 'row', marginRight: 3 }}>
-      {stars}
-    </View>
-  );
+  return <View style={{ flexDirection: 'row', marginRight: 3 }}>{stars}</View>;
 };
 
 /* --------------------- ReviewItem Component --------------------- */
-const ReviewItem = memo(({item, styles}) => {
+const ReviewItem = memo(({ item, styles }) => {
   if (!item.comment) return null;
-
   return (
     <View style={styles.reviewContainer}>
       <View style={styles.userContainer}>
         <Image
           source={{
-            uri: 'https://i.postimg.cc/mZnDzdqJ/IMG-20240929-WA0024.jpg',
+            // uri: 'https://i.postimg.cc/mZnDzdqJ/IMG-20240929-WA0024.jpg',
+            uri: item.userImage
           }}
-          style={styles.userImage}
+          style={styles.userImage} 
         />
         <View>
           <Text style={styles.userName}>{item.username}</Text>
           <Text style={styles.reviewTime}>{formatDate(item.created_at)}</Text>
         </View>
       </View>
-
-      {/* If your review ratings can be decimals, you can also use <PartialStarRating rating={item.rating} /> */}
       <View style={styles.ratingContainerSmall}>
-        {Array.from({length: 5}, (_, i) => (
+        {Array.from({ length: 5 }, (_, i) => (
           <FontAwesome
             key={i + 1}
             name={i < item.rating ? 'star' : 'star-o'}
             size={16}
             color="#FF5700"
-            style={{marginRight: 3}}
+            style={{ marginRight: 3 }}
           />
         ))}
       </View>
-
       <Text style={styles.reviewText}>{item.comment}</Text>
     </View>
   );
 });
 
-/* --------------------- Main Screen --------------------- */
+/* --------------------- Main Screen: RatingsScreen --------------------- */
 const RatingsScreen = () => {
   const { width } = useWindowDimensions();
-  const styles = dynamicStyles(width);
+  // Get the theme flag from our context
+  const { isDarkMode } = useTheme();
+  // Pass isDarkMode to dynamicStyles so colors update accordingly.
+  const styles = dynamicStyles(width, isDarkMode);
 
   const [reviews, setReviews] = useState([]);
   const [workerReview, setWorkerReview] = useState({});
@@ -140,7 +131,7 @@ const RatingsScreen = () => {
       if (!token) throw new Error('Token not found');
 
       const response = await axios.get(
-        'http://192.168.55.102:5000/api/worker/ratings',
+        'http:192.168.243.71:5000/api/worker/ratings',
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -160,7 +151,7 @@ const RatingsScreen = () => {
   }, []);
 
   const calculateRatingDistribution = (reviewsData) => {
-    const distribution = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
+    const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
     reviewsData.forEach((review) => {
       if (review.rating >= 1 && review.rating <= 5) {
         distribution[review.rating] += 1;
@@ -184,7 +175,7 @@ const RatingsScreen = () => {
     <View style={styles.ratingDistributionRow}>
       <Text style={styles.ratingLabel}>{label}</Text>
       <View style={styles.ratingBarContainer}>
-        <View style={[styles.ratingValue, {width: `${value}%`}]} />
+        <View style={[styles.ratingValue, { width: `${value}%` }]} />
       </View>
       <Text style={styles.ratingPercentage}>{value}%</Text>
     </View>
@@ -194,7 +185,6 @@ const RatingsScreen = () => {
   const renderHeader = () => {
     return (
       <View>
-        {/* Rating Summary & Distribution */}
         <View style={styles.ratingHeadContainer}>
           <View style={styles.ratingDistributionContainer}>
             {Object.keys(ratingDistribution)
@@ -207,20 +197,16 @@ const RatingsScreen = () => {
                 />
               ))}
           </View>
-
           <View style={styles.ratingSummaryContainer}>
             <Text style={styles.overallRating}>
               {workerReview.average_rating || 0}
             </Text>
-            {/* Partial star rating for average */}
             <PartialStarRating
               rating={workerReview.average_rating || 0}
               size={16}
               color="#FF5722"
             />
-            <Text style={styles.reviewCount}>
-              {reviews.length} ratings
-            </Text>
+            <Text style={styles.reviewCount}>{reviews.length} ratings</Text>
           </View>
         </View>
       </View>
@@ -238,9 +224,8 @@ const RatingsScreen = () => {
   if (reviews.length === 0) {
     return (
       <View style={styles.mainContainer}>
-        {/* Header */}
         <View style={styles.headerContainer}>
-          <Icon name="arrow-back" size={24} color="#000" style={{marginRight: 10}} />
+          <Icon name="arrow-back" size={24} color={isDarkMode ? "#ffffff" : "#000"} style={{ marginRight: 10 }} />
           <Text style={styles.headerTitle}>Rating Screen</Text>
         </View>
         <View style={styles.noDataContainer}>
@@ -252,13 +237,10 @@ const RatingsScreen = () => {
 
   return (
     <View style={styles.mainContainer}>
-      {/* Header */}
       <View style={styles.headerContainer}>
-        <Icon name="arrow-back" size={24} color="#000" style={{marginRight: 10}} />
+        <Icon name="arrow-back" size={24} color={isDarkMode ? "#ffffff" : "#000"} style={{ marginRight: 10 }} />
         <Text style={styles.headerTitle}>Rating Screen</Text>
       </View>
-
-      {/* Single FlatList with ListHeaderComponent */}
       <FlatList
         style={styles.container}
         data={reviews}
@@ -272,24 +254,22 @@ const RatingsScreen = () => {
 };
 
 /* --------------------- Dynamic Styles Generator --------------------- */
-function dynamicStyles(width) {
+function dynamicStyles(width, isDarkMode) {
   const isTablet = width >= 600;
   return StyleSheet.create({
     mainContainer: {
       flex: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
     },
     container: {
       flex: 1,
-      backgroundColor: '#ffffff',
-      // You can add padding if needed:
-      // paddingHorizontal: isTablet ? 24 : 16,
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
     },
     headerContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       padding: isTablet ? 20 : 16,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
       elevation: 2,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
@@ -299,7 +279,7 @@ function dynamicStyles(width) {
     headerTitle: {
       fontSize: isTablet ? 22 : 18,
       fontWeight: 'bold',
-      color: '#000',
+      color: isDarkMode ? '#ffffff' : '#000',
       textAlign: 'center',
       flex: 1,
     },
@@ -315,7 +295,8 @@ function dynamicStyles(width) {
     },
     noDataText: {
       fontSize: isTablet ? 18 : 16,
-      color: '#999',
+      color: isDarkMode ? '#cccccc' : '#999',
+      fontWeight: 'bold',
     },
     ratingHeadContainer: {
       flexDirection: 'row',
@@ -334,12 +315,12 @@ function dynamicStyles(width) {
     ratingLabel: {
       width: isTablet ? 30 : 20,
       fontSize: isTablet ? 18 : 16,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ffffff' : '#4a4a4a',
     },
     ratingBarContainer: {
       flex: 1,
       height: isTablet ? 12 : 10,
-      backgroundColor: '#e0e0e0',
+      backgroundColor: isDarkMode ? '#333333' : '#e0e0e0',
       borderRadius: 5,
       overflow: 'hidden',
       marginHorizontal: 10,
@@ -350,7 +331,7 @@ function dynamicStyles(width) {
     },
     ratingPercentage: {
       fontSize: isTablet ? 18 : 16,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ffffff' : '#4a4a4a',
     },
     ratingSummaryContainer: {
       flexDirection: 'column',
@@ -361,11 +342,11 @@ function dynamicStyles(width) {
     overallRating: {
       fontSize: isTablet ? 40 : 35,
       fontWeight: 'bold',
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
     },
     reviewCount: {
       fontSize: isTablet ? 18 : 16,
-      color: '#808080',
+      color: isDarkMode ? '#cccccc' : '#808080',
       textAlign: 'center',
       marginTop: 4,
     },
@@ -373,7 +354,7 @@ function dynamicStyles(width) {
       paddingVertical: isTablet ? 20 : 16,
       paddingHorizontal: isTablet ? 24 : 20,
       borderBottomWidth: 1,
-      borderBottomColor: '#e0e0e0',
+      borderBottomColor: isDarkMode ? '#333333' : '#e0e0e0',
     },
     userContainer: {
       flexDirection: 'row',
@@ -388,12 +369,12 @@ function dynamicStyles(width) {
     },
     userName: {
       fontSize: isTablet ? 18 : 16,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ffffff' : '#4a4a4a',
       fontWeight: 'bold',
     },
     reviewTime: {
       fontSize: isTablet ? 14 : 12,
-      color: '#808080',
+      color: isDarkMode ? '#cccccc' : '#808080',
     },
     ratingContainerSmall: {
       flexDirection: 'row',
@@ -402,9 +383,61 @@ function dynamicStyles(width) {
     },
     reviewText: {
       fontSize: isTablet ? 16 : 14,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#dddddd' : '#4a4a4a',
       marginTop: isTablet ? 12 : 8,
       lineHeight: isTablet ? 24 : 20,
+    },
+    historyItemContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: isDarkMode ? '#222222' : '#fff',
+      marginHorizontal: isTablet ? 30 : 16,
+      marginVertical: 8,
+      borderRadius: 10,
+      padding: isTablet ? 20 : 16,
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+    },
+    historyIconWrapper: {
+      width: isTablet ? 50 : 45,
+      height: isTablet ? 50 : 45,
+      borderRadius: isTablet ? 25 : 22.5,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: isTablet ? 18 : 14,
+    },
+    historyMiddle: {
+      flex: 2,
+      justifyContent: 'center',
+    },
+    historyMainText: {
+      fontSize: isTablet ? 16 : 14,
+      fontWeight: '600',
+      color: isDarkMode ? '#ffffff' : '#333',
+      marginBottom: 4,
+    },
+    historyTimeText: {
+      fontSize: isTablet ? 14 : 12,
+      color: isDarkMode ? '#cccccc' : '#999',
+    },
+    historyRight: {
+      alignItems: 'flex-end',
+      justifyContent: 'center',
+      marginLeft: isTablet ? 12 : 8,
+    },
+    historyAmount: {
+      fontSize: isTablet ? 18 : 16,
+      fontWeight: 'bold',
+      color: isDarkMode ? '#ffffff' : '#333',
+    },
+    historyOrderId: {
+      marginTop: 4,
+      fontSize: isTablet ? 13 : 12,
+      color: isDarkMode ? '#cccccc' : '#999',
+      maxWidth: 120,
     },
   });
 }

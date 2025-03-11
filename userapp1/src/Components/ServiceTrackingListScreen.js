@@ -1,27 +1,35 @@
-import React, {useEffect, useState} from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  FlatList,
+  Image,
   TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  BackHandler,
+  Modal,
+  ActivityIndicator,
+  useWindowDimensions,
   TouchableWithoutFeedback,
   Keyboard,
-  useWindowDimensions,
+  FlatList,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import LottieView from 'lottie-react-native';
+import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
 import uuid from 'react-native-uuid';
-import {useNavigation} from '@react-navigation/native';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import LottieView from 'lottie-react-native';
-import { useTheme } from '../context/ThemeContext'; // <-- Import the theme hook
+import { useNavigation, useRoute, CommonActions, useFocusEffect } from '@react-navigation/native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import messaging from '@react-native-firebase/messaging';
+// Import theme hook
+import { useTheme } from '../context/ThemeContext';
 
 const ServiceTrackingListScreen = () => {
   const { width, height } = useWindowDimensions();
-  const { isDarkMode } = useTheme(); // Get dark mode state
+  const { isDarkMode } = useTheme();
   const styles = dynamicStyles(width, height, isDarkMode);
 
   const [serviceData, setServiceData] = useState([]);
@@ -29,7 +37,7 @@ const ServiceTrackingListScreen = () => {
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false); 
+  const [error, setError] = useState(false);
   const navigation = useNavigation();
 
   const filterOptions = ['Collected Item', 'Work started', 'Work Completed'];
@@ -43,25 +51,38 @@ const ServiceTrackingListScreen = () => {
       if (!token) throw new Error('Token not found');
 
       const response = await axios.get(
-        'http://192.168.55.102:5000/api/user/tracking/services',
+        'http:192.168.243.71:5000/api/user/tracking/services',
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        },
+        }
       );
       setServiceData(response.data);
       setFilteredData(response.data); // Initially display all data
     } catch (err) {
       console.error('Error fetching bookings data:', err);
-      setError(true); 
+      setError(true);
     } finally {
       setLoading(false);
     }
   };
 
+  // Initial data fetch
   useEffect(() => {
     fetchBookings();
+  }, []);
+
+  // Listen for FCM notifications. If notification.data has a "status" key, call fetchBookings.
+  useEffect(() => {
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      console.log('FCM notification received in ServiceTrackingListScreen:', remoteMessage);
+      if (remoteMessage.data && remoteMessage.data.status) {
+        console.log('Notification has status data. Refreshing bookings...');
+        fetchBookings();
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
   const formatDate = (created_at) => {
@@ -185,7 +206,6 @@ const ServiceTrackingListScreen = () => {
           {/* Service List */}
           <View style={styles.trackingItems}>
             {loading ? (
-              // LOADING VIEW
               <View style={styles.loadingContainer}>
                 <LottieView
                   source={require('../assets/searchLoading.json')}
@@ -195,7 +215,6 @@ const ServiceTrackingListScreen = () => {
                 />
               </View>
             ) : error ? (
-              // ERROR VIEW with Retry button
               <View style={styles.errorContainer}>
                 <Text style={styles.errorText}>
                   Something went wrong. Please try again.
@@ -205,12 +224,10 @@ const ServiceTrackingListScreen = () => {
                 </TouchableOpacity>
               </View>
             ) : filteredData.length === 0 ? (
-              // NO DATA VIEW
               <View style={styles.noDataContainer}>
                 <Text style={styles.noDataText}>No data available</Text>
               </View>
             ) : (
-              // DATA VIEW
               <FlatList
                 data={filteredData}
                 renderItem={renderItem}
@@ -292,7 +309,6 @@ const dynamicStyles = (width, height, isDarkMode) => {
       flex: 1,
       paddingTop: isTablet ? 20 : 16,
     },
-    // LOADING
     loadingContainer: {
       flex: 1,
       justifyContent: 'center',
@@ -303,7 +319,6 @@ const dynamicStyles = (width, height, isDarkMode) => {
       width: '100%',
       height: '100%',
     },
-    // ERROR
     errorContainer: {
       flex: 1,
       justifyContent: 'center',
@@ -388,7 +403,6 @@ const dynamicStyles = (width, height, isDarkMode) => {
       fontFamily: 'RobotoSlab-Medium',
       color: '#212121',
     },
-    // NO DATA
     noDataContainer: {
       alignItems: 'center',
       marginTop: 20,

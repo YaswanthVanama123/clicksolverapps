@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback} from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -21,12 +21,19 @@ import {
 
 // Set Mapbox access token
 Mapbox.setAccessToken(
-  'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY2x5Ymw5MXZpMWZseDJqcTJ3NXFlZnRnYyJ9._E8mIoaIlyGrgdeu71StDg',
+  'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY2x5Ymw5MXZpMWZseDJqcTJ3NXFlZnRnYyJ9._E8mIoaIlyGrgdeu71StDg'
 );
 
+// Import theme hook
+import { useTheme } from '../context/ThemeContext';
+
 const ServiceCompletionScreen = () => {
+  const { width } = Dimensions.get('window');
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, isDarkMode);
+
   const {
-    params: {encodedId},
+    params: { encodedId },
   } = useRoute();
   const navigation = useNavigation();
   const [serviceArray, setServiceArray] = useState([]);
@@ -36,19 +43,17 @@ const ServiceCompletionScreen = () => {
     center: [0, 0],
   });
 
-  // Decode ID
+  // Decode ID from route params
   const decodedId = encodedId ? atob(encodedId) : null;
 
-  // Fetch payment details
+  // Fetch payment details on mount or when decodedId changes
   useEffect(() => {
     if (decodedId) {
       const fetchPaymentDetails = async () => {
         try {
           const response = await axios.post(
-            `http://192.168.55.102:5000/api/worker/payment/service/completed/details`,
-            {
-              notification_id: decodedId,
-            },
+            `http:192.168.243.71:5000/api/worker/payment/service/completed/details`,
+            { notification_id: decodedId }
           );
 
           const {
@@ -62,7 +67,7 @@ const ServiceCompletionScreen = () => {
             pincode,
             name,
           } = response.data;
-          console.log(typeof service, service, response.data);
+
           let serviceBooked;
           if (typeof service === 'string') {
             try {
@@ -72,10 +77,9 @@ const ServiceCompletionScreen = () => {
               serviceBooked = [];
             }
           } else {
-            serviceBooked = service; // Already parsed
+            serviceBooked = service;
           }
 
-          console.log(serviceBooked);
           setLocationDetails({
             paymentDetails: {
               payment_type,
@@ -93,32 +97,29 @@ const ServiceCompletionScreen = () => {
           console.error('Error fetching payment details:', error);
         }
       };
-
       fetchPaymentDetails();
     }
   }, [decodedId]);
 
-  // Handle back press
+  // Handle back press: navigate back to Home screen
   const onBackPress = useCallback(() => {
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
-      }),
+        routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
+      })
     );
     return true;
   }, [navigation]);
 
-  // Add back handler listener
   useFocusEffect(
     useCallback(() => {
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () =>
-        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-    }, [onBackPress]),
+      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [onBackPress])
   );
 
-  const {paymentDetails, totalAmount, center} = locationDetails;
+  const { paymentDetails, totalAmount, center } = locationDetails;
 
   return (
     <View style={styles.container}>
@@ -144,7 +145,7 @@ const ServiceCompletionScreen = () => {
           style={styles.locationIcon}
           source={{
             uri: 'https://i.postimg.cc/rpb2czKR/1000051859-removebg-preview.png',
-          }} // Pin icon
+          }}
         />
         <Text style={styles.locationText}>
           {paymentDetails.area}
@@ -170,96 +171,109 @@ const ServiceCompletionScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#fafafa',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  doneButton: {
-    borderWidth: 1,
-    borderColor: '#FF5722',
-    backgroundColor: '#ffffff',
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 25,
-    width: 250,
-  },
-  doneText: {
-    color: '#FF5722',
-    fontSize: 15,
-    fontWeight: 'bold',
-  },
-  heading: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
-    textAlign: 'center',
-    color: '#212121',
-    paddingTop: 30,
-    paddingBottom: 10,
-  },
-  subHeading: {
-    fontSize: 14,
-    color: '#9e9e9e',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  amountContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 50,
-    marginTop: 20,
-    gap: 10,
-  },
-  amount: {
-    fontSize: 35,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  date: {
-    fontSize: 14,
-    color: '#757575',
-    paddingBottom: 20,
-  },
-  serviceType: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#212121',
-    paddingBottom: 20,
-  },
-  locationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 30,
-    width: '95%',
-  },
-  locationIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 10,
-  },
-  locationText: {
-    fontSize: 14,
-    color: '#212121',
-  },
-  time: {
-    fontSize: 14,
-    color: '#757575',
-    marginLeft: 10,
-  },
-  map: {
-    width: '100%',
-    height: 200,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-});
+const dynamicStyles = (width, isDarkMode) => {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 20,
+      backgroundColor: isDarkMode ? '#121212' : '#fafafa',
+    },
+    heading: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 5,
+      textAlign: 'center',
+      color: isDarkMode ? '#ffffff' : '#212121',
+      paddingTop: 30,
+      paddingBottom: 10,
+    },
+    subHeading: {
+      fontSize: 14,
+      color: isDarkMode ? '#aaaaaa' : '#9e9e9e',
+      textAlign: 'center',
+      marginBottom: 20,
+    },
+    amountContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 50,
+      marginTop: 20,
+      gap: 10,
+    },
+    amount: {
+      fontSize: 35,
+      fontWeight: 'bold',
+      color: isDarkMode ? '#ffffff' : '#000000',
+    },
+    date: {
+      fontSize: 14,
+      color: isDarkMode ? '#cccccc' : '#757575',
+      paddingBottom: 20,
+      textAlign: 'center',
+    },
+    serviceType: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: isDarkMode ? '#ffffff' : '#212121',
+      paddingBottom: 20,
+      textAlign: 'center',
+    },
+    locationContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 30,
+      width: '95%',
+    },
+    locationIcon: {
+      width: 20,
+      height: 20,
+      marginRight: 10,
+    },
+    locationText: {
+      fontSize: 14,
+      color: isDarkMode ? '#ffffff' : '#212121',
+    },
+    time: {
+      fontSize: 14,
+      color: isDarkMode ? '#cccccc' : '#757575',
+      marginLeft: 10,
+    },
+    map: {
+      width: '100%',
+      height: 200,
+      borderRadius: 10,
+      marginBottom: 20,
+    },
+    markerContainer: {
+      backgroundColor: isDarkMode ? '#333333' : '#ffffff',
+      borderRadius: 12.5,
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: 25,
+      height: 25,
+      paddingBottom: 2,
+    },
+    buttonContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+    },
+    doneButton: {
+      borderWidth: 1,
+      borderColor: '#FF5722',
+      backgroundColor: isDarkMode ? '#222222' : '#ffffff',
+      paddingVertical: 10,
+      borderRadius: 10,
+      alignItems: 'center',
+      marginTop: 25,
+      width: 250,
+    },
+    doneText: {
+      color: '#FF5722',
+      fontSize: 15,
+      fontWeight: 'bold',
+    },
+  });
+};
 
 export default ServiceCompletionScreen;

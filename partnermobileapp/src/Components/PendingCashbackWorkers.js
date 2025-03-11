@@ -47,7 +47,7 @@ const PendingCashbackWorkers = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.get(
-          `http://192.168.55.102:5000/api/workers/pending/cashback`,
+          `http:192.168.243.71:5000/api/workers/pending/cashback`,
           {},
         );
         console.log(response.data);

@@ -16,45 +16,52 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
 import uuid from 'react-native-uuid';
 import { useNavigation } from '@react-navigation/native';
+// Import our theme hook
+import { useTheme } from '../context/ThemeContext';
 
 const ServiceTrackingListScreen = () => {
-  const { width, height } = useWindowDimensions(); 
-  const styles = dynamicStyles(width, height);
+  const { width, height } = useWindowDimensions();
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, height, isDarkMode);
 
   const [serviceData, setServiceData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const navigation = useNavigation();
 
   const filterOptions = ['Collected Item', 'Work started', 'Work Completed'];
 
-  useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        setLoading(true);
-        const token = await EncryptedStorage.getItem('pcs_token');
-        if (!token) throw new Error('Token not found');
+  const fetchBookings = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const token = await EncryptedStorage.getItem('pcs_token');
+      if (!token) throw new Error('Token not found');
 
-        const response = await axios.get(
-          'http://192.168.55.102:5000/api/worker/tracking/services',
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+      const response = await axios.get(
+        'http:192.168.243.71:5000/api/worker/tracking/services',
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-        );
-        console.log(response.data);
-        setServiceData(response.data);
-        setFilteredData(response.data); 
-      } catch (error) {
-        console.error('Error fetching bookings data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+        },
+      );
+      console.log("data",response.data);
+      setServiceData(response.data);
+      setFilteredData(response.data);
+    } catch (error) {
+      console.log("work")
+      console.error('Error fetching bookings data:', error.response || error);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchBookings();
   }, []);
 
@@ -80,9 +87,7 @@ const ServiceTrackingListScreen = () => {
 
     const filtered =
       updatedFilters.length > 0
-        ? serviceData.filter((item) =>
-            updatedFilters.includes(item.service_status),
-          )
+        ? serviceData.filter((item) => updatedFilters.includes(item.service_status))
         : serviceData;
 
     setFilteredData(filtered);
@@ -94,8 +99,8 @@ const ServiceTrackingListScreen = () => {
     }
   };
 
-  // Sub-component that receives `styles` as a prop
-  const ServiceItem = ({ item, formatDate, styles }) => {
+  // Sub-component for each service item
+  const ServiceItem = ({ item }) => {
     return (
       <TouchableOpacity
         style={styles.itemContainer}
@@ -147,13 +152,13 @@ const ServiceTrackingListScreen = () => {
 
   return (
     <TouchableWithoutFeedback onPress={handleOutsidePress}>
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={styles.headerContainer}>
-          <Icon name="arrow-back" size={24} color="#000" />
+          <Icon name="arrow-back" size={24} color={isDarkMode ? "#ffffff" : "#000"} />
           <Text style={styles.headerTitle}>Service Tracking</Text>
           <TouchableOpacity onPress={() => setIsFilterVisible(!isFilterVisible)}>
-            <Icon name="filter-list" size={24} color="#000" />
+            <Icon name="filter-list" size={24} color={isDarkMode ? "#ffffff" : "#000"} />
           </TouchableOpacity>
         </View>
 
@@ -174,7 +179,7 @@ const ServiceTrackingListScreen = () => {
                       : 'check-box-outline-blank'
                   }
                   size={20}
-                  color="#4a4a4a"
+                  color={isDarkMode ? "#ffffff" : "#4a4a4a"}
                 />
                 <Text style={styles.dropdownText}>{option}</Text>
               </TouchableOpacity>
@@ -184,46 +189,48 @@ const ServiceTrackingListScreen = () => {
 
         {/* Service List */}
         <View style={styles.trackingItems}>
-          {loading ? (
-            <ActivityIndicator
-              size="large"
-              color="#FF5722"
-              style={styles.loadingIndicator}
-            />
-          ) : filteredData.length === 0 ? (
-            <View style={styles.noDataContainer}>
-              <Text style={styles.noDataText}>No data available</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={filteredData}
-              renderItem={({ item }) => (
-                <ServiceItem
-                  item={item}
-                  formatDate={formatDate}
-                  styles={styles}
-                />
-              )}
-              keyExtractor={() => uuid.v4()}
-              contentContainerStyle={styles.listContainer}
-            />
-          )}
+        {loading ? (
+  <ActivityIndicator size="large" color="#FF5722" style={styles.loadingIndicator} />
+) : error ? (
+  <View style={styles.errorContainer}>
+    <Text style={styles.errorText}>Something went wrong. Please try again.</Text>
+    <TouchableOpacity style={styles.retryButton} onPress={fetchBookings}>
+      <Text style={styles.retryButtonText}>Retry</Text>
+    </TouchableOpacity>
+  </View>
+) : filteredData.length === 0 ? (
+  <View style={styles.noDataContainer}>
+    <Icon name="search-off" size={48} color="#888" />
+    <Text style={styles.noDataText}>No tracking data available</Text>
+    {/* <TouchableOpacity style={styles.retryButton} onPress={fetchBookings}>
+      <Text style={styles.retryButtonText}>Retry</Text>
+    </TouchableOpacity> */}
+  </View>
+) : (
+  <FlatList
+    data={filteredData}
+    renderItem={({ item }) => <ServiceItem item={item} />}
+    keyExtractor={() => uuid.v4()}
+    contentContainerStyle={styles.listContainer}
+  />
+)}
+
         </View>
-      </View>
+      </SafeAreaView>
     </TouchableWithoutFeedback>
   );
 };
 
 /**
- *  Dynamic styles helper
+ * Dynamic styles generator that accepts screen width, height, and isDarkMode flag.
  */
-function dynamicStyles(width, height) {
+function dynamicStyles(width, height, isDarkMode) {
   const isTablet = width >= 600;
 
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#f3f3f3',
+      backgroundColor: isDarkMode ? '#121212' : '#f3f3f3',
     },
     headerContainer: {
       flexDirection: 'row',
@@ -236,20 +243,20 @@ function dynamicStyles(width, height) {
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,
       shadowRadius: 4,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
       zIndex: 1,
     },
     headerTitle: {
       fontSize: 18,
       fontWeight: 'bold',
-      color: '#000',
+      color: isDarkMode ? '#ffffff' : '#000',
     },
     dropdownContainer: {
       position: 'absolute',
       top: 70,
       right: 16,
       width: 200,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
       borderRadius: 8,
       padding: 10,
       elevation: 5,
@@ -262,7 +269,7 @@ function dynamicStyles(width, height) {
     dropdownTitle: {
       fontSize: 14,
       fontWeight: 'bold',
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       marginBottom: 8,
     },
     dropdownOption: {
@@ -273,7 +280,7 @@ function dynamicStyles(width, height) {
     dropdownText: {
       marginLeft: 8,
       fontSize: 14,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ffffff' : '#4a4a4a',
     },
     trackingItems: {
       flex: 1,
@@ -286,15 +293,10 @@ function dynamicStyles(width, height) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#222222' : '#fff',
       borderRadius: 10,
       padding: 20,
       marginBottom: 16,
-      elevation: 1,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
     },
     itemMainContainer: {
       flexDirection: 'row',
@@ -318,12 +320,12 @@ function dynamicStyles(width, height) {
     itemTitle: {
       fontSize: 14,
       fontWeight: '700',
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       marginBottom: 4,
     },
     itemDate: {
       fontSize: 12,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#cccccc' : '#4a4a4a',
     },
     statusLabel: {
       borderRadius: 10,
@@ -344,7 +346,7 @@ function dynamicStyles(width, height) {
     statusText: {
       fontSize: 12,
       fontWeight: 'bold',
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
     },
     loadingIndicator: {
       marginTop: 20,
@@ -356,7 +358,27 @@ function dynamicStyles(width, height) {
     },
     noDataText: {
       fontSize: 16,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
+      marginTop: 10,
+    },
+    errorContainer: {
+      marginTop: 20,
+      alignItems: 'center',
+    },
+    errorText: {
+      fontSize: 16,
+      color: isDarkMode ? '#ffffff' : '#212121',
+      marginBottom: 10,
+    },
+    retryButton: {
+      backgroundColor: '#FF5722',
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: 5,
+    },
+    retryButtonText: {
+      color: '#fff',
+      fontSize: 16,
     },
   });
 }

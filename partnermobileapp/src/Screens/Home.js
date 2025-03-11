@@ -33,6 +33,8 @@ import {Buffer} from 'buffer';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import ThemeToggleIcon from '../Components/ThemeToggleIcon'; // Adjust the path accordingly
+import { useTheme } from '../context/ThemeContext';
 
 // Import the LocationTracker component
 import LocationTracker from './LocationTracker';
@@ -44,7 +46,8 @@ const HomeScreen = () => {
   // 2) Grab screen width & height
   const { width, height } = useWindowDimensions();
   // 3) Create dynamic styles
-  const styles = dynamicStyles(width, height);
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, height, isDarkMode);
 
   const [center, setCenter] = useState([0, 0]);
   const [workerLocation, setWorkerLocation] = useState([]);
@@ -122,7 +125,7 @@ const HomeScreen = () => {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       if (pcs_token) {
         const response = await axios.get(
-          `http://192.168.55.102:5000/api/worker/track/details`,
+          `http:192.168.243.71:5000/api/worker/track/details`,
           {
             headers: { Authorization: `Bearer ${pcs_token}` },
           }
@@ -225,7 +228,7 @@ const HomeScreen = () => {
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/accept/request`,
+        `http:192.168.243.71:5000/api/accept/request`,
         { user_notification_id: decodedId },
         { headers: { Authorization: `Bearer ${jwtToken}` } },
       );
@@ -248,7 +251,7 @@ const HomeScreen = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `http://192.168.55.102:5000/api/worker/action`,
+          `http:192.168.243.71:5000/api/worker/action`,
           { encodedId: encodedNotificationId, screen: 'UserNavigation' },
           { headers: { Authorization: `Bearer ${pcs_token}` } },
         );
@@ -266,7 +269,7 @@ const HomeScreen = () => {
       } else {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         await axios.post(
-          `http://192.168.55.102:5000/api/worker/action`,
+          `http:192.168.243.71:5000/api/worker/action`,
           { encodedId: '', screen: '' },
           { headers: { Authorization: `Bearer ${pcs_token}` } },
         );
@@ -362,7 +365,7 @@ const HomeScreen = () => {
       }
 
       await axios.post(
-        `http://192.168.55.102:5000/api/worker/store-fcm-token`,
+        `http:192.168.243.71:5000/api/worker/store-fcm-token`,
         { fcmToken: newToken },
         { headers: { Authorization: `Bearer ${pcs_token}` } },
       );
@@ -635,13 +638,18 @@ const HomeScreen = () => {
     <SafeAreaView style={styles.screenContainer}>
       <View style={styles.header}>
         <View style={styles.switchContainer}>
-          <View>
+
+          {/* <View>
             <MaterialCommunityIcons
               name="sort-variant"
               size={22}
               color="#656565"
             />
-          </View>
+            
+          </View> */}
+          <View>
+    <ThemeToggleIcon />
+  </View>
           <View style={styles.innerSwitch}>
             <View style={styles.workStatusContainer}>
               <Text style={styles.workStatus}>Active</Text>
@@ -963,17 +971,16 @@ const HomeScreen = () => {
  * 4) A helper function that returns a StyleSheet based on screen width & height.
  *    If width >= 600, we treat it as a tablet and scale up certain styles.
  */
-function dynamicStyles(width, height) {
+function dynamicStyles(width, height, isDarkMode) {
   const isTablet = width >= 600;
-
   return StyleSheet.create({
     screenContainer: {
       flex: 1,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#000000' : '#ffffff',
       paddingBottom: 70,
     },
     header: {
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
       flexDirection: 'column',
     },
     switchContainer: {
@@ -1025,6 +1032,7 @@ function dynamicStyles(width, height) {
     status: {
       paddingLeft: 10,
       fontSize: isTablet ? 16 : 14,
+      color: isDarkMode ? '#ffffff' : '#212121',
     },
     notificationContainer: {
       alignSelf: 'center',
@@ -1037,7 +1045,7 @@ function dynamicStyles(width, height) {
     greetingText: {
       fontSize: isTablet ? 16 : 14,
       fontStyle: 'italic',
-      color: '#808080',
+      color: isDarkMode ? '#bbbbbb' : '#808080',
       fontWeight: 'bold',
     },
     greetingIcon: {
@@ -1046,7 +1054,7 @@ function dynamicStyles(width, height) {
     userName: {
       fontSize: isTablet ? 18 : 16,
       fontWeight: '500',
-      color: '#4A4A4A',
+      color: isDarkMode ? '#ffffff' : '#4A4A4A',
       marginTop: 4,
     },
     moneyContainer: {
@@ -1060,7 +1068,7 @@ function dynamicStyles(width, height) {
       width: isTablet ? 180 : 162,
       height: isTablet ? 50 : 45,
       borderRadius: isTablet ? 28 : 25,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#333333' : '#ffffff',
       shadowColor: '#000',
       shadowOpacity: 0.1,
       shadowOffset: { width: 0, height: 1 },
@@ -1074,7 +1082,7 @@ function dynamicStyles(width, height) {
     balanceText: {
       flex: 1,
       textAlign: 'center',
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       fontWeight: 'bold',
       fontSize: isTablet ? 16 : 14,
     },
@@ -1082,7 +1090,7 @@ function dynamicStyles(width, height) {
       marginLeft: 10,
     },
     markerContainer: {
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#222222' : '#ffffff',
       borderRadius: 12.5,
       justifyContent: 'center',
       alignItems: 'center',
@@ -1094,7 +1102,7 @@ function dynamicStyles(width, height) {
       fontSize: isTablet ? 16 : 14,
       textAlign: 'center',
       marginTop: 20,
-      color: '#777',
+      color: isDarkMode ? '#888888' : '#777777',
     },
     messageScrollView: {
       position: 'absolute',
@@ -1109,7 +1117,7 @@ function dynamicStyles(width, height) {
     messageBox: {
       width: width * 0.85,
       height: isTablet ? 240 : 220,
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#222222' : '#fff',
       marginRight: width * 0.05,
       borderRadius: 10,
       shadowColor: '#000',
@@ -1130,7 +1138,7 @@ function dynamicStyles(width, height) {
       marginRight: 10,
     },
     secondaryColor: {
-      color: '#9e9e9e',
+      color: isDarkMode ? '#cccccc' : '#9e9e9e',
       fontSize: isTablet ? 17 : 15,
     },
     serviceNamesContainer: {
@@ -1159,7 +1167,7 @@ function dynamicStyles(width, height) {
       zIndex: 1,
     },
     primaryColor: {
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       fontSize: isTablet ? 16 : 14,
     },
     addressContainer: {
@@ -1169,7 +1177,7 @@ function dynamicStyles(width, height) {
       marginTop: 10,
     },
     address: {
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       fontSize: isTablet ? 13 : 12,
       width: isTablet ? 240 : 210,
     },
@@ -1193,7 +1201,7 @@ function dynamicStyles(width, height) {
       fontWeight: '600',
     },
     messageBoxContainer: {
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#333333' : '#ffffff',
       borderRadius: 10,
       flexDirection: 'row',
       padding: isTablet ? 12 : 10,
@@ -1224,7 +1232,7 @@ function dynamicStyles(width, height) {
       fontSize: isTablet ? 16 : 15,
       paddingBottom: 5,
       fontWeight: 'bold',
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       marginLeft: 10,
     },
     rightIcon: {
@@ -1238,7 +1246,7 @@ function dynamicStyles(width, height) {
       alignItems: 'center',
     },
     modalContent: {
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#333333' : '#fff',
       padding: isTablet ? 24 : 20,
       borderRadius: 10,
       width: isTablet ? '60%' : '80%',
@@ -1249,12 +1257,13 @@ function dynamicStyles(width, height) {
       fontWeight: 'bold',
       marginBottom: 10,
       textAlign: 'center',
+      color: isDarkMode ? '#ffffff' : '#000000',
     },
     modalMessage: {
       fontSize: isTablet ? 16 : 14,
       textAlign: 'center',
       marginBottom: 20,
-      color: '#333',
+      color: isDarkMode ? '#dddddd' : '#333333',
     },
     modalButtonsRow: {
       flexDirection: 'row',

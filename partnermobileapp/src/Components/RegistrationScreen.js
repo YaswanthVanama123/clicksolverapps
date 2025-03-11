@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,17 +11,24 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import {Dropdown} from 'react-native-element-dropdown';
-import {RadioButton, Checkbox} from 'react-native-paper';
-import {launchImageLibrary} from 'react-native-image-picker';
+import { Dropdown } from 'react-native-element-dropdown';
+import { RadioButton, Checkbox } from 'react-native-paper';
+import { launchImageLibrary } from 'react-native-image-picker';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import SwipeButton from 'rn-swipe-button';
 import Entypo from 'react-native-vector-icons/Entypo';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import {useNavigation} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import { useWindowDimensions } from 'react-native';
+// Import the theme hook from your context
+import { useTheme } from '../context/ThemeContext';
 
 const RegistrationScreen = () => {
+  const { width } = useWindowDimensions();
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, isDarkMode);
+
   const [formData, setFormData] = useState({
     lastName: '',
     firstName: '',
@@ -45,50 +52,43 @@ const RegistrationScreen = () => {
   const [titleColor, setTitleColor] = useState('#FF5722');
   const [errorFields, setErrorFields] = useState({});
   const [skillCategoryItems, setSkillCategoryItems] = useState([
-    {label: 'Electrician', value: 'electrician'},
-    {label: 'Plumber', value: 'plumber'},
-    {label: 'Carpenter', value: 'carpenter'},
+    { label: 'Electrician', value: 'electrician' },
+    { label: 'Plumber', value: 'plumber' },
+    { label: 'Carpenter', value: 'carpenter' },
   ]);
   const [phoneNumber, setPhoneNumber] = useState('');
   const navigation = useNavigation();
 
   const educationItems = [
-    {label: 'High School', value: 'highschool'},
-    {label: "Bachelor's", value: 'bachelor'},
-    {label: "Master's", value: 'master'},
+    { label: 'High School', value: 'highschool' },
+    { label: "Bachelor's", value: 'bachelor' },
+    { label: "Master's", value: 'master' },
   ];
 
   const experienceItems = [
-    {label: '0-1 Year', value: '0-1'},
-    {label: '1-3 years', value: '1-3'},
-    {label: 'more than 3 years', value: '3+'},
+    { label: '0-1 Year', value: '0-1' },
+    { label: '1-3 years', value: '1-3' },
+    { label: 'more than 3 years', value: '3+' },
   ];
 
-  const ThumbIcon = () => {
-    return (
-      <View style={styles.thumbContainer}>
-        <Text>
-          {swiped ? (
-            <Entypo
-              name="check"
-              size={20}
-              color="#FF5722"
-              style={styles.checkIcon}
-            />
-          ) : (
-            <FontAwesome6 name="arrow-right-long" size={18} color="#FF5722" />
-          )}
-        </Text>
-      </View>
-    );
-  };
+  const ThumbIcon = () => (
+    <View style={styles.thumbContainer}>
+      <Text>
+        {swiped ? (
+          <Entypo name="check" size={20} color="#FF5722" style={styles.checkIcon} />
+        ) : (
+          <FontAwesome6 name="arrow-right-long" size={18} color="#FF5722" />
+        )}
+      </Text>
+    </View>
+  );
 
   const handleCheckboxChange = serviceName => {
     const isChecked = formData.subSkills.includes(serviceName);
     const updatedSubSkills = isChecked
       ? formData.subSkills.filter(skill => skill !== serviceName)
       : [...formData.subSkills, serviceName];
-    setFormData({...formData, subSkills: updatedSubSkills});
+    setFormData({ ...formData, subSkills: updatedSubSkills });
   };
 
   const uploadImage = async uri => {
@@ -111,7 +111,6 @@ const RegistrationScreen = () => {
     if (!response.ok) {
       throw new Error('Failed to upload image.');
     }
-
     const data = await response.json();
     return data.data.url;
   };
@@ -130,13 +129,11 @@ const RegistrationScreen = () => {
         errors[key] = true;
       }
     }
-
     if (Object.keys(errors).length > 0) {
       setErrorFields(errors);
       Alert.alert('Error', 'Please fill all the required fields.');
       return;
     }
-
     try {
       const pcsToken = await EncryptedStorage.getItem('pcs_token');
       if (!pcsToken) {
@@ -144,9 +141,8 @@ const RegistrationScreen = () => {
         navigation.replace('Login');
         return;
       }
-
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/registration/submit`,
+        'http:192.168.243.71:5000/api/registration/submit',
         formData,
         {
           headers: {
@@ -165,24 +161,21 @@ const RegistrationScreen = () => {
   const fetchServices = async () => {
     try {
       const pcsToken = await EncryptedStorage.getItem('pcs_token');
-
       if (!pcsToken) {
         console.error('No pcs_token found.');
         navigation.replace('Login');
         return;
       }
-
       const response = await axios.get(
-        `http://192.168.55.102:5000/api/service/categories`,
+        'http:192.168.243.71:5000/api/service/categories',
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
           },
         },
       );
-      console.log('pc', pcsToken);
-      // console.log(response.data);
-      console.log("phone",response.data[0].phone_numbers[0])
+      console.log('pcsToken', pcsToken);
+      console.log('phone', response.data[0].phone_numbers[0]);
       setPhoneNumber(response.data[0].phone_numbers[0]);
       const data = response.data;
       const mappedData = data.map(item => ({
@@ -209,7 +202,7 @@ const RegistrationScreen = () => {
         console.error('ImagePicker Error: ', response.error);
         Alert.alert('Error', 'Failed to pick image.');
       } else if (response.assets) {
-        const {uri} = response.assets[0];
+        const { uri } = response.assets[0];
         try {
           const imageUrl = await uploadImage(uri);
           handleInputChange(fieldName, imageUrl);
@@ -222,13 +215,13 @@ const RegistrationScreen = () => {
   };
 
   const handleInputChange = async (field, value) => {
-    setFormData({...formData, [field]: value});
-    setErrorFields(prev => ({...prev, [field]: false}));
+    setFormData({ ...formData, [field]: value });
+    setErrorFields(prev => ({ ...prev, [field]: false }));
 
     if (field === 'skillCategory') {
       try {
         const response = await axios.post(
-          `http://192.168.55.102:5000/api/subservice/checkboxes`,
+          'http:192.168.243.71:5000/api/subservice/checkboxes',
           {
             selectedService: value,
           },
@@ -253,7 +246,7 @@ const RegistrationScreen = () => {
           <FontAwesome6
             name="arrow-left-long"
             size={20}
-            color="#333"
+            color={isDarkMode ? '#ffffff' : '#333'}
             style={styles.leftIcon}
           />
         </TouchableOpacity>
@@ -313,10 +306,7 @@ const RegistrationScreen = () => {
           <Text style={styles.label}>Work Experience (Years)</Text>
           <View style={styles.inputContainer}>
             <Dropdown
-              style={[
-                styles.dropdown,
-                errorFields.workExperience && styles.errorInput,
-              ]}
+              style={[styles.dropdown, errorFields.workExperience && styles.errorInput]}
               containerStyle={styles.dropdownContainer}
               data={experienceItems}
               placeholderStyle={styles.placeholderStyle}
@@ -356,10 +346,7 @@ const RegistrationScreen = () => {
           <Text style={styles.label}>Education</Text>
           <View style={styles.inputContainer}>
             <Dropdown
-              style={[
-                styles.dropdown,
-                errorFields.education && styles.errorInput,
-              ]}
+              style={[styles.dropdown, errorFields.education && styles.errorInput]}
               containerStyle={styles.dropdownContainer}
               data={educationItems}
               placeholderStyle={styles.placeholderStyle}
@@ -409,7 +396,6 @@ const RegistrationScreen = () => {
         {/* Address / Residential Details */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Address / Residential Details</Text>
-
           <Text style={styles.label}>Door-No/Street</Text>
           <View style={styles.inputContainer}>
             <TextInput
@@ -421,7 +407,6 @@ const RegistrationScreen = () => {
               <Text style={styles.errorText}>This field is required.</Text>
             )}
           </View>
-
           <Text style={styles.label}>Landmark</Text>
           <View style={styles.inputContainer}>
             <TextInput
@@ -433,7 +418,6 @@ const RegistrationScreen = () => {
               <Text style={styles.errorText}>This field is required.</Text>
             )}
           </View>
-
           <Text style={styles.label}>City</Text>
           <View style={styles.inputContainer}>
             <TextInput
@@ -445,7 +429,6 @@ const RegistrationScreen = () => {
               <Text style={styles.errorText}>This field is required.</Text>
             )}
           </View>
-
           <Text style={styles.label}>Pin Code</Text>
           <View style={styles.inputContainer}>
             <TextInput
@@ -457,7 +440,6 @@ const RegistrationScreen = () => {
               <Text style={styles.errorText}>This field is required.</Text>
             )}
           </View>
-
           <Text style={styles.label}>District</Text>
           <View style={styles.inputContainer}>
             <TextInput
@@ -469,7 +451,6 @@ const RegistrationScreen = () => {
               <Text style={styles.errorText}>This field is required.</Text>
             )}
           </View>
-
           <Text style={styles.label}>State</Text>
           <View style={styles.inputContainer}>
             <TextInput
@@ -486,14 +467,10 @@ const RegistrationScreen = () => {
         {/* Skill Details */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Skill Details</Text>
-
           <Text style={styles.label}>Select Service Category</Text>
           <View>
             <Dropdown
-              style={[
-                styles.dropdown,
-                errorFields.skillCategory && styles.errorInput,
-              ]}
+              style={[styles.dropdown, errorFields.skillCategory && styles.errorInput]}
               containerStyle={styles.dropdownContainer}
               data={skillCategoryItems}
               placeholderStyle={styles.placeholderStyle}
@@ -517,7 +494,6 @@ const RegistrationScreen = () => {
               <Text style={styles.errorText}>This field is required.</Text>
             )}
           </View>
-
           <View style={styles.checkboxGrid}>
             {subServices.map(item => (
               <View key={item.id} style={styles.checkboxContainer}>
@@ -539,7 +515,6 @@ const RegistrationScreen = () => {
         {/* Upload Details */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Upload Details</Text>
-
           <View style={styles.uploadContainer}>
             <View style={styles.imageUpload}>
               <View style={styles.text1}>
@@ -553,7 +528,7 @@ const RegistrationScreen = () => {
               <View style={styles.image1}>
                 {formData.profileImageUri && (
                   <Image
-                    source={{uri: formData.profileImageUri}}
+                    source={{ uri: formData.profileImageUri }}
                     style={styles.imagePreview}
                   />
                 )}
@@ -561,18 +536,18 @@ const RegistrationScreen = () => {
               <View style={styles.image2}>
                 {formData.proofImageUri && (
                   <Image
-                    source={{uri: formData.proofImageUri}}
+                    source={{ uri: formData.proofImageUri }}
                     style={styles.imagePreview}
                   />
                 )}
               </View>
             </View>
-
             <View style={styles.imageUpload}>
               <View>
                 <TouchableOpacity
                   style={styles.uploadButton}
-                  onPress={() => handleImagePick('profileImageUri')}>
+                  onPress={() => handleImagePick('profileImageUri')}
+                >
                   <Icon name="image" size={24} color="#9e9e9e" />
                   <Text style={styles.fileText}>Choose File</Text>
                 </TouchableOpacity>
@@ -583,7 +558,8 @@ const RegistrationScreen = () => {
               <View>
                 <TouchableOpacity
                   style={styles.uploadButton}
-                  onPress={() => handleImagePick('proofImageUri')}>
+                  onPress={() => handleImagePick('proofImageUri')}
+                >
                   <Icon name="file-upload" size={24} color="#9e9e9e" />
                   <Text style={styles.fileText}>Choose File</Text>
                 </TouchableOpacity>
@@ -601,7 +577,7 @@ const RegistrationScreen = () => {
               forceResetButton = reset;
             }}
             title="Submit to Commander"
-            titleStyles={{color: titleColor, fontSize: 16}}
+            titleStyles={{ color: titleColor, fontSize: 16 }}
             railBackgroundColor="#FF5722"
             railBorderColor="#FF5722"
             railStyles={{
@@ -629,196 +605,204 @@ const RegistrationScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  // ... (styles remain unchanged)
-  container: {
-    flex: 1,
-    padding: 16,
-    paddingBottom: 0,
-    backgroundColor: '#F5F5F5',
-  },
-  placeholderStyle: {
-    color: '#9e9e9e',
-  },
-  inputContainer: {
-    marginBottom: 15,
-  },
-  uploadContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  imagePreview: {
-    width: 80,
-    height: 80,
-    borderRadius: 50,
-  },
-  leftIcon: {
-    position: 'absolute',
-    left: 10,
-  },
-  imageUpload: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    alignItems: 'center',
-  },
-  errorInput: {
-    borderColor: '#FF4500',
-  },
-  errorText: {
-    color: '#FF4500',
-    fontSize: 12,
-  },
-  image1: {
-    margin: 10,
-    marginLeft: 20,
-  },
-  text1: {
-    marginLeft: 20,
-  },
-  text2: {
-    marginRight: 30,
-  },
-  image2: {
-    margin: 10,
-    marginRight: 30,
-  },
-  checkboxGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  radioText: {
-    fontSize: 16,
-    marginLeft: 2,
-    color: '#212121',
-    fontWeight: 'bold',
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 12,
-  },
-  genderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  header: {
-    marginBottom: 20,
-  },
-  iconStyle: {
-    width: 20,
-    height: 20,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginLeft: 10,
-    color: '#1D2951',
-    textAlign: 'center',
-  },
-  dropdownItem: {
-    padding: 10,
-    backgroundColor: '#fff',
-  },
-  dropdownItemText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  section: {
-    marginBottom: 20,
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#1D2951',
-  },
-  label: {
-    marginBottom: 5,
-    color: '#666',
-  },
-  input: {
-    height: 40,
-    borderColor: '#E0E0E0',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    color: '#212121',
-  },
-  selectedTextStyle: {
-    color: '#9e9e9e',
-  },
-  dropdown: {
-    height: 40,
-    borderColor: '#E0E0E0',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-  },
-  dropdownContainer: {
-    marginBottom: 20,
-    backgroundColor: '#fff',
-    borderRadius: 5,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 30,
-    marginBottom: 15,
-  },
-  phoneContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  countryCode: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderColor: '#E0E0E0',
-    borderWidth: 1,
-    borderRadius: 5,
-    padding: 10,
-    marginRight: 10,
-  },
-  flagIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 5,
-  },
-  swiperButton: {
-    marginBottom: 10,
-  },
-  inputPhone: {
-    flex: 1,
-    height: 40,
-    borderColor: '#E0E0E0',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    color: '#212121',
-  },
-  uploadButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#9e9e9e',
-    borderRadius: 5,
-    marginBottom: 10,
-    width: 130,
-  },
-  fileText: {
-    color: '#212121',
-    fontWeight: 'bold',
-  },
-});
+function dynamicStyles(width, isDarkMode) {
+  const isTablet = width >= 600;
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 16,
+      backgroundColor: isDarkMode ? '#121212' : '#F5F5F5',
+    },
+    placeholderStyle: {
+      color: isDarkMode ? '#cccccc' : '#9e9e9e',
+    },
+    inputContainer: {
+      marginBottom: 15,
+      backgroundColor: isDarkMode ? '#333333' : '#F5F5F5',
+      borderRadius: 10,
+      borderColor: isDarkMode ? '#444444' : '#ccc',
+      borderWidth: 1,
+      paddingHorizontal: 10,
+      height: 50,
+      justifyContent: 'center',
+    },
+    uploadContainer: {
+      flexDirection: 'column',
+    },
+    imagePreview: {
+      width: 80,
+      height: 80,
+      borderRadius: 50,
+    },
+    leftIcon: {
+      position: 'absolute',
+      left: 10,
+    },
+    imageUpload: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      width: '100%',
+    },
+    errorInput: {
+      borderColor: '#FF4500',
+    },
+    errorText: {
+      color: '#FF4500',
+      fontSize: 12,
+    },
+    image1: {
+      margin: 10,
+      marginLeft: 20,
+    },
+    text1: {
+      marginLeft: 20,
+    },
+    text2: {
+      marginRight: 30,
+    },
+    image2: {
+      margin: 10,
+      marginRight: 30,
+    },
+    checkboxGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+    },
+    radioText: {
+      fontSize: 16,
+      marginLeft: 2,
+      color: isDarkMode ? '#ffffff' : '#212121',
+      fontWeight: 'bold',
+    },
+    checkboxContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: 12,
+    },
+    genderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    header: {
+      marginBottom: 20,
+    },
+    iconStyle: {
+      width: 20,
+      height: 20,
+    },
+    headerTitle: {
+      fontSize: isTablet ? 24 : 20,
+      fontWeight: 'bold',
+      marginLeft: 10,
+      color: isDarkMode ? '#ffffff' : '#1D2951',
+      textAlign: 'center',
+    },
+    dropdownItem: {
+      padding: 10,
+      backgroundColor: isDarkMode ? '#333333' : '#ffffff',
+    },
+    dropdownItemText: {
+      fontSize: 16,
+      color: isDarkMode ? '#ffffff' : '#333333',
+    },
+    section: {
+      marginBottom: 20,
+      backgroundColor: isDarkMode ? '#333333' : '#ffffff',
+      padding: 15,
+      borderRadius: 10,
+    },
+    sectionTitle: {
+      fontSize: isTablet ? 20 : 18,
+      fontWeight: 'bold',
+      marginBottom: 10,
+      color: isDarkMode ? '#ffffff' : '#1D2951',
+    },
+    label: {
+      marginBottom: 5,
+      color: isDarkMode ? '#cccccc' : '#666666',
+    },
+    input: {
+      height: 40,
+      borderColor: isDarkMode ? '#444444' : '#E0E0E0',
+      borderWidth: 1,
+      borderRadius: 5,
+      paddingHorizontal: 10,
+      color: isDarkMode ? '#ffffff' : '#212121',
+    },
+    selectedTextStyle: {
+      color: isDarkMode ? '#cccccc' : '#9e9e9e',
+    },
+    dropdown: {
+      height: 40,
+      borderColor: isDarkMode ? '#444444' : '#E0E0E0',
+      borderWidth: 1,
+      borderRadius: 5,
+      paddingHorizontal: 10,
+      backgroundColor: isDarkMode ? '#333333' : '#ffffff',
+    },
+    dropdownContainer: {
+      marginBottom: 20,
+      backgroundColor: isDarkMode ? '#333333' : '#ffffff',
+      borderRadius: 5,
+      elevation: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+    },
+    row: {
+      flexDirection: 'row',
+      gap: 30,
+      marginBottom: 15,
+    },
+    phoneContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 15,
+    },
+    countryCode: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderColor: isDarkMode ? '#444444' : '#E0E0E0',
+      borderWidth: 1,
+      borderRadius: 5,
+      padding: 10,
+      marginRight: 10,
+    },
+    flagIcon: {
+      width: 20,
+      height: 20,
+      marginRight: 5,
+    },
+    swiperButton: {
+      marginBottom: 10,
+    },
+    inputPhone: {
+      flex: 1,
+      height: 40,
+      borderColor: isDarkMode ? '#444444' : '#E0E0E0',
+      borderWidth: 1,
+      borderRadius: 5,
+      paddingHorizontal: 10,
+      color: isDarkMode ? '#ffffff' : '#212121',
+    },
+    uploadButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 10,
+      borderWidth: 1,
+      borderColor: isDarkMode ? '#444444' : '#9e9e9e',
+      borderRadius: 5,
+      marginBottom: 10,
+      width: 130,
+    },
+    fileText: {
+      color: isDarkMode ? '#ffffff' : '#212121',
+      fontWeight: 'bold',
+    },
+  });
+}
 
 export default RegistrationScreen;

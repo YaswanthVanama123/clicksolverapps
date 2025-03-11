@@ -16,7 +16,6 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
-
 import Mapbox from '@rnmapbox/maps';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
@@ -41,6 +40,9 @@ import SwipeButton from 'rn-swipe-button';
 // For decoding the Ola Maps `overview_polyline`
 import polyline from '@mapbox/polyline';
 
+// Import the theme hook from your context
+import { useTheme } from '../context/ThemeContext';
+
 /** 
  * 1) Ola Maps API key 
  *    (replace "iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT" with your actual API key)
@@ -49,7 +51,7 @@ const OLA_MAPS_API_KEY = 'iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT';
 
 /**
  * 2) OPTIONAL: Mapbox access token (used ONLY to render the map background).
- *    You won't call Mapbox directions endpoints since you're using Ola Maps for routing.ola
+ *    You won't call Mapbox directions endpoints since you're using Ola Maps for routing.
  */
 Mapbox.setAccessToken(
   'pk.eyJ1IjoiZnJlZWNvZGV4IiwiYSI6ImNra3FmMDkwcjBjeWYycHAxYnN6eDFneDcifQ.2T_8bDb2FzY1E7GiC0WrBg',
@@ -58,6 +60,11 @@ Mapbox.setAccessToken(
 const WorkerNavigationScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
+
+  // Get dark mode flag
+  const { isDarkMode } = useTheme();
+  // Generate dynamic styles
+  const styles = dynamicStyles(isDarkMode);
 
   // ------------------ (A) LOADING & ROTATION STATES FOR REFRESH ICON ------------------
   const [isLoading, setIsLoading] = useState(false);
@@ -84,11 +91,8 @@ const WorkerNavigationScreen = () => {
     } else if (animation) {
       animation.stop();
     }
-
     return () => {
-      if (animation) {
-        animation.stop();
-      }
+      if (animation) animation.stop();
     };
   }, [isLoading, rotationValue]);
 
@@ -114,7 +118,7 @@ const WorkerNavigationScreen = () => {
   // 1) DECODE THE ID FROM route.params
   // ---------------------------------------------------------------------
   useEffect(() => {
-    const {encodedId} = route.params;
+    const { encodedId } = route.params;
     if (encodedId) {
       try {
         setDecodedId(atob(encodedId));
@@ -169,16 +173,15 @@ const WorkerNavigationScreen = () => {
   useFocusEffect(
     useCallback(() => {
       const onBackPress = async () => {
-        await EncryptedStorage.removeItem("workerInAction");
+        await EncryptedStorage.removeItem('workerInAction');
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
           }),
         );
         return true;
       };
-
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () => {
         BackHandler.removeEventListener('hardwareBackPress', onBackPress);
@@ -209,21 +212,20 @@ const WorkerNavigationScreen = () => {
   const checkCancellationStatus = async () => {
     try {
       const response = await axios.get(
-        `http://192.168.55.102:5000/api/worker/cancelled/status`,
-        {params: {notification_id: decodedId}},
+        `http:192.168.243.71:5000/api/worker/cancelled/status`,
+        { params: { notification_id: decodedId } },
       );
       if (response.data.notificationStatus === 'usercanceled') {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         await axios.post(
-          `http://192.168.55.102:5000/api/worker/action`,
-          {encodedId: '', screen: ''},
-          {headers: {Authorization: `Bearer ${pcs_token}`}},
+          `http:192.168.243.71:5000/api/worker/action`,
+          { encodedId: '', screen: '' },
+          { headers: { Authorization: `Bearer ${pcs_token}` } },
         );
-
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
           }),
         );
       }
@@ -232,24 +234,24 @@ const WorkerNavigationScreen = () => {
     }
   };
 
+  // ---------------------------------------------------------------------
+  // PHONE CALL
+  // ---------------------------------------------------------------------
   const phoneCall = async () => {
-    try { 
-      const response = await axios.post('http://192.168.55.102:5000/api/user/call', { decodedId });
-  
+    try {
+      const response = await axios.post('http:192.168.243.71:5000/api/user/call', { decodedId });
       if (response.status === 200 && response.data.mobile) {
         const phoneNumber = response.data.mobile;
-        console.log("Call initiated successfully:", phoneNumber);
-  
-        // Open phone dialer with the retrieved number
+        console.log('Call initiated successfully:', phoneNumber);
         const dialURL = `tel:${phoneNumber}`;
-        Linking.openURL(dialURL).catch(err => 
-          console.error("Error opening dialer:", err)
+        Linking.openURL(dialURL).catch(err =>
+          console.error('Error opening dialer:', err),
         );
       } else {
-        console.log("Failed to initiate call:", response.data);
+        console.log('Failed to initiate call:', response.data);
       }
     } catch (error) {
-      console.error("Error initiating call:", error.response ? error.response.data : error.message);
+      console.error('Error initiating call:', error.response ? error.response.data : error.message);
     }
   };
 
@@ -259,8 +261,8 @@ const WorkerNavigationScreen = () => {
   const fetchAddressDetails = useCallback(async () => {
     try {
       const response = await axios.get(
-        `http://192.168.55.102:5000/api/user/address/details`,
-        {params: {notification_id: decodedId}},
+        `http:192.168.243.71:5000/api/user/address/details`,
+        { params: { notification_id: decodedId } },
       );
       setAddressDetails(response.data);
       setServiceArray(response.data.service_booked);
@@ -275,14 +277,13 @@ const WorkerNavigationScreen = () => {
   const fetchLocationDetails = async () => {
     try {
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/service/location/navigation`,
-        {notification_id: decodedId},
+        `http:192.168.243.71:5000/api/service/location/navigation`,
+        { notification_id: decodedId },
       );
-      const {startPoint, endPoint} = response.data;
+      const { startPoint, endPoint } = response.data;
       setLocationDetails({
-        // Convert each to float but keep them in [lng, lat] format
-        startPoint: startPoint.map(coord => parseFloat(coord)),
-        endPoint: endPoint.map(coord => parseFloat(coord)),
+        startPoint: startPoint.map(coord => parseFloat(coord)), // [lng, lat]
+        endPoint: endPoint.map(coord => parseFloat(coord)),     // [lng, lat]
       });
     } catch (error) {
       console.error('Error fetching location details:', error);
@@ -298,8 +299,8 @@ const WorkerNavigationScreen = () => {
     try {
       setIsLoading(true);
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/worker/work/cancel`,
-        {notification_id: decodedId},
+        `http:192.168.243.71:5000/api/worker/work/cancel`,
+        { notification_id: decodedId },
       );
       if (response.status === 200) {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
@@ -307,24 +308,19 @@ const WorkerNavigationScreen = () => {
           Alert.alert('Error', 'User token not found.');
           return;
         }
-
         await axios.post(
-          `http://192.168.55.102:5000/api/worker/action`,
-          {encodedId: '', screen: ''},
-          {headers: {Authorization: `Bearer ${pcs_token}`}},
+          `http:192.168.243.71:5000/api/worker/action`,
+          { encodedId: '', screen: '' },
+          { headers: { Authorization: `Bearer ${pcs_token}` } },
         );
-
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
           }),
         );
       } else {
-        Alert.alert(
-          'Cancellation failed',
-          'Your cancellation time of 2 minutes is over.',
-        );
+        Alert.alert('Cancellation failed', 'Your cancellation time of 2 minutes is over.');
       }
     } catch (error) {
       console.error('Error cancelling booking:', error);
@@ -335,30 +331,35 @@ const WorkerNavigationScreen = () => {
   };
 
   // ---------------------------------------------------------------------
-  // E) FETCH ROUTE DATA FROM OLA MAPS (instead of Mapbox)
+  // E) FETCH ROUTE DATA FROM OLA MAPS (using GET)
   // ---------------------------------------------------------------------
   useEffect(() => {
     if (locationDetails.startPoint && locationDetails.endPoint) {
       const fetchOlaRoute = async () => {
         try {
-          // Because Ola wants lat,lng, but we currently store [lng, lat].
+          // Ola expects origin=lat,lng, but we store [lng, lat]
           const [lng1, lat1] = locationDetails.startPoint;
           const [lng2, lat2] = locationDetails.endPoint;
 
-          // Construct Ola Maps URL
+          console.log("startpoint ",locationDetails.startPoint)
+          console.log("endpoint ",locationDetails.endPoint)
+
+          // Use GET instead of POST:
           let url = `https://api.olamaps.io/routing/v1/directions?origin=${lat1},${lng1}&destination=${lat2},${lng2}&api_key=${OLA_MAPS_API_KEY}`;
 
-          // POST with an empty body
+          // Make the GET request
           const response = await axios.post(url, {}, {});
 
-          // The overview_polyline typically at response.data.routes[0].overview_polyline
+          console.log("location data",response)
+
+          // Decode the overview_polyline
           const olaEncoded = response.data?.routes?.[0]?.overview_polyline;
           if (!olaEncoded) {
             console.error('No overview_polyline found in Ola Maps response');
             return;
           }
 
-          // Decode with "polyline" => array of [lat, lng] so swap to [lng, lat]
+          // Decode polyline => array of [lat, lng], then swap to [lng, lat]
           const decodedCoords = polyline
             .decode(olaEncoded)
             .map(([lati, lngi]) => [lngi, lati]);
@@ -403,7 +404,7 @@ const WorkerNavigationScreen = () => {
       if (minY === undefined || lat < minY) minY = lat;
       if (maxY === undefined || lat > maxY) maxY = lat;
     }
-    return {ne: [maxX, maxY], sw: [minX, minY]};
+    return { ne: [maxX, maxY], sw: [minX, minY] };
   };
 
   // ---------------------------------------------------------------------
@@ -411,7 +412,7 @@ const WorkerNavigationScreen = () => {
   // ---------------------------------------------------------------------
   const handleLocationReached = () => {
     const encodedNotificationId = btoa(decodedId);
-    navigation.push('OtpVerification', {encodedId: encodedNotificationId});
+    navigation.push('OtpVerification', { encodedId: encodedNotificationId });
   };
 
   // ---------------------------------------------------------------------
@@ -428,7 +429,7 @@ const WorkerNavigationScreen = () => {
   const openGoogleMaps = () => {
     Geolocation.getCurrentPosition(
       position => {
-        const {latitude, longitude} = position.coords;
+        const { latitude, longitude } = position.coords;
         const url = `https://www.google.com/maps/dir/?api=1&origin=${latitude},${longitude}&destination=${locationDetails.endPoint[1]},${locationDetails.endPoint[0]}&travelmode=driving`;
         Linking.openURL(url).catch(err =>
           console.error('Error opening Google Maps:', err),
@@ -498,9 +499,16 @@ const WorkerNavigationScreen = () => {
     </View>
   );
 
-  // ---------------------------------------------------------------------
-  // RENDER
-  // ---------------------------------------------------------------------
+  const messageChatting = async () => {
+    navigation.push('ChatScreen', {
+      request_id: decodedId,
+      senderType: 'worker',
+      profileImage: addressDetails.profile,
+      profileName: addressDetails.name,
+    });
+    
+  }
+
   return (
     <View style={styles.container}>
       {/* MAP BOX VIEW */}
@@ -520,16 +528,12 @@ const WorkerNavigationScreen = () => {
                 : null
             }
           />
-
-          {/* Markers from local images */}
           <Mapbox.Images
             images={{
               'start-point-icon': require('../../assets/start-marker.png'),
               'end-point-icon': require('../../assets/end-marker.png'),
             }}
           />
-
-          {/* Display Markers */}
           {markers && (
             <Mapbox.ShapeSource id="markerSource" shape={markers}>
               <Mapbox.SymbolLayer
@@ -544,26 +548,19 @@ const WorkerNavigationScreen = () => {
               />
             </Mapbox.ShapeSource>
           )}
-
-          {/* Display Route from Ola */}
           {routeData && (
-            <Mapbox.ShapeSource
-              id="routeSource"
-              shape={routeData}
-            >
+            <Mapbox.ShapeSource id="routeSource" shape={routeData}>
               <Mapbox.LineLayer id="routeLine" style={styles.routeLine} />
             </Mapbox.ShapeSource>
           )}
         </Mapbox.MapView>
-
-        {/* ABSOLUTE REFRESH ICON (ROTATION) */}
         <TouchableOpacity
           style={styles.refreshContainer}
           onPress={handleRefresh}
           disabled={isLoading}
         >
-          <Animated.View style={{transform: [{rotate: spin}]}}>
-            <MaterialIcons name="refresh" size={25} color="#000" />
+          <Animated.View style={{ transform: [{ rotate: spin }] }}>
+            <MaterialIcons name="refresh" size={25} color={isDarkMode ? '#fff' : '#000'} />
           </Animated.View>
         </TouchableOpacity>
       </View>
@@ -580,7 +577,7 @@ const WorkerNavigationScreen = () => {
           name="navigation-variant"
           size={20}
           color="#C1C1C1"
-          style={{marginLeft: 5}}
+          style={{ marginLeft: 5 }}
         />
       </TouchableOpacity>
 
@@ -592,55 +589,31 @@ const WorkerNavigationScreen = () => {
         onRequestClose={closeReasonModal}
       >
         <View style={styles.modalOverlay}>
-          <TouchableOpacity
-            onPress={closeReasonModal}
-            style={styles.backButtonContainer}
-          >
-            <AntDesign name="arrowleft" size={20} color="black" />
+          <TouchableOpacity onPress={closeReasonModal} style={styles.backButtonContainer}>
+            <AntDesign name="arrowleft" size={20} color={isDarkMode ? '#fff' : 'black'} />
           </TouchableOpacity>
-
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>
-              What is the reason for your cancellation?
-            </Text>
-            <Text style={styles.modalSubtitle}>
-              Could you let us know why you're canceling?
-            </Text>
-
-            <TouchableOpacity
-              style={styles.reasonButton}
-              onPress={openConfirmationModal}
-            >
+            <Text style={styles.modalTitle}>What is the reason for your cancellation?</Text>
+            <Text style={styles.modalSubtitle}>Could you let us know why you're canceling?</Text>
+            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
               <Text style={styles.reasonText}>Accidentally clicked</Text>
-              <AntDesign name="right" size={16} color="#4a4a4a" />
+              <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.reasonButton}
-              onPress={openConfirmationModal}
-            >
+            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
               <Text style={styles.reasonText}>Health Issue</Text>
-              <AntDesign name="right" size={16} color="#4a4a4a" />
+              <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.reasonButton}
-              onPress={openConfirmationModal}
-            >
+            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
               <Text style={styles.reasonText}>Another Work get</Text>
-              <AntDesign name="right" size={16} color="#4a4a4a" />
+              <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.reasonButton}
-              onPress={openConfirmationModal}
-            >
+            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
               <Text style={styles.reasonText}>Problem to my vehicle</Text>
-              <AntDesign name="right" size={16} color="#4a4a4a" />
+              <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.reasonButton}
-              onPress={openConfirmationModal}
-            >
+            <TouchableOpacity style={styles.reasonButton} onPress={openConfirmationModal}>
               <Text style={styles.reasonText}>Others</Text>
-              <AntDesign name="right" size={16} color="#4a4a4a" />
+              <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
             </TouchableOpacity>
           </View>
         </View>
@@ -655,27 +628,17 @@ const WorkerNavigationScreen = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.crossContainer}>
-            <TouchableOpacity
-              onPress={closeConfirmationModal}
-              style={styles.backButtonContainer}
-            >
-              <Entypo name="cross" size={20} color="black" />
+            <TouchableOpacity onPress={closeConfirmationModal} style={styles.backButtonContainer}>
+              <Entypo name="cross" size={20} color={isDarkMode ? '#fff' : 'black'} />
             </TouchableOpacity>
           </View>
-
           <View style={styles.confirmationModalContainer}>
-            <Text style={styles.confirmationTitle}>
-              Are you sure you want to cancel this Service?
-            </Text>
+            <Text style={styles.confirmationTitle}>Are you sure you want to cancel this Service?</Text>
             <Text style={styles.confirmationSubtitle}>
-              The user is waiting for your help to solve their issue. Please
-              avoid clicking cancel and assist them as soon as possible
+              The user is waiting for your help to solve their issue. Please avoid clicking cancel and
+              assist them as soon as possible
             </Text>
-
-            <TouchableOpacity
-              style={styles.confirmButton}
-              onPress={handleCancelBooking}
-            >
+            <TouchableOpacity style={styles.confirmButton} onPress={handleCancelBooking}>
               <Text style={styles.confirmButtonText}>Cancel my service</Text>
             </TouchableOpacity>
           </View>
@@ -691,8 +654,6 @@ const WorkerNavigationScreen = () => {
               <Text style={styles.amount}>Be quick, stay safe!</Text>
             </Text>
           </View>
-
-          {/* SERVICE LOCATION */}
           <View style={styles.locationContainer}>
             <Image
               source={{
@@ -706,8 +667,6 @@ const WorkerNavigationScreen = () => {
               </Text>
             </View>
           </View>
-
-          {/* SERVICE TYPE & CALL/CHAT BUTTONS */}
           <View style={styles.serviceDetails}>
             <View>
               <Text style={styles.serviceType}>Service</Text>
@@ -716,16 +675,15 @@ const WorkerNavigationScreen = () => {
               <TouchableOpacity style={styles.actionButton} onPress={phoneCall}>
                 <MaterialIcons name="call" size={18} color="#FF5722" />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
+              <TouchableOpacity style={styles.actionButton} onPress={messageChatting}>
                 <AntDesign name="message1" size={18} color="#FF5722" />
               </TouchableOpacity>
             </View>
           </View>
-
-          <View style={{position: 'relative'}}>
+          <View style={{ position: 'relative' }}>
             {showUpArrowService && (
               <View style={styles.arrowUpContainer}>
-                <Entypo name="chevron-small-up" size={20} color="#9e9e9e" />
+                <Entypo name="chevron-small-up" size={20} color={isDarkMode ? '#fff' : '#9e9e9e'} />
               </View>
             )}
             <ScrollView
@@ -736,26 +694,21 @@ const WorkerNavigationScreen = () => {
             >
               {serviceArray.map((serviceItem, index) => (
                 <View key={index} style={styles.serviceItem}>
-                  <Text style={styles.serviceText}>
-                    {serviceItem.serviceName}
-                  </Text>
+                  <Text style={styles.serviceText}>{serviceItem.serviceName}</Text>
                 </View>
               ))}
             </ScrollView>
             {showDownArrowService && (
               <View style={styles.arrowDownContainer}>
-                <Entypo name="chevron-small-down" size={20} color="#9e9e9e" />
+                <Entypo name="chevron-small-down" size={20} color={isDarkMode ? '#fff' : '#9e9e9e'} />
               </View>
             )}
           </View>
-
           <Text style={styles.pickupText}>You are at pickup location</Text>
-
-          {/* SWIPE BUTTON */}
-          <View style={{paddingTop: 10}}>
+          <View style={{ paddingTop: 10 }}>
             <SwipeButton
               title="I've Arrived"
-              titleStyles={{color: titleColor}}
+              titleStyles={{ color: titleColor }}
               railBackgroundColor="#FF5722"
               railBorderColor="#FF5722"
               railStyles={{
@@ -784,286 +737,297 @@ const WorkerNavigationScreen = () => {
   );
 };
 
-// -------------------------------- STYLES --------------------------------
 const bottomCardHeight = 300;
 const screenHeight = Dimensions.get('window').height;
 
-const styles = StyleSheet.create({
-  container: {flex: 1},
-  mapContainer: {flex: 1},
-  map: {flex: 1},
-  routeLine: {
-    lineColor: '#212121',
-    lineWidth: 3,
-  },
-  refreshContainer: {
-    position: 'absolute',
-    top: 30,
-    right: 20,
-    backgroundColor: '#ffffff',
-    borderRadius: 50,
-    padding: 7,
-    elevation: 3,
-    zIndex: 999,
-  },
-  cancelButton: {
-    position: 'absolute',
-    bottom: bottomCardHeight + 5,
-    left: 5,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-    width: 80,
-    height: 35,
-  },
-  cancelText: {
-    fontSize: 13,
-    color: '#4a4a4a',
-    fontWeight: 'bold',
-  },
-  googleMapsButton: {
-    position: 'absolute',
-    bottom: bottomCardHeight + 5,
-    right: 10,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-    width: 140,
-    height: 40,
-    paddingHorizontal: 5,
-  },
-  googleMapsText: {
-    fontSize: 14,
-    color: '#212121',
-    fontWeight: 'bold',
-  },
-  detailsContainer: {
-    height: bottomCardHeight,
-    backgroundColor: '#ffffff',
-    padding: 15,
-    paddingHorizontal: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: -5},
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 10,
-  },
-  minimumChargesContainer: {
-    height: 46,
-    backgroundColor: '#f6f6f6',
-    borderRadius: 32,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 5,
-  },
-  serviceFare: {
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-    fontSize: 16,
-    color: '#9e9e9e',
-  },
-  amount: {
-    color: '#212121',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  locationContainer: {
-    flexDirection: 'row',
-    width: '90%',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginVertical: 10,
-  },
-  locationPinImage: {
-    width: 20,
-    height: 20,
-    marginRight: 10,
-  },
-  locationDetails: {
-    marginLeft: 10,
-  },
-  locationAddress: {
-    fontSize: 12,
-    color: '#212121',
-    fontWeight: '500',
-  },
-  serviceDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  serviceType: {
-    fontSize: 16,
-    marginTop: 10,
-    color: '#9e9e9e',
-  },
-  iconsContainer: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  servicesNamesContainer: {
-    width: '70%',
-    maxHeight: 65,
-  },
-  servicesNamesContent: {
-    flexDirection: 'column',
-  },
-  serviceItem: {
-    marginBottom: 5,
-  },
-  serviceText: {
-    color: '#212121',
-    fontWeight: 'bold',
-    fontSize: 13,
-  },
-  arrowUpContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    zIndex: 1,
-  },
-  arrowDownContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    zIndex: 1,
-  },
-  pickupText: {
-    fontSize: 16,
-    color: '#212121',
-    marginTop: 10,
-  },
-  actionButton: {
-    backgroundColor: '#EFDCCB',
-    height: 35,
-    width: 35,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  thumbContainer: {
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  backButtonContainer: {
-    width: 40,
-    height: 40,
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'white',
-    borderRadius: 50,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    zIndex: 1,
-    marginHorizontal: 10,
-    marginBottom: 5,
-  },
-  modalContainer: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 30,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 5,
-    color: '#000',
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    paddingBottom: 10,
-  },
-  reasonButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  reasonText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  crossContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  confirmationModalContainer: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 40,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-  },
-  confirmationTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    paddingBottom: 10,
-    marginBottom: 5,
-    color: '#000',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  confirmationSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 20,
-    paddingBottom: 10,
-    paddingTop: 10,
-  },
-  confirmButton: {
-    backgroundColor: '#FF4500',
-    borderRadius: 40,
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    alignItems: 'center',
-  },
-  confirmButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
+/**
+ * DYNAMIC STYLES
+ */
+function dynamicStyles(isDarkMode) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: isDarkMode ? '#000' : '#fff',
+    },
+    mapContainer: {
+      flex: 1,
+    },
+    map: {
+      flex: 1,
+    },
+    routeLine: {
+      lineColor: isDarkMode ? '#212121' : '#212121',
+      lineWidth: 3,
+    },
+    refreshContainer: {
+      position: 'absolute',
+      top: 30,
+      right: 20,
+      backgroundColor: isDarkMode ? '#333' : '#ffffff',
+      borderRadius: 50,
+      padding: 7,
+      elevation: 3,
+      zIndex: 999,
+    },
+    cancelButton: {
+      position: 'absolute',
+      bottom: bottomCardHeight + 5,
+      left: 5,
+      backgroundColor: isDarkMode ? '#333' : '#FFFFFF',
+      borderRadius: 20,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 5,
+      width: 80,
+      height: 35,
+    },
+    cancelText: {
+      fontSize: 13,
+      color: isDarkMode ? '#fff' : '#4a4a4a',
+      fontWeight: 'bold',
+    },
+    googleMapsButton: {
+      position: 'absolute',
+      bottom: bottomCardHeight + 5,
+      right: 10,
+      backgroundColor: isDarkMode ? '#333' : '#FFFFFF',
+      borderRadius: 20,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 5,
+      width: 140,
+      height: 40,
+      paddingHorizontal: 5,
+    },
+    googleMapsText: {
+      fontSize: 14,
+      color: isDarkMode ? '#fff' : '#212121',
+      fontWeight: 'bold',
+    },
+    detailsContainer: {
+      height: bottomCardHeight,
+      backgroundColor: isDarkMode ? '#222' : '#ffffff',
+      padding: 15,
+      paddingHorizontal: 20,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: -5 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 10,
+    },
+    minimumChargesContainer: {
+      height: 46,
+      backgroundColor: isDarkMode ? '#333' : '#f6f6f6',
+      borderRadius: 32,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingTop: 5,
+    },
+    serviceFare: {
+      fontWeight: 'bold',
+      textAlign: 'center',
+      marginBottom: 10,
+      fontSize: 16,
+      color: isDarkMode ? '#ccc' : '#9e9e9e',
+    },
+    amount: {
+      color: isDarkMode ? '#fff' : '#212121',
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    locationContainer: {
+      flexDirection: 'row',
+      width: '90%',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginVertical: 10,
+    },
+    locationPinImage: {
+      width: 20,
+      height: 20,
+      marginRight: 10,
+    },
+    locationDetails: {
+      marginLeft: 10,
+    },
+    locationAddress: {
+      fontSize: 12,
+      color: isDarkMode ? '#fff' : '#212121',
+      fontWeight: '500',
+    },
+    serviceDetails: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    serviceType: {
+      fontSize: 16,
+      marginTop: 10,
+      color: isDarkMode ? '#ccc' : '#9e9e9e',
+    },
+    iconsContainer: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    servicesNamesContainer: {
+      width: '70%',
+      maxHeight: 65,
+    },
+    servicesNamesContent: {
+      flexDirection: 'column',
+    },
+    serviceItem: {
+      marginBottom: 5,
+    },
+    serviceText: {
+      color: isDarkMode ? '#fff' : '#212121',
+      fontWeight: 'bold',
+      fontSize: 13,
+    },
+    arrowUpContainer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+      backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+      zIndex: 1,
+    },
+    arrowDownContainer: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+      backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+      zIndex: 1,
+    },
+    pickupText: {
+      fontSize: 16,
+      color: isDarkMode ? '#fff' : '#212121',
+      marginTop: 10,
+    },
+    actionButton: {
+      backgroundColor: '#EFDCCB',
+      height: 35,
+      width: 35,
+      borderRadius: 50,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    thumbContainer: {
+      width: 50,
+      height: 50,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'transparent',
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'flex-end',
+    },
+    backButtonContainer: {
+      width: 40,
+      height: 40,
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: isDarkMode ? '#333' : 'white',
+      borderRadius: 50,
+      elevation: 5,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      zIndex: 1,
+      marginHorizontal: 10,
+      marginBottom: 5,
+    },
+    modalContainer: {
+      backgroundColor: isDarkMode ? '#222' : 'white',
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: 20,
+      paddingBottom: 30,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      textAlign: 'center',
+      marginBottom: 5,
+      color: isDarkMode ? '#fff' : '#000',
+    },
+    modalSubtitle: {
+      fontSize: 14,
+      color: isDarkMode ? '#ccc' : '#666',
+      textAlign: 'center',
+      marginBottom: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: isDarkMode ? '#444' : '#eee',
+      paddingBottom: 10,
+    },
+    reasonButton: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: isDarkMode ? '#444' : '#eee',
+    },
+    reasonText: {
+      fontSize: 16,
+      color: isDarkMode ? '#fff' : '#333',
+    },
+    crossContainer: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+    },
+    confirmationModalContainer: {
+      backgroundColor: isDarkMode ? '#222' : 'white',
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      paddingTop: 40,
+      paddingBottom: 30,
+      paddingHorizontal: 20,
+      alignItems: 'center',
+    },
+    confirmationTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      textAlign: 'center',
+      paddingBottom: 10,
+      marginBottom: 5,
+      color: isDarkMode ? '#fff' : '#000',
+      borderBottomWidth: 1,
+      borderBottomColor: isDarkMode ? '#444' : '#eee',
+    },
+    confirmationSubtitle: {
+      fontSize: 14,
+      color: isDarkMode ? '#ccc' : '#666',
+      textAlign: 'center',
+      marginBottom: 20,
+      paddingBottom: 10,
+      paddingTop: 10,
+    },
+    confirmButton: {
+      backgroundColor: '#FF4500',
+      borderRadius: 40,
+      paddingVertical: 15,
+      paddingHorizontal: 40,
+      alignItems: 'center',
+    },
+    confirmButtonText: {
+      color: 'white',
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+  });
+}
 
 export default WorkerNavigationScreen;

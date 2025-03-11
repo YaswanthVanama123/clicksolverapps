@@ -1,385 +1,459 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
+  SafeAreaView,
   FlatList,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
-  Modal,
-  TouchableWithoutFeedback,
+  Image,
   ActivityIndicator,
   useWindowDimensions,
-  Image
+  TextInput,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Feather from 'react-native-vector-icons/Feather';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Icon from 'react-native-vector-icons/Ionicons';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import Entypo from 'react-native-vector-icons/Entypo';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext';
 
-// 1) Define a sub-component that accepts `styles` as a prop.
-const ServiceItem = ({ item, formatDate, styles }) => {
+/** 
+ * Example item structure:
+ * item = {
+ *   notification_id: "...",
+ *   created_at: "2023-08-20T10:00:00Z",
+ *   payment: 100,
+ *   payment_type: "cash",
+ *   service_booked: [
+ *     {
+ *       serviceName: "Parking in Downtown",
+ *       imageUrl: "https://example.com/image.jpg"
+ *     }
+ *   ]
+ * }
+ */
+
+// Helper: format the date
+const formatDate = (created_at) => {
+  const date = new Date(created_at);
+  const monthNames = [
+    'January','February','March','April','May','June',
+    'July','August','September','October','November','December',
+  ];
+  return `${monthNames[date.getMonth()]} ${String(date.getDate()).padStart(2, '0')}, ${date.getFullYear()}`;
+};
+
+// Card component for a single service item
+const ServiceItemCard = ({ item, styles, tab }) => {
   const navigation = useNavigation();
-
+  const isCancelled = item.total_cost === null;
+  let buttonLabel = 'View Details';
+  let disabled = false;
+  if (isCancelled) {
+    buttonLabel = 'Cancelled';
+    disabled = true;
+  }
+  const serviceName =
+    item.service_booked && item.service_booked.length > 0
+      ? item.service_booked[0]?.serviceName
+      : 'Unknown Service';
+  const imageUrl =
+    item.service_booked && item.service_booked.length > 0
+      ? item.service_booked[0].imageUrl
+      : item.service_booked[0]?.url;
   return (
-    <TouchableOpacity
-      style={styles.itemContainer}
-      onPress={() => {
-        navigation.push('serviceBookingItem', {
-          tracking_id: item.notification_id,
-        });
-      }}
-    >
-      <View style={styles.itemMainContainer}>
-        {/* <View style={styles.iconContainer}>
-          {item.payment_type === 'cash' ? (
-            <Entypo name="wallet" size={20} color="#ffffff" />
-          ) : (
-            <MaterialCommunityIcons name="bank" size={20} color="#ffffff" />
-          )}
-        </View> */}
-        <View style={styles.imageContainer1}>
-          <Image
-            style={styles.imageContainer} 
-            source={
-              item.service_booked &&
-              item.service_booked.length > 0 &&
-              item.service_booked[0]?.imageUrl
-                ? { uri: item.service_booked[0].imageUrl }
-                : { uri: item.service_booked[0].url } // <-- Fallback image
-            }
-            resizeMode="cover"
-          />
-        </View>
-        <View style={styles.itemDetails}>
-          <Text style={styles.title}>
-            {item.service_booked
-              ? item.service_booked[0].serviceName
-              : item.service}
-          </Text>
-          <Text style={styles.schedule}>{formatDate(item.created_at)}</Text>
-        </View>
-        <View>
-          <Text style={styles.price}>₹{item.payment}</Text>
-          <Text style={styles.paymentDetails}>
-            {item.payment_type === 'cash'
-              ? 'Paid to you'
-              : 'Paid to click solver'}
-          </Text>
-        </View>
+    <View style={styles.cardContainer}>
+      <Image
+        style={styles.cardImage}
+        source={ imageUrl ? { uri: imageUrl } : null }
+      />
+      <View style={styles.cardInfo}>
+        <Text style={styles.cardTitle} numberOfLines={1}>
+          {serviceName}
+        </Text>
+        <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
+        <Text style={styles.cardPrice}>
+          {isCancelled ? '₹0' : `₹${item.total_cost}`}
+        </Text>
       </View>
-    </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.cardButton, disabled && styles.cardButtonDisabled]}
+        onPress={() => {
+          if (!disabled) {
+            if (tab === 'Ongoing') {
+              navigation.push('ServiceBookingOngoingItem', {
+                tracking_id: item.notification_id,
+              });
+            } else {
+              navigation.push('serviceBookingItem', {
+                tracking_id: item.notification_id,
+              });
+            }
+          }
+        }}
+        disabled={disabled}
+      >
+        <Text style={[styles.cardButtonText, disabled && styles.cardButtonTextDisabled]}>
+          {buttonLabel}
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const RecentServices = () => {
-  // 2) Use `useWindowDimensions` for dynamic styling
   const { width, height } = useWindowDimensions();
-  const styles = dynamicStyles(width, height);
-
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, height, isDarkMode);
+  const TABS = ['Ongoing', 'Completed', 'Cancelled'];
+  const [selectedTab, setSelectedTab] = useState('Ongoing');
   const [bookingsData, setBookingsData] = useState([]);
-  const [isFilterVisible, setIsFilterVisible] = useState(false);
-  const [selectedFilters, setSelectedFilters] = useState([]);
-  const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [searchActive, setSearchActive] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const navigation = useNavigation();
 
-  const filterOptions = ['Completed', 'Cancelled'];
+  // Fetch data based on the selected tab
+  const fetchBookings = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const token = await EncryptedStorage.getItem('pcs_token');
+      if (!token) throw new Error('Token not found');
 
-  useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        setLoading(true);
-        const token = await EncryptedStorage.getItem('pcs_token');
-        if (!token) throw new Error('Token not found');
-
-        const response = await axios.get(
-          'http://192.168.55.102:5000/api/worker/bookings',
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
+      let response;
+      if (selectedTab === 'Ongoing') {
+        // Call a different API endpoint for Ongoing services
+        response = await axios.get(
+          `http:192.168.243.71:5000/api/worker/ongoingBookings`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-        console.log(response.data)
-        setBookingsData(response.data);
-        setFilteredData(response.data);
-      } catch (error) {
-        console.error('Error fetching bookings data:', error);
-      } finally {
-        setLoading(false);
+      } else {
+        // For Completed and Cancelled, use the default endpoint
+        response = await axios.get( 
+          `http:192.168.243.71:5000/api/worker/bookings`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
       }
-    };
-
-    fetchBookings();
-  }, []);
-
-  const formatDate = (created_at) => {
-    const date = new Date(created_at);
-    const monthNames = [
-      'January','February','March','April','May','June',
-      'July','August','September','October','November','December',
-    ];
-    return `${monthNames[date.getMonth()]} ${String(date.getDate()).padStart(2, '0')}, ${date.getFullYear()}`;
-  };
-
-  const toggleFilter = (status) => {
-    const updatedFilters = selectedFilters.includes(status)
-      ? selectedFilters.filter((s) => s !== status)
-      : [...selectedFilters, status];
-
-    setSelectedFilters(updatedFilters);
-
-    // Apply filter
-    const filtered =
-      updatedFilters.length > 0
-        ? bookingsData.filter((item) => {
-            const itemStatus = item.payment !== null ? 'Completed' : 'Cancelled';
-            return updatedFilters.includes(itemStatus);
-          })
-        : bookingsData;
-
-    setFilteredData(filtered);
-  };
-
-  const handleOutsidePress = () => {
-    if (isFilterVisible) {
-      setIsFilterVisible(false);
+      setBookingsData(response.data);
+    } catch (err) {
+      console.error('Error fetching bookings data:', err);
+      setError(true);
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Re-fetch data when selectedTab changes
+  useEffect(() => {
+    fetchBookings();
+  }, [selectedTab]);
+
+  const getFilteredData = () => {
+    // Filter based on the selected tab.
+    let data = [];
+    if (selectedTab === 'Completed') {
+      // Only include bookings that are not cancelled.
+      data = bookingsData.filter(item => item.total_cost !== null);
+    } else if (selectedTab === 'Cancelled') {
+      // Only include cancelled bookings.
+      data = bookingsData.filter(item => item.total_cost === null);
+    } else {
+      // Ongoing tab: no additional filtering is needed as the API already returns ongoing items.
+      data = bookingsData;
+    }
+    
+    // Then, if search is active, filter by service name.
+    if (searchActive && searchText.trim()) {
+      const lowerSearch = searchText.toLowerCase();
+      data = data.filter(item => {
+        if (
+          item.service_booked &&
+          item.service_booked.length > 0 &&
+          item.service_booked[0].serviceName
+        ) {
+          return item.service_booked[0].serviceName.toLowerCase().includes(lowerSearch);
+        }
+        return false;
+      });
+    }
+    
+    // Sort the data in descending order by creation date.
+    data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    return data;
+  };
+  
+  const filteredData = getFilteredData();
+
   return (
-    <TouchableWithoutFeedback onPress={handleOutsidePress}>
-      <SafeAreaView style={styles.screenContainer}>
-        {/* Header */}
-        <View style={styles.headerContainer}>
-          <View style={styles.sortContainerLeft}>
-            <Feather name="shopping-cart" size={18} color="#212121" />
-            <Text style={styles.headerTitle}>My services</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => setIsFilterVisible(!isFilterVisible)}
-            style={styles.sortContainerRight}
-          >
-            <Text style={styles.sortText}>Sort by Status</Text>
-            <Icon name="filter-list" size={24} color="#000" />
-          </TouchableOpacity>
-        </View>
+    <SafeAreaView style={styles.safeArea}>
+      {/* TOP BAR */}
+      <View style={styles.topBar}>
+        <Text style={styles.topBarTitle}>My Services</Text>
+        <TouchableOpacity
+          onPress={() => {
+            setSearchActive(!searchActive);
+            setSearchText('');
+          }}
+        >
+          <Icon name="search" size={24} color={isDarkMode ? '#fff' : '#000'} />
+        </TouchableOpacity>
+      </View>
 
-        {/* Dropdown */}
-        {isFilterVisible && (
-          <View style={styles.dropdownContainer}>
-            <Text style={styles.dropdownTitle}>SORT BY STATUS</Text>
-            {filterOptions.map((option, index) => (
+      {/* SEARCH BOX or TAB BAR */}
+      {searchActive ? (
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search services..."
+            placeholderTextColor="#999"
+            value={searchText}
+            onChangeText={setSearchText}
+          />
+        </View>
+      ) : (
+        <View style={styles.tabContainer}>
+          {TABS.map((tab) => {
+            const active = tab === selectedTab;
+            return (
               <TouchableOpacity
-                key={index}
-                style={styles.dropdownOption}
-                onPress={() => toggleFilter(option)}
+                key={tab}
+                style={[styles.tabButton, active && styles.tabButtonActive]}
+                onPress={() => setSelectedTab(tab)}
               >
-                <Icon
-                  name={
-                    selectedFilters.includes(option)
-                      ? 'check-box'
-                      : 'check-box-outline-blank'
-                  }
-                  size={20}
-                  color="#4a4a4a"
-                />
-                <Text style={styles.dropdownText}>{option}</Text>
+                <Text style={[styles.tabButtonText, active && styles.tabButtonTextActive]}>
+                  {tab}
+                </Text>
               </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        {/* List */}
-        <View style={styles.serviceContainer}>
-          {loading ? (
-            <ActivityIndicator
-              size="large"
-              color="#FF5722"
-              style={styles.loadingIndicator}
-            />
-          ) : filteredData.length === 0 ? (
-            <View style={styles.noDataContainer}>
-              <Text style={styles.noDataText}>No data available</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={filteredData}
-              renderItem={({ item }) => (
-                <ServiceItem
-                  item={item}
-                  formatDate={formatDate}
-                  styles={styles} // 3) Pass styles here
-                />
-              )}
-              keyExtractor={(item, index) => index.toString()}
-            />
-          )}
+            );
+          })}
         </View>
-      </SafeAreaView>
-    </TouchableWithoutFeedback>
+      )}
+
+      {/* CONTENT */}
+      <View style={styles.contentContainer}>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#ff5722" />
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <MaterialIcons name="error-outline" size={48} color="#FF0000" />
+            <Text style={styles.errorText}>Something went wrong. Please try again.</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={fetchBookings}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : filteredData.length === 0 ? (
+          <View style={styles.noDataContainer}>
+            <MaterialIcons name="search-off" size={48} color="#888" />
+            <Text style={styles.noDataText}>No results found</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredData}
+            keyExtractor={(item, index) => `${item.notification_id}_${index}`}
+            renderItem={({ item }) => <ServiceItemCard item={item} styles={styles} tab={selectedTab} />}
+            contentContainerStyle={styles.listContent}
+          />
+        )}
+      </View>
+    </SafeAreaView>
   );
 };
 
-/**
- * Returns a StyleSheet based on screen width/height.
- * If `width >= 600`, we treat it as a tablet and scale up certain styles.
- */
-function dynamicStyles(width, height) {
+const dynamicStyles = (width, height, isDarkMode) => {
   const isTablet = width >= 600;
-
   return StyleSheet.create({
-    screenContainer: {
+    safeArea: {
       flex: 1,
-      backgroundColor: '#f3f3f3',
+      backgroundColor: isDarkMode ? '#121212' : '#fff',
     },
-    headerContainer: {
+    /* TOP BAR */
+    topBar: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      backgroundColor: isDarkMode ? '#222' : '#fff',
+      paddingVertical: isTablet ? 16 : 12,
       paddingHorizontal: isTablet ? 24 : 16,
-      paddingVertical: isTablet ? 18 : 16,
       elevation: 2,
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      backgroundColor: '#ffffff',
-      zIndex: 1,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
     },
-    sortContainerLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
+    topBarTitle: {
+      fontSize: isTablet ? 22 : 18,
+      fontFamily: 'RobotoSlab-Bold',
+      color: isDarkMode ? '#fff' : '#212121',
     },
-    sortContainerRight: {
-      flexDirection: 'row',
-      alignItems: 'center',
+
+    /* SEARCH BOX */
+    searchContainer: {
+      backgroundColor: isDarkMode ? '#333' : '#F8F8F8',
+      paddingVertical: isTablet ? 12 : 8,
+      paddingHorizontal: isTablet ? 24 : 16,
     },
-    headerTitle: {
-      fontSize: isTablet ? 20 : 18,
-      fontWeight: 'bold',
-      color: '#000',
-      marginLeft: 7,
-    },
-    sortText: {
-      fontSize: isTablet ? 18 : 16,
-      marginRight: 8,
-      fontWeight: 'bold',
-      color: '#212121',
-    },
-    dropdownContainer: {
-      position: 'absolute',
-      top: isTablet ? 80 : 70,
-      right: isTablet ? 24 : 16,
-      width: isTablet ? 240 : 200,
-      backgroundColor: '#ffffff',
+    searchInput: {
+      backgroundColor: isDarkMode ? '#444' : '#fff',
       borderRadius: 8,
-      padding: 10,
-      elevation: 5,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-      zIndex: 10,
-    },
-    dropdownTitle: {
+      borderWidth: 1,
+      borderColor: isDarkMode ? '#666' : '#ccc',
+      paddingVertical: isTablet ? 10 : 8,
+      paddingHorizontal: isTablet ? 14 : 10,
       fontSize: isTablet ? 16 : 14,
-      fontWeight: 'bold',
-      color: '#212121',
-      marginBottom: 8,
+      color: isDarkMode ? '#fff' : '#333',
+      fontFamily: 'RobotoSlab-Regular',
     },
-    dropdownOption: {
+
+    /* TABS */
+    tabContainer: {
       flexDirection: 'row',
+      justifyContent: 'center',
       alignItems: 'center',
-      paddingVertical: 8,
+      backgroundColor: isDarkMode ? '#333' : '#F8F8F8',
+      paddingVertical: isTablet ? 14 : 10,
     },
-    dropdownText: {
-      marginLeft: 8,
-      fontSize: isTablet ? 15 : 14,
-      color: '#4a4a4a',
+    tabButton: {
+      paddingVertical: isTablet ? 10 : 8,
+      paddingHorizontal: isTablet ? 20 : 14,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: isDarkMode ? '#666' : '#ccc',
+      marginHorizontal: 5,
     },
-    serviceContainer: {
+    tabButtonActive: {
+      backgroundColor: '#ff5722',
+      borderColor: '#ff5722',
+    },
+    tabButtonText: {
+      fontSize: isTablet ? 16 : 14,
+      color: isDarkMode ? '#fff' : '#333',
+      fontFamily: 'RobotoSlab-Medium',
+    },
+    tabButtonTextActive: {
+      color: '#fff',
+    },
+
+    /* CONTENT */
+    contentContainer: {
       flex: 1,
       paddingHorizontal: isTablet ? 24 : 16,
-      paddingTop: isTablet ? 14 : 10,
+      paddingTop: isTablet ? 16 : 12,
     },
-    itemContainer: {
-      backgroundColor: '#ffffff',
-      marginHorizontal: isTablet ? 8 : 5,
-      padding: isTablet ? 20 : 18,
-      borderRadius: 10,
-      marginBottom: isTablet ? 14 : 12,
-      shadowColor: '#000',
-      // elevation: 1,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
+    listContent: {
+      paddingBottom: isTablet ? 30 : 20,
     },
-    itemMainContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    iconContainer: {
-      width: isTablet ? 50 : 45,
-      height: isTablet ? 50 : 45,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#ff4500',
-      borderRadius: isTablet ? 25 : 22.5,
-      marginRight: 5,
-    },
-    imageContainer:{
-      width: isTablet ? 65 : 55,
-      height: isTablet ? 65 : 55,
-      alignItems: 'center',
-      justifyContent: 'center',
-      // backgroundColor: '#ff4500',
-      borderRadius: isTablet ? 10: 5,
-      marginRight: 5,
-    },
-    itemDetails: {
+
+    // Loading / Error / No Data
+    loadingContainer: {
       flex: 1,
-      marginRight: 8,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
-    title: {
-      fontSize: isTablet ? 17 : 16,
-      fontWeight: 'bold',
-      color: '#212121',
-      marginBottom: 3,
+    errorContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 16,
     },
-    schedule: {
-      fontSize: isTablet ? 14 : 13,
-      color: '#9e9e9e',
+    errorText: {
+      fontSize: isTablet ? 18 : 16,
+      color: '#FF0000',
+      marginVertical: 10,
+      fontFamily: 'RobotoSlab-Medium',
+      textAlign: 'center',
     },
-    price: {
-      fontSize: isTablet ? 17 : 16,
-      fontWeight: 'bold',
-      color: '#212121',
-      textAlign: 'right',
-      marginBottom: 3,
+    retryButton: {
+      backgroundColor: isDarkMode ? '#444' : '#FFF',
+      borderWidth: 1,
+      borderColor: '#ff5722',
+      borderRadius: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      marginTop: 10,
     },
-    paymentDetails: {
-      fontSize: isTablet ? 14 : 12,
-      color: '#9e9e9e',
-      textAlign: 'right',
-    },
-    loadingIndicator: {
-      marginTop: 20,
-      alignSelf: 'center',
+    retryButtonText: {
+      color: '#ff5722',
+      fontFamily: 'RobotoSlab-Medium',
+      fontSize: isTablet ? 16 : 14,
     },
     noDataContainer: {
-      marginTop: 20,
+      flex: 1,
+      justifyContent: 'center',
       alignItems: 'center',
     },
     noDataText: {
-      fontSize: isTablet ? 17 : 16,
-      color: '#212121',
+      marginTop: 8,
+      fontSize: isTablet ? 18 : 16,
+      color: '#888',
+      fontFamily: 'RobotoSlab-Regular',
+    },
+
+    /* CARD LAYOUT */
+    cardContainer: {
+      flexDirection: 'row',
+      backgroundColor: isDarkMode ? '#333' : '#fff',
+      borderRadius: 12,
+      marginBottom: isTablet ? 16 : 12,
+      padding: isTablet ? 16 : 12,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    },
+    cardImage: {
+      width: isTablet ? 80 : 60,
+      height: isTablet ? 80 : 60,
+      borderRadius: 8,
+      marginRight: isTablet ? 14 : 10,
+      backgroundColor: '#eee',
+    },
+    cardInfo: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    cardTitle: {
+      fontSize: isTablet ? 16 : 14,
+      fontFamily: 'RobotoSlab-SemiBold',
+      color: isDarkMode ? '#fff' : '#212121',
+      marginBottom: 4,
+    },
+    cardDate: {
+      fontSize: isTablet ? 14 : 12,
+      fontFamily: 'RobotoSlab-Regular',
+      color: isDarkMode ? '#bbb' : '#777',
+      marginBottom: 4,
+    },
+    cardPrice: {
+      fontSize: isTablet ? 16 : 14,
+      fontFamily: 'RobotoSlab-Medium',
+      color: isDarkMode ? '#fff' : '#333',
+    },
+    cardButton: {
+      paddingVertical: isTablet ? 10 : 8,
+      paddingHorizontal: isTablet ? 12 : 10,
+      backgroundColor: '#ff5722',
+      borderRadius: 8,
+      marginLeft: isTablet ? 12 : 8,
+    },
+    cardButtonText: {
+      fontSize: isTablet ? 14 : 12,
+      fontFamily: 'RobotoSlab-Medium',
+      color: '#fff',
+    },
+    cardButtonDisabled: {
+      backgroundColor: '#ccc',
+    },
+    cardButtonTextDisabled: {
+      color: '#888',
     },
   });
-}
+};
 
 export default RecentServices;

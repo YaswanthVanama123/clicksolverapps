@@ -54,6 +54,7 @@ import VerificationScreen from './Components/VerificationScreen';
 import PaymentScreenRazor from './Components/PaymentScreenRazor';
 import AboutCS from './Components/AboutCS';
 import ServiceBookingOngoingItem from './Components/ServiceBookingOngoingItem';
+import ChatScreen from './Components/ChatScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -171,7 +172,7 @@ function App() {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         if (cs_token) {
           await axios.post(
-            `http://192.168.55.102:5000/api/user/store-fcm-token`,
+            `http:192.168.243.71:5000/api/user/store-fcm-token`,
             { fcmToken: token },
             { headers: { Authorization: `Bearer ${cs_token}` } }
           );
@@ -188,7 +189,7 @@ function App() {
       const pcs_token = await EncryptedStorage.getItem('cs_token');
       const fcmToken = await EncryptedStorage.getItem('fcm_token');
       await axios.post(
-        `http://192.168.55.102:5000/api/user/store-notification`,
+        `http:192.168.243.71:5000/api/user/store-notification`,
         { notification, fcmToken },
         { headers: { Authorization: `Bearer ${pcs_token}` } }
       );
@@ -457,6 +458,8 @@ function App() {
           <Stack.Screen name="ServiceInProgress" component={ServiceInProgress} options={{ headerShown: false }} />
           <Stack.Screen name="AboutCS" component={AboutCS} options={{ headerShown: false }} />
           <Stack.Screen name="ServiceBookingOngoingItem" component={ServiceBookingOngoingItem} options={{ headerShown: false }} />
+          <Stack.Screen name="ChatScreen" component={ChatScreen} options={{ headerShown: false }} />
+          
         </Stack.Navigator>
       </NavigationContainer>
     </ThemeProvider>

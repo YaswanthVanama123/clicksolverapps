@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import axios from 'axios';
+import messaging from '@react-native-firebase/messaging';
 import {
   useNavigation,
   useRoute,
@@ -132,7 +133,7 @@ const WaitingUser = () => {
       }
       console.log("tip", tipAmount);
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/workers-nearby`,
+        `http:192.168.243.71:5000/api/workers-nearby`,
         { 
           area,
           city,
@@ -158,7 +159,7 @@ const WaitingUser = () => {
           encode !== 'No workers match the requested subservices'
         ) {
           await axios.post(
-            `http://192.168.55.102:5000/api/user/action`,
+            `http:192.168.243.71:5000/api/user/action`,
             {
               encodedId: encode,
               screen: 'userwaiting',
@@ -216,7 +217,7 @@ const WaitingUser = () => {
     try {
       if (decodedId) {
         await axios.post(
-          `http://192.168.55.102:5000/api/user/cancellation`,
+          `http:192.168.243.71:5000/api/user/cancellation`,
           {
             user_notification_id: decodedId,
             cancellation_reason: selectedReason,
@@ -225,7 +226,7 @@ const WaitingUser = () => {
 
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
-          `http://192.168.55.102:5000/api/user/action/cancel`,
+          `http:192.168.243.71:5000/api/user/action/cancel`,
           {encodedId: encodedData, screen: 'userwaiting'},
           {headers: {Authorization: `Bearer ${cs_token}`}},
         );
@@ -266,14 +267,14 @@ const WaitingUser = () => {
 
       if (attemptCountRef.current > 3) {
         await axios.post(
-          `http://192.168.55.102:5000/api/user/cancellation`,
+          `http:192.168.243.71:5000/api/user/cancellation`,
           {
             user_notification_id: decodedId,
           },
         );
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
-          `http://192.168.55.102:5000/api/user/action/cancel`,
+          `http:192.168.243.71:5000/api/user/action/cancel`,
           {encodedId: encodedData, screen: 'userwaiting'},
           {headers: {Authorization: `Bearer ${cs_token}`}},
         );
@@ -290,7 +291,7 @@ const WaitingUser = () => {
       if (decodedId) {
         try {
           await axios.post(
-            `http://192.168.55.102:5000/api/user/cancellation`,
+            `http:192.168.243.71:5000/api/user/cancellation`,
             {
               user_notification_id: decodedId,
             },
@@ -302,7 +303,7 @@ const WaitingUser = () => {
 
       const cs_token = await EncryptedStorage.getItem('cs_token');
       await axios.post(
-        `http://192.168.55.102:5000/api/user/action/cancel`,
+        `http:192.168.243.71:5000/api/user/action/cancel`,
         {encodedId: encodedData, screen: 'userwaiting'},
         {headers: {Authorization: `Bearer ${cs_token}`}},
       );
@@ -314,6 +315,66 @@ const WaitingUser = () => {
       setBackendLoading(false);
     }
   };
+
+  // Inside your WaitingUser component (or similar)
+  useEffect(() => {
+  // Function to handle notification data
+  const handleNotificationData = (data) => {
+    if (data && data.notification_id && decodedId) {
+      // Compare notification_id (as string) with your decodedId
+      if (data.notification_id.toString() === decodedId) {
+        const encodedNotificationId = Buffer.from(
+          data.notification_id.toString(),
+          'utf-8'
+        ).toString('base64');
+
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: data.screen, // the target screen from notification data
+                params: { encodedId: encodedNotificationId, service: service },
+              },
+            ],
+          })
+        );
+      }
+    }
+  };
+
+  // 1. Check if the app was opened from a quit state by a notification
+  messaging()
+    .getInitialNotification()
+    .then(remoteMessage => {
+      if (remoteMessage && remoteMessage.data) {
+        console.log('App opened from quit state by notification:', remoteMessage);
+        handleNotificationData(remoteMessage.data);
+      }
+    });
+
+  // 2. Listener for foreground messages
+  const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
+    if (remoteMessage && remoteMessage.data) {
+      console.log('Foreground notification received:', remoteMessage);
+      handleNotificationData(remoteMessage.data);
+    }
+  });
+
+  // 3. Listener for when the app is in background and the user taps the notification
+  const unsubscribeOnNotificationOpened = messaging().onNotificationOpenedApp(remoteMessage => {
+    if (remoteMessage && remoteMessage.data) {
+      console.log('Notification opened from background:', remoteMessage);
+      handleNotificationData(remoteMessage.data);
+    }
+  });
+
+  // Clean up the listeners on unmount
+  return () => {
+    unsubscribeOnMessage();
+    unsubscribeOnNotificationOpened();
+  };
+}, [decodedId, navigation, service]);
 
   useEffect(() => {
     let intervalId;
@@ -332,76 +393,97 @@ const WaitingUser = () => {
     };
   }, [decodedId, encodedData]);
 
-  useEffect(() => {
-    const checkStatus = async () => {
-      setBackendLoading(true);
-      try {
-        const response = await axios.get(
-          `http://192.168.55.102:5000/api/checking/status`,
-          {
-            params: {user_notification_id: decodedId},
-          },
-        );
-
-        console.log('API Response:', response.data);
-
-        const {status, notification_id} = response.data;
-
-        if (typeof status !== 'string' || typeof notification_id !== 'number') {
-          throw new TypeError('Unexpected type in API response');
-        }
-
-        if (status === 'accept') {
-          setStatus('accepted');
-          const encodedNotificationId = Buffer.from(
-            notification_id.toString(),
-            'utf-8',
-          ).toString('base64');
-          const cs_token = await EncryptedStorage.getItem('cs_token');
-
-          await axios.post(
-            `http://192.168.55.102:5000/api/user/action/cancel`,
-            {encodedId: encodedData, screen: 'userwaiting'},
-            {headers: {Authorization: `Bearer ${cs_token}`}},
-          );
-
-          await axios.post(
-            `http://192.168.55.102:5000/api/user/action`,
+  useFocusEffect(
+    useCallback(() => {
+      let intervalId;
+  
+      const checkStatus = async () => {
+        setBackendLoading(true);
+        try {
+          const response = await axios.get(
+            `http:192.168.243.71:5000/api/checking/status`,
             {
-              encodedId: encodedNotificationId,
-              screen: 'UserNavigation',
-              serviceBooked: service,
-            },
-            {headers: {Authorization: `Bearer ${cs_token}`}},
+              params: { user_notification_id: decodedId },
+              validateStatus: (status) => status === 200 || status === 201,
+            }
           );
-
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [
-                {
-                  name: 'UserNavigation',
-                  params: {encodedId: encodedNotificationId, service: service},
-                },
-              ],
-            }),
-          );
+  
+          console.log('API Response:', response.status);
+  
+          // If status code is 201: accepted
+          if (response.status === 201) {
+            setStatus('accepted');
+  
+            const { notification_id } = response.data;
+            if (typeof notification_id !== 'number') {
+              throw new TypeError('Unexpected type for notification_id in API response');
+            }
+            const encodedNotificationId = Buffer.from(notification_id.toString(), 'utf-8').toString('base64');
+            const cs_token = await EncryptedStorage.getItem('cs_token');
+  
+            // Cancel the previous waiting action
+            await axios.post(
+              `http:192.168.243.71:5000/api/user/action/cancel`,
+              { encodedId: encodedData, screen: 'userwaiting' },
+              { headers: { Authorization: `Bearer ${cs_token}` } }
+            );
+  
+            // Proceed with the accepted action
+            await axios.post(
+              `http:192.168.243.71:5000/api/user/action`,
+              {
+                encodedId: encodedNotificationId,
+                screen: 'UserNavigation',
+                serviceBooked: service,
+              },
+              { headers: { Authorization: `Bearer ${cs_token}` } }
+            );
+  
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [
+                  {
+                    name: 'UserNavigation',
+                    params: { encodedId: encodedNotificationId, service: service },
+                  },
+                ],
+              })
+            );
+          } else if (response.status === 200) {
+            // 200 means still waiting
+            setStatus('waiting');
+          }
+        } catch (error) {
+          console.error('Error checking status:', error);
+        } finally {
+          setBackendLoading(false);
         }
-      } catch (error) {
-        console.error('Error checking status:', error);
-      } finally {
-        setBackendLoading(false);
+      };
+  
+      if (
+        decodedId &&
+        decodedId !== 'No workersverified found within 2 km radius'
+      ) {
+        console.log("Decoded ID when screen focused:", decodedId);
+        checkStatus(); // Initial call when screen is focused
+  
+        // Set interval to call checkStatus every 1m50s (110,000ms)
+        intervalId = setInterval(() => {
+          console.log("Checking status again...");
+          checkStatus();
+        }, 110000);
       }
-    };
-
-    if (
-      decodedId &&
-      decodedId !== 'No workersverified found within 2 km radius'
-    ) {
-      console.log(decodedId);
-      checkStatus();
-    }
-  }, [decodedId, navigation]);
+  
+      // Cleanup function to clear interval when screen loses focus
+      return () => {
+        if (intervalId) {
+          clearInterval(intervalId);
+          console.log("Interval cleared as screen lost focus.");
+        }
+      };
+    }, [decodedId, navigation]) // Dependencies for re-execution when focused
+  );
 
   useFocusEffect(
     React.useCallback(() => {

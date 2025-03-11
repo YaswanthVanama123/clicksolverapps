@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect} from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,16 +8,33 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
-import {useNavigation} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+// Import the theme hook from your context
+import { useTheme } from '../context/ThemeContext';
 
-const TrackingConfirmation = ({route}) => {
+const TrackingConfirmation = ({ route }) => {
   const [otp, setOtp] = useState(Array(4).fill(''));
   const inputRefs = useRef([]);
-  const {trackingId} = route.params;
+  const { trackingId } = route.params;
   const navigation = useNavigation();
   const [decodedId, setDecodedId] = useState(null);
   const [error, setError] = useState('');
-  const [focusedIndex, setFocusedIndex] = useState(-1); // To track the focused input
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+
+  // Get current theme flag from context
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(isDarkMode);
+
+  useEffect(() => {
+    if (trackingId) {
+      // Decoding trackingId (assuming it's Base64 encoded)
+      try {
+        setDecodedId(atob(trackingId));
+      } catch (error) {
+        console.error('Error decoding trackingId:', error);
+      }
+    }
+  }, [trackingId]);
 
   const handleChange = (text, index) => {
     if (/^\d?$/.test(text)) {
@@ -40,30 +57,30 @@ const TrackingConfirmation = ({route}) => {
     const enteredOtp = otp.join('');
     try {
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/service/tracking/delivery/verification`,
-        {trackingId, enteredOtp},
+        `http:192.168.243.71:5000/api/service/tracking/delivery/verification`,
+        { trackingId, enteredOtp }
       );
-      const {encodedId} = response.data;
+      const { encodedId } = response.data;
       if (response.status === 200) {
-        navigation.replace('Paymentscreen', {encodedId});
+        navigation.replace('Paymentscreen', { encodedId });
       }
     } catch (error) {
-      console.error('Error fetching bookings data:', error);
+      console.error('Error during verification:', error);
       setError('Verification failed. Please try again.');
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Back arrow and title at the top */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <FontAwesome6 name="arrow-left-long" size={18} color="#1D2951" />
+          <FontAwesome6 name="arrow-left-long" size={18} color={isDarkMode ? '#ffffff' : '#1D2951'} />
         </TouchableOpacity>
         <Text style={styles.title}>Pin Verification</Text>
       </View>
 
-      {/* Centered OTP inputs and submit button */}
+      {/* OTP Inputs */}
       <View style={styles.otpContainer}>
         {otp.map((value, index) => (
           <TextInput
@@ -84,8 +101,10 @@ const TrackingConfirmation = ({route}) => {
         ))}
       </View>
 
+      {/* Error Message */}
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
+      {/* Submit Button */}
       <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
         <Text style={styles.submitButtonText}>Submit</Text>
       </TouchableOpacity>
@@ -93,67 +112,68 @@ const TrackingConfirmation = ({route}) => {
   );
 };
 
-export default TrackingConfirmation;
+const dynamicStyles = isDarkMode =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: isDarkMode ? '#000000' : '#ffffff',
+      padding: 16,
+    },
+    header: {
+      position: 'absolute',
+      top: 10,
+      left: 16,
+      right: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    title: {
+      fontSize: 20,
+      color: isDarkMode ? '#ffffff' : '#1D2951',
+      fontWeight: 'bold',
+      textAlign: 'center',
+      flex: 1,
+    },
+    otpContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginBottom: 32,
+    },
+    otpInput: {
+      width: 50,
+      height: 50,
+      marginHorizontal: 8,
+      textAlign: 'center',
+      fontSize: 20,
+      borderWidth: 1.5,
+      borderColor: isDarkMode ? '#ffffff' : '#1D2951',
+      borderRadius: 10,
+      backgroundColor: isDarkMode ? '#222222' : '#f9f9f9',
+      color: isDarkMode ? '#ffffff' : '#212121',
+    },
+    otpInputFocused: {
+      borderColor: '#ff4500',
+    },
+    error: {
+      color: 'red',
+      marginBottom: 16,
+    },
+    submitButton: {
+      backgroundColor: '#ff4500',
+      flexDirection: 'row',
+      width: 120,
+      height: 43,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 10,
+    },
+    submitButtonText: {
+      color: '#ffffff',
+      fontSize: 16,
+    },
+  });
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 16,
-  },
-  header: {
-    position: 'absolute',
-    top: 10,
-    left: 16,
-    right: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center', // Center the header content
-  },
-  title: {
-    fontSize: 20,
-    color: '#1D2951',
-    fontWeight: 'bold',
-    textAlign: 'center',
-    flex: 1, // Ensures the text takes up available space and centers
-  },
-  otpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center', // centers the input boxes
-    marginBottom: 32,
-  },
-  otpInput: {
-    width: 50,
-    height: 50,
-    marginHorizontal: 8,
-    textAlign: 'center',
-    fontSize: 20,
-    borderWidth: 1.5,
-    borderColor: '#1D2951', // default border color
-    borderRadius: 10,
-    backgroundColor: '#f9f9f9',
-    color: '#212121',
-  },
-  otpInputFocused: {
-    borderColor: '#ff4500', // change border color on focus
-  },
-  error: {
-    color: 'red',
-    marginBottom: 16,
-  },
-  submitButton: {
-    backgroundColor: '#ff4500',
-    flexDirection: 'row',
-    width: 120,
-    height: 43,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 10,
-  },
-  submitButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-  },
-});
+export default TrackingConfirmation;

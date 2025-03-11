@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   Alert,
   BackHandler,
-  useWindowDimensions, // For responsiveness
+  useWindowDimensions,
 } from 'react-native';
-import {RadioButton} from 'react-native-paper';
+import { RadioButton } from 'react-native-paper';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import {
   useNavigation,
@@ -21,11 +21,16 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
 import SwipeButton from 'rn-swipe-button';
 import Entypo from 'react-native-vector-icons/Entypo';
+// Import theme hook from your context
+import { useTheme } from '../context/ThemeContext';
 
-const PaymentScanner = ({route}) => {
-  // 1) Grab window width & height for responsive styling
+const PaymentScanner = ({ route }) => {
+  // Grab window dimensions for responsive styling
   const { width } = useWindowDimensions();
-  const styles = dynamicStyles(width); // Create the dynamic styles
+  // Get the current theme flag
+  const { isDarkMode } = useTheme();
+  // Generate dynamic styles with width and theme flag
+  const styles = dynamicStyles(width, isDarkMode);
 
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [paymentDetails, setPaymentDetails] = useState({});
@@ -38,7 +43,7 @@ const PaymentScanner = ({route}) => {
   const navigation = useNavigation();
 
   useEffect(() => {
-    const {encodedId} = route.params;
+    const { encodedId } = route.params;
     if (encodedId) {
       setEncodedId(encodedId);
       const decoded = atob(encodedId);
@@ -51,7 +56,7 @@ const PaymentScanner = ({route}) => {
       if (decodedId) {
         try {
           const response = await axios.post(
-            'http://192.168.55.102:5000/api/worker/payment/scanner/details',
+            'http:192.168.243.71:5000/api/worker/payment/scanner/details',
             { notification_id: decodedId }
           );
           const { totalAmount: amount, name, service } = response.data;
@@ -77,11 +82,10 @@ const PaymentScanner = ({route}) => {
   };
 
   useFocusEffect(
-    useCallback(() => {
-      const handleBackPress = () => onBackPress();
-      BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+    React.useCallback(() => {
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () =>
-        BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
     }, [navigation])
   );
 
@@ -89,15 +93,15 @@ const PaymentScanner = ({route}) => {
   const handlePayment = async () => {
     try {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
-      const numberAmmount = Number(totalAmount);
-      await axios.post('http://192.168.55.102:5000/api/user/payed', {
-        totalAmount: numberAmmount,
+      const numberAmount = Number(totalAmount);
+      await axios.post('http:192.168.243.71:5000/api/user/payed', {
+        totalAmount: numberAmount,
         paymentMethod,
         decodedId,
       });
 
       await axios.post(
-        'http://192.168.55.102:5000/api/worker/action',
+        'http:192.168.243.71:5000/api/worker/action',
         { encodedId, screen: '' },
         { headers: { Authorization: `Bearer ${pcs_token}` } }
       );
@@ -119,7 +123,7 @@ const PaymentScanner = ({route}) => {
     <View style={styles.thumbContainer}>
       <Text>
         {swiped ? (
-          <Entypo name="check" size={20} color="#ffffff" style={styles.checkIcon} />
+          <Entypo name="check" size={20} color="#ffffff" style={{ marginLeft: 2 }} />
         ) : (
           <FontAwesome6 name="arrow-right-long" size={18} color="#ffffff" />
         )}
@@ -127,12 +131,12 @@ const PaymentScanner = ({route}) => {
     </View>
   );
 
-  return ( 
+  return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.leftIcon} onPress={onBackPress}>
-          <FontAwesome6 name="arrow-left-long" size={20} color="#9e9e9e" />
+          <FontAwesome6 name="arrow-left-long" size={20} color={isDarkMode ? '#ffffff' : '#9e9e9e'} />
         </TouchableOpacity>
         <Text style={styles.screenName}>Payment Scanner</Text>
       </View>
@@ -173,7 +177,7 @@ const PaymentScanner = ({route}) => {
         <SwipeButton
           title="Collected Amount"
           titleStyles={{ color: titleColor, fontSize: 16 }}
-          railBackgroundColor="#ffffff"
+          railBackgroundColor={isDarkMode ? '#333333' : '#ffffff'}
           railBorderColor="#FF5722"
           railStyles={{
             borderRadius: 25,
@@ -200,14 +204,14 @@ const PaymentScanner = ({route}) => {
 };
 
 /* -------------------- Dynamic Styles -------------------- */
-function dynamicStyles(width) {
+function dynamicStyles(width, isDarkMode) {
   const isTablet = width >= 600;
 
   return StyleSheet.create({
     container: {
       flex: 1,
       padding: isTablet ? 30 : 20,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#000000' : '#ffffff',
     },
     header: {
       flexDirection: 'row',
@@ -221,7 +225,7 @@ function dynamicStyles(width) {
       left: 10,
     },
     screenName: {
-      color: '#747476',
+      color: isDarkMode ? '#ffffff' : '#747476',
       fontSize: isTablet ? 20 : 17,
       fontWeight: 'bold',
     },
@@ -229,7 +233,7 @@ function dynamicStyles(width) {
       alignItems: 'center',
       marginBottom: isTablet ? 30 : 20,
       padding: isTablet ? 30 : 20,
-      backgroundColor: '#F3F6F8',
+      backgroundColor: isDarkMode ? '#222222' : '#F3F6F8',
       borderRadius: 10,
     },
     profileImage: {
@@ -241,22 +245,22 @@ function dynamicStyles(width) {
     name: {
       fontSize: isTablet ? 24 : 20,
       fontWeight: 'bold',
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
     },
     amountText: {
       fontSize: isTablet ? 16 : 14,
-      color: '#9E9E9E',
+      color: isDarkMode ? '#cccccc' : '#9E9E9E',
       marginTop: 10,
     },
     amount: {
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       fontWeight: 'bold',
       fontSize: isTablet ? 28 : 24,
       marginBottom: 10,
     },
     service: {
       fontSize: isTablet ? 18 : 16,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       fontWeight: 'bold',
     },
     qrContainer: {
@@ -271,7 +275,7 @@ function dynamicStyles(width) {
     qrText: {
       marginTop: 10,
       fontSize: isTablet ? 16 : 14,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
     },
     radioContainer: {
       flexDirection: 'row',
@@ -281,7 +285,7 @@ function dynamicStyles(width) {
     radioText: {
       fontSize: isTablet ? 18 : 16,
       marginLeft: 10,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       fontWeight: 'bold',
     },
     thumbContainer: {
@@ -289,9 +293,6 @@ function dynamicStyles(width) {
       height: isTablet ? 60 : 50,
       justifyContent: 'center',
       alignItems: 'center',
-    },
-    checkIcon: {
-      marginLeft: 2,
     },
     swipeButtonContainer: {
       marginTop: isTablet ? 30 : 20,

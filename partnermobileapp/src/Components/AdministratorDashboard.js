@@ -108,7 +108,7 @@ const DashboardScreen = () => {
     console.log(process.env.BackendAPI17);
     try {
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/administrator/service/date/details`,
+        `http:192.168.243.71:5000/api/administrator/service/date/details`,
         payload,
       );
       console.log(response.data);

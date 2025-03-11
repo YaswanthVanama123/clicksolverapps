@@ -85,7 +85,7 @@ const OrderScreen = () => {
           const token = await EncryptedStorage.getItem('cs_token');
           if (!token) return;
           const response = await axios.post(
-            'http://192.168.55.102:5000/api/user/coupons',
+            'http:192.168.243.71:5000/api/user/coupons',
             {},
             { headers: { Authorization: `Bearer ${token}` } }
           );

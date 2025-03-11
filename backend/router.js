@@ -154,7 +154,13 @@ const {
   workerTrackingCall,
   getUserOngoingBookings,
   getServiceOngoingItemDetails,
-  userProfileUpdate
+  userProfileUpdate,
+  getWorkerOngoingBookings,
+  getServiceOngoingWorkerItemDetails,
+  sendMessageWorker,
+  workerGetMessage,
+  sendMessageUser,
+  callMasking
 } = require("./controller.js");
 
 const router = express.Router();
@@ -256,6 +262,16 @@ router.post(
 router.post("/service/booking/item/details", getServiceBookingItemDetails);
 
 router.post("/service/ongoing/booking/item/details", getServiceOngoingItemDetails);
+
+router.get("/worker/getMessages",workerGetMessage);
+
+
+
+router.post("/service/ongoing/worker/booking/item/details", getServiceOngoingWorkerItemDetails);
+
+router.post("/send/message/worker",sendMessageWorker);
+
+router.post("/send/message/user",sendMessageUser);
 
 router.post("/user/coupons", authenticateToken, userCoupons);
 
@@ -647,6 +663,8 @@ router.get(
   getWorkerTrackingServices
 );
 
+router.post("/callMasking",callMasking)
+
 router.get("/all/tracking/services", getAllTrackingServices);
 
 router.post("/user/work/progress/details", userWorkerInProgressDetails);
@@ -697,7 +715,11 @@ router.get("/worker/bookings", authenticateWorkerToken, getWorkerBookings);
 
 router.get("/user/bookings", authenticateToken, getUserAllBookings);
 
-router.get("/user/ongoingBookings",authenticateToken, getUserOngoingBookings)
+router.get("/user/ongoingBookings",authenticateToken, getUserOngoingBookings);
+
+router.get("/worker/ongoingBookings",authenticateWorkerToken, getWorkerOngoingBookings);
+
+
 
 router.get(
   "/worker/profile/details",

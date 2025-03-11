@@ -6,27 +6,55 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
-  Linking,
-  useWindowDimensions, // <-- important for responsiveness
+  Animated,
+  ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome6';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, CommonActions, useRoute } from '@react-navigation/native';
 import axios from 'axios';
+import Entypo from 'react-native-vector-icons/Entypo';
+import AntDesign from 'react-native-vector-icons/AntDesign';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../context/ThemeContext'; // Import the theme hook
 
 const ServiceBookingOngoingItem = () => {
-  const { width } = useWindowDimensions();  // <-- get screen width
-  const styles = dynamicStyles(width);      // <-- create dynamic styles
+  // Get screen dimensions
+  const { width, height } = useWindowDimensions();
+  // Get dark mode flag from context and pass it to dynamicStyles
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, height, isDarkMode);
 
   const [details, setDetails] = useState({});
   const [serviceArray, setServiceArray] = useState([]);
-  const [status, setStatus] = useState({
-    accept: '2024-11-02 22:16:22',
-    arrived: '2024-11-02 22:16:32',
-    workCompleted: '2024-11-02 22:16:48',
-    paymentCompleted: '2024-11-02 22:16:56',
+  const { tracking_id } = useRoute().params;
+
+  const [paymentExpanded, setPaymentExpanded] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState({}); // Timestamps & status
+
+  const navigation = useNavigation();
+  const rotateAnimation = useMemo(() => new Animated.Value(0), []);
+
+  const togglePaymentDetails = () => {
+    setPaymentExpanded(!paymentExpanded);
+  };
+
+  useEffect(() => {
+    Animated.timing(rotateAnimation, {
+      toValue: paymentExpanded ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [paymentExpanded, rotateAnimation]);
+
+  const rotateInterpolate = rotateAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
   });
 
+  // Mapping for status display names
   const statusDisplayNames = {
     accept: 'Commander Accepted',
     arrived: 'Commander Arrived',
@@ -34,13 +62,10 @@ const ServiceBookingOngoingItem = () => {
     paymentCompleted: 'Payment Completed',
   };
 
-  const { tracking_id } = useRoute().params;
-  const navigation = useNavigation();
-
+  // Timeline data generation based on status object
   const getTimelineData = useMemo(() => {
     const statusKeys = Object.keys(status);
     const currentStatusIndex = statusKeys.findIndex((key) => status[key] === null);
-
     return statusKeys.map((statusKey, index) => ({
       title: statusDisplayNames[statusKey],
       time: status[statusKey],
@@ -56,174 +81,207 @@ const ServiceBookingOngoingItem = () => {
   }, [status]);
 
   useEffect(() => {
-    const fetchBookings = async () => {
+    
+    const fetchBookingDetails = async () => {
       try {
+        setLoading(true);
+        console.log("track",tracking_id)
         const response = await axios.post(
-          'http://192.168.55.102:5000/api/service/ongoing/booking/item/details',
+          `http:192.168.243.71:5000/api/service/ongoing/worker/booking/item/details`,
           { tracking_id },
         );
         const { data } = response.data;
-
-        // If you have `paymentDetails` in response, you can handle them as well
+        console.log("data", data);
         setStatus(data.time || {});
         setDetails(data);
-        setServiceArray(data.service_booked || []);
+        setServiceArray(data.service_booked);
       } catch (error) {
         console.error('Error fetching bookings data:', error);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchBookings();
+    fetchBookingDetails();
   }, [tracking_id]);
 
-  const openPhonePeScanner = useCallback(() => {
-    const url = 'phonepe://scan';
-    Linking.openURL(url).catch((err) => {
-      console.error('Failed to open PhonePe scanner:', err);
-      Linking.openURL(
-        'https://play.google.com/store/apps/details?id=com.phonepe.app'
-      );
-    });
-  }, []);
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#FF5722" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Icon
-          name="arrow-left-long"
-          size={styles.headerIconSize}
-          color="#212121"
-          style={styles.backIcon}
-          onPress={() => navigation.goBack()}
-        />
-        <Text style={styles.headerText}>Service Tracking</Text>
-      </View>
-
-      <ScrollView>
-        {/* User Profile */}
-        <View style={styles.profileContainer}>
-          <View style={styles.profileImage}>
-            <Text style={styles.profileInitial}>
-              {details.name ? details.name.charAt(0).toUpperCase() : ''}
-            </Text>
-          </View>
-          <View style={styles.profileTextContainer}>
-            <View>
-              <Text style={styles.userName}>{details.name}</Text>
-              <Text style={styles.userDesignation}>{details.service}</Text>
-            </View>
-          </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Icon
+            name="arrow-left-long"
+            size={20}
+            color={isDarkMode ? '#fff' : '#212121'}
+            style={styles.backIcon}
+          />
+          <Text style={styles.headerText}>Service Trackings</Text>
         </View>
 
-        <View style={styles.horizantalLine} />
-
-        {/* Service Details */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionBookedTitle}>Service Details</Text>
-          <View style={styles.innerContainer}>
-            {serviceArray.map((service, index) => (
-              <Text key={index} style={styles.serviceDetail}>
-                {service.serviceName}
+        <ScrollView>
+          {/* User Profile */}
+          <View style={styles.profileContainer}>
+            <View style={styles.profileImage}>
+              <Text style={styles.profileInitial}>
+                {details.name ? details.name.charAt(0).toUpperCase() : ''}
               </Text>
-            ))}
+            </View>
+            <View style={styles.profileTextContainer}>
+              <View>
+                <Text style={styles.userName}>{details.name}</Text>
+                {/* <Text style={styles.userDesignation}>{details.service}</Text> */}
+              </View>
+            </View>
           </View>
-        </View>
 
-        <View style={styles.horizantalLine} />
+          <View style={styles.horizantalLine} />
 
-        {/* Service Timeline */}
-        <View style={styles.sectionContainer}>
-          <View style={styles.serviceTimeLineContainer}>
-            <Text style={styles.sectionTitle}>Service Timeline</Text>
+          {/* Service Details */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionBookedTitle}>Service Details</Text>
+            <View style={styles.innerContainer}>
+              {serviceArray.map((service, index) => (
+                <Text key={index} style={styles.serviceDetail}>
+                  {service.serviceName}
+                </Text>
+              ))}
+            </View>
           </View>
-          <View style={styles.innerContainerLine}>
-            {getTimelineData.map((item, index) => (
-              <View key={index} style={styles.timelineItem}>
-                <View style={{ alignItems: 'center' }}>
-                  <MaterialCommunityIcons
-                    name="circle"
-                    size={14}
-                    color={item.iconColor}
-                    style={styles.timelineIcon}
-                  />
-                  {index !== getTimelineData.length - 1 && (
-                    <View
-                      style={[
-                        styles.lineSegment,
-                        { backgroundColor: getTimelineData[index + 1].iconColor },
-                      ]}
+
+          <View style={styles.horizantalLine} />
+
+          {/* Service Timeline */}
+          <View style={styles.sectionContainer}>
+            <View style={styles.serviceTimeLineContainer}>
+              <Text style={styles.sectionTitle}>Service Timeline</Text>
+            </View>
+            <View style={styles.innerContainerLine}>
+              {getTimelineData.map((item, index) => (
+                <View key={index} style={styles.timelineItem}>
+                  <View style={{ alignItems: 'center' }}>
+                    <MaterialCommunityIcons
+                      name="circle"
+                      size={14}
+                      color={item.iconColor}
+                      style={styles.timelineIcon}
                     />
+                    {index !== getTimelineData.length - 1 && (
+                      <View
+                        style={[
+                          styles.lineSegment,
+                          {
+                            backgroundColor: getTimelineData[index + 1].iconColor,
+                          },
+                        ]}
+                      />
+                    )}
+                  </View>
+                  <View style={styles.timelineTextContainer}>
+                    <Text style={styles.timelineText}>{item.title}</Text>
+                    <Text style={styles.timelineTime}>
+                      {item.time ? item.time : 'Pending'}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.horizantalLine} />
+
+          {/* Address */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Address</Text>
+            <View style={styles.addressContainer}>
+              <Image
+                source={{
+                  uri: 'https://i.postimg.cc/rpb2czKR/1000051859-removebg-preview.png',
+                }}
+                style={styles.locationPinImage}
+              />
+              <View style={styles.addressTextContainer}>
+                <Text style={styles.address}>{details.area}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Payment Details */}
+          <View style={styles.paymentInnerContainer}>
+            <TouchableOpacity
+              style={styles.paymentSummaryContainer}
+              onPress={togglePaymentDetails}
+              accessibilityRole="button"
+              accessibilityLabel="Toggle Payment Details"
+            >
+              <Text style={styles.sectionPaymentTitle}>Payment Details</Text>
+              <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
+                <Entypo name="chevron-small-right" size={20} color="#ff4500" />
+              </Animated.View>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.sectionContainer}>
+            {paymentExpanded && (
+              <>
+                <View style={styles.PaymentItemContainer}>
+                  {serviceArray.map((service, index) => (
+                    <View key={index} style={styles.paymentRow}>
+                      <Text style={styles.paymentLabelHead}>{service.serviceName}</Text>
+                      <Text style={styles.paymentValue}>
+                        ₹{service.cost.toFixed(2)}
+                      </Text>
+                    </View>
+                  ))}
+                  {details.discount > 0 && (
+                    <View style={styles.paymentRow}>
+                      <Text style={styles.paymentLabel}>Cashback (5%)</Text>
+                      <Text style={styles.paymentValue}>₹{details.discount}</Text>
+                    </View>
                   )}
+                  <View style={styles.paymentRow}>
+                    <Text style={styles.paymentValue}>Grand Total</Text>
+                    <Text style={styles.paymentValue}>₹{details.total_cost}</Text>
+                  </View>
                 </View>
-                <View style={styles.timelineTextContainer}>
-                  <Text style={styles.timelineText}>{item.title}</Text>
-                  <Text style={styles.timelineTime}>
-                    {item.time ? item.time : 'Pending'}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.horizantalLine} />
-
-        {/* Address */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Address</Text>
-          <View style={styles.addressContainer}>
-            <Image
-              source={{
-                uri: 'https://i.postimg.cc/qvJw8Kzy/Screenshot-2024-11-13-170828-removebg-preview.png',
-              }}
-              style={styles.locationPinImage}
-            />
-            <View style={styles.addressTextContainer}>
-              <Text style={styles.address}>{details.area}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Payment Details */}
-        <View style={styles.paymentInnerContainer}>
-          <Text style={styles.sectionPaymentTitle}>Payment Details</Text>
-        </View>
-        <View style={styles.sectionContainer}>
-          <View style={styles.PaymentItemContainer}>
-            {details.discount > 0 && (
-              <View style={styles.paymentRow}>
-                <Text style={styles.paymentLabel}>Cashback (5%)</Text>
-                <Text style={styles.paymentValue}>₹{details.discount}</Text>
-              </View>
+              </>
             )}
-            <View style={styles.paymentRow}>
-              <Text style={styles.paymentValue}>Grand Total</Text>
-              <Text style={styles.paymentValue}>₹ {details.total_cost}</Text>
-            </View>
           </View>
-        </View>
 
-        <TouchableOpacity style={styles.payButton} onPress={openPhonePeScanner}>
-          <Text style={styles.payButtonText}>PAYED</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
+          {/* Pay Button */}
+          <TouchableOpacity style={styles.payButton}>
+            <Text style={styles.payButtonText}>PAY</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    </SafeAreaView>
   );
 };
 
-export default ServiceBookingOngoingItem;
-
 /**
- * DYNAMIC STYLES for responsiveness
- * ---------------------------------
- * If `width >= 600`, we treat it as a tablet and scale up certain styles.
+ * DYNAMIC STYLES:
+ * Returns a StyleSheet with values based on device dimensions and dark mode.
  */
-function dynamicStyles(width) {
+const dynamicStyles = (width, height, isDarkMode) => {
   const isTablet = width >= 600;
 
   return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
+    },
     container: {
       flex: 1,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
     },
     header: {
       flexDirection: 'row',
@@ -235,16 +293,15 @@ function dynamicStyles(width) {
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,
       shadowRadius: 4,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#333' : '#ffffff',
     },
-    headerIconSize: isTablet ? 24 : 20, // or just do isTablet ? 24 : 20
     backIcon: {
-      marginRight: 10,
+      marginRight: isTablet ? 15 : 10,
     },
     headerText: {
-      fontSize: isTablet ? 20 : 16,
-      fontWeight: 'bold',
-      color: '#1D2951',
+      fontSize: isTablet ? 20 : 18,
+      fontFamily: 'RobotoSlab-SemiBold',
+      color: isDarkMode ? '#fff' : '#1D2951',
       paddingLeft: isTablet ? 40 : 30,
     },
     profileContainer: {
@@ -256,7 +313,6 @@ function dynamicStyles(width) {
     profileImage: {
       width: isTablet ? 70 : 60,
       height: isTablet ? 70 : 60,
-      flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: '#FF7A22',
@@ -265,8 +321,8 @@ function dynamicStyles(width) {
     },
     profileInitial: {
       color: '#FFFFFF',
+      fontFamily: 'RobotoSlab-Medium',
       fontSize: isTablet ? 24 : 22,
-      fontWeight: '800',
     },
     profileTextContainer: {
       flex: 1,
@@ -277,107 +333,79 @@ function dynamicStyles(width) {
     },
     userName: {
       fontSize: isTablet ? 22 : 20,
-      fontWeight: 'bold',
-      color: '#1D2951',
+      fontFamily: 'RobotoSlab-Medium',
+      color: isDarkMode ? '#fff' : '#1D2951',
     },
     userDesignation: {
       fontSize: isTablet ? 16 : 14,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ccc' : '#4a4a4a',
+      fontFamily: 'RobotoSlab-Regular',
     },
     horizantalLine: {
       height: 2,
-      backgroundColor: '#F5F5F5',
+      backgroundColor: isDarkMode ? '#333' : '#F5F5F5',
       marginBottom: isTablet ? 16 : 12,
     },
     sectionContainer: {
-      marginBottom: 16,
-      paddingLeft: isTablet ? 20 : 16,
+      marginBottom: isTablet ? 20 : 16,
+      paddingLeft: isTablet ? 20 : 15,
       paddingRight: isTablet ? 20 : 16,
+      paddingTop: isTablet ? 10 : 5,
       width: '95%',
-      alignSelf: 'center',
     },
     sectionBookedTitle: {
       fontSize: isTablet ? 18 : 16,
-      fontWeight: 'bold',
-      color: '#212121',
+      fontFamily: 'RobotoSlab-SemiBold',
+      color: isDarkMode ? '#fff' : '#212121',
       marginBottom: 8,
     },
     innerContainer: {
       paddingLeft: isTablet ? 20 : 16,
     },
+    sectionTitle: {
+      fontSize: isTablet ? 18 : 16,
+      fontFamily: 'RobotoSlab-SemiBold',
+      color: isDarkMode ? '#fff' : '#212121',
+      marginBottom: 8,
+      paddingBottom: isTablet ? 20 : 15,
+    },
+    serviceDetail: {
+      fontSize: isTablet ? 16 : 14,
+      color: isDarkMode ? '#fff' : '#212121',
+      fontFamily: 'RobotoSlab-Regular',
+      marginBottom: 4,
+    },
     serviceTimeLineContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
     },
-    sectionTitle: {
-      fontSize: isTablet ? 18 : 16,
-      fontWeight: '700',
-      color: '#212121',
-      marginBottom: 8,
-      paddingBottom: 15,
-    },
     innerContainerLine: {
       paddingLeft: isTablet ? 20 : 16,
-    },
-    serviceDetail: {
-      fontSize: isTablet ? 15 : 14,
-      color: '#212121',
-      fontWeight: '500',
-      marginBottom: 4,
     },
     timelineItem: {
       flexDirection: 'row',
       alignItems: 'flex-start',
     },
     timelineIcon: {
-      marginBottom: 2,
-    },
-    lineSegment: {
-      width: 2,
-      height: isTablet ? 50 : 40,
+      marginBottom: 5,
     },
     timelineTextContainer: {
       flex: 1,
       marginLeft: 10,
     },
     timelineText: {
-      fontSize: isTablet ? 15 : 14,
-      color: '#212121',
-      fontWeight: 'bold',
+      fontSize: isTablet ? 16 : 14,
+      color: isDarkMode ? '#fff' : '#212121',
+      fontFamily: 'RobotoSlab-Medium',
     },
     timelineTime: {
       fontSize: isTablet ? 12 : 10,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#bbb' : '#4a4a4a',
+      fontFamily: 'RobotoSlab-Regular',
     },
-    addressContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingLeft: isTablet ? 20 : 10,
-    },
-    locationPinImage: {
-      width: isTablet ? 25 : 20,
-      height: isTablet ? 25 : 20,
-      marginRight: 10,
-    },
-    addressTextContainer: {
-      marginLeft: 10,
-    },
-    address: {
-      fontSize: isTablet ? 14 : 13,
-      color: '#212121',
-    },
-    paymentInnerContainer: {
-      padding: isTablet ? 12 : 10,
-      backgroundColor: '#f5f5f5',
-      marginTop: 10,
-      marginBottom: 10,
-    },
-    sectionPaymentTitle: {
-      fontSize: isTablet ? 18 : 16,
-      fontWeight: 'bold',
-      color: '#212121',
-      marginBottom: 8,
-      paddingLeft: isTablet ? 14 : 10,
+    lineSegment: {
+      width: 2,
+      height: isTablet ? 50 : 40,
     },
     PaymentItemContainer: {
       paddingLeft: isTablet ? 20 : 16,
@@ -390,26 +418,77 @@ function dynamicStyles(width) {
       marginBottom: 4,
     },
     paymentLabel: {
-      fontSize: isTablet ? 15 : 14,
-      color: '#212121',
+      fontSize: isTablet ? 14 : 12,
+      fontFamily: 'RobotoSlab-Regular',
+      color: isDarkMode ? '#fff' : '#212121',
+    },
+    paymentLabelHead: {
+      width: '80%',
+      fontSize: isTablet ? 14 : 12,
+      fontFamily: 'RobotoSlab-Regular',
+      color: isDarkMode ? '#fff' : '#212121',
     },
     paymentValue: {
-      fontSize: isTablet ? 15 : 14,
-      color: '#212121',
-      fontWeight: 'bold',
+      fontSize: isTablet ? 16 : 14,
+      fontFamily: 'RobotoSlab-SemiBold',
+      color: isDarkMode ? '#fff' : '#212121',
+    },
+    addressContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingLeft: isTablet ? 12 : 10,
+    },
+    locationPinImage: {
+      width: isTablet ? 24 : 20,
+      height: isTablet ? 24 : 20,
+      marginRight: isTablet ? 12 : 10,
+    },
+    addressTextContainer: {
+      marginLeft: isTablet ? 12 : 10,
+    },
+    address: {
+      fontSize: isTablet ? 14 : 12,
+      fontFamily: 'RobotoSlab-Regular',
+      color: isDarkMode ? '#fff' : '#212121',
+    },
+    paymentInnerContainer: {
+      padding: isTablet ? 15 : 10,
+      backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
+      marginTop: isTablet ? 15 : 10,
+      marginBottom: isTablet ? 15 : 10,
+    },
+    paymentSummaryContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    sectionPaymentTitle: {
+      fontSize: isTablet ? 18 : 16,
+      fontFamily: 'RobotoSlab-SemiBold',
+      color: isDarkMode ? '#fff' : '#212121',
+      marginBottom: 8,
+      paddingLeft: isTablet ? 15 : 10,
     },
     payButton: {
       backgroundColor: '#ff4500',
       paddingVertical: isTablet ? 14 : 12,
       borderRadius: 8,
       alignItems: 'center',
-      marginVertical: 20,
-      marginHorizontal: isTablet ? 24 : 20,
+      marginVertical: isTablet ? 25 : 20,
+      marginHorizontal: isTablet ? 25 : 20,
     },
     payButtonText: {
       fontSize: isTablet ? 18 : 16,
-      fontWeight: 'bold',
+      textAlign: 'center',
+      fontFamily: 'RobotoSlab-Regular',
       color: '#fff',
     },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
   });
-}
+};
+
+export default ServiceBookingOngoingItem;

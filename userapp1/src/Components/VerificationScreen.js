@@ -59,7 +59,7 @@ const VerificationScreen = () => {
     try {
       // Validate OTP
       const validateResponse = await axios.get(
-        'http://192.168.55.102:5000/api/validate',
+        'http:192.168.243.71:5000/api/validate',
         {
           params: {
             mobileNumber: phoneNumber,
@@ -71,7 +71,7 @@ const VerificationScreen = () => {
       if (validateResponse.data.message === 'OTP Verified') {
         // If OTP is valid, proceed with login
         const loginResponse = await axios.post(
-          'http://192.168.55.102:5000/api/user/login',
+          'http:192.168.243.71:5000/api/user/login',
           { phone_number: phoneNumber }
         );
         if (loginResponse.status === 200) {

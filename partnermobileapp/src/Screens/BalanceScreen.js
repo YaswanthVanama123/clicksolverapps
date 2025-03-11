@@ -15,15 +15,16 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import RazorpayCheckout from 'react-native-razorpay';
+// Import the theme hook
+import { useTheme } from '../context/ThemeContext';
 
 /** 
  * Helper function to compute relative time (e.g. "Just now", "3 hours ago", "Yesterday", etc.).
- * You can adjust the thresholds and output format as desired.
  */
 function getRelativeTime(dateString) {
   const now = new Date();
   const then = new Date(dateString);
-  const diffMs = now - then; // milliseconds
+  const diffMs = now - then;
   const diffSec = Math.floor(diffMs / 1000);
   const diffMin = Math.floor(diffSec / 60);
   const diffHours = Math.floor(diffMin / 60);
@@ -33,12 +34,13 @@ function getRelativeTime(dateString) {
   if (diffHours < 1) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
   if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
   if (diffDays === 1) return 'Yesterday';
-  return then.toDateString(); // fallback to full date if older than 1 day
+  return then.toDateString();
 }
 
 const BalanceScreen = () => { 
   const { width } = useWindowDimensions();
-  const styles = dynamicStyles(width);
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, isDarkMode);
   const navigation = useNavigation();
 
   const [balance, setBalance] = useState(null);
@@ -55,7 +57,7 @@ const BalanceScreen = () => {
       if (!pcs_token) throw new Error('User not authenticated');
   
       const response = await axios.post(
-        'http://192.168.55.102:5000/api/balance/ammount',
+        'http:192.168.243.71:5000/api/balance/ammount',
         {},
         { headers: { Authorization: `Bearer ${pcs_token}` } }
       );
@@ -87,9 +89,9 @@ const BalanceScreen = () => {
         return {
           id: index.toString(),
           amount,
-          time: formattedTime,         // Formatted display time
-          timestamp: dateObject.getTime(), // Raw timestamp for sorting
-          service: 'Electrician', // Example service type
+          time: formattedTime,
+          timestamp: dateObject.getTime(),
+          service: 'Electrician',
           payment: paymentType === 'cash' ? 'Paid by Cash' : 'Paid to Click Solver',
           name: transaction.name,
         };
@@ -105,7 +107,6 @@ const BalanceScreen = () => {
     }
   }, []);
   
-
   useEffect(() => {
     fetchServiceBalanceHistory();
   }, [fetchServiceBalanceHistory]);
@@ -117,29 +118,18 @@ const BalanceScreen = () => {
   const handlePayNow = async () => {
     try {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
-      if (!pcs_token) {
-        // navigation.navigate('PaymentConfirmationScreen', {
-        //   status: 'failure',
-        //   total: 0,
-        //   message: 'User not authenticated.',
-        //   transactionNumber: 'N/A',
-        //   paymentMethod: 'Unknown',
-        // });
-        return;
-      }
-
+      if (!pcs_token) return;
       const amountToPay = Math.abs(Number(balance));
-
-      // 1. Create an order on the backend
+      // Create an order on the backend
       const createResponse = await axios.post(
-        'http://192.168.55.102:5000/api/create-order',
+        'http:192.168.243.71:5000/api/create-order',
         { amount: amountToPay, currency: 'INR' },
         { headers: { Authorization: `Bearer ${pcs_token}` } }
       );
       const data = createResponse.data;
       if (!data.success) throw new Error('Order creation failed');
 
-      // 2. Open Razorpay Checkout
+      // Open Razorpay Checkout
       const options = {
         description: 'Payment for clearing negative balance',
         currency: data.currency,
@@ -157,51 +147,24 @@ const BalanceScreen = () => {
 
       RazorpayCheckout.open(options)
         .then(async (paymentData) => {
-          // 3. Payment completed – verify on the backend
+          // Verify payment on the backend
           const verifyResponse = await axios.post(
-            'http://192.168.55.102:5000/api/verify-payment',
+            'http:192.168.243.71:5000/api/verify-payment',
             paymentData,
             { headers: { Authorization: `Bearer ${pcs_token}` } }
           );
           const verifyData = verifyResponse.data;
-
           if (verifyData.success) {
-            // navigation.navigate('PaymentConfirmationScreen', {
-            //   status: 'success',
-            //   total: amountToPay,
-            //   message: verifyData.message,
-            //   transactionNumber: paymentData.razorpay_payment_id,
-            //   paymentMethod: 'Online',
-            // });
-            // Refresh local data
             fetchServiceBalanceHistory();
           } else {
-            // navigation.navigate('PaymentConfirmationScreen', {
-            //   status: 'failure',
-            //   total: amountToPay,
-            //   message: verifyData.message,
-            //   transactionNumber: paymentData.razorpay_payment_id || 'N/A',
-            //   paymentMethod: 'Online',
-            // });
+            // Handle failure
           }
         })
         .catch((error) => {
-          // navigation.navigate('PaymentConfirmationScreen', {
-          //   status: 'failure',
-          //   total: amountToPay,
-          //   message: error.description || error.message,
-          //   transactionNumber: 'N/A',
-          //   paymentMethod: 'Online',
-          // });
+          // Handle Razorpay errors
         });
     } catch (error) {
-      // navigation.navigate('PaymentConfirmationScreen', {
-      //   status: 'failure',
-      //   total: 0,
-      //   message: error.message,
-      //   transactionNumber: 'N/A',
-      //   paymentMethod: 'Unknown',
-      // });
+      // Handle errors
     }
   };
 
@@ -212,7 +175,7 @@ const BalanceScreen = () => {
     </View>
   );
 
-  // 1) Service History Card
+  // Service History Card
   const renderServiceHistoryItem = ({ item }) => (
     <View style={styles.transactionContainer}>
       <View style={styles.paymentContainer}>
@@ -228,13 +191,7 @@ const BalanceScreen = () => {
           <Text style={styles.nameText}>{item.name}</Text>
         </View>
         <View style={styles.paymentDetails}>
-          <Text
-            style={
-              item.amount.startsWith('-')
-                ? styles.amountNegative
-                : styles.amountPositive
-            }
-          >
+          <Text style={item.amount.startsWith('-') ? styles.amountNegative : styles.amountPositive}>
             {item.amount}
           </Text>
           <Text style={styles.timeText}>{item.time}</Text>
@@ -243,45 +200,24 @@ const BalanceScreen = () => {
     </View>
   );
 
-  // 2) Payment History Card
-  // Example item format:
-  // {
-  //   amount: 679.2,
-  //   order_id: "order_Q2fM4LyHKV1qGd",
-  //   paid: "paid by Click Solver",
-  //   status: "success",
-  //   time: "2025-03-04 09:36:37"
-  // }
+  // Payment History Card
   const renderPaymentHistoryItem = ({ item }) => {
-    // Determine if user "Received" or "Paid"
     const lowerPaid = item.paid.toLowerCase();
     const isReceived = lowerPaid.includes('paid by click solver') || lowerPaid.includes('received');
-    const mainText = isReceived
-      ? `Received from Click Solver`
-      : `Paid to Click Solver`;
-
-    // Icon logic
+    const mainText = isReceived ? `Received from Click Solver` : `Paid to Click Solver`;
     const iconName = isReceived ? 'arrow-bottom-left' : 'arrow-top-right';
     const iconBg = isReceived ? '#4CAF50' : '#FF5722';
     const timeString = getRelativeTime(item.time);
 
-    // We'll place the order_id on the bottom line (right side),
-    // removing "Credited to you" or "Debited from you" lines.
-    // We'll keep the alignment for a professional look.
     return (
       <View style={styles.historyItemContainer}>
-        {/* Left Icon/Avatar */}
         <View style={[styles.historyIconWrapper, { backgroundColor: iconBg }]}>
           <MaterialCommunityIcons name={iconName} size={20} color="#fff" />
         </View>
-
-        {/* Middle Section */}
         <View style={styles.historyMiddle}>
           <Text style={styles.historyMainText}>{mainText}</Text>
           <Text style={styles.historyTimeText}>{timeString}</Text>
         </View>
-
-        {/* Right Section */}
         <View style={styles.historyRight}>
           <Text style={styles.historyAmount}>₹{item.amount.toFixed(2)}</Text>
           <Text style={styles.historyOrderId} numberOfLines={1}>
@@ -308,17 +244,12 @@ const BalanceScreen = () => {
             }
             style={styles.leftIcon}
           >
-            <FontAwesome6 name="arrow-left-long" size={24} color="#9e9e9e" />
+            <FontAwesome6 name="arrow-left-long" size={24} color={isDarkMode ? "#ffffff" : "#9e9e9e"} />
           </TouchableOpacity>
         </View>
         <View style={styles.balanceContainer}>
           <Text style={styles.balanceTitle}>Balance</Text>
-          <Text
-            style={[
-              styles.balanceAmount,
-              balance !== null && Number(balance) < 0 && styles.negativeBalance,
-            ]}
-          >
+          <Text style={[styles.balanceAmount, balance !== null && Number(balance) < 0 && styles.negativeBalance]}>
             ₹{balance ?? 0}
           </Text>
         </View>
@@ -327,12 +258,7 @@ const BalanceScreen = () => {
             style={[styles.card, activeCard === 'ServiceHistory' && styles.activeCard]}
             onPress={() => setActiveCard('ServiceHistory')}
           >
-            <Text
-              style={[
-                styles.cardText,
-                activeCard === 'ServiceHistory' && styles.activeCardText,
-              ]}
-            >
+            <Text style={[styles.cardText, activeCard === 'ServiceHistory' && styles.activeCardText]}>
               Service Charge
             </Text>
           </TouchableOpacity>
@@ -340,12 +266,7 @@ const BalanceScreen = () => {
             style={[styles.card, activeCard === 'TransactionHistory' && styles.activeCard]}
             onPress={() => setActiveCard('TransactionHistory')}
           >
-            <Text
-              style={[
-                styles.cardText,
-                activeCard === 'TransactionHistory' && styles.activeCardText,
-              ]}
-            >
+            <Text style={[styles.cardText, activeCard === 'TransactionHistory' && styles.activeCardText]}>
               Payment History
             </Text>
           </TouchableOpacity>
@@ -394,15 +315,18 @@ const BalanceScreen = () => {
   );
 };
 
-function dynamicStyles(width) {
+/**
+ * Dynamic styles generator that accepts screen width and current theme.
+ */
+function dynamicStyles(width, isDarkMode) {
   const isTablet = width >= 600;
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#f3f3f3',
+      backgroundColor: isDarkMode ? '#121212' : '#f3f3f3',
     },
     headContainer: {
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
       paddingBottom: isTablet ? 20 : 10,
     },
     header: {
@@ -421,12 +345,12 @@ function dynamicStyles(width) {
     },
     balanceTitle: {
       fontSize: isTablet ? 20 : 17,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
     },
     balanceAmount: {
       fontSize: isTablet ? 26 : 22,
       fontWeight: 'bold',
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
     },
     negativeBalance: {
       color: 'red',
@@ -441,7 +365,7 @@ function dynamicStyles(width) {
       flex: 1,
       paddingVertical: isTablet ? 12 : 10,
       marginHorizontal: isTablet ? 10 : 5,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#333333' : '#ffffff',
       alignItems: 'center',
       borderRadius: 10,
       elevation: 5,
@@ -452,10 +376,10 @@ function dynamicStyles(width) {
     },
     cardText: {
       fontSize: isTablet ? 15 : 13,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ffffff' : '#4a4a4a',
     },
     activeCardText: {
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       fontWeight: 'bold',
     },
     scrollContainer: {
@@ -476,13 +400,12 @@ function dynamicStyles(width) {
     },
     noDataText: {
       fontSize: isTablet ? 18 : 16,
-      color: '#999',
+      color: isDarkMode ? '#ffffff' : '#999',
       fontWeight: 'bold',
     },
-
-    // Service History transaction styling
+    // Service History styling
     transactionContainer: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDarkMode ? '#222222' : '#FFFFFF',
       borderRadius: 15,
       padding: isTablet ? 24 : 20,
       marginHorizontal: isTablet ? 30 : 20,
@@ -509,16 +432,16 @@ function dynamicStyles(width) {
     paymentText: {
       fontSize: isTablet ? 16 : 14,
       fontWeight: 'bold',
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ffffff' : '#4a4a4a',
     },
     nameText: {
       fontSize: isTablet ? 17 : 16,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
     },
     amountPositive: {
       fontSize: isTablet ? 18 : 16,
       fontWeight: 'bold',
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       textAlign: 'right',
     },
     amountNegative: {
@@ -529,11 +452,10 @@ function dynamicStyles(width) {
     },
     timeText: {
       fontSize: isTablet ? 15 : 14,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#cccccc' : '#4a4a4a',
       marginTop: 8,
       textAlign: 'right',
     },
-
     // Pay Now button
     payNowButton: {
       position: 'absolute',
@@ -552,12 +474,11 @@ function dynamicStyles(width) {
       fontSize: isTablet ? 18 : 16,
       fontWeight: 'bold',
     },
-
-    // Payment History item styling (like reference image)
+    // Payment History styling
     historyItemContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#222222' : '#fff',
       marginHorizontal: isTablet ? 30 : 16,
       marginVertical: 8,
       borderRadius: 10,
@@ -583,12 +504,12 @@ function dynamicStyles(width) {
     historyMainText: {
       fontSize: isTablet ? 16 : 14,
       fontWeight: '600',
-      color: '#333',
+      color: isDarkMode ? '#ffffff' : '#333',
       marginBottom: 4,
     },
     historyTimeText: {
       fontSize: isTablet ? 14 : 12,
-      color: '#999',
+      color: isDarkMode ? '#cccccc' : '#999',
     },
     historyRight: {
       alignItems: 'flex-end',
@@ -598,13 +519,13 @@ function dynamicStyles(width) {
     historyAmount: {
       fontSize: isTablet ? 18 : 16,
       fontWeight: 'bold',
-      color: '#333',
+      color: isDarkMode ? '#ffffff' : '#333',
     },
     historyOrderId: {
       marginTop: 4,
       fontSize: isTablet ? 13 : 12,
-      color: '#999',
-      maxWidth: 120, // so it doesn't overflow
+      color: isDarkMode ? '#cccccc' : '#999',
+      maxWidth: 120,
     },
   });
 }

@@ -226,7 +226,7 @@ const Navigation = () => {
       setIsLoading(true);
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       const response = await axios.post(
-        'http://192.168.55.102:5000/api/worker/navigation/details',
+        'http:192.168.243.71:5000/api/worker/navigation/details',
         {notificationId: decodedId},
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
@@ -280,14 +280,14 @@ const Navigation = () => {
     const checkVerificationStatus = async () => {
       try {
         const response = await axios.get(
-          'http://192.168.55.102:5000/api/worker/verification/status',
+          'http:192.168.243.71:5000/api/worker/verification/status',
           {params: {notification_id: decodedId}},
         );
 
         if (response.data === 'true') {
           const cs_token = await EncryptedStorage.getItem('cs_token');
           await axios.post(
-            'http://192.168.55.102:5000/api/user/action',
+            'http:192.168.243.71:5000/api/user/action',
             {
               encodedId: encodedData,
               screen: 'worktimescreen',
@@ -405,7 +405,7 @@ const Navigation = () => {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        'http://192.168.55.102:5000/api/user/location/navigation',
+        'http:192.168.243.71:5000/api/user/location/navigation',
         {params: {notification_id: decodedId}},
       );
 
@@ -526,13 +526,13 @@ const Navigation = () => {
     try {
       setIsLoading(true);
       const response = await axios.post(
-        'http://192.168.55.102:5000/api/user/work/cancel',
+        'http:192.168.243.71:5000/api/user/work/cancel',
         {notification_id: decodedId},
       );
       if (response.status === 200) {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
-          'http://192.168.55.102:5000/api/user/action',
+          'http:192.168.243.71:5000/api/user/action',
           {
             encodedId: encodedData,
             screen: '',
@@ -570,7 +570,7 @@ const Navigation = () => {
   const phoneCall = async () => {
     try {
       const response = await axios.post(
-        'http://192.168.55.102:5000/api/worker/call',
+        'http:192.168.243.71:5000/api/worker/call',
         {decodedId},
       );
       if (response.status === 200 && response.data.mobile) {
@@ -589,6 +589,16 @@ const Navigation = () => {
       );
     }
   };
+
+  const messageChatting = async () => {
+    navigation.push('ChatScreen', {
+      request_id: decodedId,
+      senderType: 'user',
+      profileImage: addressDetails.profile,
+      profileName: addressDetails.name,
+    });
+    
+  }
 
   const closeModal = () => {
     setModalVisible(false);
@@ -856,7 +866,7 @@ const Navigation = () => {
                   <MaterialIcons name="call" size={18} color="#FF5722" />
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.actionButton}>
+                <TouchableOpacity style={styles.actionButton} onPress={messageChatting}>
                   <AntDesign name="message1" size={18} color="#FF5722" />
                 </TouchableOpacity>
               </View>

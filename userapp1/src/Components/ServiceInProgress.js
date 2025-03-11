@@ -12,6 +12,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import messaging from '@react-native-firebase/messaging';
 import LottieView from 'lottie-react-native';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import EncryptedStorage from 'react-native-encrypted-storage';
@@ -23,7 +24,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 
 const ServiceInProgressScreen = () => {
-  // For dynamic styling
   const { width } = useWindowDimensions();
   const { isDarkMode } = useTheme();
   const styles = dynamicStyles(width, isDarkMode);
@@ -44,45 +44,60 @@ const ServiceInProgressScreen = () => {
     }
   }, [encodedId]);
 
-  // 2) Fetch data from backend
-  useEffect(() => {
-    const fetchBookings = async () => {
-      if (!decodedId) return;
-      try {
-        const response = await axios.post(
-          'http://192.168.55.102:5000/api/user/work/progress/details',
-          { decodedId }
+  // 2) Define fetchBookings function to fetch data from backend
+  const fetchBookings = async () => {
+    if (!decodedId) return;
+    try {
+      const response = await axios.post(
+        'http:192.168.243.71:5000/api/user/work/progress/details',
+        { decodedId }
+      );
+      const data = response.data[0];
+      setDetails(data);
+
+      // Build a combined array of services with status
+      const mappedServices = data.service_booked.map((serviceBookedItem) => {
+        const statusItem = data.service_status.find(
+          (s) => s.serviceName === serviceBookedItem.serviceName
         );
-        const data = response.data[0];
-        setDetails(data);
+        return {
+          id: serviceBookedItem.main_service_id,
+          name: serviceBookedItem.serviceName,
+          quantity: serviceBookedItem.quantity,
+          image:
+            serviceBookedItem.url ||
+            'https://i.postimg.cc/6Tsbn3S6/Image-8.png',
+          status: {
+            accept: statusItem?.accept || null,
+            arrived: statusItem?.arrived || null,
+            workCompleted: statusItem?.workCompleted || null,
+          },
+        };
+      });
+      setServices(mappedServices);
+    } catch (error) {
+      console.error('Error fetching bookings data:', error);
+    }
+  };
 
-        // Build a combined array of services with status
-        const mappedServices = data.service_booked.map((serviceBookedItem) => {
-          const statusItem = data.service_status.find(
-            (s) => s.serviceName === serviceBookedItem.serviceName
-          );
-          return {
-            id: serviceBookedItem.main_service_id,
-            name: serviceBookedItem.serviceName,
-            quantity: serviceBookedItem.quantity,
-            image: serviceBookedItem.url || 'https://i.postimg.cc/6Tsbn3S6/Image-8.png',
-            status: {
-              accept: statusItem?.accept || null,
-              arrived: statusItem?.arrived || null,
-              workCompleted: statusItem?.workCompleted || null,
-            },
-          };
-        });
-        setServices(mappedServices);
-      } catch (error) {
-        console.error('Error fetching bookings data:', error);
-      }
-    };
-
+  // 3) Fetch bookings when decodedId changes
+  useEffect(() => {
     fetchBookings();
   }, [decodedId]);
 
-  // 3) Generate timeline data
+  // 4) Listen for incoming notifications; if notification.data has "status", call fetchBookings
+  useEffect(() => {
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      console.log('FCM notification received in ServiceInProgressScreen:', remoteMessage);
+      if (remoteMessage.data && remoteMessage.data.status) {
+        console.log('Notification has status data. Calling fetchBookings...');
+        fetchBookings();
+      }
+    });
+    return () => unsubscribe();
+  }, [decodedId]);
+
+  // 5) Generate timeline data
   const generateTimelineData = (status) => {
     const statusKeys = ['accept', 'arrived', 'workCompleted'];
     const statusDisplayNames = {
@@ -99,7 +114,7 @@ const ServiceInProgressScreen = () => {
     }));
   };
 
-  // 4) Confirm completion
+  // 6) Confirm completion
   const handleCompleteClick = () => {
     setConfirmationModalVisible(true);
   };
@@ -107,11 +122,10 @@ const ServiceInProgressScreen = () => {
   const handleConfirmComplete = async () => {
     try {
       const response = await axios.post(
-        'http://192.168.55.102:5000/api/work/time/completed/request',
+        'http:192.168.243.71:5000/api/work/time/completed/request',
         { notification_id: decodedId }
       );
       if (response.status === 200) {
-        // e.g. show success or navigate
         setConfirmationModalVisible(false);
       }
     } catch (error) {
@@ -119,7 +133,7 @@ const ServiceInProgressScreen = () => {
     }
   };
 
-  // 5) On hardware back => go home
+  // 7) On hardware back => go home
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -136,7 +150,7 @@ const ServiceInProgressScreen = () => {
     }, [navigation])
   );
 
-  // 6) Format date strings
+  // 8) Format date strings
   const formatDate = (dateString) => {
     if (!dateString) return 'Pending';
     const date = new Date(dateString);
@@ -274,7 +288,6 @@ const ServiceInProgressScreen = () => {
                                 size={14}
                                 color={item.iconColor}
                               />
-                              { /* Draw a line if not the last item */}
                               {item.key !== 'workCompleted' && (
                                 <View
                                   style={[
@@ -386,7 +399,6 @@ function dynamicStyles(width, isDarkMode) {
       marginVertical: isTablet ? 16 : 10,
       marginHorizontal: isTablet ? 28 : 20,
       borderRadius: 10,
-      // elevation: 1,
     },
     technicianContainer: {
       flexDirection: 'row',
@@ -456,7 +468,6 @@ function dynamicStyles(width, isDarkMode) {
       marginTop: isTablet ? 24 : 20,
       marginHorizontal: isTablet ? 28 : 20,
       borderRadius: 10,
-      // elevation: 1,
       marginBottom: isTablet ? 16 : 10,
     },
     serviceDetailsHeaderContainer: {
@@ -496,7 +507,6 @@ function dynamicStyles(width, isDarkMode) {
       backgroundColor: isDarkMode ? '#2c2c2c' : '#f9f9f9',
       padding: isTablet ? 18 : 15,
       borderRadius: 10,
-      // elevation: 1,
     },
     /* Timeline Section */
     sectionContainer: {
@@ -610,3 +620,4 @@ function dynamicStyles(width, isDarkMode) {
 }
 
 export default ServiceInProgressScreen;
+ 

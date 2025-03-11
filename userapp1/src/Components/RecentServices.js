@@ -127,13 +127,13 @@ const RecentServices = () => {
       if (selectedTab === 'Ongoing') {
         // Call a different API endpoint for Ongoing services
         response = await axios.get(
-          `http://192.168.55.102:5000/api/user/ongoingBookings`,
+          `http:192.168.243.71:5000/api/user/ongoingBookings`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } else {
         // For Completed and Cancelled, use the default endpoint
         response = await axios.get( 
-          `http://192.168.55.102:5000/api/user/bookings`,
+          `http:192.168.243.71:5000/api/user/bookings`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
       }

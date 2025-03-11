@@ -10,7 +10,7 @@ import {
   BackHandler,
   SafeAreaView,
   ActivityIndicator,
-  useWindowDimensions, // <-- for responsiveness
+  useWindowDimensions,
 } from 'react-native';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import { Calendar } from 'react-native-calendars';
@@ -19,10 +19,14 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Feather from 'react-native-vector-icons/Feather';
 import axios from 'axios';
 import DestinationCircles from '../Components/DestinationCircles';
+// Import theme hook to get isDarkMode value
+import { useTheme } from '../context/ThemeContext';
 
 const EarningsScreen = () => {
   const { width } = useWindowDimensions();
-  const styles = dynamicStyles(width); // use the dynamic style generator
+  const { isDarkMode } = useTheme();
+  // Pass isDarkMode to dynamicStyles to generate themed styles
+  const styles = dynamicStyles(width, isDarkMode);
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedPeriod, setSelectedPeriod] = useState('Today');
@@ -43,10 +47,10 @@ const EarningsScreen = () => {
     cashback: 0,
     cashback_pending: 0,
   });
-  const [loading, setLoading] = useState(false); // Loading state for API call
+  const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
 
-  // State variables for date range
+  // Date range states
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
 
@@ -56,13 +60,13 @@ const EarningsScreen = () => {
 
   const partnerEarnings = async (date, endDate = null) => {
     try {
-      setLoading(true); // Start loading
+      setLoading(true);
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       if (!pcs_token) throw new Error('pcs_token not found');
 
       const payload = endDate ? { startDate: date, endDate: endDate } : { date };
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/worker/earnings`,
+        `http:192.168.243.71:5000/api/worker/earnings`,
         payload,
         {
           headers: {
@@ -71,7 +75,6 @@ const EarningsScreen = () => {
         }
       );
 
-      // destructure needed fields
       const {
         total_payment = 0,
         cash_payment = 0,
@@ -87,7 +90,6 @@ const EarningsScreen = () => {
         average_rating = 0,
       } = response.data;
 
-      // Example logic for computing certain fields
       const serviceCountNum = Number(service_counts);
       const gain = Math.trunc(serviceCountNum / 6) * 100;
 
@@ -110,7 +112,7 @@ const EarningsScreen = () => {
     } catch (error) {
       console.error('Error fetching payment details:', error);
     } finally {
-      setLoading(false); // End loading
+      setLoading(false);
     }
   };
 
@@ -127,7 +129,6 @@ const EarningsScreen = () => {
 
   const handleTabClick = (period) => {
     setSelectedPeriod(period);
-
     if (period === 'Today') {
       const today = new Date();
       setSelectedDate(today);
@@ -136,10 +137,10 @@ const EarningsScreen = () => {
       partnerEarnings(today);
     } else if (period === 'This Week') {
       const startOfWeek = new Date();
-      const day = startOfWeek.getDay(); // 0 (Sunday) to 6 (Saturday)
-      startOfWeek.setDate(startOfWeek.getDate() - day); // set to Sunday
+      const day = startOfWeek.getDay();
+      startOfWeek.setDate(startOfWeek.getDate() - day);
       const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(endOfWeek.getDate() + 6); // set to Saturday
+      endOfWeek.setDate(endOfWeek.getDate() + 6);
 
       setSelectedDate(startOfWeek);
       setStartDate(startOfWeek);
@@ -154,7 +155,6 @@ const EarningsScreen = () => {
 
   const selectDate = (day) => {
     const selected = new Date(day.dateString);
-
     if (!startDate || (startDate && endDate)) {
       setStartDate(selected);
       setEndDate(null);
@@ -213,7 +213,6 @@ const EarningsScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Loading Indicator Overlay */}
       {loading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#FF5722" />
@@ -223,7 +222,7 @@ const EarningsScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={backToHome} style={styles.leftIcon}>
-          <FontAwesome6 name="arrow-left-long" size={24} color="#4a4a4a" />
+          <FontAwesome6 name="arrow-left-long" size={24} color={isDarkMode ? "#ffffff" : "#4a4a4a"} />
         </TouchableOpacity>
         <View style={styles.earningsIconContainer}>
           <FontAwesome6
@@ -263,7 +262,6 @@ const EarningsScreen = () => {
             <Text style={styles.mainRupeeIcon}>₹ </Text>
             {earnings.total_payment}
           </Text>
-          {/* Toggle Icon and Message */}
           <TouchableOpacity
             onPress={() => setIsMessageVisible(!isMessageVisible)}
             style={styles.eyeIconContainer}
@@ -271,7 +269,7 @@ const EarningsScreen = () => {
             <Feather
               name={isMessageVisible ? 'eye-off' : 'eye'}
               size={20}
-              color="#4a4a4a"
+              color={isDarkMode ? "#ffffff" : "#4a4a4a"}
             />
           </TouchableOpacity>
         </View>
@@ -315,9 +313,7 @@ const EarningsScreen = () => {
           { value: earnings.cashback_pending, title: 'Cashback pending', color: '#ffa500' },
         ].map((stat, index) => (
           <View key={index} style={[styles.statBox, { borderLeftColor: stat.color }]}>
-            <Text style={[styles.statValue, { color: stat.color }]}>
-              {stat.value}
-            </Text>
+            <Text style={[styles.statValue, { color: stat.color }]}>{stat.value}</Text>
             <Text style={styles.statTitle}>{stat.title}</Text>
           </View>
         ))}
@@ -352,16 +348,15 @@ const EarningsScreen = () => {
 };
 
 /**
- * A helper function that returns a StyleSheet based on screen width.
- * If `width >= 600`, we treat it as a tablet and scale up certain styles.
+ * A helper function that returns a StyleSheet based on screen width and the current theme.
+ * If `width >= 600`, we treat it as a tablet.
  */
-function dynamicStyles(width) {
+function dynamicStyles(width, isDarkMode) {
   const isTablet = width >= 600;
-
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
       padding: isTablet ? 24 : 16,
     },
     loadingOverlay: {
@@ -395,14 +390,14 @@ function dynamicStyles(width) {
       marginRight: 5,
     },
     screenName: {
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       fontSize: isTablet ? 24 : 20,
       fontWeight: 'bold',
     },
     tabs: {
       flexDirection: 'row',
       justifyContent: 'space-around',
-      backgroundColor: '#f0f0f0',
+      backgroundColor: isDarkMode ? '#333333' : '#f0f0f0',
       height: isTablet ? 60 : 52,
       borderRadius: 10,
       marginTop: isTablet ? 15 : 10,
@@ -421,7 +416,7 @@ function dynamicStyles(width) {
       backgroundColor: '#FF5722',
     },
     tabText: {
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ffffff' : '#4a4a4a',
       fontSize: isTablet ? 18 : 16,
       fontWeight: '500',
     },
@@ -429,10 +424,9 @@ function dynamicStyles(width) {
       color: '#ffffff',
     },
     earningsContainer: {
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#222222' : '#fff',
       marginTop: isTablet ? 20 : 15,
       marginVertical: 10,
-      marginHorizontal: 0,
       borderRadius: 10,
       padding: isTablet ? 20 : 16,
       elevation: 4,
@@ -446,13 +440,13 @@ function dynamicStyles(width) {
     totalEarningsText: {
       fontSize: isTablet ? 26 : 22,
       fontWeight: 'bold',
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       textAlign: 'center',
     },
     mainRupeeIcon: {
       fontSize: isTablet ? 22 : 18,
       fontWeight: 'bold',
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       textAlign: 'center',
     },
     eyeIconContainer: {
@@ -463,19 +457,19 @@ function dynamicStyles(width) {
       marginTop: 10,
       padding: 10,
       marginBottom: 5,
-      backgroundColor: '#f3f3f3',
+      backgroundColor: isDarkMode ? '#333333' : '#f3f3f3',
       borderRadius: 5,
       alignItems: 'center',
     },
     messageText: {
       fontSize: isTablet ? 16 : 14,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#dddddd' : '#4a4a4a',
       textAlign: 'center',
     },
     horizontalLine: {
       width: '100%',
       height: isTablet ? 3 : 2,
-      backgroundColor: '#f0f0f0',
+      backgroundColor: isDarkMode ? '#555555' : '#f0f0f0',
       marginVertical: isTablet ? 14 : 10,
     },
     cashContainer: {
@@ -486,18 +480,18 @@ function dynamicStyles(width) {
     },
     cashCollectedText: {
       fontSize: isTablet ? 17 : 15,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#cccccc' : '#4a4a4a',
       fontWeight: 'bold',
       marginTop: 5,
     },
     cashCollectedAmount: {
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ffffff' : '#4a4a4a',
       fontWeight: '900',
       paddingHorizontal: 20,
       fontSize: isTablet ? 17 : 15,
     },
     rupeeIcon: {
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ffffff' : '#4a4a4a',
       fontWeight: '900',
       fontSize: isTablet ? 15 : 13,
     },
@@ -521,13 +515,12 @@ function dynamicStyles(width) {
       justifyContent: 'space-between',
     },
     statBox: {
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#222222' : '#ffffff',
       padding: isTablet ? 24 : 20,
       marginHorizontal: 5,
       marginVertical: 8,
       alignItems: 'center',
       borderLeftWidth: 4,
-      borderRadius: 0,
       elevation: 4,
       width: isTablet ? '31%' : '46%',
       height: isTablet ? 120 : 100,
@@ -537,7 +530,7 @@ function dynamicStyles(width) {
       fontWeight: 'bold',
     },
     statTitle: {
-      color: '#4a4a4a',
+      color: isDarkMode ? '#ffffff' : '#4a4a4a',
       fontWeight: '600',
       marginTop: 5,
       fontSize: isTablet ? 16 : 15,
@@ -549,7 +542,7 @@ function dynamicStyles(width) {
       backgroundColor: 'rgba(0,0,0,0.5)',
     },
     calendarContainer: {
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#333333' : '#fff',
       borderRadius: 10,
       marginHorizontal: isTablet ? 60 : 20,
       padding: isTablet ? 24 : 16,
@@ -558,4 +551,3 @@ function dynamicStyles(width) {
 }
 
 export default EarningsScreen;
- 

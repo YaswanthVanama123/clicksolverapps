@@ -11,42 +11,40 @@ import axios from 'axios';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import EncryptedStorage from 'react-native-encrypted-storage';
+// Import theme hook from your context
+import {useTheme} from '../context/ThemeContext';
 
 const PartnerSteps = () => {
-  // Step 1 and Step 2 statuses come from your server or local state
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(isDarkMode);
+  const navigation = useNavigation();
+
+  // Step statuses
   const [step1Status, setStep1Status] = useState(false);
   const [step2Status, setStep2Status] = useState(false);
 
-  // Track each banking detail separately
+  // Track banking details
   const [bankAccountAdded, setBankAccountAdded] = useState(false);
   const [upiIdAdded, setUpiIdAdded] = useState(false);
 
   // UI selections
   const [selectedStep, setSelectedStep] = useState(null);
   const [showLogout, setShowLogout] = useState(false);
-
-  // We can also keep track of which option is currently selected
-  // for the user to proceed with adding details.
   const [selectedBankOption, setSelectedBankOption] = useState(null);
 
-  const navigation = useNavigation();
-
-  // Example: fetching steps from server
+  // Fetch step statuses from API
   const fetchStepStatuses = useCallback(async () => {
     try {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       if (!pcs_token) throw new Error('pcs_token not found');
 
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/onboarding/step-status`,
+        `http:192.168.243.71:5000/api/onboarding/step-status`,
         {},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
 
-      console.log(response.data)
- 
-      // Suppose your API returns something like:
-      // steps: { step1: boolean, step2: boolean, bankAccount: boolean, upiId: boolean }
+      // Example response structure
       setStep1Status(response.data.steps.step1);
       setStep2Status(response.data.steps.step2);
       setBankAccountAdded(response.data.steps.bankAccount);
@@ -54,11 +52,11 @@ const PartnerSteps = () => {
     } catch (error) {
       console.error('Error fetching step statuses:', error);
     } 
-  }, []); 
+  }, []);
 
   useEffect(() => {
     fetchStepStatuses();
-  }, [fetchStepStatuses]); 
+  }, [fetchStepStatuses]);
 
   // Toggle logout pop-up
   const toggleLogout = () => setShowLogout(prev => !prev);
@@ -67,10 +65,10 @@ const PartnerSteps = () => {
     navigation.replace('Login');
   };
 
-  // Step 3 is considered complete if the user has added either a bank account or a UPI ID
+  // Step 3 is complete if a bank account or UPI ID is added
   const isStep3Complete = bankAccountAdded || upiIdAdded;
 
-  // Only navigate when all steps are done (1, 2, and 3).
+  // Only navigate when all steps are complete
   const navigateToHome = async () => {
     if (step1Status && step2Status && isStep3Complete) {
       await EncryptedStorage.setItem('partnerSteps', 'completed');
@@ -85,7 +83,7 @@ const PartnerSteps = () => {
         <View style={{flex: 1}} />
         <Text style={styles.helpText}>Help</Text>
         <TouchableOpacity onPress={toggleLogout} style={styles.moreIcon}>
-          <Icon name="more-vert" size={24} color="#333" />
+          <Icon name="more-vert" size={24} color={isDarkMode ? '#fff' : '#333'} />
         </TouchableOpacity>
         {showLogout && (
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -173,12 +171,7 @@ const PartnerSteps = () => {
           <View style={styles.stepContent}>
             <Text style={styles.stepTitle}>STEP 3</Text>
             <Text style={styles.stepName}>Adding Banking Details</Text>
-            <Text
-              style={[
-                styles.stepStatus,
-                !isStep3Complete && {color: '#ff4500'},
-              ]}
-            >
+            <Text style={[styles.stepStatus, !isStep3Complete && {color: '#ff4500'}]}>
               {isStep3Complete ? 'Completed' : 'Incomplete'}
             </Text>
           </View>
@@ -201,7 +194,7 @@ const PartnerSteps = () => {
                       : 'radio-button-unchecked'
                   }
                   size={20}
-                  color="#000"
+                  color={isDarkMode ? '#fff' : '#000'}
                 />
                 <Text style={styles.optionText}>Add bank account</Text>
                 {bankAccountAdded && (
@@ -219,9 +212,7 @@ const PartnerSteps = () => {
                 <TouchableOpacity
                   style={styles.proceedButton}
                   onPress={() => {
-                    // Navigate to Add Bank Account screen
                     navigation.push('BankAccountScreen');
-                    // After a successful bank account addition, set bankAccountAdded(true).
                   }}
                 >
                   <Text style={styles.proceedButtonText}>Proceed</Text>
@@ -242,7 +233,7 @@ const PartnerSteps = () => {
                       : 'radio-button-unchecked'
                   }
                   size={20}
-                  color="#000"
+                  color={isDarkMode ? '#fff' : '#000'}
                 />
                 <Text style={styles.optionText}>Add UPI Id</Text>
                 {upiIdAdded && (
@@ -260,9 +251,7 @@ const PartnerSteps = () => {
                 <TouchableOpacity
                   style={styles.proceedButton}
                   onPress={() => {
-                    // Navigate to Add UPI ID screen
                     navigation.push('UpiIDScreen');
-                    // After a successful UPI addition, setUpiIdAdded(true).
                   }}
                 >
                   <Text style={styles.proceedButtonText}>Proceed</Text>
@@ -273,7 +262,7 @@ const PartnerSteps = () => {
         )}
       </TouchableOpacity>
 
-      {/* If Step 1, Step 2, and Step 3 are all complete, show "Start now" */}
+      {/* "Start now" button when all steps are complete */}
       {step1Status && step2Status && isStep3Complete && (
         <TouchableOpacity style={styles.startButton} onPress={navigateToHome}>
           <Text style={styles.startButtonText}>Start now</Text>
@@ -285,129 +274,131 @@ const PartnerSteps = () => {
 
 export default PartnerSteps;
 
-/* ============ Styles ============ */
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#f7f7f7',
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  helpText: {
-    fontSize: 14,
-    color: '#212121',
-    marginRight: 8,
-    fontWeight: 'bold',
-  },
-  moreIcon: {
-    marginRight: 8,
-  },
-  logoutButton: {
-    backgroundColor: '#fff',
-    padding: 10,
-    width: 70,
-    borderRadius: 5,
-    position: 'absolute',
-    top: 40,
-    right: 10,
-  },
-  logoutText: {
-    color: '#ff4500',
-    fontWeight: 'bold',
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  workerImage: {
-    width: 120,
-    height: 120,
-    resizeMode: 'contain',
-  },
-  headerText: {
-    fontSize: 14,
-    textAlign: 'center',
-    fontWeight: '500',
-    marginTop: 8,
-    color: '#212121',
-  },
-  stepBox: {
-    backgroundColor: '#fff',
-    padding: 12,
-    marginVertical: 8,
-    borderRadius: 10,
-    elevation: 1,
-  },
-  selectedStepBox: {
-    borderWidth: 2,
-    borderColor: '#FF5C00',
-  },
-  stepRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  stepContent: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  stepTitle: {
-    fontSize: 12,
-    color: '#212121',
-    paddingBottom: 5,
-  },
-  stepName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#212121',
-    paddingBottom: 5,
-  },
-  stepStatus: {
-    fontSize: 14,
-    color: '#1DA472', // Green color if completed
-  },
-  bankDetailsContainer: {
-    marginTop: 8,
-  },
-  optionContainer: {
-    marginBottom: 16,
-  },
-  optionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  optionText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#212121',
-  },
-  proceedButton: {
-    backgroundColor: '#FF5C00',
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 5,
-    marginTop: 8,
-  },
-  proceedButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  startButton: {
-    backgroundColor: '#FF5722',
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderRadius: 5,
-    marginTop: 20,
-  },
-  startButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-});
+/* ============ Dynamic Styles ============ */
+function dynamicStyles(isDarkMode) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 16,
+      backgroundColor: isDarkMode ? '#121212' : '#f7f7f7',
+    },
+    topBar: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    helpText: {
+      fontSize: 14,
+      color: isDarkMode ? '#ffffff' : '#212121',
+      marginRight: 8,
+      fontWeight: 'bold',
+    },
+    moreIcon: {
+      marginRight: 8,
+    },
+    logoutButton: {
+      backgroundColor: isDarkMode ? '#333333' : '#fff',
+      padding: 10,
+      width: 70,
+      borderRadius: 5,
+      position: 'absolute',
+      top: 40,
+      right: 10,
+    },
+    logoutText: {
+      color: '#ff4500',
+      fontWeight: 'bold',
+    },
+    header: {
+      alignItems: 'center',
+      marginBottom: 24,
+    },
+    workerImage: {
+      width: 120,
+      height: 120,
+      resizeMode: 'contain',
+    },
+    headerText: {
+      fontSize: 14,
+      textAlign: 'center',
+      fontWeight: '500',
+      marginTop: 8,
+      color: isDarkMode ? '#ffffff' : '#212121',
+    },
+    stepBox: {
+      backgroundColor: isDarkMode ? '#1e1e1e' : '#fff',
+      padding: 12,
+      marginVertical: 8,
+      borderRadius: 10,
+      elevation: 1,
+    },
+    selectedStepBox: {
+      borderWidth: 2,
+      borderColor: '#FF5C00',
+    },
+    stepRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    stepContent: {
+      marginLeft: 12,
+      flex: 1,
+    },
+    stepTitle: {
+      fontSize: 12,
+      color: isDarkMode ? '#ffffff' : '#212121',
+      paddingBottom: 5,
+    },
+    stepName: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: isDarkMode ? '#ffffff' : '#212121',
+      paddingBottom: 5,
+    },
+    stepStatus: {
+      fontSize: 14,
+      color: '#1DA472',
+    },
+    bankDetailsContainer: {
+      marginTop: 8,
+    },
+    optionContainer: {
+      marginBottom: 16,
+    },
+    optionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    optionText: {
+      marginLeft: 8,
+      fontSize: 14,
+      color: isDarkMode ? '#ffffff' : '#212121',
+    },
+    proceedButton: {
+      backgroundColor: '#FF5C00',
+      paddingVertical: 10,
+      alignItems: 'center',
+      borderRadius: 5,
+      marginTop: 8,
+    },
+    proceedButtonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    startButton: {
+      backgroundColor: '#FF5722',
+      paddingVertical: 12,
+      alignItems: 'center',
+      borderRadius: 5,
+      marginTop: 20,
+    },
+    startButtonText: {
+      color: '#fff',
+      fontSize: 18,
+      fontWeight: 'bold',
+    },
+  });
+}

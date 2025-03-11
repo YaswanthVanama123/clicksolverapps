@@ -263,7 +263,7 @@ const UserLocation = () => {
         return;
       }
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/user/location`,
+        `http:192.168.243.71:5000/api/user/location`,
         { longitude: String(longitude), latitude: String(latitude) },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -311,7 +311,7 @@ const UserLocation = () => {
         setConfirmLoading(false);
         return;
       }
-      const response = await axios.get(`http://192.168.55.102:5000/api/get/user`, {
+      const response = await axios.get(`http:192.168.243.71:5000/api/get/user`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.status === 200) {
@@ -338,7 +338,7 @@ const UserLocation = () => {
         return;
       }
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/send/reminder`,
+        `http:192.168.243.71:5000/api/send/reminder`,
         { area, city },
         { headers: { Authorization: `Bearer ${token}` } }
       );

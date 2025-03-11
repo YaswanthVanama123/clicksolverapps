@@ -36,7 +36,7 @@
 const { Client } = require("pg");
 
 const client = new Client({
-  host: "clicksolver-db.cls4w8866ilh.ap-south-1.rds.amazonaws.com", // RDS endpoint
+  host: "clicksolver-db.cj4u8o8yoet2.ap-south-1.rds.amazonaws.com", // RDS endpoint
   user: "postgres",
   port: 5432,
   password: "Yaswanth123", // Use your RDS password

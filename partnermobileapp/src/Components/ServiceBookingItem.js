@@ -6,6 +6,7 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
+  Alert,
   Linking,
   useWindowDimensions, // <-- important for responsiveness
 } from 'react-native';
@@ -13,10 +14,14 @@ import Icon from 'react-native-vector-icons/FontAwesome6';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, CommonActions, useRoute } from '@react-navigation/native';
 import axios from 'axios';
+// Import the theme hook from your context
+import { useTheme } from '../context/ThemeContext';
 
 const ServiceBookingItem = () => {
-  const { width } = useWindowDimensions();  // <-- get screen width
-  const styles = dynamicStyles(width);      // <-- create dynamic styles
+  const { width } = useWindowDimensions();  // get screen width
+  // Get isDarkMode from theme context and pass it to our dynamic styles generator
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(width, isDarkMode);
 
   const [details, setDetails] = useState({});
   const [serviceArray, setServiceArray] = useState([]);
@@ -40,7 +45,6 @@ const ServiceBookingItem = () => {
   const getTimelineData = useMemo(() => {
     const statusKeys = Object.keys(status);
     const currentStatusIndex = statusKeys.findIndex((key) => status[key] === null);
-
     return statusKeys.map((statusKey, index) => ({
       title: statusDisplayNames[statusKey],
       time: status[statusKey],
@@ -59,12 +63,11 @@ const ServiceBookingItem = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.post(
-          'http://192.168.55.102:5000/api/service/booking/item/details',
-          { tracking_id },
+          'http:192.168.243.71:5000/api/service/booking/item/details',
+          { tracking_id }
         );
         const { data } = response.data;
-
-        // If you have `paymentDetails` in response, you can handle them as well
+        // If you have paymentDetails in response, you can handle them as well
         setStatus(data.time || {});
         setDetails(data);
         setServiceArray(data.service_booked || []);
@@ -91,7 +94,7 @@ const ServiceBookingItem = () => {
         <Icon
           name="arrow-left-long"
           size={styles.headerIconSize}
-          color="#212121"
+          color={isDarkMode ? "#ffffff" : "#212121"}
           style={styles.backIcon}
           onPress={() => navigation.goBack()}
         />
@@ -107,10 +110,8 @@ const ServiceBookingItem = () => {
             </Text>
           </View>
           <View style={styles.profileTextContainer}>
-            <View>
-              <Text style={styles.userName}>{details.name}</Text>
-              <Text style={styles.userDesignation}>{details.service}</Text>
-            </View>
+            <Text style={styles.userName}>{details.name}</Text>
+            <Text style={styles.userDesignation}>{details.service}</Text>
           </View>
         </View>
 
@@ -156,9 +157,7 @@ const ServiceBookingItem = () => {
                 </View>
                 <View style={styles.timelineTextContainer}>
                   <Text style={styles.timelineText}>{item.title}</Text>
-                  <Text style={styles.timelineTime}>
-                    {item.time ? item.time : 'Pending'}
-                  </Text>
+                  <Text style={styles.timelineTime}>{item.time}</Text>
                 </View>
               </View>
             ))}
@@ -213,17 +212,14 @@ const ServiceBookingItem = () => {
 export default ServiceBookingItem;
 
 /**
- * DYNAMIC STYLES for responsiveness
- * ---------------------------------
- * If `width >= 600`, we treat it as a tablet and scale up certain styles.
+ * Dynamic styles for responsiveness and dark/light theming.
  */
-function dynamicStyles(width) {
+function dynamicStyles(width, isDarkMode) {
   const isTablet = width >= 600;
-
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
     },
     header: {
       flexDirection: 'row',
@@ -235,16 +231,16 @@ function dynamicStyles(width) {
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,
       shadowRadius: 4,
-      backgroundColor: '#ffffff',
+      backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
     },
-    headerIconSize: isTablet ? 24 : 20, // or just do isTablet ? 24 : 20
+    headerIconSize: isTablet ? 24 : 20,
     backIcon: {
       marginRight: 10,
     },
     headerText: {
       fontSize: isTablet ? 20 : 16,
       fontWeight: 'bold',
-      color: '#1D2951',
+      color: isDarkMode ? '#ffffff' : '#1D2951',
       paddingLeft: isTablet ? 40 : 30,
     },
     profileContainer: {
@@ -256,7 +252,6 @@ function dynamicStyles(width) {
     profileImage: {
       width: isTablet ? 70 : 60,
       height: isTablet ? 70 : 60,
-      flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: '#FF7A22',
@@ -270,23 +265,23 @@ function dynamicStyles(width) {
     },
     profileTextContainer: {
       flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: 'column',
+      // alignItems: 'center',
       justifyContent: 'space-between',
       paddingRight: isTablet ? 20 : 16,
     },
     userName: {
       fontSize: isTablet ? 22 : 20,
       fontWeight: 'bold',
-      color: '#1D2951',
+      color: isDarkMode ? '#ffffff' : '#1D2951',
     },
     userDesignation: {
       fontSize: isTablet ? 16 : 14,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#cccccc' : '#4a4a4a',
     },
     horizantalLine: {
       height: 2,
-      backgroundColor: '#F5F5F5',
+      backgroundColor: isDarkMode ? '#333333' : '#F5F5F5',
       marginBottom: isTablet ? 16 : 12,
     },
     sectionContainer: {
@@ -299,7 +294,7 @@ function dynamicStyles(width) {
     sectionBookedTitle: {
       fontSize: isTablet ? 18 : 16,
       fontWeight: 'bold',
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       marginBottom: 8,
     },
     innerContainer: {
@@ -312,7 +307,7 @@ function dynamicStyles(width) {
     sectionTitle: {
       fontSize: isTablet ? 18 : 16,
       fontWeight: '700',
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       marginBottom: 8,
       paddingBottom: 15,
     },
@@ -321,7 +316,7 @@ function dynamicStyles(width) {
     },
     serviceDetail: {
       fontSize: isTablet ? 15 : 14,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       fontWeight: '500',
       marginBottom: 4,
     },
@@ -342,12 +337,12 @@ function dynamicStyles(width) {
     },
     timelineText: {
       fontSize: isTablet ? 15 : 14,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       fontWeight: 'bold',
     },
     timelineTime: {
       fontSize: isTablet ? 12 : 10,
-      color: '#4a4a4a',
+      color: isDarkMode ? '#cccccc' : '#4a4a4a',
     },
     addressContainer: {
       flexDirection: 'row',
@@ -364,18 +359,18 @@ function dynamicStyles(width) {
     },
     address: {
       fontSize: isTablet ? 14 : 13,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
     },
     paymentInnerContainer: {
       padding: isTablet ? 12 : 10,
-      backgroundColor: '#f5f5f5',
+      backgroundColor: isDarkMode ? '#333333' : '#f5f5f5',
       marginTop: 10,
       marginBottom: 10,
     },
     sectionPaymentTitle: {
       fontSize: isTablet ? 18 : 16,
       fontWeight: 'bold',
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       marginBottom: 8,
       paddingLeft: isTablet ? 14 : 10,
     },
@@ -391,11 +386,11 @@ function dynamicStyles(width) {
     },
     paymentLabel: {
       fontSize: isTablet ? 15 : 14,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
     },
     paymentValue: {
       fontSize: isTablet ? 15 : 14,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       fontWeight: 'bold',
     },
     payButton: {

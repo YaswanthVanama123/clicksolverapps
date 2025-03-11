@@ -12,7 +12,7 @@ import {
   Platform,
   BackHandler,
   ActivityIndicator,
-  useWindowDimensions, // For responsive styling
+  useWindowDimensions,
 } from 'react-native';
 import axios from 'axios';
 import { useNavigation, CommonActions, useFocusEffect } from '@react-navigation/native';
@@ -23,18 +23,23 @@ const BG_IMAGE_URL = 'https://i.postimg.cc/rFFQLGRh/Picsart-24-10-01-15-38-43-20
 const LOGO_URL = 'https://i.postimg.cc/hjjpy2SW/Button-1.png';
 const FLAG_ICON_URL = 'https://i.postimg.cc/C1hkm5sR/india-flag-icon-29.png';
 
+// Import theme hook
+import { useTheme } from '../context/ThemeContext';
+
 const WorkerLoginScreen = () => {
-  // 1) Grab device width to handle responsiveness
+  // Grab device width for responsiveness
   const { width } = useWindowDimensions();
-  // 2) Create dynamic styles
-  const styles = dynamicStyles(width);
+  // Get dark mode flag from theme context
+  const { isDarkMode } = useTheme();
+  // Generate dynamic styles based on width and theme
+  const styles = dynamicStyles(width, isDarkMode);
 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const navigation = useNavigation();
 
-  // Override hardware back to go to Home
+  // Override hardware back to go to Home screen
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -59,18 +64,17 @@ const WorkerLoginScreen = () => {
     }
   }, [errorMessage]);
 
-  // 3) Send OTP to worker's phone
+  // Send OTP to worker's phone
   const sendOtp = async () => {
-    if (!phoneNumber) return; // Early return if no phone number
+    if (!phoneNumber) return;
     setLoading(true);
     try {
       const response = await axios.post(
-        'http://192.168.55.102:5000/api/worker/sendOtp',
+        'http:192.168.243.71:5000/api/worker/sendOtp',
         { mobileNumber: phoneNumber }
       );
       if (response.status === 200) {
         const { verificationId } = response.data;
-        // Navigate to WorkerOtpVerificationScreen
         navigation.navigate('WorkerOtpVerificationScreen', { phoneNumber, verificationId });
       } else {
         setErrorMessage('Failed to send OTP. Please try again.');
@@ -92,7 +96,7 @@ const WorkerLoginScreen = () => {
         resizeMode="stretch"
       />
 
-      {/* Error Message at top */}
+      {/* Error Message */}
       {errorMessage !== '' && (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{errorMessage}</Text>
@@ -102,7 +106,6 @@ const WorkerLoginScreen = () => {
         </View>
       )}
 
-      {/* KeyboardAvoidingView for input */}
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -129,7 +132,7 @@ const WorkerLoginScreen = () => {
             <TextInput
               style={styles.input}
               placeholder="Enter Mobile Number"
-              placeholderTextColor="#9e9e9e"
+              placeholderTextColor={isDarkMode ? '#cccccc' : '#9e9e9e'}
               keyboardType="phone-pad"
               value={phoneNumber}
               onChangeText={setPhoneNumber}
@@ -156,18 +159,18 @@ const WorkerLoginScreen = () => {
 /**
  * DYNAMIC STYLES
  */
-function dynamicStyles(width) {
+function dynamicStyles(width, isDarkMode) {
   const isTablet = width >= 600;
-
   return StyleSheet.create({
     container: {
       flex: 1,
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
     },
     keyboardAvoidingView: {
       flex: 1,
     },
     solverText: {
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       fontWeight: 'bold',
     },
     description: {
@@ -194,24 +197,24 @@ function dynamicStyles(width) {
       fontSize: isTablet ? 30 : 26,
       lineHeight: isTablet ? 30 : 26,
       fontWeight: 'bold',
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       width: isTablet ? 120 : 100,
     },
     subheading: {
       fontSize: isTablet ? 18 : 16,
       fontWeight: 'bold',
-      color: '#333',
+      color: isDarkMode ? '#ffffff' : '#333',
     },
     tagline: {
       fontSize: isTablet ? 16 : 14,
-      color: '#666',
+      color: isDarkMode ? '#cccccc' : '#666',
       textAlign: 'center',
       paddingBottom: isTablet ? 80 : 70,
     },
     inputContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#222222' : '#fff',
       borderRadius: 10,
       paddingHorizontal: isTablet ? 12 : 10,
       marginBottom: 20,
@@ -233,7 +236,7 @@ function dynamicStyles(width) {
     },
     picker: {
       fontSize: isTablet ? 19 : 17,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       padding: 10,
       fontWeight: 'bold',
     },
@@ -241,7 +244,7 @@ function dynamicStyles(width) {
       flex: 1,
       height: isTablet ? 60 : 56,
       paddingLeft: 10,
-      color: '#212121',
+      color: isDarkMode ? '#ffffff' : '#212121',
       fontSize: isTablet ? 18 : 16,
       fontWeight: 'bold',
     },

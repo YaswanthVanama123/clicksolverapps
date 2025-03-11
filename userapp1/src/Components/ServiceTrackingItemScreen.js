@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Linking,
-  Animated, 
+  Animated,
   ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
@@ -16,8 +16,9 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Entypo from 'react-native-vector-icons/Entypo';
 import axios from 'axios';
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, CommonActions, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import messaging from '@react-native-firebase/messaging'; // Import FCM messaging
 // Import the theme hook
 import { useTheme } from '../context/ThemeContext';
 
@@ -34,6 +35,7 @@ const ServiceTrackingItemScreen = () => {
   const [pin, setPin] = useState('4567');
   const [paymentExpanded, setPaymentExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
+    const navigation = useNavigation();
 
   const rotateAnimation = useMemo(() => new Animated.Value(0), []);
 
@@ -45,7 +47,7 @@ const ServiceTrackingItemScreen = () => {
   const phoneCall = async () => {
     try {
       const response = await axios.post(
-        'http://192.168.55.102:5000/api/worker/tracking/call',
+        'http:192.168.243.71:5000/api/worker/tracking/call',
         { tracking_id },
       );
       if (response.status === 200 && response.data.mobile) {
@@ -90,27 +92,41 @@ const ServiceTrackingItemScreen = () => {
     outputRange: ['0deg', '180deg'],
   });
 
-  // Fetch data
+  // Extract fetchBookings as a function so it can be reused
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.post(
+        `http:192.168.243.71:5000/api/service/tracking/user/item/details`,
+        { tracking_id },
+      );
+      const { data } = response.data;
+      console.log("Fetched data:", data);
+      setPin(data.tracking_pin);
+      setDetails(data);
+      setServiceArray(data.service_booked);
+    } catch (error) {
+      console.error('Error fetching bookings data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data on mount or when tracking_id changes
   useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.post(
-          `http://192.168.55.102:5000/api/service/tracking/user/item/details`,
-          { tracking_id },
-        );
-        const { data } = response.data;
-        console.log("dat", data);
-        setPin(data.tracking_pin);
-        setDetails(data);
-        setServiceArray(data.service_booked);
-      } catch (error) {
-        console.error('Error fetching bookings data:', error);
-      } finally {
-        setLoading(false);
-      }
-    }; 
     fetchBookings();
+  }, [tracking_id]);
+
+  // Listen for FCM notifications. If notification.data contains a "status" key, call fetchBookings.
+  useEffect(() => {
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      console.log('FCM notification received in ServiceTrackingItemScreen:', remoteMessage);
+      if (remoteMessage.data && remoteMessage.data.status) {
+        console.log('Notification has status key. Fetching bookings...');
+        fetchBookings();
+      }
+    });
+    return () => unsubscribe();
   }, [tracking_id]);
 
   // Open PhonePe Scanner
@@ -143,6 +159,14 @@ const ServiceTrackingItemScreen = () => {
             size={20}
             color={isDarkMode ? '#fff' : "#212121"}
             style={styles.backIcon}
+                        onPress={() => {
+                          navigation.dispatch(
+                            CommonActions.reset({
+                              index: 0,
+                              routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
+                            })
+                          );
+                        }} 
           />
           <Text style={styles.headerText}>Service Trackings</Text>
         </View>
@@ -169,7 +193,6 @@ const ServiceTrackingItemScreen = () => {
           {/* PIN */}
           <View style={styles.pinContainer}>
             <Text style={styles.pinText}>PIN</Text>
-            {/* Display each pin digit in its own box */}
             <View style={styles.pinBoxesContainer}>
               {pin.split('').map((digit, index) => (
                 <View key={index} style={styles.pinBox}>
@@ -264,7 +287,6 @@ const ServiceTrackingItemScreen = () => {
           </View>
 
           <View style={styles.sectionContainer}>
-            {/* Payment Summary with Toggle */}
             {paymentExpanded && (
               <View style={styles.PaymentItemContainer}>
                 {serviceArray.map((service, index) => (
@@ -328,7 +350,7 @@ function dynamicStyles(width, height, isDarkMode) {
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,
       shadowRadius: 4,
-      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
+      backgroundColor: isDarkMode ? '#333' : '#ffffff',
     },
     backIcon: {
       marginRight: isTablet ? 15 : 10,
@@ -371,7 +393,6 @@ function dynamicStyles(width, height, isDarkMode) {
       backgroundColor: isDarkMode ? '#121212' : '#fff',
       borderRadius: 50,
       padding: isTablet ? 10 : 8,
-      // elevation: 4,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.3,

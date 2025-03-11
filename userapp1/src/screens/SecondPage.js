@@ -117,7 +117,7 @@ function ServiceApp({ navigation, route }) {
       const cs_token = await EncryptedStorage.getItem('cs_token'); 
       if (cs_token) {
         const response = await axios.get(
-          'http://192.168.55.102:5000/api/user/track/details',
+          'http:192.168.243.71:5000/api/user/track/details',
           {
             headers: { Authorization: `Bearer ${cs_token}` },
           },
@@ -138,7 +138,7 @@ function ServiceApp({ navigation, route }) {
       setLoading(true);
       crashlytics().log('Attempting to fetch services from API');
       const response = await axios.get(
-        'http://192.168.55.102:5000/api/servicecategories'
+        'http:192.168.243.71:5000/api/servicecategories'
       );
       crashlytics().log('Services fetched successfully');
       const servicesWithIds = response.data.map(service => ({
@@ -242,7 +242,7 @@ function ServiceApp({ navigation, route }) {
   const submitFeedback = async () => {
     try {
       const response = await axios.post(
-        'http://192.168.55.102:5000/api/user/feedback',
+        'http:192.168.243.71:5000/api/user/feedback',
         {
           rating,
           comment,
