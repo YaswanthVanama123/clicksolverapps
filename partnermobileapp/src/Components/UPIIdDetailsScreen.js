@@ -41,7 +41,7 @@ const UPIIdDetailsScreen = () => {
       }
 
       const response = await axios.post(
-        'http:192.168.243.71:5000/api/upi/submit',
+        'https://backend.clicksolver.com/api/upi/submit',
         { upi_id: upiId },
         { headers: { Authorization: `Bearer ${pcsToken}` } },
       );

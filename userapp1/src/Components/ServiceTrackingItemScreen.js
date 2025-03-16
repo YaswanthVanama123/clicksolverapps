@@ -47,7 +47,7 @@ const ServiceTrackingItemScreen = () => {
   const phoneCall = async () => {
     try {
       const response = await axios.post(
-        'http:192.168.243.71:5000/api/worker/tracking/call',
+        'http://192.168.55.102:5000/api/worker/tracking/call', 
         { tracking_id },
       );
       if (response.status === 200 && response.data.mobile) {
@@ -97,10 +97,10 @@ const ServiceTrackingItemScreen = () => {
     try {
       setLoading(true);
       const response = await axios.post(
-        `http:192.168.243.71:5000/api/service/tracking/user/item/details`,
+        `http://192.168.55.102:5000/api/service/tracking/user/item/details`,
         { tracking_id },
       );
-      const { data } = response.data;
+      const { data } = response.data; 
       console.log("Fetched data:", data);
       setPin(data.tracking_pin);
       setDetails(data);

@@ -56,7 +56,7 @@ const PaymentScanner = ({ route }) => {
       if (decodedId) {
         try {
           const response = await axios.post(
-            'http:192.168.243.71:5000/api/worker/payment/scanner/details',
+            'https://backend.clicksolver.com/api/worker/payment/scanner/details',
             { notification_id: decodedId }
           );
           const { totalAmount: amount, name, service } = response.data;
@@ -71,7 +71,7 @@ const PaymentScanner = ({ route }) => {
   }, [decodedId]);
 
   // Handle back press
-  const onBackPress = () => {
+  const onBackPress = React.useCallback(() => {
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
@@ -79,7 +79,14 @@ const PaymentScanner = ({ route }) => {
       })
     );
     return true;
-  };
+  }, [navigation]);
+  
+  const handleSwipeSuccess = React.useCallback(() => {
+    handlePayment();
+    setTitleColor('#FF5722');
+    setSwiped(true);
+  }, [handlePayment]);
+  
 
   useFocusEffect(
     React.useCallback(() => {
@@ -94,17 +101,11 @@ const PaymentScanner = ({ route }) => {
     try {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       const numberAmount = Number(totalAmount);
-      await axios.post('http:192.168.243.71:5000/api/user/payed', {
+      await axios.post('https://backend.clicksolver.com/api/user/payed', {
         totalAmount: numberAmount,
         paymentMethod,
         decodedId,
       });
-
-      await axios.post(
-        'http:192.168.243.71:5000/api/worker/action',
-        { encodedId, screen: '' },
-        { headers: { Authorization: `Bearer ${pcs_token}` } }
-      );
 
       navigation.dispatch(
         CommonActions.reset({
@@ -119,7 +120,7 @@ const PaymentScanner = ({ route }) => {
   };
 
   // Custom thumb icon for the swipe button
-  const ThumbIcon = () => (
+  const ThumbIcon = React.memo(() => (
     <View style={styles.thumbContainer}>
       <Text>
         {swiped ? (
@@ -129,7 +130,8 @@ const PaymentScanner = ({ route }) => {
         )}
       </Text>
     </View>
-  );
+  ));
+  
 
   return (
     <View style={styles.container}>

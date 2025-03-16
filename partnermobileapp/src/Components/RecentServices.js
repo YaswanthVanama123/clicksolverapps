@@ -47,7 +47,7 @@ const formatDate = (created_at) => {
 // Card component for a single service item
 const ServiceItemCard = ({ item, styles, tab }) => {
   const navigation = useNavigation();
-  const isCancelled = item.total_cost === null;
+  const isCancelled = item.complete_status === "cancel";
   let buttonLabel = 'View Details';
   let disabled = false;
   if (isCancelled) {
@@ -74,7 +74,7 @@ const ServiceItemCard = ({ item, styles, tab }) => {
         </Text>
         <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
         <Text style={styles.cardPrice}>
-          {isCancelled ? '₹0' : `₹${item.total_cost}`}
+          {isCancelled ? `₹${item.total_cost}` : `₹${item.total_cost}`}
         </Text>
       </View>
       <TouchableOpacity
@@ -127,15 +127,17 @@ const RecentServices = () => {
       if (selectedTab === 'Ongoing') {
         // Call a different API endpoint for Ongoing services
         response = await axios.get(
-          `http:192.168.243.71:5000/api/worker/ongoingBookings`,
+          `https://backend.clicksolver.com/api/worker/ongoingBookings`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } else {
         // For Completed and Cancelled, use the default endpoint
         response = await axios.get( 
-          `http:192.168.243.71:5000/api/worker/bookings`,
+          `https://backend.clicksolver.com/api/worker/bookings`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
+
+        console.log("second data services",response.data)
       }
       setBookingsData(response.data);
     } catch (err) {
@@ -156,10 +158,13 @@ const RecentServices = () => {
     let data = [];
     if (selectedTab === 'Completed') {
       // Only include bookings that are not cancelled.
-      data = bookingsData.filter(item => item.total_cost !== null);
+      // bookingsData.map((item) => {
+      //   console.log("cancelling",item.complete_status)
+      // })
+      data = bookingsData.filter(item => item.complete_status !==  "cancel");
     } else if (selectedTab === 'Cancelled') {
       // Only include cancelled bookings.
-      data = bookingsData.filter(item => item.total_cost === null);
+      data = bookingsData.filter(item => item.complete_status === "cancel");
     } else {
       // Ongoing tab: no additional filtering is needed as the API already returns ongoing items.
       data = bookingsData;

@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {
+  SafeAreaView,
   StyleSheet,
   View,
   Text,
@@ -8,27 +9,28 @@ import {
   Alert,
   ImageBackground,
   KeyboardAvoidingView,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import {useRoute, useNavigation, CommonActions} from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+
+const BG_IMAGE_URL = 'https://i.postimg.cc/rFFQLGRh/Picsart-24-10-01-15-38-43-205.jpg';
 
 const SignUpScreen = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [referralCode, setReferralCode] = useState(''); // Add referral code state
+  const [referralCode, setReferralCode] = useState('');
+
   const route = useRoute();
   const navigation = useNavigation();
 
-  const BG_IMAGE_URL =
-    'https://i.postimg.cc/rFFQLGRh/Picsart-24-10-01-15-38-43-205.jpg';
-
   useEffect(() => {
-    const {phone_number} = route.params || {};
+    const { phone_number } = route.params || {};
     if (phone_number) {
       setPhoneNumber(phone_number);
     }
@@ -37,29 +39,28 @@ const SignUpScreen = () => {
   const handleSignUp = async () => {
     try {
       const response = await axios.post(
-        `http:192.168.243.71:5000/api/user/signup`,
+        'http://192.168.55.106:5000/api/user/signup',
         {
           fullName,
           email,
           phoneNumber,
-          referralCode, // Send the referral code to the backend
-        },
+          referralCode,
+        }
       );
 
-      const {token, message} = response.data;
-      console.log(response.data);
-
+      const { token, message } = response.data;
       if (token) {
         await EncryptedStorage.setItem('cs_token', token);
         Alert.alert(
           'Sign Up Successful',
-          message || 'You have signed up successfully!',
+          message || 'You have signed up successfully!'
         );
+
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
-          }),
+            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
+          })
         );
       }
     } catch (error) {
@@ -67,61 +68,78 @@ const SignUpScreen = () => {
       Alert.alert(
         'Sign Up Failed',
         error.response?.data?.message ||
-          'An error occurred during sign up. Please try again.',
+          'An error occurred during sign up. Please try again.'
       );
     }
   };
 
   return (
-     <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        {/* On iOS, use "padding" so fields shift nicely.
+            On Android, we skip or use "height" to avoid extra resizing. */}
         <KeyboardAvoidingView
           style={styles.keyboardAvoidingView}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <ImageBackground
-            source={{uri: BG_IMAGE_URL}}
-            style={styles.backgroundImage}
-            resizeMode="stretch">
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}>
-              <FontAwesome6 name="arrow-left-long" size={24} color="#1D2951" />
-            </TouchableOpacity>
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <ImageBackground
+              source={{ uri: BG_IMAGE_URL }}
+              style={styles.backgroundImage}
+              resizeMode="stretch"
+            >
+              {/* Back button */}
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => navigation.goBack()}
+              >
+                <FontAwesome6 name="arrow-left-long" size={24} color="#1D2951" />
+              </TouchableOpacity>
 
-            <Text style={styles.title}>Sign Up</Text>
+              {/* Title */}
+              <Text style={styles.title}>Sign Up</Text>
 
-            <InputField
-              placeholder="Full Name"
-              value={fullName}
-              onChangeText={setFullName}
-            />
+              {/* Form Fields */}
+              <InputField
+                placeholder="Full Name"
+                value={fullName}
+                onChangeText={setFullName}
+              />
 
-            <InputField
-              placeholder="Email Address"
-              value={email}
-              onChangeText={setEmail}
-              icon={<Icon name="envelope" size={20} color="#1D2951" />}
-              keyboardType="email-address"
-            />
+              <InputField
+                placeholder="Email Address"
+                value={email}
+                onChangeText={setEmail}
+                icon={<Icon name="envelope" size={20} color="#1D2951" />}
+                keyboardType="email-address"
+              />
 
-            <InputField
-              placeholder="Referral Code (Optional)"
-              value={referralCode}
-              onChangeText={setReferralCode}
-              icon={<FontAwesome6 name="gift" size={20} color="#1D2951" />}
-            />
+              {/* If you want to show the phone number again, you can add another InputField here */}
 
-            <TouchableOpacity style={styles.button} onPress={handleSignUp}>
-              <Text style={styles.buttonText}>Sign Up</Text>
-            </TouchableOpacity>
-          </ImageBackground>
+              <InputField
+                placeholder="Referral Code (Optional)"
+                value={referralCode}
+                onChangeText={setReferralCode}
+                icon={<FontAwesome6 name="gift" size={20} color="#1D2951" />}
+              />
+
+              {/* Sign Up Button */}
+              <TouchableOpacity style={styles.button} onPress={handleSignUp}>
+                <Text style={styles.buttonText}>Sign Up</Text>
+              </TouchableOpacity>
+            </ImageBackground>
+          </ScrollView>
         </KeyboardAvoidingView>
       </View>
     </SafeAreaView>
   );
 };
 
-const InputField = ({placeholder, value, onChangeText, icon, keyboardType}) => (
+/* Reusable InputField component */
+const InputField = ({ placeholder, value, onChangeText, icon, keyboardType }) => (
   <View style={styles.inputContainer}>
     {icon && <View style={styles.iconContainer}>{icon}</View>}
     <TextInput
@@ -139,14 +157,27 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-  }, 
+  },
   container: {
     flex: 1,
-    justifyContent: 'center',
     backgroundColor: '#fff',
   },
-  keyboardAvoidingView: {flex: 1},
-  backgroundImage: {flex: 1, justifyContent: 'center', alignItems: 'center'},
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  // Make content fill screen and center horizontally + vertically
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // Background image covers the entire screen and also centers children
+  backgroundImage: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center', // Center vertically
+    alignItems: 'center',     // Center horizontally
+  },
   backButton: {
     position: 'absolute',
     top: 20,
@@ -155,24 +186,23 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    textAlign: 'center',
     marginBottom: 30,
     color: '#1D2951',
   },
   inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#F5F5F5',
     borderRadius: 10,
     borderColor: '#ccc',
     borderWidth: 1,
-    marginBottom: 20,
     height: 50,
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: 10,
-    marginHorizontal: '15%',
+    marginBottom: 20,
+    width: '75%', // doesn't stretch entire screen
   },
   iconContainer: {
-    marginRight: 10,
+    marginRight: 8,
   },
   input: {
     flex: 1,

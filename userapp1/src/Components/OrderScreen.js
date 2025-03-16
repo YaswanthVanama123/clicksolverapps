@@ -68,14 +68,27 @@ const OrderScreen = () => {
       tempTotal += s.totalCost;
     });
     setTotalPrice(tempTotal);
-
+  
+    // If a coupon is applied, check if the new total still meets the requirement
     if (appliedCoupon) {
-      applyCoupon(appliedCoupon, tempTotal);
+      const couponData = COUPONS[appliedCoupon];
+  
+      if (tempTotal < couponData.minOrderValue) {
+        // If the total is below the threshold, unapply the coupon
+        setAppliedCoupon(null);
+        setDiscountedPrice(tempTotal);
+        setSavings(0);
+      } else {
+        // Otherwise, recalculate the discount
+        applyCoupon(appliedCoupon, tempTotal);
+      }
     } else {
+      // If no coupon is applied, just set discountedPrice = tempTotal
       setDiscountedPrice(tempTotal);
       setSavings(0);
     }
   }, [services, appliedCoupon]);
+  
 
   // 3) Fetch coupon data from API
   useFocusEffect(
@@ -85,7 +98,7 @@ const OrderScreen = () => {
           const token = await EncryptedStorage.getItem('cs_token');
           if (!token) return;
           const response = await axios.post(
-            'http:192.168.243.71:5000/api/user/coupons',
+            'https://backend.clicksolver.com/api/user/coupons',
             {},
             { headers: { Authorization: `Bearer ${token}` } }
           );

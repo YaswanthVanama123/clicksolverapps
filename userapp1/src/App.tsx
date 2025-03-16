@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Platform, View, ActivityIndicator } from 'react-native';
+import {AppState, Platform, View, ActivityIndicator } from 'react-native';
 import { NavigationContainer, CommonActions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -172,7 +172,7 @@ function App() {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         if (cs_token) {
           await axios.post(
-            `http:192.168.243.71:5000/api/user/store-fcm-token`,
+            `https://backend.clicksolver.com/api/user/store-fcm-token`,
             { fcmToken: token },
             { headers: { Authorization: `Bearer ${cs_token}` } }
           );
@@ -189,7 +189,7 @@ function App() {
       const pcs_token = await EncryptedStorage.getItem('cs_token');
       const fcmToken = await EncryptedStorage.getItem('fcm_token');
       await axios.post(
-        `http:192.168.243.71:5000/api/user/store-notification`,
+        `https://backend.clicksolver.com/api/user/store-notification`,
         { notification, fcmToken },
         { headers: { Authorization: `Bearer ${pcs_token}` } }
       );
@@ -214,15 +214,87 @@ function App() {
   }
 
   // Navigate based on notification data
+  // async function handleNotificationNavigation(remoteMessage: any) {
+  //   if (!remoteMessage || !remoteMessage.data) return;
+  //   const notificationId = remoteMessage.data.notification_id;
+  //   const encodedNotificationId = btoa(notificationId);
+  //   const screen = remoteMessage.data.screen;
+  //   if (!navigationRef.current || !screen) {
+  //     return;
+  //   }
+  //   console.log('Navigating based on notification to screen:', screen);
+  //   const navigationActions: any = {
+  //     UserNavigation: () =>
+  //       navigationRef.current.dispatch(
+  //         CommonActions.navigate('UserNavigation', {
+  //           encodedId: encodedNotificationId,
+  //         })
+  //       ),
+  //     worktimescreen: () =>
+  //       navigationRef.current.dispatch(
+  //         CommonActions.navigate('ServiceInProgress', {
+  //           encodedId: encodedNotificationId,
+  //         })
+  //       ),
+  //     Paymentscreen: () =>
+  //       navigationRef.current.dispatch(
+  //         CommonActions.navigate('Paymentscreen', {
+  //           encodedId: encodedNotificationId,
+  //         })
+  //       ),
+  //     Home: () => {
+  //       if (encodedNotificationId) {
+  //         navigationRef.current.dispatch(
+  //           CommonActions.reset({
+  //             index: 0,
+  //             routes: [
+  //               {
+  //                 name: 'Tabs',
+  //                 state: {
+  //                   routes: [
+  //                     {
+  //                       name: 'Home',
+  //                       params: { encodedId: encodedNotificationId },
+  //                     },
+  //                   ],
+  //                 },
+  //               },
+  //             ],
+  //           })
+  //         );
+  //       } else {
+  //         navigationRef.current.dispatch(
+  //           CommonActions.reset({
+  //             index: 0,
+  //             routes: [
+  //               {
+  //                 name: 'Tabs',
+  //                 state: {
+  //                   routes: [{ name: 'Home' }],
+  //                 },
+  //               },
+  //             ],
+  //           })
+  //         );
+  //       }
+  //     },
+  //   };
+  //   if (navigationActions[screen]) {
+  //     navigationActions[screen]();
+  //   }
+  // }
+
   async function handleNotificationNavigation(remoteMessage: any) {
     if (!remoteMessage || !remoteMessage.data) return;
     const notificationId = remoteMessage.data.notification_id;
-    const encodedNotificationId = btoa(notificationId);
+    const encodedNotificationId = btoa(notificationId); // Use proper base64 encoding
     const screen = remoteMessage.data.screen;
     if (!navigationRef.current || !screen) {
       return;
     }
     console.log('Navigating based on notification to screen:', screen);
+    
+    // Define navigation actions for each screen
     const navigationActions: any = {
       UserNavigation: () =>
         navigationRef.current.dispatch(
@@ -243,46 +315,46 @@ function App() {
           })
         ),
       Home: () => {
-        if (encodedNotificationId) {
-          navigationRef.current.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [
-                {
-                  name: 'Tabs',
-                  state: {
-                    routes: [
-                      {
-                        name: 'Home',
-                        params: { encodedId: encodedNotificationId },
-                      },
-                    ],
-                  },
-                },
-              ],
-            })
-          );
-        } else {
-          navigationRef.current.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [
-                {
-                  name: 'Tabs',
-                  state: {
-                    routes: [{ name: 'Home' }],
-                  },
-                },
-              ],
-            })
-          );
-        }
+        navigationRef.current.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              { 
+                name: 'Tabs',
+                params: { screen: 'Home', params: { encodedId: encodedNotificationId } }
+              }
+            ],
+          })
+        );
       },
     };
+  
     if (navigationActions[screen]) {
       navigationActions[screen]();
     }
   }
+
+    // Add AppState handling for background notifications
+    useEffect(() => {
+      const handleAppStateChange = async (nextAppState: string) => {
+        if (nextAppState === 'active') {
+          try {
+            const pending = await EncryptedStorage.getItem('pendingNotification');
+            if (pending) {
+              const remoteMessage = JSON.parse(pending);
+              await handleNotificationNavigation(remoteMessage);
+              await EncryptedStorage.removeItem('pendingNotification');
+            }
+          } catch (error) {
+            console.error('Error handling pending notification:', error);
+          }
+        } 
+      };
+  
+      const subscription = AppState.addEventListener('change', handleAppStateChange);
+      return () => subscription.remove();
+    }, []);
+  
 
   useEffect(() => {
     PushNotification.configure({

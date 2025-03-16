@@ -77,7 +77,7 @@ const ServiceTrackingItemScreen = () => {
   const applyStatusChange = async (newStatus) => {
     try {
       await axios.post(
-        `http:192.168.243.71:5000/api/service/tracking/update/status`,
+        `https://backend.clicksolver.com/api/service/tracking/update/status`,
         {
           tracking_id,
           newStatus,
@@ -108,7 +108,7 @@ const ServiceTrackingItemScreen = () => {
 
   const phoneCall = async () => {
     try { 
-      const response = await axios.post('http:192.168.243.71:5000/api/user/tracking/call', { tracking_id });
+      const response = await axios.post('https://backend.clicksolver.com/api/user/tracking/call', { tracking_id });
       if (response.status === 200 && response.data.mobile) {
         const phoneNumber = response.data.mobile;
         const dialURL = `tel:${phoneNumber}`;
@@ -139,7 +139,7 @@ const ServiceTrackingItemScreen = () => {
     const fetchBookings = async () => {
       try { 
         const { data: { data } } = await axios.post(
-          `http:192.168.243.71:5000/api/service/tracking/worker/item/details`,
+          `https://backend.clicksolver.com/api/service/tracking/worker/item/details`,
           { tracking_id }
         );
         setDetails(data);

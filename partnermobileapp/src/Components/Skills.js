@@ -156,7 +156,7 @@ const RegistrationScreen = () => {
         navigation.replace('Login');
       }
       const response = await axios.post(
-        `http:192.168.243.71:5000/api/registration/submit`,
+        `https://backend.clicksolver.com/api/registration/submit`,
         formData,
         {
           headers: {
@@ -183,7 +183,7 @@ const RegistrationScreen = () => {
         navigation.replace('Login');
       }
       const response = await axios.get(
-        `http:192.168.243.71:5000/api/service/categories`,
+        `https://backend.clicksolver.com/api/service/categories`,
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
@@ -267,7 +267,7 @@ const RegistrationScreen = () => {
         return;
       }
       const response = await axios.get(
-        `http:192.168.243.71:5000/api/profile/detsils`,
+        `https://backend.clicksolver.com/api/profile/detsils`,
         {
           headers: {
             Authorization: `Bearer ${pcsToken}`,
@@ -296,7 +296,7 @@ const RegistrationScreen = () => {
       }));
       setPhoneNumber(data.phone_number);
       const subserviceResponse = await axios.post(
-        `http:192.168.243.71:5000/api/subservice/checkboxes`,
+        `https://backend.clicksolver.com/api/subservice/checkboxes`,
         { selectedService: data.service },
         {
           headers: {

@@ -160,7 +160,10 @@ const {
   sendMessageWorker,
   workerGetMessage,
   sendMessageUser,
-  callMasking
+  callMasking,
+  workerProfileScreenDetails,
+  workerProfileUpdate,
+  profileChangesSubmit
 } = require("./controller.js");
 
 const router = express.Router();
@@ -277,6 +280,8 @@ router.post("/user/coupons", authenticateToken, userCoupons);
 
 router.post("/user/updateProfileImage",authenticateToken,userProfileUpdate)
 
+router.post("/worker/updateProfileImage",authenticateWorkerToken,workerProfileUpdate)
+
 // Define the route for processing payment
 router.post("/user/payed", processPayment);
 
@@ -287,6 +292,10 @@ router.post("/user/details/update", authenticateToken, accountDetailsUpdate);
 router.post("/user/details/delete",authenticateToken,accountDelete)
 
 router.post("/user/profile", authenticateToken, userProfileDetails);
+
+
+router.post("/worker/profile", authenticateWorkerToken, workerProfileScreenDetails);
+
 
 // Route to add a new user
 router.post("/add/worker", async (req, res) => {
@@ -618,6 +627,13 @@ router.post(
   authenticateWorkerToken,
   registrationSubmit
 );
+
+router.post(
+  "/profile/changes/submit",
+  authenticateWorkerToken,
+  profileChangesSubmit
+);
+
 
 router.post("/account/submit", authenticateWorkerToken, addBankAccount);
 

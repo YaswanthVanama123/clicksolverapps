@@ -103,7 +103,7 @@ const HelloWorld = () => {
 
       if (pcs_token) {
         const response = await axios.get(
-          `http:192.168.243.71:5000/api/worker/track/details`,
+          `https://backend.clicksolver.com/api/worker/track/details`,
           {
             headers: {Authorization: `Bearer ${pcs_token}`},
           },
@@ -418,7 +418,7 @@ const HelloWorld = () => {
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const response = await axios.post(
-        `http:192.168.243.71:5000/api/accept/request`,
+        `https://backend.clicksolver.com/api/accept/request`,
         {user_notification_id: decodedId},
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
@@ -431,7 +431,7 @@ const HelloWorld = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `http:192.168.243.71:5000/api/worker/action`,
+          `https://backend.clicksolver.com/api/worker/action`,
           {
             encodedId: encodedNotificationId,
             screen: 'UserNavigation',
@@ -458,7 +458,7 @@ const HelloWorld = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
         await axios.post(
-          `http:192.168.243.71:5000/api/worker/action`,
+          `https://backend.clicksolver.com/api/worker/action`,
           {
             encodedId: '',
             screen: '',
@@ -551,7 +551,7 @@ const HelloWorld = () => {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
 
       await axios.post(
-        `http:192.168.243.71:5000/api/worker/store-fcm-token`,
+        `https://backend.clicksolver.com/api/worker/store-fcm-token`,
         {fcmToken: token},
         {headers: {Authorization: `Bearer ${pcs_token}`}},
       );
@@ -599,7 +599,7 @@ const HelloWorld = () => {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         const fcmToken = await EncryptedStorage.getItem('fcm_token');
         await axios.post(
-          `http:192.168.243.71:5000/api/worker/store-notification`,
+          `https://backend.clicksolver.com/api/worker/store-notification`,
           {notification, fcmToken},
           {headers: {Authorization: `Bearer ${pcs_token}`}},
         );

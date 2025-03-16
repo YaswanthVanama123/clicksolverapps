@@ -1,10 +1,16 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<manifest 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.partnermobileapp">
 
     <!-- Internet Access -->
     <uses-permission android:name="android.permission.INTERNET" />
-   
-
+    
+    <!-- Force–remove any Activity Recognition permissions added by dependencies -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" tools:node="remove"/>
+    <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" tools:node="remove"/>
+    <uses-permission android:name="com.huawei.hms.permission.ACTIVITY_RECOGNITION" tools:node="remove"/>
 
     <!-- Location Permissions (Physical Location - All Time) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -21,7 +27,6 @@
     <!-- Alarm & Wake Lock for Background Processing -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" android:minSdkVersion="34" />
 
     <application
         android:name=".MainApplication"
@@ -53,7 +58,9 @@
             android:foregroundServiceType="location" />
 
         <!-- TransistorSoft Geolocation License Key -->
-        <meta-data android:name="com.transistorsoft.locationmanager.polygon.license" android:value="YOUR_POLYGON_LICENCE_KEY_HERE" />
+        <meta-data 
+            android:name="com.transistorsoft.locationmanager.polygon.license" 
+            android:value="YOUR_POLYGON_LICENCE_KEY_HERE" />
 
         <!-- Google Play Services Requirement -->
         <meta-data

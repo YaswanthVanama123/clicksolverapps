@@ -18,22 +18,6 @@ import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 
-/** 
- * Example item structure:
- * item = {
- *   notification_id: "...",
- *   created_at: "2023-08-20T10:00:00Z",
- *   payment: 100,
- *   payment_type: "cash",
- *   service_booked: [
- *     {
- *       serviceName: "Parking in Downtown",
- *       imageUrl: "https://example.com/image.jpg"
- *     }
- *   ]
- * }
- */
-
 // Helper: format the date
 const formatDate = (created_at) => {
   const date = new Date(created_at);
@@ -47,7 +31,7 @@ const formatDate = (created_at) => {
 // Card component for a single service item
 const ServiceItemCard = ({ item, styles, tab }) => {
   const navigation = useNavigation();
-  const isCancelled = item.total_cost === null;
+  const isCancelled = item.complete_status === "cancel" || item.complete_status === "usercanceled" || item.complete_status === "workercanceled";
   let buttonLabel = 'View Details';
   let disabled = false;
   if (isCancelled) {
@@ -61,7 +45,7 @@ const ServiceItemCard = ({ item, styles, tab }) => {
   const imageUrl =
     item.service_booked && item.service_booked.length > 0
       ? item.service_booked[0].imageUrl
-      : item.service_booked[0]?.url;
+      : null;
   return (
     <View style={styles.cardContainer}>
       <Image
@@ -74,7 +58,7 @@ const ServiceItemCard = ({ item, styles, tab }) => {
         </Text>
         <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
         <Text style={styles.cardPrice}>
-          {isCancelled ? '₹0' : `₹${item.total_cost}`}
+          ₹{item.total_cost}
         </Text>
       </View>
       <TouchableOpacity
@@ -102,6 +86,17 @@ const ServiceItemCard = ({ item, styles, tab }) => {
   );
 };
 
+// A reusable component to display the error view with retry
+const ErrorRetryView = ({ onRetry, styles }) => (
+  <View style={styles.errorContainer}>
+    <MaterialIcons name="error-outline" size={48} color="#FF0000" />
+    <Text style={styles.errorText}>Something went wrong. Please try again.</Text>
+    <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+      <Text style={styles.retryButtonText}>Retry</Text>
+    </TouchableOpacity>
+  </View>
+);
+
 const RecentServices = () => {
   const { width, height } = useWindowDimensions();
   const { isDarkMode } = useTheme();
@@ -113,6 +108,7 @@ const RecentServices = () => {
   const [error, setError] = useState(false);
   const [searchActive, setSearchActive] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [tokenFound, setTokenFound] = useState(true);
   const navigation = useNavigation();
 
   // Fetch data based on the selected tab
@@ -121,19 +117,22 @@ const RecentServices = () => {
     setError(false);
     try {
       const token = await EncryptedStorage.getItem('cs_token');
-      if (!token) throw new Error('Token not found');
-
+      if (!token) {
+        setTokenFound(false);
+        setBookingsData([]); // clear bookings data
+        setLoading(false);
+        return;
+      }
+      setTokenFound(true);
       let response;
       if (selectedTab === 'Ongoing') {
-        // Call a different API endpoint for Ongoing services
         response = await axios.get(
-          `http:192.168.243.71:5000/api/user/ongoingBookings`,
+          `https://backend.clicksolver.com/api/user/ongoingBookings`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } else {
-        // For Completed and Cancelled, use the default endpoint
-        response = await axios.get( 
-          `http:192.168.243.71:5000/api/user/bookings`,
+        response = await axios.get(
+          `https://backend.clicksolver.com/api/user/bookings`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
       }
@@ -152,20 +151,15 @@ const RecentServices = () => {
   }, [selectedTab]);
 
   const getFilteredData = () => {
-    // Filter based on the selected tab.
     let data = [];
     if (selectedTab === 'Completed') {
-      // Only include bookings that are not cancelled.
-      data = bookingsData.filter(item => item.total_cost !== null);
-    } else if (selectedTab === 'Cancelled') {
-      // Only include cancelled bookings.
-      data = bookingsData.filter(item => item.total_cost === null);
+      data = bookingsData.filter(item => item.complete_status !== "cancel" && item.complete_status !== "usercanceled" && item.complete_status !== "workercanceled");
+    }
+     else if (selectedTab === 'Cancelled') {
+      data = bookingsData.filter(item => item.complete_status === "cancel" || item.complete_status === "usercanceled" || item.complete_status === "workercanceled");
     } else {
-      // Ongoing tab: no additional filtering is needed as the API already returns ongoing items.
       data = bookingsData;
     }
-    
-    // Then, if search is active, filter by service name.
     if (searchActive && searchText.trim()) {
       const lowerSearch = searchText.toLowerCase();
       data = data.filter(item => {
@@ -179,13 +173,10 @@ const RecentServices = () => {
         return false;
       });
     }
-    
-    // Sort the data in descending order by creation date.
     data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    
     return data;
   };
-  
+
   const filteredData = getFilteredData();
 
   return (
@@ -239,14 +230,13 @@ const RecentServices = () => {
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#ff5722" />
           </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <MaterialIcons name="error-outline" size={48} color="#FF0000" />
-            <Text style={styles.errorText}>Something went wrong. Please try again.</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={fetchBookings}>
-              <Text style={styles.retryButtonText}>Retry</Text>
-            </TouchableOpacity>
+        ) : !tokenFound ? (
+          <View style={styles.noDataContainer}>
+            <MaterialIcons name="search-off" size={48} color="#888" />
+            <Text style={styles.noDataText}>No data available</Text>
           </View>
+        ) : error ? (
+          <ErrorRetryView onRetry={fetchBookings} styles={styles} />
         ) : filteredData.length === 0 ? (
           <View style={styles.noDataContainer}>
             <MaterialIcons name="search-off" size={48} color="#888" />
@@ -291,7 +281,6 @@ const dynamicStyles = (width, height, isDarkMode) => {
       fontFamily: 'RobotoSlab-Bold',
       color: isDarkMode ? '#fff' : '#212121',
     },
-
     /* SEARCH BOX */
     searchContainer: {
       backgroundColor: isDarkMode ? '#333' : '#F8F8F8',
@@ -309,7 +298,6 @@ const dynamicStyles = (width, height, isDarkMode) => {
       color: isDarkMode ? '#fff' : '#333',
       fontFamily: 'RobotoSlab-Regular',
     },
-
     /* TABS */
     tabContainer: {
       flexDirection: 'row',
@@ -338,7 +326,6 @@ const dynamicStyles = (width, height, isDarkMode) => {
     tabButtonTextActive: {
       color: '#fff',
     },
-
     /* CONTENT */
     contentContainer: {
       flex: 1,
@@ -348,8 +335,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
     listContent: {
       paddingBottom: isTablet ? 30 : 20,
     },
-
-    // Loading / Error / No Data
+    /* Loading / Error / No Data */
     loadingContainer: {
       flex: 1,
       justifyContent: 'center',
@@ -393,7 +379,6 @@ const dynamicStyles = (width, height, isDarkMode) => {
       color: '#888',
       fontFamily: 'RobotoSlab-Regular',
     },
-
     /* CARD LAYOUT */
     cardContainer: {
       flexDirection: 'row',

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   SafeAreaView,
   View,
@@ -10,63 +10,99 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  AppState,
 } from 'react-native';
 import axios from 'axios';
 import messaging from '@react-native-firebase/messaging';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useFocusEffect } from '@react-navigation/native';
 
 const ChatScreen = ({ navigation, route }) => {
   const { request_id, senderType, profileImage, profileName } = route.params;
-
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState('');
   const flatListRef = useRef(null);
 
-  useEffect(() => {
-    fetchMessages();
-
-    const unsubscribe = messaging().onMessage(async remoteMessage => {
-      if (remoteMessage.data.request_id === String(request_id)) {
-        fetchMessages();
-      }
-    });
-
-    return unsubscribe;
-  }, []);
-
-  const fetchMessages = async () => {
+  // Fetch messages from the backend
+  const fetchMessages = useCallback(async () => {
     try {
       console.log(`Fetching messages for request_id: ${request_id}`);
-      const response = await axios.get('http:192.168.243.71:5000/api/worker/getMessages', {
-        params: { request_id },
-      });
+      const response = await axios.get(
+        'https://backend.clicksolver.com/api/worker/getMessages',
+        { params: { request_id } }
+      );
       console.log('Fetched Messages:', response.data.messages);
       setMessages(response.data.messages);
       scrollToBottom();
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
-  };
+  }, [request_id]);
+
+  const scrollToBottom = useCallback(() => {
+    flatListRef.current?.scrollToEnd({ animated: true });
+  }, []);
+
+  // Fetch messages when the screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      fetchMessages();
+    }, [fetchMessages])
+  );
+
+  // Listen for Firebase messages in the foreground
+  useEffect(() => {
+    const unsubscribeForeground = messaging().onMessage(async remoteMessage => {
+      if (remoteMessage.data?.request_id === String(request_id)) {
+        console.log('New message received in foreground:', remoteMessage);
+        fetchMessages();
+      }
+    });
+    return unsubscribeForeground;
+  }, [fetchMessages, request_id]);
+
+  // Listen for app state changes so that when app comes to foreground, messages are fetched
+  useEffect(() => {
+    const handleAppStateChange = nextAppState => {
+      if (nextAppState === 'active') {
+        console.log('App moved to foreground. Fetching messages...');
+        fetchMessages();
+      }
+    };
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription.remove();
+  }, [fetchMessages]);
+
+  // Handle background messages
+  useEffect(() => {
+    // setBackgroundMessageHandler doesn't return an unsubscribe function.
+    messaging().setBackgroundMessageHandler(async remoteMessage => {
+      if (remoteMessage.data?.request_id === String(request_id)) {
+        console.log('New message received in background:', remoteMessage);
+        fetchMessages();
+      }
+    });
+  }, [fetchMessages, request_id]);
 
   const sendMessage = async () => {
     if (!message.trim()) return;
     try {
       console.log('Sending message:', message);
-      await axios.post('http:192.168.243.71:5000/api/send/message/worker', {
+      await axios.post('https://backend.clicksolver.com/api/send/message/worker', {
         request_id,
         senderType,
         message,
       });
       console.log('Message sent successfully.');
+      setMessages(prevMessages => [
+        ...prevMessages,
+        { message, key: senderType, timestamp: Date.now() },
+      ]);
       setMessage('');
-      fetchMessages();
+      scrollToBottom();
     } catch (error) {
       console.error('Error sending message:', error);
     }
-  };
-
-  const scrollToBottom = () => {
-    flatListRef.current?.scrollToEnd({ animated: true });
   };
 
   return (
@@ -84,7 +120,7 @@ const ChatScreen = ({ navigation, route }) => {
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={60}  // Adjusted to match header height
+        keyboardVerticalOffset={60}
       >
         <FlatList
           ref={flatListRef}

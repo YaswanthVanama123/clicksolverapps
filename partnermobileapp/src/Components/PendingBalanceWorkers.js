@@ -45,7 +45,7 @@ const PendingBalanceWorkers = () => {
     const fetchBookings = async () => {
       try {
         const response = await axios.get(
-          `http:192.168.243.71:5000/api/pending/balance/workers`,
+          `https://backend.clicksolver.com/api/pending/balance/workers`,
           {},
         );
         console.log(response.data);

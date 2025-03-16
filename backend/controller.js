@@ -794,6 +794,8 @@ const sendLogoutNotificationAndDeleteTokens = async (workerId) => {
 const workerLogout = async (req, res) => {
   try {
       const { fcm_token } = req.body;
+      
+      console.log("workerlogout",fcm_token)
 
       if (!fcm_token) {
           return res.status(400).json({ success: false, message: 'FCM token is required' });
@@ -808,7 +810,7 @@ const workerLogout = async (req, res) => {
       if (result.rowCount > 0) {
           return res.status(200).json({ success: true, message: 'Worker logged out and FCM token deleted' });
       } else {
-          return res.status(404).json({ success: false, message: 'FCM token not found' });
+          return res.status(200).json({ success: false, message: 'worker already logout' });
       }
   } catch (error) {
       console.error('Error in workerLogout:', error);
@@ -819,7 +821,7 @@ const workerLogout = async (req, res) => {
 const userLogout = async (req, res) => {
   try {
       const { fcm_token } = req.body;
-
+      console.log("fcm",fcm_token)
       if (!fcm_token) {
           return res.status(400).json({ success: false, message: 'FCM token is required' });
       }
@@ -833,7 +835,7 @@ const userLogout = async (req, res) => {
       if (result.rowCount > 0) {
           return res.status(200).json({ success: true, message: 'User logged out and FCM token deleted' });
       } else {
-          return res.status(404).json({ success: false, message: 'FCM token not found' });
+          return res.status(200).json({ success: false, message: 'FCM token not found' });
       }
   } catch (error) {
       console.error('Error in userLogout:', error);
@@ -1401,6 +1403,84 @@ const accountDetailsUpdate = async (req, res) => {
 //   }
 // };
 
+
+//main userCompleteSignUp
+// const userCompleteSignUp = async (req, res) => {
+//   const { fullName, email, phoneNumber, referralCode } = req.body;
+
+//   if (!fullName || !email || !phoneNumber) {
+//     return res
+//       .status(400)
+//       .json({ message: "Full name, email, and phone number are required" });
+//   }
+
+//   try {
+//     // Start a transaction
+//     await client.query("BEGIN");
+
+//     // Updated query to insert referred_by and exclude referral_rewards
+//     const result = await client.query(
+//       `
+//       WITH referrer AS (
+//         SELECT user_id FROM "user" WHERE referral_code = $1
+//       ), new_user AS (
+//         INSERT INTO "user" (name, email, phone_number, referred_by) 
+//         VALUES ($2, $3, $4, (SELECT user_id FROM referrer)) 
+//         RETURNING user_id
+//       ), referral_insert AS (
+//         INSERT INTO referrals (referrer_user_id, referred_user_id)
+//         SELECT referrer.user_id, new_user.user_id
+//         FROM referrer, new_user
+//         WHERE referrer.user_id IS NOT NULL
+//         RETURNING referrer_user_id
+//       )
+//       SELECT new_user.user_id AS user_id FROM new_user;
+//       `,
+//       [referralCode, fullName, email, phoneNumber]
+//     );
+
+//     // Extract the new user_id
+//     const newUserId = result.rows[0].user_id;
+
+//     // Generate a unique referral code for the new user
+//     const newReferralCode = `CS${newUserId}${crypto
+//       .randomBytes(2)
+//       .toString("hex")
+//       .toUpperCase()}`;
+
+//     // Update the user's referral code
+//     await client.query(
+//       'UPDATE "user" SET referral_code = $1 WHERE user_id = $2',
+//       [newReferralCode, newUserId]
+//     );
+
+//     // Commit the transaction
+//     await client.query("COMMIT");
+
+//     // Generate a token for the user
+//     const token = generateToken({ id: newUserId, fullName, email });
+
+//     // Set the token as an HTTP-only cookie
+//     res.cookie("token", token, {
+//       httpOnly: true,
+//       secure: process.env.NODE_ENV === "production",
+//       sameSite: "Strict",
+//     });
+
+//     // Return the response
+//     return res.status(201).json({
+//       message: "User registered successfully",
+//       token,
+//       referralCode: newReferralCode,
+//     });
+//   } catch (error) {
+//     // Rollback the transaction on error
+//     await client.query("ROLLBACK");
+//     console.error("Error in userCompleteSignUp:", error);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// };
+
 const userCompleteSignUp = async (req, res) => {
   const { fullName, email, phoneNumber, referralCode } = req.body;
 
@@ -1414,7 +1494,7 @@ const userCompleteSignUp = async (req, res) => {
     // Start a transaction
     await client.query("BEGIN");
 
-    // Updated query to insert referred_by and exclude referral_rewards
+    // Insert the new user and get the new user_id
     const result = await client.query(
       `
       WITH referrer AS (
@@ -1453,8 +1533,8 @@ const userCompleteSignUp = async (req, res) => {
     // Commit the transaction
     await client.query("COMMIT");
 
-    // Generate a token for the user
-    const token = generateToken({ id: newUserId, fullName, email });
+    // <-- Change: pass user_id property instead of id
+    const token = generateToken({ user_id: newUserId, fullName, email });
 
     // Set the token as an HTTP-only cookie
     res.cookie("token", token, {
@@ -1476,6 +1556,7 @@ const userCompleteSignUp = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 // const workerCompleteSignUp = async (req, res) => {
 //   const { fullName, email = null, phoneNumber } = req.body; // Set default value of email to null
@@ -1821,6 +1902,7 @@ const getServiceTrackingWorkerItemDetails = async (req, res) => {
 const getServiceTrackingUserItemDetails = async (req, res) => {
   try {
     const { tracking_id } = req.body;
+    console.log(tracking_id)
     // console.log(tracking_id)
     const query = `
       SELECT
@@ -1845,6 +1927,8 @@ const getServiceTrackingUserItemDetails = async (req, res) => {
     const values = [tracking_id];
 
     const result = await client.query(query, values);
+
+    console.log("data",result.rows[0])
 
     if (result.rows.length === 0) {
       return res.status(404).json({
@@ -2239,6 +2323,140 @@ const userProfileDetails = async (req, res) => {
       .json({ message: "An error occurred while fetching worker details." });
   }
 };
+
+
+const workerProfileScreenDetails = async (req, res) => {
+  const workerId = req.worker.id;
+  // console.log(userId);
+
+  try {
+    const query = `
+    SELECT w.name, w.email, w.phone_number, ws.profile
+    FROM workersverified w
+    LEFT JOIN workerskills ws ON w.worker_id = ws.worker_id
+    WHERE w.worker_id = $1;
+  `;
+  
+
+    // Execute the query with the userId as a parameter
+    const result = await client.query(query, [workerId]);
+
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No worker details found for the provided worker ID." });
+    }
+
+    const { name, email, phone_number, profile } = result.rows[0];
+
+    // Return the result
+    return res.json({ name, email, phone_number, profile });
+  } catch (error) {
+    console.error("Error fetching worker details:", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred while fetching worker details." });
+  }
+};
+
+
+const profileChangesSubmit = async (req, res) => {
+  const { formData, selectedStatus } = req.body;
+
+  console.log("Received formData:", formData);
+  console.log("Received selectedStatus:", selectedStatus);
+
+  // Ensure we get a string value for selectedStatus
+  const statusValue = typeof selectedStatus === 'object' && selectedStatus.selectedStatus 
+    ? selectedStatus.selectedStatus 
+    : selectedStatus;
+  console.log("Using selectedStatus value:", statusValue);
+
+  // Extract data from formData
+  const workerId = req.worker.id;
+  console.log("Worker ID:", workerId);
+  const profileImageUri = formData.profileImageUri;
+  const proofImageUri = formData.proofImageUri;
+  const serviceCategory = formData.skillCategory;
+  const subskillArray = formData.subSkills; // Assuming this is an array
+  const personalDetails = {
+    lastName: formData.lastName,
+    firstName: formData.firstName,
+    gender: formData.gender,
+    workExperience: formData.workExperience,
+    dob: formData.dob,
+    education: formData.education,
+  };
+  const address = {
+    doorNo: formData.doorNo,
+    landmark: formData.landmark,
+    city: formData.city,
+    district: formData.district,
+    state: formData.state,
+    pincode: formData.pincode,
+  };
+
+  try {
+    // One multi-statement query using a CTE:
+    // 1. Upsert the workerskills row and return worker_id.
+    // 2. Update the workers table's issues array for matching category.
+    const query = `
+      WITH upsert AS (
+        INSERT INTO workerskills 
+          (worker_id, profile, proof, service, subservices, personalDetails, address)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        ON CONFLICT (worker_id) DO UPDATE
+          SET
+            profile = EXCLUDED.profile,
+            proof = EXCLUDED.proof,
+            service = EXCLUDED.service,
+            subservices = EXCLUDED.subservices,
+            personalDetails = EXCLUDED.personalDetails,
+            address = EXCLUDED.address
+        RETURNING worker_id
+      ),
+      update_issues AS (
+        UPDATE workers
+        SET issues = (
+          SELECT jsonb_agg(
+            CASE
+              WHEN i->>'category' = $8 THEN jsonb_set(i, '{status}', '"changed"')
+              ELSE i
+            END
+          )
+          FROM jsonb_array_elements(issues) AS i
+        )
+        WHERE worker_id = (SELECT worker_id FROM upsert)
+        RETURNING *
+      )
+      SELECT * FROM update_issues;
+    `;
+
+    const values = [
+      workerId,
+      profileImageUri,
+      proofImageUri,
+      serviceCategory,
+      subskillArray,
+      personalDetails,
+      address,
+      statusValue, // Use the extracted string value here
+    ];
+
+    console.log("Executing query with values:", values);
+    const result = await client.query(query, values);
+    console.log("CTE query executed successfully. Update result:", JSON.stringify(result.rows, null, 2));
+
+    // Send success response along with the updated data for debugging
+    res.status(200).json({ message: "Registration successful", updatedData: result.rows });
+  } catch (error) {
+    console.error("Error inserting/updating workerskills or updating issues in workers table:", error);
+    res.status(500).json({ message: "Error registering worker", error });
+  }
+};
+
+
+
 
 const registrationSubmit = async (req, res) => {
   const formData = req.body;
@@ -3923,6 +4141,7 @@ const getPendingWorkerDetails = async (req, res) => {
         w.verification_status,
         w.issues,
         ws.proof,
+        ws.profile,
         ws.service,
         ws.subservices,
         ws.personaldetails,
@@ -3942,6 +4161,35 @@ const getPendingWorkerDetails = async (req, res) => {
 
 
 
+// const updateIssues = async (req, res) => {
+//   const { workerId, issues } = req.body;
+
+//   if (!workerId || !issues) {
+//     return res
+//       .status(400)
+//       .json({ message: "workerId and issues are required." });
+//   }
+
+//   try {
+//     // Update or insert worker's issues
+//     const query = `
+//         UPDATE workers
+//         SET issues = $2::jsonb
+//         WHERE worker_id = $1
+//     `;
+
+//     // Execute the query
+//     await client.query(query, [workerId, JSON.stringify(issues)]);
+
+//     return res.status(200).json({ message: "Issues updated successfully." });
+//   } catch (error) {
+//     console.error("Error updating issues:", error);
+//     return res
+//       .status(500)
+//       .json({ message: "An error occurred while updating issues." });
+//   }
+// };
+
 const updateIssues = async (req, res) => {
   const { workerId, issues } = req.body;
 
@@ -3952,17 +4200,52 @@ const updateIssues = async (req, res) => {
   }
 
   try {
-    // Update or insert worker's issues
+    // Use a CTE to update the worker's issues and then retrieve all FCM tokens
     const query = `
+      WITH updated AS (
         UPDATE workers
         SET issues = $2::jsonb
         WHERE worker_id = $1
+      )
+      SELECT fcm_token FROM fcm;
     `;
+    const result = await client.query(query, [workerId, JSON.stringify(issues)]);
+    const tokens = result.rows.map(row => row.fcm_token);
 
-    // Execute the query
-    await client.query(query, [workerId, JSON.stringify(issues)]);
+    // If tokens exist, send notifications to all devices
+    if (tokens.length > 0) {
+      const message = {
+        notification: {
+          title: 'Issue Updated',
+          body: 'Worker issues have been updated.',
+        },
+        data: {
+          screen: "ApprovalScreen", // Ensure IDs are strings
+          issues: JSON.stringify(issues), // Send issues as a string
+          type: "issue_update", // Example custom type
+          timestamp: new Date().toISOString(), // Timestamp for reference
+        },
+        tokens: tokens, // Sends the notification to all retrieved tokens
+      };
 
-    return res.status(200).json({ message: "Issues updated successfully." });
+      try {
+        // If using Firebase Admin SDK's sendEachForMulticast:
+        const response = await admin.messaging().sendEachForMulticast(message);
+        response.responses.forEach((resp, index) => {
+          if (!resp.success) {
+            console.error(`Error sending to token ${user_fcm_tokens[index]}: `, resp.error);
+          }
+        });
+        console.log(`Notifications sent to user_id: ${user_id}`);
+      } catch (err) {
+        console.error("Error sending user payment notification:", err);
+      }
+      console.log('Notification response:', response);
+    }
+
+    return res.status(200).json({
+      message: "Issues updated and notifications sent successfully."
+    });
   } catch (error) {
     console.error("Error updating issues:", error);
     return res
@@ -4105,15 +4388,17 @@ const checkApprovalVerificationStatus = async (req, res) => {
         WHERE worker_id = $1
       )
       SELECT 
+        wc.source,
         wc.name,
         wc.issues,
         wc.verification_status,
-        ws.service
+        ws.service,
+        ws.profile
       FROM worker_check wc
       LEFT JOIN workerskills ws ON wc.worker_id = ws.worker_id
       LIMIT 1;
     `;
-
+    
     const result = await client.query(query, [workerId]);
 
     if (result.rows.length === 0) {
@@ -4121,6 +4406,7 @@ const checkApprovalVerificationStatus = async (req, res) => {
     }
 
     const workerData = result.rows[0];
+    console.log(workerData);
 
     if (workerData.source === "workersverified") {
       return res.status(201).json({ message: "Worker is verified." });
@@ -4131,6 +4417,7 @@ const checkApprovalVerificationStatus = async (req, res) => {
       issues: workerData.issues,
       verification_status: workerData.verification_status,
       service: workerData.service,
+      profile: workerData.profile,
     });
   } catch (error) {
     console.error("Error fetching approval verification status:", error);
@@ -4140,38 +4427,95 @@ const checkApprovalVerificationStatus = async (req, res) => {
   }
 };
 
+
 const workerApprove = async (req, res) => {
   const { workerId } = req.body;
 
+  if (!workerId) {
+    return res.status(400).json({ error: "workerId is required." });
+  }
+
   try {
+    // Single query with multiple CTEs:
+    // 1. Delete from workers, returning worker details
+    // 2. Insert the returned row into workersverified
+    // 3. Insert the same worker_id into workerlife
+    // 4. Finally, select fcm_token for that worker
     const query = `
       WITH moved_worker AS (
         DELETE FROM workers
         WHERE worker_id = $1
         RETURNING worker_id, name, email, phone_number, contact_id
+      ),
+      inserted_worker AS (
+        INSERT INTO workersverified (worker_id, name, email, phone_number, contact_id)
+        SELECT worker_id, name, email, phone_number, contact_id 
+        FROM moved_worker
+        RETURNING worker_id
+      ),
+      life_insert AS (
+        INSERT INTO workerlife (worker_id)
+        SELECT worker_id
+        FROM inserted_worker
+        RETURNING worker_id
       )
-      INSERT INTO workersverified (worker_id, name, email, phone_number, contact_id)
-      SELECT worker_id, name, email, phone_number, contact_id FROM moved_worker;
+      SELECT fcm_token 
+      FROM fcm
+      WHERE worker_id IN (SELECT worker_id FROM inserted_worker);
     `;
 
     const result = await client.query(query, [workerId]);
 
+    // If no rows returned, the worker wasn't found or is already verified
     if (result.rowCount === 0) {
       return res
         .status(404)
         .json({ error: "Worker not found or already verified" });
     }
 
-    res
+    // Extract tokens from the result
+    const tokens = result.rows.map(row => row.fcm_token);
+
+    // If tokens exist, send a notification to the worker
+    if (tokens.length > 0) {
+      const message = {
+        notification: {
+          title: 'Account Approved',
+          body: 'Your account is approved and now you are a family in ClickSolver!',
+        },
+        data: {
+          screen: "ApprovalScreen",
+          type: "account_approved",
+          timestamp: new Date().toISOString(),
+        },
+        tokens: tokens,
+      };
+
+      try {
+        // Using Firebase Admin SDK's sendEachForMulticast
+        const response = await admin.messaging().sendEachForMulticast(message);
+        response.responses.forEach((resp, index) => {
+          if (!resp.success) {
+            console.error(`Error sending to token ${tokens[index]}: `, resp.error);
+          }
+        });
+        console.log('Notifications sent to user');
+      } catch (err) {
+        console.error("Error sending user notification:", err);
+      }
+    }
+
+    return res
       .status(200)
-      .json({ message: "Worker approved and moved to workerverified table" });
+      .json({ message: "Worker approved, moved to workersverified, and added to workerlife." });
   } catch (error) {
     console.error("Error in workerApprove:", error.message);
-    res
+    return res
       .status(500)
       .json({ error: "An error occurred while approving the worker" });
   }
 };
+
 
 
 const sendMessageWorker = async (req, res) => {
@@ -4873,12 +5217,11 @@ const getWorkerBookings = async (req, res) => {
         n.service_booked,
         n.created_at,
         n.total_cost,
-        s.payment_type,
+        n.complete_status,
         w.name AS provider,
         ws.profile AS worker_profile
     FROM completenotifications n
-    LEFT JOIN servicecall s ON n.notification_id = s.notification_id
-    JOIN workersverified w ON s.worker_id = w.worker_id
+    JOIN workersverified w ON n.worker_id = w.worker_id
     JOIN workerskills ws ON w.worker_id = ws.worker_id
     WHERE n.worker_id = $1
     ORDER BY n.created_at DESC
@@ -4937,10 +5280,8 @@ const getUserAllBookings = async (req, res) => {
         n.created_at,
         n.complete_status,
         n.total_cost,
-        s.payment_type,
         w.name AS provider
     FROM completenotifications n
-    JOIN servicecall s ON n.notification_id = s.notification_id
     JOIN "user" w ON n.user_id = w.user_id
     WHERE n.user_id = $1
     ORDER BY n.created_at DESC
@@ -5106,15 +5447,19 @@ const storeNotification = async (req, res) => {
   }
 };
 
+
 // const updateWorkerAction = async (workerId, encodedId, screen) => {
 //   try {
+//     console.log("updateWorkerAction called with:", { workerId, encodedId, screen });
+    
 //     // Create the params object as a JSON string
 //     const params = JSON.stringify({ encodedId });
-
+//     console.log("Constructed params:", params);
+    
 //     // Define the SQL query with conditional update on screen_name.
 //     // When screen is not empty, update unconditionally.
 //     // When screen is empty, update screen_name only if the encodedId in the existing
-//     // params JSON matches the new encodedId.
+//     // params JSON (casted to jsonb) matches the new encodedId.
 //     const query = `
 //       INSERT INTO workeraction (worker_id, screen_name, params)
 //       VALUES ($1, $2, $3)
@@ -5122,16 +5467,20 @@ const storeNotification = async (req, res) => {
 //         SET params = $3,
 //             screen_name = CASE
 //               WHEN $2 <> '' THEN $2
-//               WHEN workeraction.params->>'encodedId' = jsonb_extract_path_text($3::jsonb, 'encodedId')
+//               WHEN workeraction.params::jsonb->>'encodedId' = jsonb_extract_path_text($3::jsonb, 'encodedId')
 //                 THEN $2
 //               ELSE workeraction.screen_name
 //             END
 //       RETURNING *;
 //     `;
-
+    
+//     console.log("Executing SQL query:", query);
+    
 //     // Execute the query with the provided parameters
 //     const result = await client.query(query, [workerId, screen, params]);
-
+    
+//     console.log("Query executed successfully. Result:", result.rows[0]);
+    
 //     // Return the updated or inserted row
 //     return result.rows[0];
 //   } catch (error) {
@@ -5139,46 +5488,85 @@ const storeNotification = async (req, res) => {
 //   }
 // };
 
+
+
 const updateWorkerAction = async (workerId, encodedId, screen) => {
   try {
     console.log("updateWorkerAction called with:", { workerId, encodedId, screen });
     
-    // Create the params object as a JSON string
     const params = JSON.stringify({ encodedId });
     console.log("Constructed params:", params);
-    
-    // Define the SQL query with conditional update on screen_name.
-    // When screen is not empty, update unconditionally.
-    // When screen is empty, update screen_name only if the encodedId in the existing
-    // params JSON (casted to jsonb) matches the new encodedId.
+
     const query = `
       INSERT INTO workeraction (worker_id, screen_name, params)
       VALUES ($1, $2, $3)
       ON CONFLICT (worker_id) DO UPDATE
-        SET params = $3,
-            screen_name = CASE
-              WHEN $2 <> '' THEN $2
-              WHEN workeraction.params::jsonb->>'encodedId' = jsonb_extract_path_text($3::jsonb, 'encodedId')
-                THEN $2
-              ELSE workeraction.screen_name
-            END
+        SET 
+          screen_name = CASE
+            WHEN $2 <> '' THEN $2
+            WHEN $2 = '' 
+              AND workeraction.params::jsonb->>'encodedId' = ($3::jsonb->>'encodedId')
+              THEN ''::text
+            ELSE workeraction.screen_name
+          END,
+          params = CASE
+            WHEN $2 <> '' THEN $3
+            ELSE workeraction.params
+          END
       RETURNING *;
     `;
     
     console.log("Executing SQL query:", query);
-    
-    // Execute the query with the provided parameters
     const result = await client.query(query, [workerId, screen, params]);
-    
     console.log("Query executed successfully. Result:", result.rows[0]);
-    
-    // Return the updated or inserted row
     return result.rows[0];
   } catch (error) {
     console.error("Error inserting user action:", error);
   }
 };
 
+
+
+
+// const updateWorkerAction = async (workerId, encodedId, screen) => {
+//   try {
+//     console.log("updateWorkerAction called with:", { workerId, encodedId, screen });
+    
+//     // Create the params object as a JSON string.
+//     const params = JSON.stringify({ encodedId });
+//     console.log("Constructed params:", params);
+    
+//     // SQL query: 
+//     // - When screen is not empty, update unconditionally.
+//     // - When screen is empty, update screen_name only if the existing params (as JSONB)
+//     //   contains an encodedId that matches the provided encodedId.
+//     const query = `
+//       INSERT INTO workeraction (worker_id, screen_name, params)
+//       VALUES ($1, $2, $3)
+//       ON CONFLICT (worker_id) DO UPDATE
+//         SET params = $3,
+//             screen_name = CASE
+//               WHEN $2 <> '' THEN $2
+//               WHEN $2 = '' AND workeraction.params::jsonb->>'encodedId' = jsonb_extract_path_text($3::jsonb, 'encodedId')
+//                 THEN $2
+//               ELSE workeraction.screen_name
+//             END
+//       RETURNING *;
+//     `;
+    
+//     console.log("Executing SQL query:", query);
+    
+//     // Execute the query with the provided parameters.
+//     const result = await client.query(query, [workerId, screen, params]);
+    
+//     console.log("Query executed successfully. Result:", result.rows[0]);
+    
+//     // Return the updated or inserted row.
+//     return result.rows[0];
+//   } catch (error) {
+//     console.error("Error inserting user action:", error);
+//   }
+// };
 
 
 const createWorkerAction = async (req, res) => {
@@ -5535,11 +5923,11 @@ const getWorkerTrackRoute = async (req, res) => {
 
 const getUserTrackRoute = async (req, res) => {
   const id = req.user.id;
-
+  console.log("id",id)
   try {
     // Query using a JOIN to fetch the user's name and track in one go
     const query = `
-      SELECT u.name, ua.track
+      SELECT u.name, u.profile, ua.track
       FROM "user" u
       LEFT JOIN useraction ua ON u.user_id = ua.user_id
       WHERE u.user_id = $1;
@@ -6163,7 +6551,43 @@ const userProfileUpdate = async (req, res) => {
     }
 };
 
+const workerProfileUpdate = async (req, res) => {
+  const worker_id = req.worker.id;
+  console.log("called")
+  const {  profileImage } = req.body;
 
+  // Check if both parameters are provided
+  if (!worker_id || !profileImage) {
+      return res.status(400).json({ error: "user_id and profileImage are required." });
+  }
+
+  try {
+      // Update the user's profile image
+      const query = `
+      UPDATE workerskills
+      SET profile = $1
+      WHERE worker_id = $2
+      RETURNING *;
+  `;
+  
+      
+      const values = [profileImage, worker_id];
+
+      const result = await client.query(query, values);
+
+      if (result.rowCount === 0) {
+          return res.status(404).json({ error: "User not found." });
+      }
+
+      res.status(200).json({
+          message: "Profile updated successfully.",
+          updatedUser: result.rows[0]
+      });
+  } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ error: "Internal server error." });
+  }
+};
 
 
 
@@ -7192,7 +7616,7 @@ const userNavigationCancel = async (req, res) => {
         )
         SELECT 
           accepted_id, notification_id, user_id, user_notification_id,
-          longitude, latitude, created_at, worker_id, 'cancel',
+          longitude, latitude, created_at, worker_id, 'usercanceled',
           service_booked, time, discount, total_cost, tip_amount
         FROM updated
         RETURNING worker_id, notification_id
@@ -7210,11 +7634,14 @@ const userNavigationCancel = async (req, res) => {
     );
     console.log("Combined query executed. Returned rows:", combinedQuery.rows);
 
-    // Separate DELETE query on accepted table
+    // Delete from accepted only if verification_status is false
     const deleteResult = await client.query(
-      `DELETE FROM accepted
-       WHERE notification_id = $1
-       RETURNING *`,
+      `
+      DELETE FROM accepted
+      WHERE notification_id = $1
+        AND verification_status = false
+      RETURNING *;
+      `,
       [notification_id]
     );
     console.log("Deleted rows from accepted:", deleteResult.rowCount);
@@ -7223,7 +7650,7 @@ const userNavigationCancel = async (req, res) => {
     await client.query("COMMIT");
     console.log("Transaction committed successfully for notification_id:", notification_id);
 
-    // If no row is returned, then the notification doesn't exist in accepted
+    // If no row is returned in the combinedQuery, then the notification doesn't exist in accepted
     if (combinedQuery.rows.length === 0) {
       return res.status(404).json({ error: "Notification not found" });
     }
@@ -7287,6 +7714,7 @@ const userNavigationCancel = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 
 
@@ -7636,6 +8064,7 @@ const workerNavigationCancel = async (req, res) => {
           created_at, 
           worker_id, 
           complete_status,
+          service_booked
           time,
           discount,
           total_cost,
@@ -7667,8 +8096,8 @@ const workerNavigationCancel = async (req, res) => {
           latitude, 
           created_at, 
           worker_id, 
-          'cancel', 
-          to_jsonb('service_booked'::text), 
+          'workercanceled', 
+          service_booked, 
           time,
           discount,
           total_cost,
@@ -8624,7 +9053,6 @@ const getWorkersNearby = async (req, res) => {
       serviceBooked.reduce((acc, s) => acc + s.cost, 0) - discount + tipAmount;
 
 
-  console.log("data",discount,tipAmount,serviceBooked)
 
     /**
      *  ┌───────────────────────────────────────────────────────┐
@@ -8844,8 +9272,8 @@ const getWorkersNearby = async (req, res) => {
       const normalNotificationMessage = {
         tokens,
         notification: {
-          title: serviceArray,
-          body: `${area}, ${city}, ${pincode}`,
+          title:  "🔔 ClickSolver Has a Job for You!",
+          body: "💼 A user needs Electrician help! Accept now and support our ClickSolver family in resolving their issue. 🤝",
         },
         data: {
           user_notification_id: encodedUserNotificationId,
@@ -13186,6 +13614,8 @@ const userWorkerInProgressDetails = async (req, res) => {
 
     const result = await client.query(query, [decodedId]);
 
+    console.log("data",result.rows)
+
     if (result.rows.length === 0) {
       return res
         .status(404)
@@ -14130,5 +14560,8 @@ module.exports = {
   sendMessageWorker,
   workerGetMessage,
   sendMessageUser,
-  callMasking
+  callMasking,
+  workerProfileScreenDetails,
+  workerProfileUpdate,
+  profileChangesSubmit
 };

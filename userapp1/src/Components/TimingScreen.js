@@ -42,7 +42,7 @@ const worktimescreen = () => {
   const handleCheck = useCallback(async () => {
     try {
       const response = await axios.post(
-        `http:192.168.243.71:5000/api/task/confirm/status`,
+        `https://backend.clicksolver.com/api/task/confirm/status`,
         {
           notification_id: decodedId,
         },
@@ -52,7 +52,7 @@ const worktimescreen = () => {
         const cs_token = await EncryptedStorage.getItem('cs_token');
 
         await axios.post(
-          `http:192.168.243.71:5000/api/user/action`,
+          `https://backend.clicksolver.com/api/user/action`,
           {
             encodedId: encodedId,
             screen: 'Paymentscreen',
@@ -108,7 +108,7 @@ const worktimescreen = () => {
   const handleCancelMessageBox = async () => {
     try {
       const response = await axios.post(
-        `http:192.168.243.71:5000/api/work/completion/cancel`,
+        `https://backend.clicksolver.com/api/work/completion/cancel`,
         {
           notification_id: decodedId,
         },
@@ -205,7 +205,7 @@ const worktimescreen = () => {
           }
 
           const response = await axios.post(
-            `http:192.168.243.71:5000/api/work/time/started`,
+            `https://backend.clicksolver.com/api/work/time/started`,
             {
               notification_id: decodedId,
             },
@@ -249,7 +249,7 @@ const worktimescreen = () => {
     if (decodedId) {
       try {
         const response = await axios.post(
-          `http:192.168.243.71:5000/api/work/time/completed/request`,
+          `https://backend.clicksolver.com/api/work/time/completed/request`,
           {
             notification_id: decodedId,
           },

@@ -107,38 +107,38 @@ const WaitingUser = () => {
   const fetchData = async () => {
     const {
       area,
-      city,
+      city, 
       pincode,
-      alternateName,
+      alternateName, 
       alternatePhoneNumber,
-      serviceBooked,
-      location,
+      serviceBooked, 
+      location,  
       discount,
-      tipAmount
+      tipAmount 
     } = route.params;
-    setCity(city);
-    setArea(area);
-    setPincode(pincode);
+    setCity(city);  
+    setArea(area); 
+    setPincode(pincode);   
     setAlternatePhoneNumber(alternatePhoneNumber);
     setAlternateName(alternateName);
-    setService(serviceBooked);
-    setLocation(location);
-    setDiscount(discount);
-    setTipAmount(tipAmount);
-    setBackendLoading(true);
+    setService(serviceBooked);    
+    setLocation(location);  
+    setDiscount(discount);  
+    setTipAmount(tipAmount);  
+    setBackendLoading(true); 
     try {
       const jwtToken = await EncryptedStorage.getItem('cs_token');
-      if (!jwtToken) {
+      if (!jwtToken) { 
         return;
       }
       console.log("tip", tipAmount);
       const response = await axios.post(
-        `http:192.168.243.71:5000/api/workers-nearby`,
-        { 
+        `http://192.168.55.106:5000/api/workers-nearby`,
+        {   
           area,
-          city,
-          pincode,
-          alternateName, 
+          city, 
+          pincode, 
+          alternateName,      
           alternatePhoneNumber,
           serviceBooked,
           discount,
@@ -159,7 +159,7 @@ const WaitingUser = () => {
           encode !== 'No workers match the requested subservices'
         ) {
           await axios.post(
-            `http:192.168.243.71:5000/api/user/action`,
+            `https://backend.clicksolver.com/api/user/action`,
             {
               encodedId: encode,
               screen: 'userwaiting',
@@ -217,7 +217,7 @@ const WaitingUser = () => {
     try {
       if (decodedId) {
         await axios.post(
-          `http:192.168.243.71:5000/api/user/cancellation`,
+          `https://backend.clicksolver.com/api/user/cancellation`,
           {
             user_notification_id: decodedId,
             cancellation_reason: selectedReason,
@@ -226,7 +226,7 @@ const WaitingUser = () => {
 
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
-          `http:192.168.243.71:5000/api/user/action/cancel`,
+          `https://backend.clicksolver.com/api/user/action/cancel`,
           {encodedId: encodedData, screen: 'userwaiting'},
           {headers: {Authorization: `Bearer ${cs_token}`}},
         );
@@ -267,14 +267,14 @@ const WaitingUser = () => {
 
       if (attemptCountRef.current > 3) {
         await axios.post(
-          `http:192.168.243.71:5000/api/user/cancellation`,
+          `https://backend.clicksolver.com/api/user/cancellation`,
           {
             user_notification_id: decodedId,
           },
         );
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
-          `http:192.168.243.71:5000/api/user/action/cancel`,
+          `https://backend.clicksolver.com/api/user/action/cancel`,
           {encodedId: encodedData, screen: 'userwaiting'},
           {headers: {Authorization: `Bearer ${cs_token}`}},
         );
@@ -291,7 +291,7 @@ const WaitingUser = () => {
       if (decodedId) {
         try {
           await axios.post(
-            `http:192.168.243.71:5000/api/user/cancellation`,
+            `https://backend.clicksolver.com/api/user/cancellation`,
             {
               user_notification_id: decodedId,
             },
@@ -303,7 +303,7 @@ const WaitingUser = () => {
 
       const cs_token = await EncryptedStorage.getItem('cs_token');
       await axios.post(
-        `http:192.168.243.71:5000/api/user/action/cancel`,
+        `https://backend.clicksolver.com/api/user/action/cancel`,
         {encodedId: encodedData, screen: 'userwaiting'},
         {headers: {Authorization: `Bearer ${cs_token}`}},
       );
@@ -401,7 +401,7 @@ const WaitingUser = () => {
         setBackendLoading(true);
         try {
           const response = await axios.get(
-            `http:192.168.243.71:5000/api/checking/status`,
+            `https://backend.clicksolver.com/api/checking/status`,
             {
               params: { user_notification_id: decodedId },
               validateStatus: (status) => status === 200 || status === 201,
@@ -423,14 +423,14 @@ const WaitingUser = () => {
   
             // Cancel the previous waiting action
             await axios.post(
-              `http:192.168.243.71:5000/api/user/action/cancel`,
+              `https://backend.clicksolver.com/api/user/action/cancel`,
               { encodedId: encodedData, screen: 'userwaiting' },
               { headers: { Authorization: `Bearer ${cs_token}` } }
             );
   
             // Proceed with the accepted action
             await axios.post(
-              `http:192.168.243.71:5000/api/user/action`,
+              `https://backend.clicksolver.com/api/user/action`,
               {
                 encodedId: encodedNotificationId,
                 screen: 'UserNavigation',

@@ -15,17 +15,13 @@ import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { useNavigation, CommonActions, useRoute } from '@react-navigation/native';
 import Entypo from 'react-native-vector-icons/Entypo';
-// Import theme hook for dark mode support
 import { useTheme } from '../context/ThemeContext';
 
 const VerificationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { phoneNumber, verificationId } = route.params;
-
-  // 1) Grab width & height from useWindowDimensions
   const { width, height } = useWindowDimensions();
-  // 2) Dynamically generate styles using dark mode flag
   const { isDarkMode } = useTheme();
   const styles = dynamicStyles(width, height, isDarkMode);
 
@@ -57,9 +53,8 @@ const VerificationScreen = () => {
     }
     setLoading(true);
     try {
-      // Validate OTP
       const validateResponse = await axios.get(
-        'http:192.168.243.71:5000/api/validate',
+        'https://backend.clicksolver.com/api/validate',
         {
           params: {
             mobileNumber: phoneNumber,
@@ -69,9 +64,8 @@ const VerificationScreen = () => {
         }
       );
       if (validateResponse.data.message === 'OTP Verified') {
-        // If OTP is valid, proceed with login
         const loginResponse = await axios.post(
-          'http:192.168.243.71:5000/api/user/login',
+          'https://backend.clicksolver.com/api/user/login',
           { phone_number: phoneNumber }
         );
         if (loginResponse.status === 200) {
@@ -102,7 +96,6 @@ const VerificationScreen = () => {
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
-    // Auto move to next input if a digit is entered
     if (value && index < newCode.length - 1) {
       inputs.current[index + 1]?.focus();
     }
@@ -219,7 +212,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
       fontSize: isTablet ? 18 : 16,
       textAlign: 'center',
       marginBottom: isTablet ? 35 : 30,
-      color: isDarkMode ? '#fff' : '#212121',
+      color: isDarkMode ? '#ccc' : '#212121',
       fontWeight: 'bold',
     },
     codeContainer: {
@@ -238,6 +231,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
       textAlign: 'center',
       fontSize: isTablet ? 20 : 18,
       color: isDarkMode ? '#fff' : '#212121',
+      backgroundColor: isDarkMode ? '#333' : '#fff', // Added background color
     },
     timer: {
       fontSize: isTablet ? 20 : 18,
@@ -283,3 +277,4 @@ const dynamicStyles = (width, height, isDarkMode) => {
 };
 
 export default VerificationScreen;
+ 

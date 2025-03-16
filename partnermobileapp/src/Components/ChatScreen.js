@@ -22,17 +22,39 @@ const ChatScreen = ({ navigation, route }) => {
   const [message, setMessage] = useState('');
   const flatListRef = useRef(null);
 
+  // Log initial parameters for debugging
   useEffect(() => {
     console.log('ChatScreen parameters:', { request_id, senderType, profileImage, profileName });
   }, [request_id, senderType, profileImage, profileName]);
 
+  // Memoized function to fetch messages
+  const fetchMessages = useCallback(async () => {
+    try {
+      console.log('Fetching messages for request_id:', request_id);
+      const response = await axios.get('https://backend.clicksolver.com/api/worker/getMessages', {
+        params: { request_id },
+      });
+      setMessages(response.data.messages);
+      scrollToBottom();
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    }
+  }, [request_id]);
+
+  // Memoized function to scroll to the bottom of the chat list
+  const scrollToBottom = useCallback(() => {
+    flatListRef.current?.scrollToEnd({ animated: true });
+  }, []);
+
+  // useFocusEffect will call fetchMessages each time the screen is focused
   useFocusEffect(
     useCallback(() => {
       console.log('ChatScreen focused. Fetching messages...');
       fetchMessages();
-    }, [])
+    }, [fetchMessages])
   );
 
+  // Listen for incoming FCM messages
   useEffect(() => {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
       console.log('FCM notification received in the chat box screen:', remoteMessage);
@@ -43,25 +65,12 @@ const ChatScreen = ({ navigation, route }) => {
     });
 
     return () => unsubscribe();
-  }, [request_id]);
-
-  const fetchMessages = async () => {
-    try {
-      console.log('Fetching messages for request_id:', request_id);
-      const response = await axios.get('http:192.168.243.71:5000/api/worker/getMessages', {
-        params: { request_id },
-      });
-      setMessages(response.data.messages);
-      scrollToBottom();
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-    }
-  };
+  }, [fetchMessages, request_id]);
 
   const sendMessage = async () => {
     if (!message.trim()) return;
     try {
-      await axios.post('http:192.168.243.71:5000/api/send/message/user', {
+      await axios.post('https://backend.clicksolver.com/api/send/message/user', {
         request_id,
         senderType,
         message,
@@ -71,10 +80,6 @@ const ChatScreen = ({ navigation, route }) => {
     } catch (error) {
       console.error('Error sending message:', error);
     }
-  };
-
-  const scrollToBottom = () => {
-    flatListRef.current?.scrollToEnd({ animated: true });
   };
 
   return (
@@ -98,9 +103,8 @@ const ChatScreen = ({ navigation, route }) => {
           data={messages}
           keyExtractor={(item, index) => index.toString()}
           renderItem={({ item }) => {
-            // Log the message key for debugging purposes
             console.log('Rendering message with key:', item.key);
-            // If key is "worker", use userMessage style to display on the right
+            // Use lower case to compare, assuming key is a string like "worker"
             const isWorker = item.key.toLowerCase() === 'worker';
             return (
               <View

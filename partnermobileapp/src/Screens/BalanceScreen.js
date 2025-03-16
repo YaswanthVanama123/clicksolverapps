@@ -57,7 +57,7 @@ const BalanceScreen = () => {
       if (!pcs_token) throw new Error('User not authenticated');
   
       const response = await axios.post(
-        'http:192.168.243.71:5000/api/balance/ammount',
+        'https://backend.clicksolver.com/api/balance/ammount',
         {},
         { headers: { Authorization: `Bearer ${pcs_token}` } }
       );
@@ -122,7 +122,7 @@ const BalanceScreen = () => {
       const amountToPay = Math.abs(Number(balance));
       // Create an order on the backend
       const createResponse = await axios.post(
-        'http:192.168.243.71:5000/api/create-order',
+        'https://backend.clicksolver.com/api/create-order',
         { amount: amountToPay, currency: 'INR' },
         { headers: { Authorization: `Bearer ${pcs_token}` } }
       );
@@ -149,7 +149,7 @@ const BalanceScreen = () => {
         .then(async (paymentData) => {
           // Verify payment on the backend
           const verifyResponse = await axios.post(
-            'http:192.168.243.71:5000/api/verify-payment',
+            'https://backend.clicksolver.com/api/verify-payment',
             paymentData,
             { headers: { Authorization: `Bearer ${pcs_token}` } }
           );

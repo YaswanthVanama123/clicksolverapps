@@ -90,7 +90,7 @@ const WorkerTimer = () => {
       try {
         // Send the details and notification_id in the request body
         const response = await axios.post(
-          `http:192.168.243.71:5000/api/add/tracking`,
+          `https://backend.clicksolver.com/api/add/tracking`,
           {
             notification_id: decodedId,
             details: details, // Add details here

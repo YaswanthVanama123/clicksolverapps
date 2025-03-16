@@ -27,11 +27,8 @@ const FLAG_ICON_URL = 'https://i.postimg.cc/C1hkm5sR/india-flag-icon-29.png';
 import { useTheme } from '../context/ThemeContext';
 
 const WorkerLoginScreen = () => {
-  // Grab device width for responsiveness
   const { width } = useWindowDimensions();
-  // Get dark mode flag from theme context
   const { isDarkMode } = useTheme();
-  // Generate dynamic styles based on width and theme
   const styles = dynamicStyles(width, isDarkMode);
 
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -70,7 +67,7 @@ const WorkerLoginScreen = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        'http:192.168.243.71:5000/api/worker/sendOtp',
+        'https://backend.clicksolver.com/api/worker/sendOtp',
         { mobileNumber: phoneNumber }
       );
       if (response.status === 200) {
@@ -106,9 +103,10 @@ const WorkerLoginScreen = () => {
         </View>
       )}
 
+      {/* KeyboardAvoidingView with behavior "none" */}
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="none"
       >
         <View style={styles.contentOverlay}>
           {/* Logo + Headings */}
@@ -154,7 +152,7 @@ const WorkerLoginScreen = () => {
       )}
     </SafeAreaView>
   );
-};
+}
 
 /**
  * DYNAMIC STYLES
@@ -170,12 +168,13 @@ function dynamicStyles(width, isDarkMode) {
       flex: 1,
     },
     solverText: {
-      color: isDarkMode ? '#ffffff' : '#212121',
+      color: isDarkMode ? '#212121' : '#212121',
       fontWeight: 'bold',
     },
     description: {
       flexDirection: 'column',
       marginLeft: isTablet ? 12 : 10,
+      alignItems: 'center',
     },
     contentOverlay: {
       flex: 1,
@@ -187,17 +186,17 @@ function dynamicStyles(width, isDarkMode) {
       flexDirection: 'row',
       gap: 10,
       alignItems: 'center',
+      marginBottom: 10,
     },
     logo: {
       width: isTablet ? 70 : 60,
       height: isTablet ? 70 : 60,
-      marginBottom: 10,
     },
     heading: {
       fontSize: isTablet ? 30 : 26,
       lineHeight: isTablet ? 30 : 26,
       fontWeight: 'bold',
-      color: isDarkMode ? '#ffffff' : '#212121',
+      color: isDarkMode ? '#212121' : '#212121',
       width: isTablet ? 120 : 100,
     },
     subheading: {
@@ -292,4 +291,4 @@ function dynamicStyles(width, isDarkMode) {
   });
 }
 
-export default WorkerLoginScreen;
+export default WorkerLoginScreen; 

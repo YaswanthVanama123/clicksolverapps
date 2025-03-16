@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, SafeAreaView, ActivityIndicator, View, Appearance } from 'react-native';
+import { StyleSheet, SafeAreaView, ActivityIndicator, View, Appearance, Platform } from 'react-native';
 import { NavigationContainer, CommonActions, NavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -13,6 +13,9 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
+
+// Import react-native-permissions functions and constants
+import { request, PERMISSIONS, requestNotifications } from 'react-native-permissions';
 
 // Import your components/screens
 import RecentServices from './Components/RecentServices';
@@ -66,9 +69,7 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function TabNavigator() {
-  // Here you can also use the theme if you want to apply theme styles to the Tab.Navigator.
   const { isDarkMode } = useTheme();
-  // Example: change tab bar background based on theme.
   const tabBarBackground = isDarkMode ? '#333' : '#fff';
 
   return (
@@ -90,9 +91,7 @@ function TabNavigator() {
               return <Entypo name={iconName} size={size} color={color} />;
             } else if (route.name === 'Account') {
               iconName = 'account-outline';
-              return (
-                <MaterialCommunityIcons name={iconName} size={size} color={color} />
-              );
+              return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
             }
           },
           tabBarActiveTintColor: '#ff4500',
@@ -127,11 +126,16 @@ function AppContent() {
     try {
       console.log("Logging out due to session expiration...");
       const fcm_token = await EncryptedStorage.getItem('fcm_token');
+      console.log("fcm token", fcm_token);
       if (fcm_token) {
-        await axios.post('http:192.168.243.71:5000/api/workerLogout', { fcm_token });
+        await axios.post('https://backend.clicksolver.com/api/workerLogout', { fcm_token });
       }
       await EncryptedStorage.removeItem("pcs_token");
       await EncryptedStorage.removeItem("fcm_token");
+      await EncryptedStorage.removeItem("unique");
+      await EncryptedStorage.removeItem("firebaseDocId");
+      await EncryptedStorage.removeItem("nullCoordinates");
+      await EncryptedStorage.removeItem("previousEnabled");
       await EncryptedStorage.removeItem("workerSessionToken");
 
       navigationRef.current?.dispatch(
@@ -156,7 +160,7 @@ function AppContent() {
           return;
         }
         const response = await axios.post(
-          "http:192.168.243.71:5000/api/worker/token/verification",
+          "https://backend.clicksolver.com/api/worker/token/verification",
           { pcsToken },
           { headers: { Authorization: `Bearer ${pcsToken}` } }
         );
@@ -173,22 +177,45 @@ function AppContent() {
     checkSessionOnAppStart();
   }, []);
 
-  // Set up notification handlers
+  // Set up permission and notification handlers
+  // Set up permission and notification handlers
   useEffect(() => {
     const requestPermissions = async () => {
       try {
-        const authStatus = await messaging().requestPermission();
-        const enabled =
-          authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-          authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+        // Request notifications permission using react-native-permissions
+        const { status: notifStatus } = await requestNotifications(['alert', 'sound', 'badge']);
+        console.log('Notifications permission status:', notifStatus);
 
-        if (enabled) {
-          console.log('Notification permissions enabled.');
+        let locationStatus;
+
+        if (Platform.OS === 'ios') {
+          // First request LOCATION_WHEN_IN_USE
+          const whenInUseStatus = await request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
+          console.log('Location When In Use permission status:', whenInUseStatus);
+          if (whenInUseStatus === 'granted') {
+            // Now request LOCATION_ALWAYS
+            locationStatus = await request(PERMISSIONS.IOS.LOCATION_ALWAYS);
+            console.log('Location Always permission status:', locationStatus);
+          } else {
+            console.warn('Location When In Use permission was not granted');
+          }
         } else {
-          console.log('Notification permissions denied.');
+          // For Android, first request ACCESS_FINE_LOCATION
+          const fineLocationStatus = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
+          console.log('Fine Location permission status:', fineLocationStatus);
+          if (fineLocationStatus === 'granted') {
+            // Then request ACCESS_BACKGROUND_LOCATION
+            locationStatus = await request(PERMISSIONS.ANDROID.ACCESS_BACKGROUND_LOCATION);
+            console.log('Background Location permission status:', locationStatus);
+          } else {
+            console.warn('Fine Location permission was not granted');
+          }
         }
+
+        // Request physical activity permission
+
       } catch (err) {
-        console.warn('Error requesting notification permissions:', err);
+        console.warn('Error requesting permissions:', err);
       }
     };
 
@@ -271,16 +298,17 @@ function AppContent() {
       }
     };
 
-    const setupNotificationHandlers = async () => {
+    const setupHandlers = async () => {
       await requestPermissions();
       handleForegroundNotification();
       handleBackgroundNotification();
       handleInitialNotification();
     };
 
-    setupNotificationHandlers();
+    setupHandlers();
     SplashScreen.hide();
   }, []);
+
 
   // Check partner steps status
   useEffect(() => {
@@ -326,7 +354,6 @@ function AppContent() {
     );
   }
 
-  // Use theme for container background
   const appBackground = isDarkMode ? '#000' : '#fff';
 
   return (
@@ -369,7 +396,6 @@ function AppContent() {
         <Stack.Screen name="ServiceInProgress" component={ServiceInProgress} options={{ title: 'ServiceInProgress', headerShown: false }} />
         <Stack.Screen name="ServiceBookingOngoingItem" component={ServiceBookingOngoingItem} options={{ title: 'ServiceBookingOngoingItem', headerShown: false }} />
         <Stack.Screen name="ChatScreen" component={ChatScreen} options={{ title: 'ServiceBookingOngoingItem', headerShown: false }} />
-        
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -377,7 +403,6 @@ function AppContent() {
 
 function App() {
   const { isDarkMode } = useTheme();
-  // Use theme colors globally. Here, we just change the background of the main container.
   const appBackground = isDarkMode ? '#000' : '#fff';
 
   return (

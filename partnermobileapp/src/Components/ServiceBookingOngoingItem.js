@@ -87,7 +87,7 @@ const ServiceBookingOngoingItem = () => {
         setLoading(true);
         console.log("track",tracking_id)
         const response = await axios.post(
-          `http:192.168.243.71:5000/api/service/ongoing/worker/booking/item/details`,
+          `https://backend.clicksolver.com/api/service/ongoing/worker/booking/item/details`,
           { tracking_id },
         );
         const { data } = response.data;

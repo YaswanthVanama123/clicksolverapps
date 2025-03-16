@@ -47,7 +47,7 @@ const ReferralScreen = () => {
           return;
         }
         const response = await axios.get(
-          'http://172.25.160.1:5000/api/user/referrals',
+          'http://192.168.55.106:5000/api/user/referrals',
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -61,7 +61,7 @@ const ReferralScreen = () => {
           setReferralCode(code);
           // Construct a sample link with query param
           setReferralLink(
-            `https://play.google.com/apps/internaltest/4701348414051959035?referralCode=${code}`
+            `https://play.google.com/store/apps/details?id=com.userapp1`
           );
           // Transform referral data
           const transformedData = response.data

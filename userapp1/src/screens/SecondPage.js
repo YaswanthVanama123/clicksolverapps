@@ -115,12 +115,13 @@ function ServiceApp({ navigation, route }) {
   const fetchTrackDetails = async () => {
     try {
       const cs_token = await EncryptedStorage.getItem('cs_token'); 
+      console.log(cs_token)
       if (cs_token) {
         const response = await axios.get(
-          'http:192.168.243.71:5000/api/user/track/details',
+          'http://192.168.55.106:5000/api/user/track/details',
           {
             headers: { Authorization: `Bearer ${cs_token}` },
-          },
+          }, 
         );
         const track = response?.data?.track || [];
         const { user } = response.data;
@@ -138,7 +139,7 @@ function ServiceApp({ navigation, route }) {
       setLoading(true);
       crashlytics().log('Attempting to fetch services from API');
       const response = await axios.get(
-        'http:192.168.243.71:5000/api/servicecategories'
+        'https://backend.clicksolver.com/api/servicecategories'
       );
       crashlytics().log('Services fetched successfully');
       const servicesWithIds = response.data.map(service => ({
@@ -242,7 +243,7 @@ function ServiceApp({ navigation, route }) {
   const submitFeedback = async () => {
     try {
       const response = await axios.post(
-        'http:192.168.243.71:5000/api/user/feedback',
+        'https://backend.clicksolver.com/api/user/feedback',
         {
           rating,
           comment,
@@ -339,6 +340,7 @@ function ServiceApp({ navigation, route }) {
                 style={[
                   styles.messageBoxContainer,
                   {
+                    // Ensure the container doesn't grow too large
                     width: trackScreen.length > 1 ? width * 0.8 : width * 0.88,
                     marginRight: trackScreen.length > 1 ? 10 : 0,
                   },
@@ -353,35 +355,40 @@ function ServiceApp({ navigation, route }) {
                     alternatePhoneNumber: item.alternatePhoneNumber,
                     serviceBooked: item.serviceBooked,
                     location: item.location,
-                  })
+                  }) 
                 }>
                 <View style={styles.messageBox1}>
                   <View style={styles.startingContainer}>
-                    <View style={styles.timeContainer}>
-                      {item.screen === 'Paymentscreen' ? (
-                        <Foundation name="paypal" size={24} color="#ffffff" />
-                      ) : item.screen === 'UserNavigation' ? (
-                        <MaterialCommunityIcons
-                          name="truck"
-                          size={24}
-                          color="#ffffff"
-                        />
-                      ) : item.screen === 'userwaiting' ? (
-                        <Feather name="search" size={24} color="#ffffff" />
-                      ) : item.screen === 'OtpVerification' ? (
-                        <Feather name="shield" size={24} color="#ffffff" />
-                      ) : item.screen === 'worktimescreen' ? (
-                        <MaterialCommunityIcons
-                          name="hammer"
-                          size={24}
-                          color="#ffffff"
-                        />
-                      ) : (
-                        <Feather name="alert-circle" size={24} color={isDarkMode ? "#fff" : "#000"} />
-                      )}
-                    </View>
-                    <View>
-                      <Text style={styles.textContainerText} numberOfLines={1}>
+                  <View style={styles.timeContainer}>
+                                  {item.screen === 'Paymentscreen' ? (
+                                    <Foundation name="paypal" size={24} color="#ffffff" />
+                                  ) : item.screen === 'UserNavigation' ? (
+                                    <MaterialCommunityIcons
+                                      name="truck"
+                                      size={24}
+                                      color="#ffffff"
+                                    />
+                                  ) : item.screen === 'userwaiting' ? (
+                                    <Feather name="search" size={24} color="#ffffff" />
+                                  ) : item.screen === 'OtpVerification' ? (
+                                    <Feather name="shield" size={24} color="#ffffff" />
+                                  ) : item.screen === 'worktimescreen' ? (
+                                    <MaterialCommunityIcons
+                                      name="hammer"
+                                      size={24}
+                                      color="#ffffff"
+                                    /> 
+                                  ) : (
+                                    <Feather name="alert-circle" size={24} color={isDarkMode ? "#fff" : "#000"} />
+                                  )}
+                                </View>
+
+                    <View style={{ marginLeft: 10 }}>
+                      <Text
+                        style={styles.serviceBookedText} // <-- Our new style
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
                         {item.serviceBooked && item.serviceBooked.length > 0
                           ? item.serviceBooked
                               .slice(0, 2)
@@ -390,6 +397,7 @@ function ServiceApp({ navigation, route }) {
                             (item.serviceBooked.length > 2 ? '...' : '')
                           : 'Service Booked'}
                       </Text>
+
                       <Text style={styles.textContainerTextCommander}>
                         {item.screen === 'Paymentscreen'
                           ? 'Payment in progress'
@@ -403,6 +411,7 @@ function ServiceApp({ navigation, route }) {
                       </Text>
                     </View>
                   </View>
+
                   <View style={styles.rightIcon}>
                     <Feather name="chevrons-right" size={18} color="#9e9e9e" />
                   </View>
@@ -411,7 +420,6 @@ function ServiceApp({ navigation, route }) {
             ))}
           </ScrollView>
         )}
-
         {/* Rating Modal */}
         <Modal visible={isModalVisible} transparent animationType="slide">
           <View style={styles.modalOverlay}>

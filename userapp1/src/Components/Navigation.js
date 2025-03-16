@@ -36,8 +36,7 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
 import Entypo from 'react-native-vector-icons/Entypo';
 import polyline from '@mapbox/polyline';
 import {SafeAreaView} from 'react-native-safe-area-context';
-// Import your theme hook
-import {useTheme} from '../context/ThemeContext';
+import {useTheme} from '../context/ThemeContext'; // Your theme hook
 
 // Local images
 const startMarker = require('../assets/start-marker.png');
@@ -50,7 +49,6 @@ Mapbox.setAccessToken(
 
 const Navigation = () => {
   const {width, height} = useWindowDimensions();
-  // Get dark mode flag from theme context and pass it to dynamic styles
   const {isDarkMode} = useTheme();
   const styles = dynamicStyles(width, height, isDarkMode);
 
@@ -70,8 +68,7 @@ const Navigation = () => {
   const [cameraBounds, setCameraBounds] = useState(null);
   const [showUpArrowService, setShowUpArrowService] = useState(false);
   const [showDownArrowService, setShowDownArrowService] = useState(false);
-  // Loading indicator
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Loading indicator
 
   // Camera ref for calling fitBounds
   const cameraRef = useRef(null);
@@ -93,10 +90,8 @@ const Navigation = () => {
         }),
       );
       animation.start();
-    } else {
-      if (animation) {
-        animation.stop();
-      }
+    } else if (animation) {
+      animation.stop();
     }
     return () => {
       if (animation) {
@@ -226,7 +221,7 @@ const Navigation = () => {
       setIsLoading(true);
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       const response = await axios.post(
-        'http:192.168.243.71:5000/api/worker/navigation/details',
+        'http://192.168.55.106:5000/api/worker/navigation/details',
         {notificationId: decodedId},
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
@@ -280,14 +275,14 @@ const Navigation = () => {
     const checkVerificationStatus = async () => {
       try {
         const response = await axios.get(
-          'http:192.168.243.71:5000/api/worker/verification/status',
+          'https://backend.clicksolver.com/api/worker/verification/status',
           {params: {notification_id: decodedId}},
         );
 
         if (response.data === 'true') {
           const cs_token = await EncryptedStorage.getItem('cs_token');
           await axios.post(
-            'http:192.168.243.71:5000/api/user/action',
+            'https://backend.clicksolver.com/api/user/action',
             {
               encodedId: encodedData,
               screen: 'worktimescreen',
@@ -340,8 +335,6 @@ const Navigation = () => {
         },
       );
 
-      console.log('Ola route raw response:', response.data);
-
       if (!response.data.routes || response.data.routes.length === 0) {
         console.log('No routes returned by Ola Maps');
         return null;
@@ -356,8 +349,6 @@ const Navigation = () => {
       const decodedCoordinates = polyline
         .decode(routeEncoded)
         .map((coord) => [coord[1], coord[0]]); // [lng, lat]
-
-      console.log('Decoded polyline coordinates:', decodedCoordinates);
 
       return {
         type: 'Feature',
@@ -378,9 +369,6 @@ const Navigation = () => {
   const fetchRoute = useCallback(
     async (startPoint, endPoint) => {
       try {
-        // Log your final points
-        console.log('Fetch route with start:', startPoint, 'end:', endPoint);
-
         const olaRouteData = await fetchOlaRoute(startPoint, endPoint);
         if (
           olaRouteData &&
@@ -405,21 +393,14 @@ const Navigation = () => {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        'http:192.168.243.71:5000/api/user/location/navigation',
+        'https://backend.clicksolver.com/api/user/location/navigation',
         {params: {notification_id: decodedId}},
       );
 
-      console.log('Location details from backend:', response.data);
-
       const {startPoint, endPoint} = response.data;
-      // Check what the server is returning
-      console.log('Raw start/end from server =>', startPoint, endPoint);
-
-      // Reverse from [lat, lng] to [lng, lat] if necessary
+      // Reverse from [lat, lng] to [lng, lat]
       const reversedStart = startPoint.map(parseFloat).reverse();
       const reversedEnd = endPoint.map(parseFloat).reverse();
-
-      console.log('Reversed start =>', reversedStart, 'Reversed end =>', reversedEnd);
 
       setLocationDetails({startPoint: reversedStart, endPoint: reversedEnd});
       await fetchRoute(reversedStart, reversedEnd);
@@ -486,7 +467,6 @@ const Navigation = () => {
   // Fit the camera bounds when they change
   useEffect(() => {
     if (cameraBounds && cameraRef.current) {
-      console.log('Fitting bounds =>', cameraBounds);
       cameraRef.current.fitBounds(
         [cameraBounds.sw[0], cameraBounds.sw[1]],
         [cameraBounds.ne[0], cameraBounds.ne[1]],
@@ -526,13 +506,13 @@ const Navigation = () => {
     try {
       setIsLoading(true);
       const response = await axios.post(
-        'http:192.168.243.71:5000/api/user/work/cancel',
+        'http://192.168.55.106:5000/api/user/work/cancel',
         {notification_id: decodedId},
       );
       if (response.status === 200) {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
-          'http:192.168.243.71:5000/api/user/action',
+          'https://backend.clicksolver.com/api/user/action',
           {
             encodedId: encodedData,
             screen: '',
@@ -570,7 +550,7 @@ const Navigation = () => {
   const phoneCall = async () => {
     try {
       const response = await axios.post(
-        'http:192.168.243.71:5000/api/worker/call',
+        'https://backend.clicksolver.com/api/worker/call',
         {decodedId},
       );
       if (response.status === 200 && response.data.mobile) {
@@ -597,8 +577,7 @@ const Navigation = () => {
       profileImage: addressDetails.profile,
       profileName: addressDetails.name,
     });
-    
-  }
+  };
 
   const closeModal = () => {
     setModalVisible(false);
@@ -661,14 +640,13 @@ const Navigation = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Main Container */}
       <View style={styles.container}>
+        {/* Map Container */}
         <View style={styles.mapContainer}>
-          {/* Mapbox Map */}
           {locationDetails ? (
             <Mapbox.MapView
               style={styles.map}
-              styleURL={Mapbox.StyleURL.Street} // Optionally ensure a known style
+              styleURL={Mapbox.StyleURL.Street}
               onDidFinishRenderingMapFully={() => {
                 if (cameraRef.current && cameraBounds) {
                   cameraRef.current.fitBounds(
@@ -679,21 +657,13 @@ const Navigation = () => {
                 }
               }}
             >
-              {/* If you want to test ignoring the bounding box, set a fixed camera
-                <Mapbox.Camera
-                  zoomLevel={14}
-                  centerCoordinate={[80.6, 16.8]}
-                />
-              */}
               <Mapbox.Camera ref={cameraRef} />
-
               <Mapbox.Images
                 images={{
                   'start-point-icon': startMarker,
                   'end-point-icon': endMarker,
                 }}
               />
-
               {markers && (
                 <Mapbox.ShapeSource id="markerSource" shape={markers}>
                   <Mapbox.SymbolLayer
@@ -713,7 +683,6 @@ const Navigation = () => {
                   <Mapbox.LineLayer
                     id="routeLine"
                     style={{
-                      // For debugging, make it bright red and thick
                       lineColor: 'red',
                       lineWidth: 6,
                       lineCap: 'round',
@@ -770,10 +739,14 @@ const Navigation = () => {
             </View>
           </View>
 
+          {/* Service & Profile Row */}
           <View style={styles.serviceDetails}>
-            <View>
+            {/* LEFT SECTION: Service list, PIN, Cancel */}
+            <View style={styles.leftSection}>
               <Text style={styles.serviceType}>Service</Text>
-              <View style={{position: 'relative'}}>
+
+              {/* Scrollable Services List */}
+              <View style={styles.servicesListContainer}>
                 {showUpArrowService && (
                   <View style={styles.arrowUpContainer}>
                     <Entypo
@@ -783,7 +756,6 @@ const Navigation = () => {
                     />
                   </View>
                 )}
-
                 <ScrollView
                   style={styles.servicesNamesContainer}
                   contentContainerStyle={styles.servicesNamesContent}
@@ -798,7 +770,6 @@ const Navigation = () => {
                     </View>
                   ))}
                 </ScrollView>
-
                 {showDownArrowService && (
                   <View style={styles.arrowDownContainer}>
                     <Entypo
@@ -810,6 +781,7 @@ const Navigation = () => {
                 )}
               </View>
 
+              {/* PIN Section */}
               <View style={styles.pinContainer}>
                 <Text style={styles.pinText}>PIN</Text>
                 <View style={styles.pinBoxesContainer}>
@@ -821,6 +793,7 @@ const Navigation = () => {
                 </View>
               </View>
 
+              {/* Cancel Button */}
               <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={handleCancelModal}
@@ -829,7 +802,9 @@ const Navigation = () => {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.workerDetailsContainer}>
+            {/* RIGHT SECTION: Worker Profile & Info */}
+            <View style={styles.rightSection}>
+              {/* Profile Image */}
               <View style={styles.profileImage}>
                 {addressDetails.profile && (
                   <Image
@@ -838,8 +813,11 @@ const Navigation = () => {
                   />
                 )}
               </View>
+
+              {/* Worker Name */}
               <Text style={styles.workerName}>{addressDetails.name}</Text>
 
+              {/* Rating */}
               {addressDetails.rating !== undefined && (
                 <View style={styles.ratingContainer}>
                   <Text style={styles.ratingNumber}>
@@ -849,6 +827,7 @@ const Navigation = () => {
                 </View>
               )}
 
+              {/* Service Count */}
               {addressDetails.serviceCounts !== undefined &&
                 addressDetails.serviceCounts > 0 && (
                   <View style={styles.ServiceContainer}>
@@ -861,11 +840,11 @@ const Navigation = () => {
                   </View>
                 )}
 
+              {/* Icons (Call / Message) */}
               <View style={styles.iconsContainer}>
                 <TouchableOpacity style={styles.actionButton} onPress={phoneCall}>
                   <MaterialIcons name="call" size={18} color="#FF5722" />
                 </TouchableOpacity>
-
                 <TouchableOpacity style={styles.actionButton} onPress={messageChatting}>
                   <AntDesign name="message1" size={18} color="#FF5722" />
                 </TouchableOpacity>
@@ -1024,13 +1003,6 @@ const dynamicStyles = (width, height, isDarkMode) => {
     map: {
       flex: 1,
     },
-    // For debugging, let's make lineColor red, lineWidth 6
-    routeLine: {
-      lineColor: 'red',
-      lineWidth: isTablet ? 6 : 6,
-      lineCap: 'round',
-      lineJoin: 'round',
-    },
     loadingContainer: {
       flex: 1,
       justifyContent: 'center',
@@ -1102,9 +1074,14 @@ const dynamicStyles = (width, height, isDarkMode) => {
     },
     serviceDetails: {
       flexDirection: 'row',
+      alignItems: 'flex-start',
       justifyContent: 'space-between',
-      width: '95%',
-      alignItems: 'center',
+      width: '100%',
+      marginTop: 10,
+    },
+    leftSection: {
+      flex: 1, // Occupies leftover horizontal space
+      marginRight: 10,
     },
     serviceType: {
       fontSize: isTablet ? 18 : 16,
@@ -1112,9 +1089,12 @@ const dynamicStyles = (width, height, isDarkMode) => {
       marginTop: 10,
       color: isDarkMode ? '#aaa' : '#9e9e9e',
     },
+    servicesListContainer: {
+      position: 'relative',
+      marginTop: 5,
+    },
     servicesNamesContainer: {
-      width: '90%',
-      maxHeight: isTablet ? 80 : 60,
+      maxHeight: isTablet ? 80 : 60, // Restrict the height so it doesn't overflow
     },
     servicesNamesContent: {
       flexDirection: 'column',
@@ -1191,9 +1171,8 @@ const dynamicStyles = (width, height, isDarkMode) => {
       color: isDarkMode ? '#ccc' : '#4a4a4a',
       fontFamily: 'RobotoSlab-Regular',
     },
-    workerDetailsContainer: {
-      flexDirection: 'column',
-      gap: 5,
+    rightSection: {
+      width: isTablet ? 130 : 110, // Adjust as needed
       alignItems: 'center',
     },
     profileImage: {

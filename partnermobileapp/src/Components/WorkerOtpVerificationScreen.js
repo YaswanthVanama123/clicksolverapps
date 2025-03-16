@@ -85,7 +85,7 @@ const WorkerOtpVerificationScreen = () => {
     try {
       // Validate OTP
       const validateResponse = await axios.get(
-        'http:192.168.243.71:5000/api/worker/validateOtp',
+        'https://backend.clicksolver.com/api/worker/validateOtp',
         {
           params: {
             mobileNumber: phoneNumber,
@@ -97,7 +97,7 @@ const WorkerOtpVerificationScreen = () => {
       if (validateResponse.data.message === 'OTP Verified') {
         // If valid, attempt Worker login
         const loginResponse = await axios.post(
-          'http:192.168.243.71:5000/api/worker/login',
+          'https://backend.clicksolver.com/api/worker/login',
           { phone_number: phoneNumber }
         );
         const { status, data } = loginResponse;
@@ -223,7 +223,7 @@ const WorkerOtpVerificationScreen = () => {
               <Entypo name="facebook" size={15} color="#9e9e9e" />
               <Entypo name="instagram" size={15} color="#9e9e9e" />
             </View>
-            <Text style={styles.email}>Clicksolver@yahoo.com</Text>
+            <Text style={styles.email}>customer.support@clicksolver.com</Text>
           </View>
         </View>
       </View>

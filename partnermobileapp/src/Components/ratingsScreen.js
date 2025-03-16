@@ -77,13 +77,18 @@ const ReviewItem = memo(({ item, styles }) => {
   return (
     <View style={styles.reviewContainer}>
       <View style={styles.userContainer}>
-        <Image
-          source={{
-            // uri: 'https://i.postimg.cc/mZnDzdqJ/IMG-20240929-WA0024.jpg',
-            uri: item.userImage
-          }}
-          style={styles.userImage} 
-        />
+        {item.userImage ? (
+          <Image
+            source={{ uri: item.userImage }}
+            style={styles.userImage}
+          />
+        ) : (
+          <View style={[styles.userImage, styles.userPlaceholder]}>
+            <Text style={styles.userInitial}>
+              {item.username ? item.username.charAt(0).toUpperCase() : ''}
+            </Text>
+          </View>
+        )}
         <View>
           <Text style={styles.userName}>{item.username}</Text>
           <Text style={styles.reviewTime}>{formatDate(item.created_at)}</Text>
@@ -131,14 +136,15 @@ const RatingsScreen = () => {
       if (!token) throw new Error('Token not found');
 
       const response = await axios.get(
-        'http:192.168.243.71:5000/api/worker/ratings',
+        'https://backend.clicksolver.com/api/worker/ratings',
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
+      console.log("data",response.data)
       if (response.data.length === 0) {
         setReviews([]);
         setWorkerReview({});
       } else {
+        
         setReviews(response.data);
         setWorkerReview(response.data[0]);
         calculateRatingDistribution(response.data);
@@ -366,6 +372,17 @@ function dynamicStyles(width, isDarkMode) {
       height: isTablet ? 50 : 40,
       borderRadius: isTablet ? 25 : 20,
       marginRight: isTablet ? 16 : 12,
+    },
+    // New styles for the placeholder when there is no image
+    userPlaceholder: {
+      backgroundColor: '#ccc', // adjust color as needed
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    userInitial: {
+      fontSize: isTablet ? 24 : 18,
+      color: '#fff',
+      fontWeight: 'bold',
     },
     userName: {
       fontSize: isTablet ? 18 : 16,

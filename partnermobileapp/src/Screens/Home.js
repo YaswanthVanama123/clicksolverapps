@@ -51,6 +51,7 @@ const HomeScreen = () => {
 
   const [center, setCenter] = useState([0, 0]);
   const [workerLocation, setWorkerLocation] = useState([]);
+  const [activeModalVisible, setActiveModalVisible] = useState(false);
   const navigation = useNavigation();
   const [notificationsArray, setNotificationsArray] = useState([]);
   const [screenName, setScreenName] = useState(null);
@@ -108,6 +109,26 @@ const HomeScreen = () => {
     }, [fetchNotifications]),
   );
 
+  // Helper function to check if a worker is already on another service
+const checkWorkerStatus = async () => {
+  try {
+    const pcs_token = await EncryptedStorage.getItem('pcs_token');
+    const response = await axios.get(
+      `https://backend.clicksolver.com/api/worker/track/details`,
+      {
+        headers: { Authorization: `Bearer ${pcs_token}` },
+      }
+    );
+    // Extract the route; if it's not null then the worker is already active on a service.
+    const { route } = response.data;
+    return route || null;
+  } catch (error) {
+    console.error('Error checking worker status:', error);
+    // In case of error, assume no active service to avoid blocking the worker unnecessarily.
+    return null;
+  }
+};
+
   const handleScroll = (event) => {
     const offsetY = event.nativeEvent.contentOffset.y;
     const containerHeight = event.nativeEvent.layoutMeasurement.height;
@@ -125,7 +146,7 @@ const HomeScreen = () => {
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       if (pcs_token) {
         const response = await axios.get(
-          `http:192.168.243.71:5000/api/worker/track/details`,
+          `https://backend.clicksolver.com/api/worker/track/details`,
           {
             headers: { Authorization: `Bearer ${pcs_token}` },
           }
@@ -186,18 +207,22 @@ const HomeScreen = () => {
     navigation.push('Earnings');
   };
 
-  /**
-   * STEP 1 of 2:
-   * acceptRequest checks if the services include "inspection" (case-insensitive).
-   */
   const acceptRequest = async (userNotificationId) => {
+    // Check if the worker is already engaged in another service.
+    const activeScreen = await checkWorkerStatus();
+    if (activeScreen !== null) {
+      // Instead of using alert, open our custom modal
+      setActiveModalVisible(true);
+      return;
+    }
+  
     const decodedId = Buffer.from(userNotificationId, 'base64').toString('ascii');
     const notif = notificationsArray.find(
       (n) => n.data.user_notification_id === userNotificationId
     );
-
+  
     let requiresInspectionConfirmation = false;
-
+  
     if (notif && notif.data.service) {
       try {
         const serviceData = JSON.parse(notif.data.service);
@@ -208,70 +233,61 @@ const HomeScreen = () => {
         console.error('Error parsing service data:', error);
       }
     }
-
+  
     if (requiresInspectionConfirmation) {
       setPendingNotificationId(userNotificationId);
       setInspectionModalVisible(true);
       return;
     }
-
-    // Otherwise finalize acceptance
+  
+    // Otherwise, finalize acceptance
     await finalizeAcceptRequest(userNotificationId);
   };
 
-  /**
-   * STEP 2 of 2:
-   * finalizeAcceptRequest => original acceptance logic
-   */
   const finalizeAcceptRequest = async (userNotificationId) => {
     const decodedId = Buffer.from(userNotificationId, 'base64').toString('ascii');
     try {
       const jwtToken = await EncryptedStorage.getItem('pcs_token');
       const response = await axios.post(
-        `http:192.168.243.71:5000/api/accept/request`,
+        `https://backend.clicksolver.com/api/accept/request`,
         { user_notification_id: decodedId },
-        { headers: { Authorization: `Bearer ${jwtToken}` } },
+        { headers: { Authorization: `Bearer ${jwtToken}` } }
       );
-
+  
       if (response.status === 200) {
         // Remove the accepted notification
         setNotificationsArray((prev) => {
           const updated = prev.filter(
             (n) => n.data.user_notification_id !== userNotificationId
           );
-          EncryptedStorage.setItem(
-            'Requestnotifications',
-            JSON.stringify(updated),
-          );
+          EncryptedStorage.setItem('Requestnotifications', JSON.stringify(updated));
           return updated;
         });
-
+  
         const { notificationId } = response.data;
         const encodedNotificationId = Buffer.from(notificationId.toString()).toString('base64');
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
-
+  
         await axios.post(
-          `http:192.168.243.71:5000/api/worker/action`,
+          `https://backend.clicksolver.com/api/worker/action`,
           { encodedId: encodedNotificationId, screen: 'UserNavigation' },
-          { headers: { Authorization: `Bearer ${pcs_token}` } },
+          { headers: { Authorization: `Bearer ${pcs_token}` } }
         );
-
+  
         await EncryptedStorage.setItem('workerInAction', 'true');
-
+  
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [
-              { name: 'UserNavigation', params: { encodedId: encodedNotificationId } },
-            ],
+            routes: [{ name: 'UserNavigation', params: { encodedId: encodedNotificationId } }],
           })
         );
       } else {
         const pcs_token = await EncryptedStorage.getItem('pcs_token');
         await axios.post(
-          `http:192.168.243.71:5000/api/worker/action`,
+          `https://backend.clicksolver.com/api/worker/action`,
           { encodedId: '', screen: '' },
-          { headers: { Authorization: `Bearer ${pcs_token}` } },
+          { headers: { Authorization: `Bearer ${pcs_token}` } }
         );
         navigation.dispatch(
           CommonActions.reset({
@@ -356,7 +372,7 @@ const HomeScreen = () => {
         console.error('Failed to retrieve FCM token.');
         return;
       }
-      await EncryptedStorage.setItem('fcm_token', newToken);
+      
 
       const pcs_token = await EncryptedStorage.getItem('pcs_token');
       if (!pcs_token) {
@@ -364,11 +380,15 @@ const HomeScreen = () => {
         return;
       }
 
-      await axios.post(
-        `http:192.168.243.71:5000/api/worker/store-fcm-token`,
+      const response = await axios.post(
+        `https://backend.clicksolver.com/api/worker/store-fcm-token`,
         { fcmToken: newToken },
         { headers: { Authorization: `Bearer ${pcs_token}` } },
       );
+      if (response.status === 200){
+        await EncryptedStorage.setItem('fcm_token', newToken);
+      }
+      
       console.log('New FCM token stored and sent to backend.');
     } catch (error) {
       console.error('Error handling FCM token:', error);
@@ -928,6 +948,29 @@ const HomeScreen = () => {
         </TouchableOpacity>
       )}
 
+       {/* Custom Modal for active service */}
+       <Modal
+        visible={activeModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setActiveModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Active Service</Text>
+            <Text style={styles.modalMessage}>
+              You are already engaged with another service.
+            </Text>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setActiveModalVisible(false)}
+            >
+              <Text style={styles.modalButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/** INSPECTION CONFIRMATION MODAL */}
       <Modal
         animationType="slide"
@@ -1287,6 +1330,41 @@ function dynamicStyles(width, height, isDarkMode) {
       color: '#fff',
       fontSize: isTablet ? 16 : 14,
       fontWeight: '600',
+    },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)', // semi-transparent background
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalContainer: {
+      width: '80%',
+      backgroundColor: isDarkMode ? '#000000' : '#000000',
+      borderRadius: 10,
+      paddingVertical: 20,
+      paddingHorizontal: 25,
+      alignItems: 'center',
+      elevation: 5,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: '600',
+      marginBottom: 10,
+    },
+    modalMessage: {
+      fontSize: 16,
+      textAlign: 'center',
+      marginBottom: 20,
+    },
+    modalButton: {
+      backgroundColor: '#ff5722',
+      borderRadius: 5,
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+    },
+    modalButtonText: {
+      color: '#fff',
+      fontSize: 16,
     },
   });
 }

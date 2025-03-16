@@ -48,11 +48,11 @@ const ApprovalStatusScreen = () => {
         }
 
         const response = await axios.post(
-          'http:192.168.243.71:5000/api/check/approval/verification/status',
+          'http://192.168.55.101/api/check/approval/verification/status',
           {},
           {
             headers: {
-              Authorization: `Bearer ${pcs_token}`,
+              Authorization: `Bearer ${pcs_token}`, 
             },
           },
         );
@@ -67,10 +67,11 @@ const ApprovalStatusScreen = () => {
           );
         } else if (response.status === 200) {
           const { data } = response;
+          console.log(data)
           setUserName(data.name || '');
           setUserService(data.service || '');
           setVerificationStatus(data.verification_status || '');
-          setIssues(Array.isArray(data.issues) ? data.issues : []);
+          setIssues(Array.isArray(data.issues) ? data.issues : []); 
         }
       } catch (error) {
         console.error('Error fetching approval status data:', error);

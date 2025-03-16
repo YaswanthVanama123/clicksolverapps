@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,22 +9,22 @@ import {
   ScrollView,
   Modal,
 } from 'react-native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import axios from 'axios';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import LottieView from 'lottie-react-native';
+import { launchImageLibrary } from 'react-native-image-picker';
+import EncryptedStorage from 'react-native-encrypted-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import EvilIcons from 'react-native-vector-icons/EvilIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-import EncryptedStorage from 'react-native-encrypted-storage';
-import { useNavigation } from '@react-navigation/native';
-import axios from 'axios';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import LottieView from 'lottie-react-native';
-import { launchImageLibrary } from 'react-native-image-picker';
 // Import global theme hook
 import { useTheme } from '../context/ThemeContext';
 
 const uploadImage = async (uri) => {
-  const apiKey = '287b4ba48139a6a59e75b5a8266bbea2'; // Replace with your ImgBB API key
+  const apiKey = '287b4ba48139a6a59e75b5a8266bbea2';
   const apiUrl = 'https://api.imgbb.com/1/upload';
 
   const formData = new FormData();
@@ -72,6 +72,7 @@ const ProfileScreen = () => {
     try {
       setLoading(true);
       setError(false);
+
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       if (!jwtToken) {
         setIsLoggedIn(false);
@@ -81,10 +82,11 @@ const ProfileScreen = () => {
       setIsLoggedIn(true);
 
       const response = await axios.post(
-        'http:192.168.243.71:5000/api/user/profile',
+        'https://backend.clicksolver.com/api/user/profile',
         {},
         { headers: { Authorization: `Bearer ${jwtToken}` } },
       );
+
       const { name, email, phone_number, profile } = response.data;
       setImage(profile);
       setAccount({
@@ -95,15 +97,24 @@ const ProfileScreen = () => {
       });
     } catch (err) {
       console.error('Error fetching profile details:', err);
-      setError(true);
+      // If unauthorized, clear token and redirect or update state
+      if (err.response && err.response.status === 401) {
+        await EncryptedStorage.removeItem('cs_token');
+        setIsLoggedIn(false);
+      } else {
+        setError(true);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchProfileDetails();
-  }, []);
+  // Re-fetch profile details when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfileDetails();
+    }, [])
+  );
 
   // Edit / Upload profile image
   const handleEditImage = async () => {
@@ -121,7 +132,7 @@ const ProfileScreen = () => {
           const jwtToken = await EncryptedStorage.getItem('cs_token');
           if (jwtToken) {
             await axios.post(
-              'http:192.168.243.71:5000/api/user/updateProfileImage',
+              'https://backend.clicksolver.com/api/user/updateProfileImage',
               { profileImage: uploadedUrl },
               { headers: { Authorization: `Bearer ${jwtToken}` } }
             );
@@ -134,13 +145,13 @@ const ProfileScreen = () => {
     });
   };
 
-  // Actual logout function
   const handleLogout = async () => {
     try {
       const fcm_token = await EncryptedStorage.getItem('fcm_token');
       if (fcm_token) {
-        await axios.post('http:192.168.243.71:5000/api/userLogout', { fcm_token });
+        await axios.post('http://192.168.55.106:5000/api/userLogout', { fcm_token });
       }
+      // Replace multiRemove with individual removeItem calls
       await EncryptedStorage.removeItem('cs_token');
       await EncryptedStorage.removeItem('fcm_token');
       await EncryptedStorage.removeItem('notifications');
@@ -152,15 +163,8 @@ const ProfileScreen = () => {
     }
   };
 
-  // Show the bottom-sheet logout modal
-  const confirmLogout = () => {
-    setLogoutModalVisible(true);
-  };
-
-  // Hide the bottom-sheet logout modal
-  const closeModal = () => {
-    setLogoutModalVisible(false);
-  };
+  const confirmLogout = () => setLogoutModalVisible(true);
+  const closeModal = () => setLogoutModalVisible(false);
 
   if (!isLoggedIn) {
     return (
@@ -170,14 +174,40 @@ const ProfileScreen = () => {
           <Text style={styles.loginButtonText}>Login or Sign up</Text>
         </TouchableOpacity>
         <View style={styles.optionsContainer}>
+        <View style={styles.menuItem}>
+            <Ionicons
+              name={isDarkMode ? 'moon-outline' : 'sunny-outline'}
+              size={22}
+              color={styles.toggleIconColor}
+            />
+            <Text style={[styles.menuText, { marginLeft: 12 }]}>
+              {isDarkMode ? 'Dark Theme' : 'Light Theme'}
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.toggleTrack,
+                isDarkMode ? styles.toggleTrackEnabled : styles.toggleTrackDisabled,
+              ]}
+              onPress={toggleTheme}
+            >
+              <View
+                style={[
+                  styles.toggleThumb,
+                  isDarkMode ? styles.toggleThumbEnabled : styles.toggleThumbDisabled,
+                ]}
+              />
+            </TouchableOpacity>
+          </View>
           <HelpMenuItem styles={styles} text="Help & Support" onPress={() => navigation.push('Help')} />
           <AboutCSMenuItem styles={styles} text="About CS" onPress={() => console.log('Navigate to About CS')} />
+
+            
         </View>
       </View>
     );
   }
 
-  if (isLoggedIn && loading) {
+  if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
@@ -192,7 +222,7 @@ const ProfileScreen = () => {
     );
   }
 
-  if (isLoggedIn && error) {
+  if (error) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.errorContainer}>
@@ -245,12 +275,12 @@ const ProfileScreen = () => {
         <View style={styles.divider} />
 
         <View style={styles.optionsContainer}>
-          {/* Dark/Light Theme Toggle with custom toggle */}
+          {/* Dark/Light Theme Toggle */}
           <View style={styles.menuItem}>
             <Ionicons
               name={isDarkMode ? 'moon-outline' : 'sunny-outline'}
               size={22}
-              color={styles.iconColor}
+              color={styles.toggleIconColor}
             />
             <Text style={[styles.menuText, { marginLeft: 12 }]}>
               {isDarkMode ? 'Dark Theme' : 'Light Theme'}
@@ -280,7 +310,7 @@ const ProfileScreen = () => {
           <HelpMenuItem
             styles={styles}
             text="Help & Support"
-            onPress={() => navigation.push('ChatScreen')}
+            onPress={() => navigation.push('Help')}
           />
           <DeleteAccountMenuItem
             styles={styles}
@@ -306,34 +336,24 @@ const ProfileScreen = () => {
         </View>
       </ScrollView>
 
-      {/* BOTTOM-SHEET LOGOUT CONFIRMATION MODAL */}
+      {/* Logout Confirmation Modal */}
       <Modal
         visible={logoutModalVisible}
         animationType="slide"
         transparent
         onRequestClose={closeModal}
       >
-        <TouchableOpacity
-          style={styles.bottomSheetOverlay}
-          activeOpacity={1}
-          onPress={closeModal}
-        >
+        <TouchableOpacity style={styles.bottomSheetOverlay} activeOpacity={1} onPress={closeModal}>
           <View style={styles.bottomSheetContainer}>
             <View style={styles.bottomSheetCard}>
               <Text style={styles.bottomSheetTitle}>Logout</Text>
               <Text style={styles.bottomSheetMessage}>
                 Are you sure you want to log out?
               </Text>
-              <TouchableOpacity
-                style={styles.logoutConfirmButton}
-                onPress={handleLogout}
-              >
+              <TouchableOpacity style={styles.logoutConfirmButton} onPress={handleLogout}>
                 <Text style={styles.logoutConfirmButtonText}>Yes, Logout</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.logoutCancelButton}
-                onPress={closeModal}
-              >
+              <TouchableOpacity style={styles.logoutCancelButton} onPress={closeModal}>
                 <Text style={styles.logoutCancelButtonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -401,7 +421,7 @@ const dynamicStyles = (isDarkMode) => {
   const borderColor = isDarkMode ? '#444' : '#E0E0E0';
   const iconColor = isDarkMode ? '#fff' : '#4a4a4a';
 
-  const styles = StyleSheet.create({
+  return StyleSheet.create({
     safeArea: {
       flex: 1,
       backgroundColor,
@@ -413,6 +433,7 @@ const dynamicStyles = (isDarkMode) => {
     profileTitle: {
       fontSize: 20,
       textAlign: 'center',
+      fontFamily: 'RobotoSlab-Medium',
       marginVertical: 20,
       color: textColor,
     },
@@ -587,7 +608,6 @@ const dynamicStyles = (isDarkMode) => {
       fontSize: 14,
       fontFamily: 'RobotoSlab-Medium',
     },
-    /* --- Custom Toggle Styles --- */
     toggleTrack: {
       width: 50,
       height: 30,
@@ -630,7 +650,7 @@ const dynamicStyles = (isDarkMode) => {
     },
     bottomSheetCard: {
       width: '100%',
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#333' : '#fff',
       borderTopLeftRadius: 16,
       borderTopRightRadius: 16,
       paddingHorizontal: 20,
@@ -641,19 +661,19 @@ const dynamicStyles = (isDarkMode) => {
     bottomSheetTitle: {
       fontSize: 18,
       fontFamily: 'RobotoSlab-SemiBold',
-      color: '#D9534F',
+      color: isDarkMode ? '#FF7F7F' : '#D9534F',
       marginBottom: 10,
     },
     bottomSheetMessage: {
       fontSize: 16,
       fontFamily: 'RobotoSlab-Regular',
-      color: '#333',
+      color: isDarkMode ? '#ccc' : '#333',
       marginBottom: 25,
       textAlign: 'center',
     },
     logoutConfirmButton: {
       width: '100%',
-      backgroundColor: '#ff4500',
+      backgroundColor: isDarkMode ? '#FF4500' : '#ff4500',
       borderRadius: 8,
       paddingVertical: 12,
       alignItems: 'center',
@@ -666,21 +686,22 @@ const dynamicStyles = (isDarkMode) => {
     },
     logoutCancelButton: {
       width: '100%',
-      backgroundColor: '#fff',
+      backgroundColor: isDarkMode ? '#333' : '#fff',
       borderRadius: 8,
       paddingVertical: 12,
       alignItems: 'center',
       borderWidth: 1,
-      borderColor: '#ccc',
+      borderColor: isDarkMode ? '#444' : '#ccc',
     },
     logoutCancelButtonText: {
-      color: '#333',
+      color: isDarkMode ? '#fff' : '#333',
       fontSize: 16,
       fontFamily: 'RobotoSlab-Medium',
     },
+    // New property for toggle icon color based on theme
+    toggleIconColor: isDarkMode ? '#FFCC00' : '#FFA500',
+    iconColor,
   });
-
-  return { ...styles, iconColor };
 };
 
 export default ProfileScreen;

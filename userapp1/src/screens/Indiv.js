@@ -67,7 +67,7 @@ const PaintingServices = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        'http:192.168.243.71:5000/api/individual/service',
+        'https://backend.clicksolver.com/api/individual/service',
         { serviceObject },
       );
       const servicesWithIds = response.data.map((service) => ({

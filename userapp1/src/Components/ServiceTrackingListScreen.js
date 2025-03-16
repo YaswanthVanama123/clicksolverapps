@@ -38,6 +38,7 @@ const ServiceTrackingListScreen = () => {
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [tokenFound, setTokenFound] = useState(true);
   const navigation = useNavigation();
 
   const filterOptions = ['Collected Item', 'Work started', 'Work Completed'];
@@ -48,10 +49,16 @@ const ServiceTrackingListScreen = () => {
     setError(false);
     try {
       const token = await EncryptedStorage.getItem('cs_token');
-      if (!token) throw new Error('Token not found');
-
+      if (!token) {
+        setTokenFound(false);
+        setServiceData([]);
+        setFilteredData([]);
+        setLoading(false);
+        return;
+      }
+      setTokenFound(true);
       const response = await axios.get(
-        'http:192.168.243.71:5000/api/user/tracking/services',
+        'https://backend.clicksolver.com/api/user/tracking/services',
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -223,9 +230,10 @@ const ServiceTrackingListScreen = () => {
                   <Text style={styles.retryButtonText}>Retry</Text>
                 </TouchableOpacity>
               </View>
-            ) : filteredData.length === 0 ? (
+            ) : !tokenFound || filteredData.length === 0 ? (
               <View style={styles.noDataContainer}>
-                <Text style={styles.noDataText}>No data available</Text>
+                <Icon name="search-off" size={48} color="#888" />
+                <Text style={styles.noDataText}>No trackings available</Text>
               </View>
             ) : (
               <FlatList
@@ -404,12 +412,16 @@ const dynamicStyles = (width, height, isDarkMode) => {
       color: '#212121',
     },
     noDataContainer: {
+      flex: 1,
+      justifyContent: 'center',
       alignItems: 'center',
       marginTop: 20,
     },
     noDataText: {
       fontSize: isTablet ? 18 : 16,
       color: isDarkMode ? '#fff' : '#212121',
+      textAlign: 'center',
+      marginTop: 10,
     },
   });
 };

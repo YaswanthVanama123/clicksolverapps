@@ -10,6 +10,7 @@ exports.authenticateToken = (req, res, next) => {
   }
 
   jwt.verify(token, secretKey, (err, payload) => {
+    console.log(payload)
     if (err) {
       console.log('JWT Verification Error:', err); // Log the error
     }
