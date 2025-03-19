@@ -30,7 +30,7 @@ function ServiceApp({ navigation, route }) {
   const { width, height } = useWindowDimensions();
   const { isDarkMode } = useTheme();
   const styles = dynamicStyles(width, height, isDarkMode);
-
+  const [profile,setProfile] = useState("");
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [greeting, setGreeting] = useState('');
@@ -118,14 +118,17 @@ function ServiceApp({ navigation, route }) {
       console.log(cs_token)
       if (cs_token) {
         const response = await axios.get(
-          'http://192.168.55.106:5000/api/user/track/details',
+          'https://backend.clicksolver.com/api/user/track/details',
           {
             headers: { Authorization: `Bearer ${cs_token}` },
           }, 
         );
         const track = response?.data?.track || [];
-        const { user } = response.data;
+        const { user,profile } = response.data;
+        console.log("res",response.data);
+        console.log("Fetched Profile URL:", profile);
         setName(user || response.data);
+        setProfile(profile) 
         setMessageBoxDisplay(track.length > 0);
         setTrackScreen(track);
       }
@@ -275,11 +278,23 @@ function ServiceApp({ navigation, route }) {
         {/* Header Row */}
         <View style={styles.header}>
           <View style={styles.userInfo}>
-            <View style={styles.userInitialCircle}>
-              <Text style={styles.userInitialText}>
-                {name?.charAt?.(0)?.toUpperCase() || 'U'}
-              </Text>
-            </View>
+            <TouchableOpacity   onPress={() =>
+    navigation.navigate('Tabs', {
+      screen: 'Account',
+    })
+  }>
+              {profile ? 
+              <View>
+                <Image source={{uri : profile}} style={styles.image} />
+              </View>
+              :
+              <View style={styles.userInitialCircle}>
+                <Text style={styles.userInitialText}>
+                  {name?.charAt?.(0)?.toUpperCase() || 'U'}
+                </Text>
+              </View>  
+              }
+            </TouchableOpacity>
             <View style={styles.greeting}>
               <Text style={styles.greetingText}>
                 {greeting}{' '}
@@ -494,6 +509,11 @@ const dynamicStyles = (width, height, isDarkMode) => {
       flexDirection: 'row',
       alignItems: 'center',
     },
+    image:{
+      width:30,
+      height:30,
+      borderRadius:15
+    }, 
     userInitialCircle: {
       width: isTablet ? 50 : 40,
       height: isTablet ? 50 : 40,

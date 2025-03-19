@@ -10,6 +10,7 @@ import {
   Modal,
   ActivityIndicator,
   useWindowDimensions,
+  AppState 
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import messaging from '@react-native-firebase/messaging';
@@ -27,7 +28,7 @@ const ServiceInProgressScreen = () => {
   const { width } = useWindowDimensions();
   const { isDarkMode } = useTheme();
   const styles = dynamicStyles(width, isDarkMode);
-
+  const [appState, setAppState] = useState(AppState.currentState);
   const [details, setDetails] = useState({});
   const [services, setServices] = useState([]);
   const [decodedId, setDecodedId] = useState(null);
@@ -49,7 +50,7 @@ const ServiceInProgressScreen = () => {
     if (!decodedId) return;
     try {
       const response = await axios.post(
-        'http://192.168.55.106:5000/api/user/work/progress/details',
+        'https://backend.clicksolver.com/api/user/work/progress/details',
         { decodedId }
       );
       const data = response.data[0];
@@ -97,6 +98,42 @@ const ServiceInProgressScreen = () => {
     });
     return () => unsubscribe();
   }, [decodedId]);
+
+
+  useEffect(() => {
+    messaging().setBackgroundMessageHandler(async remoteMessage => {
+      console.log('[ServiceInProgress] Background FCM:', remoteMessage);
+      // Optionally store a flag or do partial updates
+    });
+  }, []);
+
+  // 5) onNotificationOpenedApp
+  useEffect(() => {
+    const unsubscribeOpened = messaging().onNotificationOpenedApp(async remoteMessage => {
+      console.log('[ServiceInProgress] onNotificationOpenedApp:', remoteMessage);
+      // Possibly fetch or navigate
+      fetchBookings();
+    });
+    return () => unsubscribeOpened();
+  }, [fetchBookings]);
+
+
+  useEffect(() => {
+    const handleAppStateChange = nextAppState => {
+      if (appState.match(/inactive|background/) && nextAppState === 'active') {
+        console.log('[ServiceInProgress] App has come to the foreground');
+        fetchBookings(); // re-fetch
+      }
+      setAppState(nextAppState);
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, [appState, fetchBookings]);
+
 
   // 5) Generate timeline data
   const generateTimelineData = (status) => {
@@ -154,6 +191,7 @@ const ServiceInProgressScreen = () => {
   // 8) Format date strings
   const formatDate = (dateString) => {
     if (!dateString) return 'Pending';
+    console.log("date",dateString)
     const date = new Date(dateString);
     const options = {
       year: 'numeric',

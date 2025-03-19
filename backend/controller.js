@@ -337,7 +337,7 @@ const verifyPayment = async (req, res) => {
 };
 
 
-const workerTrackingCall = async (req,res) => {
+const workerTrackingCall = async (req, res) => {
   try {
     const { tracking_id } = req.body;
 
@@ -383,10 +383,10 @@ const workerTrackingCall = async (req,res) => {
       }
     );
 
-    // Extracting mobile from response data properly
-    const responseData = apiResponse.data?.data?.mobile;
+    // Extract mobile from response, fallback to worker's number if missing
+    const responseData = apiResponse.data?.data?.mobile || mobile_number;
 
-    console.log("Masked Number:", responseData);
+    console.log("Final Number (Masked or Worker’s):", responseData);
 
     res.status(200).json({
       message: "Call initiated successfully.",
@@ -395,13 +395,14 @@ const workerTrackingCall = async (req,res) => {
 
   } catch (error) {
     console.error("Error initiating call:", error.message);
-    
+
     res.status(500).json({
       message: "Internal server error.",
       error: error.message
     });
   }
-}
+};
+
 
 const phoneCall = async (req, res) => {
   try {
@@ -449,10 +450,10 @@ const phoneCall = async (req, res) => {
       }
     );
 
-    // Extracting mobile from response data properly
-    const responseData = apiResponse.data?.data?.mobile;
+    // Extract mobile from response, fallback to worker's number if missing
+    const responseData = apiResponse.data?.data?.mobile || mobile_number;
 
-    console.log("Masked Number:", responseData);
+    console.log("Final Number (Masked or Worker’s):", responseData);
 
     res.status(200).json({
       message: "Call initiated successfully.",
@@ -461,7 +462,7 @@ const phoneCall = async (req, res) => {
 
   } catch (error) {
     console.error("Error initiating call:", error.message);
-    
+
     res.status(500).json({
       message: "Internal server error.",
       error: error.message
@@ -469,19 +470,20 @@ const phoneCall = async (req, res) => {
   }
 };
 
-const userTrackingCall = async (req,res) => {
+
+const userTrackingCall = async (req, res) => {
   try {
     const { tracking_id } = req.body;
 
-    if (!tracking_id ) {
-      return res.status(400).json({ message: "Valid decodedId is required." });
+    if (!tracking_id) {
+      return res.status(400).json({ message: "Valid tracking_id is required." });
     }
 
-    // Fetch `from_number` from accepted table by joining with user and workersverified tables
+    // Fetch `from_number` from servicetracking table by joining with user and workersverified tables
     const query = `
       SELECT 
-        u.phone_number AS mobile_number, 
-        w.phone_number AS from_number
+        u.phone_number AS mobile_number,  -- User's phone number
+        w.phone_number AS from_number    -- Worker's phone number
       FROM servicetracking s
       JOIN "user" u ON s.user_id = u.user_id
       JOIN workersverified w ON s.worker_id = w.worker_id
@@ -497,12 +499,12 @@ const userTrackingCall = async (req,res) => {
 
     const { from_number, mobile_number } = result.rows[0];
 
-    // Ensure these are strings (avoiding JSON structure issues)
+    // Ensure these are valid strings
     if (typeof from_number !== "string" || typeof mobile_number !== "string") {
       return res.status(500).json({ message: "Invalid phone number format." });
     }
 
-    console.log("From Number:", from_number, "Mobile Number:", mobile_number);
+    console.log("From Number:", from_number, "User's Mobile Number:", mobile_number);
 
     // Call the external API
     const apiResponse = await axios.post(
@@ -515,10 +517,10 @@ const userTrackingCall = async (req,res) => {
       }
     );
 
-    // Extracting mobile from response data properly
-    const responseData = apiResponse.data?.data?.mobile;
+    // Extract mobile from response, fallback to user's number if missing
+    const responseData = apiResponse.data?.data?.mobile || mobile_number;
 
-    console.log("Masked Number:", responseData);
+    console.log("Final Number (Masked or User’s):", responseData);
 
     res.status(200).json({
       message: "Call initiated successfully.",
@@ -527,13 +529,14 @@ const userTrackingCall = async (req,res) => {
 
   } catch (error) {
     console.error("Error initiating call:", error.message);
-    
+
     res.status(500).json({
       message: "Internal server error.",
       error: error.message
     });
   }
-}
+};
+
 
 const UserPhoneCall = async (req, res) => {
   try {
@@ -546,8 +549,8 @@ const UserPhoneCall = async (req, res) => {
     // Fetch `from_number` from accepted table by joining with user and workersverified tables
     const query = `
       SELECT 
-        u.phone_number AS mobile_number, 
-        w.phone_number AS from_number
+        u.phone_number AS mobile_number,  -- User's phone number
+        w.phone_number AS from_number    -- Worker's phone number
       FROM accepted a
       JOIN "user" u ON a.user_id = u.user_id
       JOIN workersverified w ON a.worker_id = w.worker_id
@@ -563,12 +566,12 @@ const UserPhoneCall = async (req, res) => {
 
     const { from_number, mobile_number } = result.rows[0];
 
-    // Ensure these are strings (avoiding JSON structure issues)
+    // Ensure these are valid strings
     if (typeof from_number !== "string" || typeof mobile_number !== "string") {
       return res.status(500).json({ message: "Invalid phone number format." });
     }
 
-    console.log("From Number:", from_number, "Mobile Number:", mobile_number);
+    console.log("From Number:", from_number, "User's Mobile Number:", mobile_number);
 
     // Call the external API
     const apiResponse = await axios.post(
@@ -581,10 +584,10 @@ const UserPhoneCall = async (req, res) => {
       }
     );
 
-    // Extracting mobile from response data properly
-    const responseData = apiResponse.data?.data?.mobile;
+    // Extract mobile from response, fallback to user's number if missing
+    const responseData = apiResponse.data?.data?.mobile || mobile_number;
 
-    console.log("Masked Number:", responseData);
+    console.log("Final Number (Masked or User’s):", responseData);
 
     res.status(200).json({
       message: "Call initiated successfully.",
@@ -593,13 +596,14 @@ const UserPhoneCall = async (req, res) => {
 
   } catch (error) {
     console.error("Error initiating call:", error.message);
-    
+
     res.status(500).json({
       message: "Internal server error.",
       error: error.message
     });
   }
 };
+
 
 // Function to update `no_due` in `workersverified` only for workers with a record in `workerlife`
 const updateWorkerNoDueStatus = async () => {
@@ -622,9 +626,17 @@ const updateWorkerNoDueStatus = async () => {
 };
 
 // Schedule the function to run every day at 10 AM
+// cron.schedule("0 10 * * *", () => {
+//   console.log("Running daily worker no_due update...");
+//   updateWorkerNoDueStatus();
+// });
+
 cron.schedule("0 10 * * *", () => {
-  console.log("Running daily worker no_due update...");
+  const now = new Date();
+  console.log(`Job ran at ${now.toISOString()} (UTC) and ${now.toString()} (local time)`);
   updateWorkerNoDueStatus();
+}, {
+  timezone: "Asia/Kolkata"
 });
 
 const sendDuePaymentNotifications = async () => {
@@ -694,8 +706,10 @@ const sendDuePaymentNotifications = async () => {
 
 // Schedule the function to run every day at 9 AM
 cron.schedule("0 9 * * *", () => {
-  console.log("Running due payment notification job at 9 AM...");
+  console.log("Running due payment notification job at 9 AM IST...");
   sendDuePaymentNotifications();
+}, {
+  timezone: "Asia/Kolkata"
 });
 
 
@@ -1911,7 +1925,8 @@ const getServiceTrackingUserItemDetails = async (req, res) => {
         st.created_at,
         st.tracking_pin,
         st.total_cost,
-        st.discount,  
+        st.discount, 
+        st.data, 
         w.name,
         w.phone_number,
         un.area,
@@ -1928,7 +1943,7 @@ const getServiceTrackingUserItemDetails = async (req, res) => {
 
     const result = await client.query(query, values);
 
-    console.log("data",result.rows[0])
+    // console.log("data",result.rows[0])
 
     if (result.rows.length === 0) {
       return res.status(404).json({
@@ -1964,7 +1979,7 @@ const getServiceTrackingUserItemDetails = async (req, res) => {
     //   discountAmount,
     //   fetchedFinalTotalAmount,
     // };
-
+    console.log("data",result.rows[0])
     res.status(200).json({ data: result.rows[0] });
   } catch (error) {
     console.error(
@@ -2183,8 +2198,25 @@ const serviceTrackingUpdateStatus = async (req, res) => {
       data: {
         status: newStatus.toString(),
         message: "Service status updated."
+      },
+      android: {
+        priority: "high", // Ensures immediate delivery
+        notification: {
+          channelId: "silent_channel", // Use your silent notification channel
+          priority: "min", // Minimizes notification prominence
+          visibility: "secret" // Hides it from the status bar
+        }
+      },
+      apns: {
+        payload: {
+          aps: {
+            contentAvailable: true, // Silent notification on iOS
+            sound: "" // No sound
+          }
+        }
       }
     };
+    
 
     // Send notifications using sendEachForMulticast
     try {
@@ -3431,72 +3463,73 @@ const insertTracking = async (req, res) => {
     const serviceStatus = "Collected Item";
 
     const query = `
-      WITH selected AS (
-        SELECT
-          a.accepted_id,
-          a.notification_id,
-          a.user_notification_id,
-          a.longitude,
-          a.latitude,
-          a.worker_id,
-          a.service_booked,
-          a.user_id,
-          a.total_cost,
-          a.discount,
-          a.tip_amount,
-          u.fcm_token
-        FROM accepted a
-        JOIN userfcm u ON a.user_id = u.user_id
-        WHERE a.notification_id = $1
-      )
-      INSERT INTO servicetracking (
-        accepted_id,
-        notification_id,
-        user_notification_id,
-        longitude,
-        latitude,
-        worker_id,
-        service_booked,
-        user_id,
-        total_cost,
-        discount,
-        tip_amount,
-        created_at,
-        tracking_pin,
-        tracking_key,
-        service_status,
-        details
-      )
+    WITH selected AS (
       SELECT
-        selected.accepted_id,
-        selected.notification_id,
-        selected.user_notification_id,
-        selected.longitude,
-        selected.latitude,
-        selected.worker_id,
-        selected.service_booked,
-        selected.user_id,
-        selected.total_cost,
-        selected.discount,
-        selected.tip_amount,
-        NOW(),
-        $2,
-        $3,
-        $4,
-        $5
-      FROM selected
-      ON CONFLICT (accepted_id) DO NOTHING
-      RETURNING *,
-        (SELECT ARRAY_AGG(fcm_token) FROM selected) AS fcm_tokens;
-    `;
-
-    const values = [
+        a.accepted_id,
+        a.notification_id,
+        a.user_notification_id,
+        a.longitude,
+        a.latitude,
+        a.worker_id,
+        a.service_booked,
+        a.user_id,
+        a.total_cost,
+        a.discount,
+        a.tip_amount,
+        u.fcm_token
+      FROM accepted a
+      JOIN userfcm u ON a.user_id = u.user_id
+      WHERE a.notification_id = $1
+    )
+    INSERT INTO servicetracking (
+      accepted_id,
       notification_id,
-      trackingPin,
-      trackingKey,
-      serviceStatus,
-      details,
-    ];
+      user_notification_id,
+      longitude,
+      latitude,
+      worker_id,
+      service_booked,
+      user_id,
+      total_cost,
+      discount,
+      tip_amount,
+      created_at,
+      tracking_pin,
+      tracking_key,
+      service_status,
+      data
+    )
+    SELECT
+      selected.accepted_id,
+      selected.notification_id,
+      selected.user_notification_id,
+      selected.longitude,
+      selected.latitude,
+      selected.worker_id,
+      selected.service_booked,
+      selected.user_id,
+      selected.total_cost,
+      selected.discount,
+      selected.tip_amount,
+      NOW(),
+      $2,
+      $3,
+      $4,
+      $5::jsonb
+    FROM selected
+    ON CONFLICT (accepted_id) DO NOTHING
+    RETURNING *,
+      (SELECT ARRAY_AGG(fcm_token) FROM selected) AS fcm_tokens;
+  `;
+  
+  const values = [
+    notification_id,
+    trackingPin,
+    trackingKey,
+    serviceStatus,
+    details, // This should be a valid JSON string/object
+  ];
+  
 
     const result = await client.query(query, values);
 
@@ -5936,7 +5969,7 @@ const getUserTrackRoute = async (req, res) => {
     const result = await client.query(query, [id]);
 
     if (result.rows.length > 0) {
-      const { name, track } = result.rows[0];
+      const { name, track, profile } = result.rows[0];
 
       if (track) {
         // If track exists, return both the track and user name
@@ -7260,7 +7293,7 @@ const acceptRequest = async (req, res) => {
           (
             SELECT jsonb_agg(
               jsonb_build_object(
-                'accept', 'In progress',
+                'accept', to_char(NOW(), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
                 'arrived', null,
                 'workCompleted', null,
                 'serviceName', service->>'serviceName',
@@ -11448,8 +11481,16 @@ const checkInactiveUsers = async () => {
   }
 };
 
+// cron.schedule("0 9 * * *", () => {
+//   checkInactiveUsers();
+// });
+
+
 cron.schedule("0 9 * * *", () => {
+  console.log("Running checkInactiveUsers notification job at 9 AM IST...");
   checkInactiveUsers();
+}, {
+  timezone: "Asia/Kolkata"
 });
 
 // Function to run the DELETE query
@@ -11474,10 +11515,20 @@ const deleteOldUserNotifications = async () => {
 };
 
 // Schedule the task to run at 2 AM every day
+// cron.schedule("0 2 * * *", () => {
+//   console.log("Running scheduled task: Deleting old user notifications...");
+//   deleteOldUserNotifications();
+// });
+
 cron.schedule("0 2 * * *", () => {
-  console.log("Running scheduled task: Deleting old user notifications...");
+  console.log("Running deleteOldUserNotifications notification job at 9 AM IST...");
   deleteOldUserNotifications();
+}, {
+  timezone: "Asia/Kolkata"
 });
+
+
+
 
 // ***
 const cancelRequest = async (req, res) => {
@@ -13673,8 +13724,25 @@ const workerWorkingStatusUpdated = async (req, res) => {
         status: currentTime.toString(),
         statusKey: statusKey,
         message: "Status updated"
+      },
+      android: {
+        priority: "high",
+        notification: {
+          channelId: "silent_channel",  // Use a channel created for silent notifications
+          priority: "min",              // Minimizes the notification prominence
+          visibility: "secret"          // Hides it from the status bar
+        }
+      },
+      apns: {
+        payload: {
+          aps: {
+            contentAvailable: true, // Ensures the app processes the notification silently
+            sound: ""               // No sound will be played
+          }
+        }
       }
     };
+    
 
     // Send notifications using sendEachForMulticast
     try {

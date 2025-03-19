@@ -90,8 +90,8 @@ android {
         applicationId "com.partnermobileapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 122
-        versionName "1.22" 
+        versionCode 123
+        versionName "1.23" 
     }
     signingConfigs {
         release {

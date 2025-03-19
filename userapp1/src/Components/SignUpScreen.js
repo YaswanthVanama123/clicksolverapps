@@ -39,7 +39,7 @@ const SignUpScreen = () => {
   const handleSignUp = async () => {
     try {
       const response = await axios.post(
-        'http://192.168.55.106:5000/api/user/signup',
+        'https://backend.clicksolver.com/api/user/signup',
         {
           fullName,
           email,

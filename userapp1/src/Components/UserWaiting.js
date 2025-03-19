@@ -133,7 +133,7 @@ const WaitingUser = () => {
       }
       console.log("tip", tipAmount);
       const response = await axios.post(
-        `http://192.168.55.106:5000/api/workers-nearby`,
+        `https://backend.clicksolver.com/api/workers-nearby`,
         {   
           area,
           city, 

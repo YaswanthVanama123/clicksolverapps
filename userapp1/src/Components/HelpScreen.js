@@ -12,6 +12,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { CommonActions, useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient'; // For better button styling
 import axios from 'axios';
 import { useTheme } from '../context/ThemeContext';
@@ -29,7 +30,7 @@ const HelpScreen = () => {
   const { width } = useWindowDimensions();
   const { isDarkMode } = useTheme();
   const styles = dynamicStyles(width, isDarkMode);
-
+  const navigation = useNavigation();
   const [loadingCall, setLoadingCall] = useState(false);
 
   const handleEmailPress = () => {
@@ -41,8 +42,8 @@ const HelpScreen = () => {
   const handleCallPress = async () => {
     setLoadingCall(true);
     try {
-      const response = await axios.get('https://backend.clicksolver.com/customer/care');
-      const phoneNumber = response.data.phone;
+      // const response = await axios.get('https://backend.clicksolver.com/customer/care');
+      const phoneNumber = "7981793632";
       if (phoneNumber) {
         Linking.openURL(`tel:${phoneNumber}`).catch(() =>
           Alert.alert('Error', 'Unable to open dialer')
@@ -61,13 +62,13 @@ const HelpScreen = () => {
     <View style={styles.container}>
       {/* Custom Header */}
       <View style={styles.header}>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#fff' : '#212121'} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Help & Support</Text>
         <TouchableOpacity onPress={handleEmailPress}>
           <Ionicons name="mail-outline" size={24} color="#ff4500" />
-        </TouchableOpacity>
+        </TouchableOpacity> 
       </View>
 
       {/* Steps Section */}
@@ -87,7 +88,15 @@ const HelpScreen = () => {
         ))}
 
         {/* CTA Button */}
-        <TouchableOpacity style={styles.ctaButton}>
+        <TouchableOpacity style={styles.ctaButton}         
+          onPress={() => {
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
+              })
+            );
+        }}>
           <LinearGradient colors={['#ff5722', '#ff4500']} style={styles.gradientButton}>
             <Text style={styles.ctaButtonText}>Book a Service Now</Text>
           </LinearGradient>

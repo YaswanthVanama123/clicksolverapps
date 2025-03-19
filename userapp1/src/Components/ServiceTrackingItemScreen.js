@@ -35,7 +35,7 @@ const ServiceTrackingItemScreen = () => {
   const [pin, setPin] = useState('4567');
   const [paymentExpanded, setPaymentExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
-    const navigation = useNavigation();
+  const navigation = useNavigation();
 
   const rotateAnimation = useMemo(() => new Animated.Value(0), []);
 
@@ -47,7 +47,7 @@ const ServiceTrackingItemScreen = () => {
   const phoneCall = async () => {
     try {
       const response = await axios.post(
-        'http://192.168.55.102:5000/api/worker/tracking/call', 
+        'https://backend.clicksolver.com/api/worker/tracking/call',
         { tracking_id },
       );
       if (response.status === 200 && response.data.mobile) {
@@ -97,11 +97,11 @@ const ServiceTrackingItemScreen = () => {
     try {
       setLoading(true);
       const response = await axios.post(
-        `http://192.168.55.102:5000/api/service/tracking/user/item/details`,
+        `https://backend.clicksolver.com/api/service/tracking/user/item/details`,
         { tracking_id },
       );
-      const { data } = response.data; 
-      console.log("Fetched data:", data);
+      const { data } = response.data;
+      console.log("Fetched data:", data.data);
       setPin(data.tracking_pin);
       setDetails(data);
       setServiceArray(data.service_booked);
@@ -159,14 +159,14 @@ const ServiceTrackingItemScreen = () => {
             size={20}
             color={isDarkMode ? '#fff' : "#212121"}
             style={styles.backIcon}
-                        onPress={() => {
-                          navigation.dispatch(
-                            CommonActions.reset({
-                              index: 0,
-                              routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-                            })
-                          );
-                        }} 
+            onPress={() => {
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
+                })
+              );
+            }} 
           />
           <Text style={styles.headerText}>Service Trackings</Text>
         </View>
@@ -175,9 +175,7 @@ const ServiceTrackingItemScreen = () => {
           {/* User Profile */}
           <View style={styles.profileContainer}>
             <View style={styles.profileImage}>
-              <Text style={styles.profileInitial}>
-                {details.name ? details.name.charAt(0).toUpperCase() : ''}
-              </Text>
+              <Image source={{ uri: details.profile }} style={styles.image} />
             </View>
             <View style={styles.profileTextContainer}>
               <View>
@@ -218,6 +216,26 @@ const ServiceTrackingItemScreen = () => {
 
           <View style={styles.horizantalLine} />
 
+          {/* Additional Info Section */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Additional Info</Text>
+            <View style={styles.additionalInfoContainer}>
+              {details.data?.estimatedDuration ? (
+                <Text style={styles.infoText}>
+                  Estimated Time: {details.data.estimatedDuration}
+                </Text>
+              ) : null}
+              {details.data?.image ? (
+                <Image
+                  source={{ uri: details.data.image }}
+                  style={styles.additionalImage}
+                />
+              ) : null}
+            </View>
+          </View>
+
+          <View style={styles.horizantalLine} />
+
           {/* Service Timeline */}
           <View style={styles.sectionContainer}>
             <View style={styles.serviceTimeLineContainer}>
@@ -237,9 +255,7 @@ const ServiceTrackingItemScreen = () => {
                       <View
                         style={[
                           styles.lineSegment,
-                          {
-                            backgroundColor: getTimelineData[index + 1].iconColor,
-                          },
+                          { backgroundColor: getTimelineData[index + 1].iconColor },
                         ]}
                       />
                     )}
@@ -302,16 +318,12 @@ const ServiceTrackingItemScreen = () => {
                 {details.discount > 0 && (
                   <View style={styles.paymentRow}>
                     <Text style={styles.paymentLabel}>Discount</Text>
-                    <Text style={styles.paymentValue}>
-                      ₹{details.discount}
-                    </Text>
+                    <Text style={styles.paymentValue}>₹{details.discount}</Text>
                   </View>
                 )}
                 <View style={styles.paymentRow}>
                   <Text style={styles.paymentLabel}>Grand Total</Text>
-                  <Text style={styles.paymentValue}>
-                    ₹{details.total_cost}
-                  </Text>
+                  <Text style={styles.paymentValue}>₹{details.total_cost}</Text>
                 </View>
               </View>
             )}
@@ -366,21 +378,11 @@ function dynamicStyles(width, height, isDarkMode) {
       marginVertical: isTablet ? 20 : 15,
       paddingLeft: isTablet ? 20 : 16,
     },
-    profileImage: {
+    image: {
       width: isTablet ? 70 : 60,
       height: isTablet ? 70 : 60,
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#FF7A22',
       borderRadius: isTablet ? 35 : 30,
       marginRight: 5,
-    },
-    profileInitial: {
-      color: '#FFFFFF',
-      fontSize: isTablet ? 24 : 22,
-      fontFamily: 'RobotoSlab-Medium',
-      fontWeight: '800',
     },
     profileTextContainer: {
       flex: 1,
@@ -585,7 +587,25 @@ function dynamicStyles(width, height, isDarkMode) {
       justifyContent: 'center',
       alignItems: 'center',
     },
+    // Additional Info Styles
+    additionalInfoContainer: {
+      marginVertical: isTablet ? 12 : 10,
+      alignItems: 'center',
+    },
+    infoText: {
+      fontSize: isTablet ? 16 : 14,
+      color: isDarkMode ? '#fff' : '#212121',
+      fontFamily: 'RobotoSlab-Regular',
+      marginBottom: 8,
+    },
+    additionalImage: {
+      width: isTablet ? 200 : 150,
+      height: isTablet ? 200 : 150,
+      resizeMode: 'cover',
+      borderRadius: 10,
+    },
   });
 }
 
 export default ServiceTrackingItemScreen;
+ 

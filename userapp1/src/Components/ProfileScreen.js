@@ -149,7 +149,7 @@ const ProfileScreen = () => {
     try {
       const fcm_token = await EncryptedStorage.getItem('fcm_token');
       if (fcm_token) {
-        await axios.post('http://192.168.55.106:5000/api/userLogout', { fcm_token });
+        await axios.post('https://backend.clicksolver.com/api/userLogout', { fcm_token });
       }
       // Replace multiRemove with individual removeItem calls
       await EncryptedStorage.removeItem('cs_token');
@@ -327,10 +327,10 @@ const ProfileScreen = () => {
             text="Refer & Earn"
             onPress={() => navigation.push('ReferralScreen')}
           />
-          <AboutCSMenuItem
+          <AboutCSMenuItem 
             styles={styles}
             text="About CS"
-            onPress={() => navigation.push('OnboardingScreen')}
+            onPress={() => navigation.push('AboutCS')}
           />
           <LogoutMenuItem styles={styles} text="Logout" onPress={confirmLogout} />
         </View>

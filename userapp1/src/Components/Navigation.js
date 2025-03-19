@@ -221,7 +221,7 @@ const Navigation = () => {
       setIsLoading(true);
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       const response = await axios.post(
-        'http://192.168.55.106:5000/api/worker/navigation/details',
+        'https://backend.clicksolver.com/api/worker/navigation/details',
         {notificationId: decodedId},
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
@@ -506,7 +506,7 @@ const Navigation = () => {
     try {
       setIsLoading(true);
       const response = await axios.post(
-        'http://192.168.55.106:5000/api/user/work/cancel',
+        'https://backend.clicksolver.com/api/user/work/cancel',
         {notification_id: decodedId},
       );
       if (response.status === 200) {

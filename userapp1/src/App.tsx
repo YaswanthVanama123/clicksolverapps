@@ -380,6 +380,18 @@ function App() {
       created => console.log(`createChannel returned '${created}'`)
     );
 
+    PushNotification.createChannel(
+      {
+        channelId: 'silent_channel',
+        channelName: 'Silent Channel',
+        channelDescription: 'A channel for silent notifications',
+        soundName: 'default',
+        importance: 1, // Low importance so it doesn't pop up
+        vibrate: false,
+      },
+      created => console.log(`Silent channel created: '${created}'`)
+    ); 
+
     const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
       console.log('A new FCM message arrived!', JSON.stringify(remoteMessage));
       await handleNotificationNavigation(remoteMessage);

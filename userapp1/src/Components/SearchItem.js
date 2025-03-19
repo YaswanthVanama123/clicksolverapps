@@ -103,7 +103,6 @@ const SearchItem = () => {
     setSearchQuery(query);
 
     if (query.length > 0) {
-      setIsFocused(true);
       setLoading(true);
       try {
         const response = await axios.get(
@@ -116,7 +115,6 @@ const SearchItem = () => {
         setLoading(false);
       }
     } else {
-      setIsFocused(false);
       setSuggestions([]);
       setLoading(false);
     }
@@ -147,7 +145,6 @@ const SearchItem = () => {
   const handleClear = useCallback(() => {
     setSearchQuery('');
     setSuggestions([]);
-    setIsFocused(false);
   }, []);
 
   const handleServiceClick = useCallback(
@@ -265,7 +262,7 @@ const SearchItem = () => {
         </View>
 
         <ScrollView style={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-          {isFocused && suggestions.length > 0 && (
+          {searchQuery.length > 0 && suggestions.length > 0 && (
             <View style={styles.suggestionsList}>
               {suggestions.map((item, index) =>
                 renderSuggestionItem(item, index)
@@ -290,7 +287,7 @@ const SearchItem = () => {
                 </View>
               </View>
             )}
-          {!searchQuery && suggestions.length === 0 && (
+          {searchQuery.length === 0 && suggestions.length === 0 && (
             <View style={styles.searchSuggestionsContainer}>
               <View style={styles.recentSearchesContainer}>
                 <Text style={styles.sectionTitle}>Recents</Text>

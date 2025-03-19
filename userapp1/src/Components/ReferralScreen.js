@@ -47,7 +47,7 @@ const ReferralScreen = () => {
           return;
         }
         const response = await axios.get(
-          'http://192.168.55.106:5000/api/user/referrals',
+          'https://backend.clicksolver.com/api/user/referrals',
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -217,7 +217,7 @@ const ReferralScreen = () => {
       <View style={styles.container}>
         {/* Header Section */}
         <View style={styles.headerSection}>
-          <TouchableOpacity style={styles.backButton}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#fff' : "#212121"} />
           </TouchableOpacity>
           <Text style={styles.mainTitle}>Refer Friends</Text>
