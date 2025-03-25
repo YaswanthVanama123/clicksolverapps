@@ -9,6 +9,7 @@ import {
   Modal,
   ActivityIndicator,
   useWindowDimensions,
+  Button,
 } from 'react-native';
 import axios from 'axios';
 import Swiper from 'react-native-swiper';
@@ -16,29 +17,31 @@ import {
   useFocusEffect,
   useNavigation,
   useRoute,
+  CommonActions,
 } from '@react-navigation/native';
 import Entypo from 'react-native-vector-icons/Entypo';
 import Icon from 'react-native-vector-icons/Ionicons';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import LottieView from 'lottie-react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../context/ThemeContext';  // Import the global theme context
+import { useTheme } from '../context/ThemeContext';
+
+// 1. Import i18n initialization (loads your JSON translations)
+import '../i18n/i18n';
+// 2. Import useTranslation hook
+import { useTranslation } from 'react-i18next';
 
 const SingleService = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { serviceName } = route.params;
-
-  // 1) Grab width from useWindowDimensions for 16:9 aspect ratio
   const { width } = useWindowDimensions();
-  
-  // 2) Extract theme info
+  const insets = useSafeAreaInsets();
   const { isDarkMode } = useTheme();
-  
-  // 3) Generate dynamic styles
+  const { t } = useTranslation(); // get the translation function
   const styles = dynamicStyles(width, isDarkMode);
 
-  // State
+  // State variables
   const [services, setServices] = useState([]);
   const [quantities, setQuantities] = useState({});
   const [modalVisible, setModalVisible] = useState(false);
@@ -47,8 +50,6 @@ const SingleService = () => {
   const [loginModalVisible, setLoginModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
-
-  const insets = useSafeAreaInsets();
 
   // Fetch details from API
   const fetchDetails = useCallback(async () => {
@@ -84,8 +85,6 @@ const SingleService = () => {
         const parsedCart = JSON.parse(storedCart);
         if (Array.isArray(parsedCart)) {
           setBookedServices(parsedCart);
-
-          // Update quantities from the stored items
           const parsedQuantities = parsedCart.reduce((acc, item) => {
             acc[item.main_service_id] = item.quantity;
             return acc;
@@ -98,7 +97,7 @@ const SingleService = () => {
     }
   }, [serviceName]);
 
-  // Effects
+  // Effects: Fetch details and stored cart on mount or when route params change
   useEffect(() => {
     fetchDetails().then(fetchStoredCart);
   }, [fetchDetails, fetchStoredCart]);
@@ -106,7 +105,6 @@ const SingleService = () => {
   useFocusEffect(
     useCallback(() => {
       fetchDetails().then(fetchStoredCart);
-      return () => {};
     }, [fetchDetails, fetchStoredCart])
   );
 
@@ -120,7 +118,6 @@ const SingleService = () => {
     });
     setTotalAmount(total);
 
-    // Build the cart
     const newBooked = services
       .map((srv) => {
         const qty = quantities[srv.main_service_id];
@@ -137,10 +134,8 @@ const SingleService = () => {
         return null;
       })
       .filter(Boolean);
-
     setBookedServices(newBooked);
 
-    // Store updated cart
     if (newBooked.length > 0) {
       (async () => {
         try {
@@ -170,12 +165,10 @@ const SingleService = () => {
       setBookingLoading(true);
       const cs_token = await EncryptedStorage.getItem('cs_token');
       if (cs_token) {
-        // user is logged in
         setModalVisible(false);
         setBookingLoading(false);
         navigation.push('OrderScreen', { serviceName: bookedServices });
       } else {
-        // user is not logged in
         setModalVisible(false);
         setBookingLoading(false);
         setLoginModalVisible(true);
@@ -191,7 +184,7 @@ const SingleService = () => {
     navigation.push('Login');
   };
 
-  // Navigation
+  // Navigation: Back button handler
   const handleBackPress = () => {
     navigation.goBack();
   };
@@ -199,23 +192,18 @@ const SingleService = () => {
   // Render
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
         {/* Carousel Container */}
         <View style={styles.carouselContainer}>
-          {/* Icons absolutely on top of the carousel */}
+          {/* Carousel Icons */}
           <View style={styles.carouselIconsContainer}>
             <TouchableOpacity style={styles.iconButton} onPress={handleBackPress}>
               <Icon name="arrow-back" size={24} color={isDarkMode ? '#fff' : '#000'} />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.iconButton}
-              onPress={() => navigation.push('SearchItem')}
-            >
+            <TouchableOpacity style={styles.iconButton} onPress={() => navigation.push('SearchItem')}>
               <Icon name="search" size={24} color={isDarkMode ? '#fff' : '#000'} />
             </TouchableOpacity>
           </View>
-
-          {/* Carousel or loader */}
           {loading ? (
             <View style={styles.carouselLoaderContainer}>
               <LottieView
@@ -226,12 +214,7 @@ const SingleService = () => {
               />
             </View>
           ) : (
-            <Swiper
-              style={styles.wrapper}
-              autoplay
-              autoplayTimeout={3}
-              showsPagination={false}
-            >
+            <Swiper style={styles.wrapper} autoplay autoplayTimeout={3} showsPagination={false}>
               {services.map((srv) => (
                 <View key={srv.main_service_id}>
                   <Image
@@ -251,7 +234,7 @@ const SingleService = () => {
             <Text style={styles.serviceTitle}>{serviceName}</Text>
             <View style={styles.priceContainer}>
               <Text style={styles.Sparetext}>
-                Spare parts, if required, will incur additional charges
+                {t('spare_text') || 'Spare parts, if required, will incur additional charges'}
               </Text>
             </View>
           </View>
@@ -277,29 +260,20 @@ const SingleService = () => {
                   <Text style={styles.recomendedCardDetailsHead}>
                     {srv.service_tag}
                   </Text>
-                  <Text
-                    style={styles.recomendedCardDetailsDescription}
-                    numberOfLines={2}
-                  >
+                  <Text style={styles.recomendedCardDetailsDescription} numberOfLines={2}>
                     {srv.service_details.about}
                   </Text>
                   <Text style={styles.recomendedCardDetailsRating}>
                     ₹{srv.cost}
                   </Text>
                   <View style={styles.addButton}>
-                    <TouchableOpacity
-                      onPress={() => handleQuantityChange(srv.main_service_id, -1)}
-                    >
+                    <TouchableOpacity onPress={() => handleQuantityChange(srv.main_service_id, -1)}>
                       <Entypo name="minus" size={20} color={isDarkMode ? '#ddd' : '#4a4a4a'} />
                     </TouchableOpacity>
                     <Text style={styles.addButtonText}>
-                      {quantities[srv.main_service_id] > 0
-                        ? quantities[srv.main_service_id]
-                        : 'Add'}
+                      {quantities[srv.main_service_id] > 0 ? quantities[srv.main_service_id] : t('add') || 'Add'}
                     </Text>
-                    <TouchableOpacity
-                      onPress={() => handleQuantityChange(srv.main_service_id, 1)}
-                    >
+                    <TouchableOpacity onPress={() => handleQuantityChange(srv.main_service_id, 1)}>
                       <Entypo name="plus" size={20} color={isDarkMode ? '#ddd' : '#4a4a4a'} />
                     </TouchableOpacity>
                   </View>
@@ -320,9 +294,9 @@ const SingleService = () => {
       {/* Bottom Cart Bar */}
       {totalAmount > 0 && (
         <View style={styles.cartContainer}>
-          <Text style={styles.amount}>Total: ₹{totalAmount}</Text>
+          <Text style={styles.amount}>{t('total_amount') || 'Total:'} ₹{totalAmount}</Text>
           <TouchableOpacity onPress={handleBookNow} style={styles.buttonContainer}>
-            <Text style={styles.buttonText}>View</Text>
+            <Text style={styles.buttonText}>{t('view_cart') || 'View Cart'}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -332,19 +306,15 @@ const SingleService = () => {
         transparent
         animationType="slide"
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
+        onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalContainer}>
-          <TouchableOpacity
-            style={styles.crossIconContainer}
-            onPress={() => setModalVisible(false)}
-          >
+          <TouchableOpacity style={styles.crossIconContainer} onPress={() => setModalVisible(false)}>
             <View style={styles.crossIcon}>
               <Entypo name="cross" size={20} color={isDarkMode ? '#fff' : '#4a4a4a'} />
             </View>
           </TouchableOpacity>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Booked Services</Text>
+            <Text style={styles.modalTitle}>{t('booked_services') || 'Booked Services'}</Text>
             <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
               <View style={styles.itemContainers}>
                 {bookedServices.map((srv, idx) => (
@@ -363,30 +333,20 @@ const SingleService = () => {
                       />
                     )}
                     <View style={styles.descriptionContainer}>
-                      <Text
-                        style={styles.recomendedCardDetailsHead}
-                        numberOfLines={3}
-                      >
+                      <Text style={styles.recomendedCardDetailsHead} numberOfLines={3}>
                         {srv.serviceName}
                       </Text>
-                      <Text
-                        style={styles.recomendedCardDetailsDescription}
-                        numberOfLines={2}
-                      >
+                      <Text style={styles.recomendedCardDetailsDescription} numberOfLines={2}>
                         {srv.description}
                       </Text>
                       <View style={styles.addButton}>
-                        <TouchableOpacity
-                          onPress={() => handleQuantityChange(srv.main_service_id, -1)}
-                        >
+                        <TouchableOpacity onPress={() => handleQuantityChange(srv.main_service_id, -1)}>
                           <Entypo name="minus" size={20} color={isDarkMode ? '#ddd' : '#4a4a4a'} />
                         </TouchableOpacity>
                         <Text style={styles.addButtonText}>
                           {quantities[srv.main_service_id]}
                         </Text>
-                        <TouchableOpacity
-                          onPress={() => handleQuantityChange(srv.main_service_id, 1)}
-                        >
+                        <TouchableOpacity onPress={() => handleQuantityChange(srv.main_service_id, 1)}>
                           <Entypo name="plus" size={20} color={isDarkMode ? '#ddd' : '#4a4a4a'} />
                         </TouchableOpacity>
                       </View>
@@ -395,17 +355,12 @@ const SingleService = () => {
                 ))}
               </View>
             </ScrollView>
-            <Text style={styles.modalTotal}>Total Amount: ₹{totalAmount}</Text>
-
+            <Text style={styles.modalTotal}>{t('total_amount') || 'Total Amount:'} ₹{totalAmount}</Text>
             {bookingLoading ? (
-              <ActivityIndicator
-                size="large"
-                color="#FF5720"
-                style={{ marginVertical: 20 }}
-              />
+              <ActivityIndicator size="large" color="#FF5720" style={{ marginVertical: 20 }} />
             ) : (
               <TouchableOpacity style={styles.bookButton} onPress={bookService}>
-                <Text style={styles.modalButtonText}>Book Now</Text>
+                <Text style={styles.modalButtonText}>{t('view_cart') || 'View Cart'}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -417,26 +372,27 @@ const SingleService = () => {
         transparent
         animationType="fade"
         visible={loginModalVisible}
-        onRequestClose={() => setLoginModalVisible(false)}
-      >
+        onRequestClose={() => setLoginModalVisible(false)}>
         <View style={styles.loginModalOverlay}>
           <View style={styles.loginModalContent}>
-            <Text style={styles.loginModalTitle}>Login Required</Text>
+            <Text style={styles.loginModalTitle}>{t('login_required') || 'Login Required'}</Text>
             <Text style={styles.loginModalMessage}>
-              You need to log in to book services. Would you like to log in now?
+              {t('login_required_message') ||
+                'You need to log in to book services. Would you like to log in now?'}
             </Text>
             <View style={styles.loginModalButtons}>
               <TouchableOpacity
                 style={styles.loginCancelButton}
-                onPress={() => setLoginModalVisible(false)}
-              >
-                <Text style={styles.loginCancelText}>Cancel</Text>
+                onPress={() => setLoginModalVisible(false)}>
+                <Text style={styles.loginCancelText}>{t('cancel') || 'Cancel'}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.loginProceedButton}
-                onPress={navigateToLogin}
-              >
-                <Text style={styles.loginProceedText}>Login</Text>
+                onPress={() => {
+                  setLoginModalVisible(false);
+                  navigation.push('Login');
+                }}>
+                <Text style={styles.loginProceedText}>{t('login') || 'Login'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -446,8 +402,7 @@ const SingleService = () => {
   );
 };
 
-// 4) DYNAMIC STYLES
-function dynamicStyles(width, isDarkMode) {
+const dynamicStyles = (width, isDarkMode) => {
   const isTablet = width >= 600;
   const aspectRatio = 16 / 9;
   const carouselHeight = Math.round(width / aspectRatio);
@@ -632,7 +587,6 @@ function dynamicStyles(width, isDarkMode) {
       color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Medium',
     },
-    // Modals
     modalContainer: {
       flex: 1,
       marginTop: isTablet ? 90 : 70,
@@ -704,7 +658,6 @@ function dynamicStyles(width, isDarkMode) {
       height: isTablet ? 125 : 105,
       borderRadius: 10,
     },
-    // Login Modal
     loginModalOverlay: {
       flex: 1,
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -764,6 +717,6 @@ function dynamicStyles(width, isDarkMode) {
       fontSize: isTablet ? 16 : 14,
     },
   });
-}
+};
 
 export default SingleService;

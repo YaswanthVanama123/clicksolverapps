@@ -27,8 +27,11 @@ android {
         applicationId "com.userapp1"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 90
-        versionName "1.56"
+        versionCode 99
+        versionName "1.59"
+        manifestPlaceholders = [
+        CodePushDeploymentKey: "9osws50ZWw1_SwJJi-EynN9Xpz0mJlO43mKHPQ" // Replace with your Production key
+    ]
     }
     signingConfigs {
         release {
@@ -80,7 +83,9 @@ dependencies {
 apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); 
 applyNativeModulesAppBuildGradle(project)
 
-apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle")
+apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle");
+apply from: "../../node_modules/react-native-code-push/android/codepush.gradle"
+
 
 configurations.all {
     exclude group: 'com.google.android.gms', module: 'play-services-safetynet'

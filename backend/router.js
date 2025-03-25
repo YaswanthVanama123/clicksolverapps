@@ -163,7 +163,9 @@ const {
   callMasking,
   workerProfileScreenDetails,
   workerProfileUpdate,
-  profileChangesSubmit
+  profileChangesSubmit,
+  fetchOffers,
+  offerValidation
 } = require("./controller.js");
 
 const router = express.Router();
@@ -769,6 +771,8 @@ router.post(
 
 router.get("/user/track/details", authenticateToken, getUserTrackRoute);
 
+router.get("/user/offers",authenticateToken,fetchOffers)
+
 router.get(
   "/worker/track/details",
   authenticateWorkerToken,
@@ -813,6 +817,8 @@ router.post("/user/tryping/cancel", userCancelNavigation);
 router.post("/user/work/cancel", userNavigationCancel);
 
 router.post("/worker/work/cancel", workerNavigationCancel);
+
+router.post("/user/validate-offer",authenticateToken,offerValidation)
 
 router.post(
   "/registration/status",

@@ -11,6 +11,7 @@ import {
   Platform,
   Linking,
   useWindowDimensions,
+  Button,
 } from 'react-native';
 import {
   useNavigation,
@@ -25,19 +26,28 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import LottieView from 'lottie-react-native';
 import PushNotification from 'react-native-push-notification';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../context/ThemeContext'; // Theme hook
+import { useTheme } from '../context/ThemeContext';
+
+// 1. Import i18n to initialize translations
+import '../i18n/i18n';
+// 2. Import language change helper
+import { changeAppLanguage } from '../i18n/languageChange';
+// 3. Import useTranslation hook
+import { useTranslation } from 'react-i18next';
 
 const PaintingServices = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { width, height } = useWindowDimensions();
-  const { isDarkMode } = useTheme(); // Get dark mode state
+  const { isDarkMode } = useTheme();
+  const { t } = useTranslation();
   const styles = dynamicStyles(width, height, isDarkMode);
 
   const [subservice, setSubServices] = useState([]);
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(true);
 
+  // When the component mounts, extract serviceObject from route params and fetch backend data.
   useEffect(() => {
     if (route.params) {
       setName(route.params.serviceObject);
@@ -45,7 +55,7 @@ const PaintingServices = () => {
     }
   }, [route.params]);
 
-  // Handle back button press
+  // Handle back button press for Android
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -53,22 +63,24 @@ const PaintingServices = () => {
           CommonActions.reset({
             index: 0,
             routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          }),
+          })
         );
         return true;
       };
 
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-    }, [navigation]),
+      return () =>
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [navigation])
   );
 
+  // Fetch subservices from the backend
   const fetchServices = useCallback(async (serviceObject) => {
     setLoading(true);
     try {
       const response = await axios.post(
         'https://backend.clicksolver.com/api/individual/service',
-        { serviceObject },
+        { serviceObject }
       );
       const servicesWithIds = response.data.map((service) => ({
         ...service,
@@ -82,41 +94,45 @@ const PaintingServices = () => {
     }
   }, []);
 
-  const handleBookCommander = useCallback(async (serviceId) => {
-    try {
-      // Check if notifications are enabled
-      PushNotification.checkPermissions((permissions) => {
-        if (!permissions.alert) {
-          Alert.alert(
-            'Notifications Required',
-            'You need to enable notifications to proceed. Go to app settings to enable them.',
-            [
-              {
-                text: 'Cancel',
-                onPress: () => console.log('Notification permission denied'),
-                style: 'cancel',
-              },
-              {
-                text: 'Open Settings',
-                onPress: () => {
-                  if (Platform.OS === 'ios') {
-                    Linking.openURL('app-settings:');
-                  } else {
-                    Linking.openSettings();
-                  }
+  const handleBookCommander = useCallback(
+    async (serviceId) => {
+      try {
+        // Check if notifications are enabled
+        PushNotification.checkPermissions((permissions) => {
+          if (!permissions.alert) {
+            Alert.alert(
+              t('notifications_required') || 'Notifications Required',
+              t('enable_notifications') ||
+                'You need to enable notifications to proceed. Go to app settings to enable them.',
+              [
+                {
+                  text: t('cancel') || 'Cancel',
+                  onPress: () => console.log('Notification permission denied'),
+                  style: 'cancel',
                 },
-              },
-            ],
-            { cancelable: false },
-          );
-        } else {
-          proceedToBookCommander(serviceId);
-        }
-      });
-    } catch (error) {
-      console.error('Error checking notification permissions:', error);
-    }
-  }, []);
+                {
+                  text: t('open_settings') || 'Open Settings',
+                  onPress: () => {
+                    if (Platform.OS === 'ios') {
+                      Linking.openURL('app-settings:');
+                    } else {
+                      Linking.openSettings();
+                    }
+                  },
+                },
+              ],
+              { cancelable: false }
+            );
+          } else {
+            proceedToBookCommander(serviceId);
+          }
+        });
+      } catch (error) {
+        console.error('Error checking notification permissions:', error);
+      }
+    },
+    [t]
+  );
 
   const proceedToBookCommander = useCallback(
     async (serviceId) => {
@@ -124,7 +140,7 @@ const PaintingServices = () => {
         serviceName: serviceId,
       });
     },
-    [navigation],
+    [navigation]
   );
 
   const handleBack = useCallback(() => {
@@ -132,7 +148,7 @@ const PaintingServices = () => {
       CommonActions.reset({
         index: 0,
         routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-      }),
+      })
     );
   }, [navigation]);
 
@@ -144,7 +160,7 @@ const PaintingServices = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Header with back arrow, title, and search icon */}
+        {/* Header with back arrow, title, search, and language selector */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.iconContainer}>
             <Icon name="arrow-back" size={24} color={isDarkMode ? '#fff' : '#000'} />
@@ -155,13 +171,22 @@ const PaintingServices = () => {
           </TouchableOpacity>
         </View>
 
+        {/* Language Selector Button */}
+        <View style={{ alignSelf: 'flex-end', marginVertical: 10 }}>
+          <Button
+            title={t('change_language') || 'Change Language'}
+            onPress={() => navigation.navigate('LanguageSelector')}
+          />
+        </View>
+
+        {/* Banner */}
         <View style={styles.banner}>
           <View style={styles.bannerText}>
             <View style={styles.bannerDetails}>
               <Text style={styles.bannerPrice}>Just 49/-</Text>
               <Text style={styles.bannerDescription}>{name}</Text>
               <Text style={styles.bannerInfo}>
-                Just pay to book a Commander Inspection!
+                {t('just_pay') || 'Just pay to book a Commander Inspection!'}
               </Text>
             </View>
           </View>
@@ -192,7 +217,8 @@ const PaintingServices = () => {
               imageUrl={service.service_urls}
               handleBookCommander={handleBookCommander}
               serviceId={service.service_name}
-              isDarkMode={isDarkMode}  // Pass the isDarkMode flag here
+              isDarkMode={isDarkMode}
+              t={t}  // Pass translation function to the item
             />
           ))}
         </ScrollView>
@@ -202,9 +228,8 @@ const PaintingServices = () => {
 };
 
 const ServiceItem = React.memo(
-  ({ title, imageUrl, handleBookCommander, serviceId, isDarkMode }) => {
+  ({ title, imageUrl, handleBookCommander, serviceId, isDarkMode, t }) => {
     const { width } = useWindowDimensions();
-    // Pass isDarkMode to dynamicStyles so the card background also adapts to dark mode.
     const itemStyles = dynamicStyles(width, undefined, isDarkMode);
 
     return (
@@ -222,21 +247,18 @@ const ServiceItem = React.memo(
             style={itemStyles.bookNow}
             onPress={() => handleBookCommander(serviceId)}
           >
-            <Text style={itemStyles.bookNowText}>Book Now ➔</Text>
+            <Text style={itemStyles.bookNowText}>
+              {t('book_now') || 'Book Now ➔'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
     );
-  },
+  }
 );
 
-/**
- * DYNAMIC STYLES:
- * Adjusts layout based on width (to accommodate tablets) and dark mode.
- */
 const dynamicStyles = (width, height, isDarkMode) => {
   const isTablet = width >= 600;
-
   return StyleSheet.create({
     safeArea: {
       flex: 1,
@@ -313,20 +335,16 @@ const dynamicStyles = (width, height, isDarkMode) => {
     services: {
       flex: 1,
     },
-
-    /* --- Service Item Styles --- */
     serviceItem: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 10,
       padding: isTablet ? 15 : 10,
       borderRadius: 10,
-      backgroundColor: isDarkMode ? '#333' : '#fff', // Card background in dark mode
+      backgroundColor: isDarkMode ? '#333' : '#fff',
       marginBottom: isTablet ? 15 : 10,
     },
-    serviceImageContainer: {
-      // Additional styling if needed
-    },
+    serviceImageContainer: {},
     serviceImage: {
       width: isTablet ? 200 : 165,
       height: isTablet ? 130 : 105,

@@ -14,6 +14,7 @@ const {
 } = require("./src/utils/generateToken.js");
 const { response } = require("express");
 const request = require("request");
+const { off } = require("process");
 
 // Telesign API credentials
 const customerId = "1D0C4D6D-48D8-40A2-BD9D-CE2160F6B3E9";
@@ -2199,19 +2200,35 @@ const serviceTrackingUpdateStatus = async (req, res) => {
         status: newStatus.toString(),
         message: "Service status updated."
       },
+      // android: {
+      //   priority: "high", // Ensures immediate delivery
+      //   notification: {
+      //     channelId: "silent_channel", // Use your silent notification channel
+      //     priority: "min", // Minimizes notification prominence
+      //     visibility: "secret" // Hides it from the status bar
+      //   }
+      // },
+      // apns: {
+      //   payload: {
+      //     aps: {
+      //       contentAvailable: true, // Silent notification on iOS
+      //       sound: "" // No sound
+      //     }
+      //   }
+      // }
       android: {
-        priority: "high", // Ensures immediate delivery
-        notification: {
-          channelId: "silent_channel", // Use your silent notification channel
-          priority: "min", // Minimizes notification prominence
-          visibility: "secret" // Hides it from the status bar
-        }
+        priority: "high",
+        // notification: {
+        //   channelId: "silent_channel",  // Use a channel created for silent notifications
+        //   priority: "min",              // Minimizes the notification prominence
+        //   visibility: "secret"          // Hides it from the status bar
+        // }
       },
       apns: {
         payload: {
           aps: {
-            contentAvailable: true, // Silent notification on iOS
-            sound: "" // No sound
+            contentAvailable: true // Ensures the app processes the notification silently
+            // Remove the sound property to avoid errors for silent notifications.
           }
         }
       }
@@ -5757,7 +5774,8 @@ const createUserAction = async (req, res) => {
     pincode,
     location,
     discount,
-    tipAmount
+    tipAmount,
+    offer
   } = req.body;
 
   // console.log("User action creation initiated", req.body);
@@ -5808,6 +5826,7 @@ const createUserAction = async (req, res) => {
           newAction.location = location;
           newAction.discount = discount;
           newAction.tipAmount = tipAmount;
+          newAction.offer = offer;
         }
         // console.log("new action anta ", newAction);
         // console.log("new action anta ra location undha", newAction.location);
@@ -5851,6 +5870,7 @@ const createUserAction = async (req, res) => {
           newAction.location = location;
           newAction.discount = discount;
           newAction.tipAmount = tipAmount;
+          newAction.offer = offer;
         }
 
         newTrack = [newAction];
@@ -5880,11 +5900,36 @@ const createUserAction = async (req, res) => {
 
 const userActionRemove = async (req, res) => {
   const userId = req.user.id; // Assuming req.user contains the authenticated user's information
-  const { screen, encodedId } = req.body;
+  const { screen, encodedId,offer } = req.body;
+
+  console.log("offer applied",offer)
 
   // console.log("Removing user action");
 
   try {
+    if(offer){
+      const offerCodeValue = offer.offer_code
+      console.log("offers applied changes",offerCodeValue)
+      const queryText = `
+        UPDATE "user" AS u
+        SET offers_used = (
+          SELECT jsonb_agg(
+            CASE
+              WHEN elem->>'offer_code' = $1
+                THEN elem || '{"status":"pending"}'
+              ELSE elem
+            END
+          )
+          FROM jsonb_array_elements(u.offers_used) elem
+        )
+        WHERE u.user_id = $2
+      `;
+
+      const values = [offerCodeValue, userId];
+
+      await client.query(queryText, values);
+    }
+
     // Step 1: Get the track field directly (no need to select the entire row)
     const query = `
       SELECT track FROM useraction
@@ -6153,42 +6198,60 @@ const getAllServices = async () => {
 //   }
 // };
 
-const getServicesBySearch = async (req, res) => {
-  const searchQuery = req.query.search
-    ? req.query.search.toLowerCase().trim()
-    : "";
 
+const getServicesBySearch = async (req, res) => {
+  // Get the search query in lowercase and trim any extra spaces
+  const searchQuery = req.query.search ? req.query.search.toLowerCase().trim() : "";
+  
   try {
     const allServices = await getAllServices();
 
-    // Split search query into individual words (e.g., "ac machine" -> ["ac", "machine"])
+    // Split the search query into keywords
     const searchKeywords = searchQuery.split(" ").filter(Boolean);
 
-    // 1. First attempt: Exact or partial match for the full search query
-    let filteredServices = allServices.filter(
-      (service) =>
-        service.service_tag.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        service.service_category
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase()) ||
-        service.service_name?.toLowerCase().includes(searchQuery.toLowerCase()) // Ensure to handle null or undefined properties with optional chaining
-    );
+    // Define a function to calculate a score for each service based on different match criteria
+    const calculateScore = (service) => {
+      let score = 0;
+      // Define the fields to check
+      const fields = ["service_tag", "service_category", "service_name"];
 
-    // 2. Second attempt: Match any of the individual keywords
-    if (filteredServices.length === 0 && searchKeywords.length > 0) {
-      filteredServices = allServices.filter((service) =>
-        searchKeywords.some(
-          (keyword) =>
-            service.service_tag.toLowerCase().includes(keyword.toLowerCase()) ||
-            service.service_category
-              .toLowerCase()
-              .includes(keyword.toLowerCase()) ||
-            service.service_name?.toLowerCase().includes(keyword.toLowerCase()) // Optional chaining for safety
-        )
-      );
-    }
+      fields.forEach((field) => {
+        const value = service[field];
+        if (value) {
+          const valueLower = value.toLowerCase();
 
-    // Return filtered results (empty or matched)
+          // Prioritize if the field starts with the full search query
+          if (valueLower.startsWith(searchQuery)) {
+            score += 3;
+          } else if (valueLower.includes(searchQuery)) {
+            score += 2;
+          }
+
+          // Check each keyword separately
+          searchKeywords.forEach((keyword) => {
+            if (valueLower.startsWith(keyword)) {
+              score += 2;
+            } else if (valueLower.includes(keyword)) {
+              score += 1;
+            }
+          });
+        }
+      });
+
+      return score;
+    };
+
+    // Map services to include a computed score
+    const scoredServices = allServices.map((service) => ({
+      ...service,
+      score: calculateScore(service)
+    }));
+
+    // Filter out services with no matches (score === 0)
+    const filteredServices = scoredServices.filter(service => service.score > 0);
+
+    // Sort the results by score (highest score first)
+    filteredServices.sort((a, b) => b.score - a.score);
 
     res.json(filteredServices);
   } catch (error) {
@@ -6196,6 +6259,51 @@ const getServicesBySearch = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+
+// const getServicesBySearch = async (req, res) => {
+//   const searchQuery = req.query.search
+//     ? req.query.search.toLowerCase().trim()
+//     : "";
+
+//   try {
+//     const allServices = await getAllServices();
+
+//     // Split search query into individual words (e.g., "ac machine" -> ["ac", "machine"])
+//     const searchKeywords = searchQuery.split(" ").filter(Boolean);
+
+//     // 1. First attempt: Exact or partial match for the full search query
+//     let filteredServices = allServices.filter(
+//       (service) =>
+//         service.service_tag.toLowerCase().includes(searchQuery.toLowerCase()) ||
+//         service.service_category
+//           .toLowerCase()
+//           .includes(searchQuery.toLowerCase()) ||
+//         service.service_name?.toLowerCase().includes(searchQuery.toLowerCase()) // Ensure to handle null or undefined properties with optional chaining
+//     );
+
+//     // 2. Second attempt: Match any of the individual keywords
+//     if (filteredServices.length === 0 && searchKeywords.length > 0) {
+//       filteredServices = allServices.filter((service) =>
+//         searchKeywords.some(
+//           (keyword) =>
+//             service.service_tag.toLowerCase().includes(keyword.toLowerCase()) ||
+//             service.service_category
+//               .toLowerCase()
+//               .includes(keyword.toLowerCase()) ||
+//             service.service_name?.toLowerCase().includes(keyword.toLowerCase()) // Optional chaining for safety
+//         )
+//       );
+//     }
+
+//     // Return filtered results (empty or matched)
+
+//     res.json(filteredServices);
+//   } catch (error) {
+//     console.error("Error fetching services:", error);
+//     res.status(500).json({ error: "Internal Server Error" });
+//   }
+// };
 
 // Function to log in partner (worker)
 // const Partnerlogin = async (req, res) => {
@@ -6233,6 +6341,8 @@ const getServicesBySearch = async (req, res) => {
 // };
 
 // Controller function to handle storing user location
+
+
 const storeWorkerLocation = async (req, res) => {
   const { longitude, latitude, workerId } = req.body;
 
@@ -7617,16 +7727,440 @@ const acceptRequest = async (req, res) => {
 //   }
 // };
 
+//yesterday sure
+// const userNavigationCancel = async (req, res) => {
+//   const { notification_id } = req.body;
 
+//   try {
+//     // Begin transaction
+//     await client.query("BEGIN");
+//     console.log("Transaction started for notification_id:", notification_id);
+
+//     // Combined query: verification, update, and insert
+//     const combinedQuery = await client.query(
+//       `
+//       WITH verification AS (
+//         SELECT verification_status, worker_id
+//         FROM accepted 
+//         WHERE notification_id = $1
+//       ),
+//       updated AS (
+//         UPDATE accepted
+//         SET user_navigation_cancel_status = 'usercanceled'
+//         WHERE notification_id = $1 
+//           AND (SELECT NOT verification_status FROM verification)
+//         RETURNING *
+//       ),
+//       inserted AS (
+//         INSERT INTO completenotifications (
+//           accepted_id, notification_id, user_id, user_notification_id,
+//           longitude, latitude, created_at, worker_id, complete_status,
+//           service_booked, time, discount, total_cost, tip_amount
+//         )
+//         SELECT 
+//           accepted_id, notification_id, user_id, user_notification_id,
+//           longitude, latitude, created_at, worker_id, 'usercanceled',
+//           service_booked, time, discount, total_cost, tip_amount
+//         FROM updated
+//         RETURNING worker_id, notification_id
+//       )
+//       SELECT 
+//         v.verification_status AS verified,
+//         COALESCE(i.worker_id, v.worker_id) AS worker_id, 
+//         f.fcm_token
+//       FROM verification v
+//       LEFT JOIN inserted i ON true
+//       LEFT JOIN workersverified w ON w.worker_id = COALESCE(i.worker_id, v.worker_id)
+//       LEFT JOIN fcm f ON f.worker_id = w.worker_id;
+//       `,
+//       [notification_id]
+//     );
+//     console.log("Combined query executed. Returned rows:", combinedQuery.rows);
+
+//     // Delete from accepted only if verification_status is false
+//     const deleteResult = await client.query(
+//       `
+//       DELETE FROM accepted
+//       WHERE notification_id = $1
+//         AND verification_status = false
+//       RETURNING *;
+//       `,
+//       [notification_id]
+//     );
+//     console.log("Deleted rows from accepted:", deleteResult.rowCount);
+
+//     // Commit transaction
+//     await client.query("COMMIT");
+//     console.log("Transaction committed successfully for notification_id:", notification_id);
+
+//     // If no row is returned in the combinedQuery, then the notification doesn't exist in accepted
+//     if (combinedQuery.rows.length === 0) {
+//       return res.status(404).json({ error: "Notification not found" });
+//     }
+
+//     const { verified, worker_id, fcm_token } = combinedQuery.rows[0];
+//     console.log("Data:", combinedQuery.rows);
+
+//     // If the notification is verified, block cancellation
+//     if (verified) {
+//       return res.status(205).json({
+//         message: "Cancellation blocked - verification already completed"
+//       });
+//     }
+
+//     // Gather FCM tokens if available
+//     const fcmTokens = combinedQuery.rows
+//       .filter(row => row.fcm_token)
+//       .map(row => row.fcm_token);
+
+//     const screen = "";
+//     const encodedId = Buffer.from(notification_id.toString()).toString("base64");
+
+//     // Send FCM notifications if tokens exist
+//     if (fcmTokens.length > 0) {
+//       try {
+//         const multicastMessage = {
+//           tokens: fcmTokens,
+//           notification: {
+//             title: "Click Solver",
+//             body: "Sorry for this, User cancelled the Service.",
+//           },
+//           data: {
+//             screen: "Home",
+//           },
+//         };
+//         const response = await getMessaging().sendEachForMulticast(multicastMessage);
+//         const successCount = response.responses.filter((res) => res.success).length;
+//         const failureCount = response.responses.filter((res) => !res.success).length;
+//         console.log(`Notifications sent: ${successCount}, Notifications failed: ${failureCount}`);
+//         response.responses.forEach((res, index) => {
+//           if (!res.success) {
+//             console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+//           }
+//         });
+//       } catch (error) {
+//         console.error("Error sending notifications:", error);
+//       }
+//     }
+
+//     // Update worker action (only if worker_id is available)
+//     if (worker_id) {
+//       await updateWorkerAction(worker_id, encodedId, screen);
+//     } else {
+//       console.error("No worker_id available to update worker action");
+//     }
+
+//     return res.status(200).json({ message: "Cancellation successful" });
+//   } catch (error) {
+//     await client.query("ROLLBACK");
+//     console.error("Error processing request:", error);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+// };
+
+//chatgpt main
+// const userNavigationCancel = async (req, res) => {
+//   // Expect notification_id, user_id and offer_code in the request body
+//   const { notification_id, user_id, offer_code } = req.body;
+
+//   try {
+//     // Begin transaction
+//     await client.query("BEGIN");
+//     console.log("Transaction started for notification_id:", notification_id);
+
+//     // Combined query: verification, update, and insert into completenotifications
+//     const combinedQuery = await client.query(
+//       `
+//       WITH verification AS (
+//         SELECT verification_status, worker_id
+//         FROM accepted 
+//         WHERE notification_id = $1
+//       ),
+//       updated AS (
+//         UPDATE accepted
+//         SET user_navigation_cancel_status = 'usercanceled'
+//         WHERE notification_id = $1 
+//           AND (SELECT NOT verification_status FROM verification)
+//         RETURNING *
+//       ),
+//       inserted AS (
+//         INSERT INTO completenotifications (
+//           accepted_id, notification_id, user_id, user_notification_id,
+//           longitude, latitude, created_at, worker_id, complete_status,
+//           service_booked, time, discount, total_cost, tip_amount
+//         )
+//         SELECT 
+//           accepted_id, notification_id, user_id, user_notification_id,
+//           longitude, latitude, created_at, worker_id, 'usercanceled',
+//           service_booked, time, discount, total_cost, tip_amount
+//         FROM updated
+//         RETURNING worker_id, notification_id
+//       )
+//       SELECT 
+//         v.verification_status AS verified,
+//         COALESCE(i.worker_id, v.worker_id) AS worker_id, 
+//         f.fcm_token
+//       FROM verification v
+//       LEFT JOIN inserted i ON true
+//       LEFT JOIN workersverified w ON w.worker_id = COALESCE(i.worker_id, v.worker_id)
+//       LEFT JOIN fcm f ON f.worker_id = w.worker_id;
+//       `,
+//       [notification_id]
+//     );
+//     console.log("Combined query executed. Returned rows:", combinedQuery.rows);
+
+//     // Delete from accepted only if verification_status is false
+//     const deleteResult = await client.query(
+//       `
+//       DELETE FROM accepted
+//       WHERE notification_id = $1
+//         AND verification_status = false
+//       RETURNING *;
+//       `,
+//       [notification_id]
+//     );
+//     console.log("Deleted rows from accepted:", deleteResult.rowCount);
+
+//     // Commit transaction
+//     await client.query("COMMIT");
+//     console.log("Transaction committed successfully for notification_id:", notification_id);
+
+//     // If no row is returned in the combinedQuery, then the notification doesn't exist in accepted
+//     if (combinedQuery.rows.length === 0) {
+//       return res.status(404).json({ error: "Notification not found" });
+//     }
+
+//     const { verified, worker_id, fcm_token } = combinedQuery.rows[0];
+//     console.log("Data:", combinedQuery.rows);
+
+//     // If the notification is verified, block cancellation
+//     if (verified) {
+//       return res.status(205).json({
+//         message: "Cancellation blocked - verification already completed"
+//       });
+//     }
+
+//     // Gather FCM tokens if available
+//     const fcmTokens = combinedQuery.rows
+//       .filter(row => row.fcm_token)
+//       .map(row => row.fcm_token);
+
+//     const screen = "";
+//     const encodedId = Buffer.from(notification_id.toString()).toString("base64");
+
+//     // Send FCM notifications if tokens exist
+//     if (fcmTokens.length > 0) {
+//       try {
+//         const multicastMessage = {
+//           tokens: fcmTokens,
+//           notification: {
+//             title: "Click Solver",
+//             body: "Sorry for this, User cancelled the Service.",
+//           },
+//           data: {
+//             screen: "Home",
+//           },
+//         };
+//         const response = await getMessaging().sendEachForMulticast(multicastMessage);
+//         const successCount = response.responses.filter((res) => res.success).length;
+//         const failureCount = response.responses.filter((res) => !res.success).length;
+//         console.log(`Notifications sent: ${successCount}, Notifications failed: ${failureCount}`);
+//         response.responses.forEach((res, index) => {
+//           if (!res.success) {
+//             console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+//           }
+//         });
+//       } catch (error) {
+//         console.error("Error sending notifications:", error);
+//       }
+//     }
+
+//     // Update worker action (only if worker_id is available)
+//     if (worker_id) {
+//       await updateWorkerAction(worker_id, encodedId, screen);
+//     } else {
+//       console.error("No worker_id available to update worker action");
+//     }
+
+//     // New logic: Update the "user" table offers_applied column
+//     // Check if the accepted table has coupons_applied with the matching offer_code,
+//     // then update the offers_applied JSONB array by setting the object's status to "pending"
+//     const updateOffersAppliedQuery = `
+//       UPDATE "user" AS u
+//       SET offers_applied = (
+//         SELECT jsonb_agg(
+//           CASE
+//             WHEN elem->>'offer_code' = $1 THEN elem || '{"status": "pending"}'
+//             ELSE elem
+//           END
+//         )
+//         FROM jsonb_array_elements(u.offers_applied) AS elem
+//       )
+//       WHERE u.user_id = $2
+//         AND EXISTS (
+//           SELECT 1 
+//           FROM accepted a
+//           WHERE a.user_id = $2
+//             AND a.coupons_applied IS NOT NULL
+//             AND EXISTS (
+//               SELECT 1
+//               FROM jsonb_array_elements(a.coupons_applied) AS ac
+//               WHERE ac->>'offer_code' = $1
+//             )
+//         );
+//     `;
+//     const updateValues = [offer_code, user_id];
+//     await client.query(updateOffersAppliedQuery, updateValues);
+//     console.log("Offers applied updated for user_id:", user_id, "with offer_code:", offer_code);
+
+//     return res.status(200).json({ message: "Cancellation successful" });
+//   } catch (error) {
+//     await client.query("ROLLBACK");
+//     console.error("Error processing request:", error);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+// };
+
+// const userNavigationCancel = async (req, res) => {
+//   const { notification_id, user_id, offer_code } = req.body;
+
+//   try {
+//     await client.query("BEGIN");
+//     console.log("Transaction started for notification_id:", notification_id);
+
+//     const combinedQuery = await client.query(
+//       `
+//       WITH verification AS (
+//         SELECT verification_status, worker_id
+//         FROM accepted 
+//         WHERE notification_id = $1
+//       ),
+//       updated AS (
+//         UPDATE accepted
+//         SET user_navigation_cancel_status = 'usercanceled'
+//         WHERE notification_id = $1 
+//           AND (SELECT NOT verification_status FROM verification)
+//         RETURNING *
+//       ),
+//       inserted AS (
+//         INSERT INTO completenotifications (
+//           accepted_id, notification_id, user_id, user_notification_id,
+//           longitude, latitude, created_at, worker_id, complete_status,
+//           service_booked, time, discount, total_cost, tip_amount
+//         )
+//         SELECT 
+//           accepted_id, notification_id, user_id, user_notification_id,
+//           longitude, latitude, created_at, worker_id, 'usercanceled',
+//           service_booked, time, discount, total_cost, tip_amount
+//         FROM updated
+//         RETURNING worker_id, notification_id
+//       ),
+//       user_updated AS (
+//         UPDATE "user" AS u
+//         SET offers_used = (
+//           SELECT jsonb_agg(
+//             CASE
+//               WHEN elem->>'offer_code' = $2 THEN elem || '{"status": "pending"}'
+//               ELSE elem
+//             END
+//           )
+//           FROM jsonb_array_elements(u.offers_used) AS elem
+//         )
+//         WHERE u.user_id = $3
+//           AND EXISTS (
+//             SELECT 1 
+//             FROM updated a
+//             WHERE a.user_id = $3
+//               AND a.coupons_applied IS NOT NULL
+//               AND EXISTS (
+//                 SELECT 1
+//                 FROM jsonb_array_elements(a.coupons_applied) AS ac
+//                 WHERE ac->>'offer_code' = $2
+//               )
+//           )
+//         RETURNING u.user_id
+//       ),
+//       deleted AS (
+//         DELETE FROM accepted
+//         WHERE notification_id = $1
+//           AND verification_status = false
+//         RETURNING *
+//       )
+//       SELECT 
+//         v.verification_status AS verified,
+//         COALESCE(i.worker_id, v.worker_id) AS worker_id, 
+//         f.fcm_token
+//       FROM verification v
+//       LEFT JOIN inserted i ON true
+//       LEFT JOIN workersverified w ON w.worker_id = COALESCE(i.worker_id, v.worker_id)
+//       LEFT JOIN fcm f ON f.worker_id = w.worker_id;
+//       `,
+//       [notification_id, offer_code, user_id]
+//     );
+
+//     await client.query("COMMIT");
+//     console.log("Transaction committed successfully for notification_id:", notification_id);
+
+//     if (combinedQuery.rows.length === 0) {
+//       return res.status(404).json({ error: "Notification not found" });
+//     }
+
+//     const { verified, worker_id, fcm_token } = combinedQuery.rows[0];
+//     console.log("Data:", combinedQuery.rows);
+
+//     if (verified) {
+//       return res.status(205).json({
+//         message: "Cancellation blocked - verification already completed"
+//       });
+//     }
+
+//     const fcmTokens = combinedQuery.rows
+//       .filter(row => row.fcm_token)
+//       .map(row => row.fcm_token);
+
+//     const screen = "";
+//     const encodedId = Buffer.from(notification_id.toString()).toString("base64");
+
+//     if (fcmTokens.length > 0) {
+//       try {
+//         const multicastMessage = {
+//           tokens: fcmTokens,
+//           notification: {
+//             title: "Click Solver",
+//             body: "Sorry for this, User cancelled the Service.",
+//           },
+//           data: {
+//             screen: "Home",
+//           },
+//         };
+//         const response = await getMessaging().sendEachForMulticast(multicastMessage);
+//         // ... (keep existing logging for FCM responses)
+//       } catch (error) {
+//         console.error("Error sending notifications:", error);
+//       }
+//     }
+
+//     if (worker_id) {
+//       await updateWorkerAction(worker_id, encodedId, screen);
+//     } else {
+//       console.error("No worker_id available to update worker action");
+//     }
+
+//     return res.status(200).json({ message: "Cancellation successful" });
+//   } catch (error) {
+//     await client.query("ROLLBACK");
+//     console.error("Error processing request:", error);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+// };
 const userNavigationCancel = async (req, res) => {
-  const { notification_id } = req.body;
+  const { notification_id, user_id, offer_code } = req.body;
 
   try {
-    // Begin transaction
     await client.query("BEGIN");
     console.log("Transaction started for notification_id:", notification_id);
 
-    // Combined query: verification, update, and insert
+    // Combined query: update accepted, insert into completenotifications, and update user.
     const combinedQuery = await client.query(
       `
       WITH verification AS (
@@ -7653,6 +8187,31 @@ const userNavigationCancel = async (req, res) => {
           service_booked, time, discount, total_cost, tip_amount
         FROM updated
         RETURNING worker_id, notification_id
+      ),
+      user_updated AS (
+        UPDATE "user" AS u
+        SET offers_used = (
+          SELECT jsonb_agg(
+            CASE
+              WHEN elem->>'offer_code' = $2 THEN elem || '{"status": "pending"}'
+              ELSE elem
+            END
+          )
+          FROM jsonb_array_elements(u.offers_used) AS elem
+        )
+        WHERE u.user_id = $3
+          AND EXISTS (
+            SELECT 1 
+            FROM updated a
+            WHERE a.user_id = $3
+              AND a.coupons_applied IS NOT NULL
+              AND EXISTS (
+                SELECT 1
+                FROM jsonb_array_elements(a.coupons_applied) AS ac
+                WHERE ac->>'offer_code' = $2
+              )
+          )
+        RETURNING u.user_id
       )
       SELECT 
         v.verification_status AS verified,
@@ -7663,42 +8222,35 @@ const userNavigationCancel = async (req, res) => {
       LEFT JOIN workersverified w ON w.worker_id = COALESCE(i.worker_id, v.worker_id)
       LEFT JOIN fcm f ON f.worker_id = w.worker_id;
       `,
-      [notification_id]
+      [notification_id, offer_code, user_id]
     );
-    console.log("Combined query executed. Returned rows:", combinedQuery.rows);
 
-    // Delete from accepted only if verification_status is false
-    const deleteResult = await client.query(
-      `
-      DELETE FROM accepted
-      WHERE notification_id = $1
-        AND verification_status = false
-      RETURNING *;
-      `,
-      [notification_id]
-    );
-    console.log("Deleted rows from accepted:", deleteResult.rowCount);
-
-    // Commit transaction
-    await client.query("COMMIT");
-    console.log("Transaction committed successfully for notification_id:", notification_id);
-
-    // If no row is returned in the combinedQuery, then the notification doesn't exist in accepted
+    // Check if insertion took place.
     if (combinedQuery.rows.length === 0) {
+      await client.query("ROLLBACK");
       return res.status(404).json({ error: "Notification not found" });
     }
+
+    // Execute the deletion as a separate query.
+    await client.query(
+      `DELETE FROM accepted 
+       WHERE notification_id = $1 
+         AND verification_status = false`,
+      [notification_id]
+    );
+
+    await client.query("COMMIT");
+    console.log("Transaction committed successfully for notification_id:", notification_id);
 
     const { verified, worker_id, fcm_token } = combinedQuery.rows[0];
     console.log("Data:", combinedQuery.rows);
 
-    // If the notification is verified, block cancellation
     if (verified) {
       return res.status(205).json({
         message: "Cancellation blocked - verification already completed"
       });
     }
 
-    // Gather FCM tokens if available
     const fcmTokens = combinedQuery.rows
       .filter(row => row.fcm_token)
       .map(row => row.fcm_token);
@@ -7706,7 +8258,6 @@ const userNavigationCancel = async (req, res) => {
     const screen = "";
     const encodedId = Buffer.from(notification_id.toString()).toString("base64");
 
-    // Send FCM notifications if tokens exist
     if (fcmTokens.length > 0) {
       try {
         const multicastMessage = {
@@ -7715,25 +8266,15 @@ const userNavigationCancel = async (req, res) => {
             title: "Click Solver",
             body: "Sorry for this, User cancelled the Service.",
           },
-          data: {
-            screen: "Home",
-          },
+          data: { screen: "Home" },
         };
         const response = await getMessaging().sendEachForMulticast(multicastMessage);
-        const successCount = response.responses.filter((res) => res.success).length;
-        const failureCount = response.responses.filter((res) => !res.success).length;
-        console.log(`Notifications sent: ${successCount}, Notifications failed: ${failureCount}`);
-        response.responses.forEach((res, index) => {
-          if (!res.success) {
-            console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
-          }
-        });
+        // (Keep your existing logging for FCM responses)
       } catch (error) {
         console.error("Error sending notifications:", error);
       }
     }
 
-    // Update worker action (only if worker_id is available)
     if (worker_id) {
       await updateWorkerAction(worker_id, encodedId, screen);
     } else {
@@ -7747,9 +8288,6 @@ const userNavigationCancel = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
-
-
-
 
 
 
@@ -8071,16 +8609,14 @@ const userNavigationCancel = async (req, res) => {
 // };
 
 const workerNavigationCancel = async (req, res) => {
-  const { notification_id } = req.body;
-  const encodedUserNotificationId = Buffer.from(
-    notification_id.toString()
-  ).toString("base64");
+  const { notification_id, offer_code } = req.body;
+  const encodedUserNotificationId = Buffer.from(notification_id.toString()).toString("base64");
 
   try {
-    // Begin a transaction
     await client.query("BEGIN");
+    console.log("Transaction started for notification_id:", notification_id);
 
-    // First query: UPDATE and INSERT operations
+    // Combined query: update accepted, insert into completenotifications, and update user
     const combinedQuery = await client.query(
       `
       WITH updated AS (
@@ -8088,159 +8624,289 @@ const workerNavigationCancel = async (req, res) => {
         SET user_navigation_cancel_status = 'workercanceled'
         WHERE notification_id = $1
         RETURNING 
-          accepted_id, 
-          notification_id, 
-          user_id, 
-          user_notification_id, 
-          longitude, 
-          latitude, 
-          created_at, 
-          worker_id, 
-          complete_status,
-          service_booked
-          time,
-          discount,
-          total_cost,
-          tip_amount
+          accepted_id, user_id, user_notification_id,
+          longitude, latitude, created_at, worker_id,
+          service_booked, time, discount, total_cost,
+          tip_amount, coupons_applied
       ),
       inserted AS (
         INSERT INTO completenotifications (
-          accepted_id, 
-          notification_id, 
-          user_id, 
-          user_notification_id, 
-          longitude, 
-          latitude, 
-          created_at, 
-          worker_id, 
-          complete_status,
-          service_booked, 
-          time,
-          discount,
-          total_cost,
-          tip_amount
+          accepted_id, notification_id, user_id, user_notification_id,
+          longitude, latitude, created_at, worker_id, complete_status,
+          service_booked, time, discount, total_cost, tip_amount
         )
         SELECT 
-          accepted_id, 
-          notification_id, 
-          user_id, 
-          user_notification_id, 
-          longitude, 
-          latitude, 
-          created_at, 
-          worker_id, 
-          'workercanceled', 
-          service_booked, 
-          time,
-          discount,
-          total_cost,
-          tip_amount
+          accepted_id, $1, user_id, user_notification_id,
+          longitude, latitude, created_at, worker_id, 'workercanceled',
+          service_booked, time, discount, total_cost, tip_amount
         FROM updated
-        RETURNING user_id, notification_id, service_booked
+        RETURNING user_id, service_booked
+      ),
+      user_updated AS (
+        UPDATE "user" AS u
+        SET offers_used = (
+          SELECT jsonb_agg(
+            CASE
+              WHEN elem->>'offer_code' = $2 THEN elem || '{"status": "pending"}'
+              ELSE elem
+            END
+          )
+          FROM jsonb_array_elements(u.offers_used) AS elem
+        )
+        WHERE u.user_id IN (SELECT user_id FROM updated)
+          AND EXISTS (
+            SELECT 1 FROM updated a
+            WHERE a.user_id = u.user_id
+              AND a.coupons_applied IS NOT NULL
+              AND EXISTS (
+                SELECT 1 FROM jsonb_array_elements(a.coupons_applied) AS ac
+                WHERE ac->>'offer_code' = $2
+              )
+          )
+        RETURNING u.user_id
       )
-      SELECT i.user_id, f.fcm_token
+      SELECT 
+        i.user_id, 
+        f.fcm_token, 
+        i.service_booked
       FROM inserted i
       JOIN "user" w ON w.user_id = i.user_id
       JOIN userfcm f ON f.user_id = w.user_id;
       `,
+      [notification_id, offer_code]
+    );
+
+    // If no rows were returned, nothing was inserted
+    if (combinedQuery.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(205).json({
+        message: "Cancellation not performed. Either invalid ID or already canceled."
+      });
+    }
+
+    // Execute the deletion as a separate query if the insertion succeeded
+    await client.query(
+      `DELETE FROM accepted WHERE notification_id = $1`,
       [notification_id]
     );
 
-    // Second query: DELETE operation
-    const deleteResult = await client.query(
-      `
-      DELETE FROM accepted
-      WHERE notification_id = $1
-      RETURNING *;
-    `,
-      [notification_id]
-    );
-
-    // Commit the transaction
     await client.query("COMMIT");
+    console.log("Transaction committed successfully for notification_id:", notification_id);
 
-    if (combinedQuery.rowCount > 0) {
-      const userId = combinedQuery.rows[0].user_id;
-      const serviceBooked = combinedQuery.rows[0].service_booked;
+    const { user_id, service_booked } = combinedQuery.rows[0];
+    const fcmTokens = combinedQuery.rows
+      .map(row => row.fcm_token)
+      .filter(Boolean);
 
-      const fcmTokens = combinedQuery.rows.map((row) => row.fcm_token);
-
-      if (fcmTokens.length > 0) {
-        // Create the multicast message object for FCM tokens
+    // FCM Notification Handling
+    if (fcmTokens.length > 0) {
+      try {
         const multicastMessage = {
           tokens: fcmTokens,
           notification: {
             title: "Click Solver",
-            body: `Sorry for this, User cancelled the Service.`,
+            body: "Sorry for this, User cancelled the Service.",
           },
-          data: {
-            screen: "Home",
-          },
+          data: { screen: "Home" },
         };
-
-        try {
-          // Send the message to multiple tokens using sendEachForMulticast
-          const response = await getMessaging().sendEachForMulticast(
-            multicastMessage
-          );
-
-          // Log the responses for each token
-          response.responses.forEach((res, index) => {
-            if (res.success) {
-              // Optionally log successful sends
-              // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
-            } else {
-              console.error(
-                `Error sending message to token ${fcmTokens[index]}:`,
-                res.error
-              );
-            }
-          });
-        } catch (error) {
-          console.error("Error sending notifications:", error);
-        }
-
-        const screen = "";
-        const encodedId = Buffer.from(notification_id.toString()).toString(
-          "base64"
-        );
-        await createUserBackgroundAction(
-          userId,
-          encodedId,
-          screen,
-          serviceBooked
-        );
-
-        return res.status(200).json({ message: "Cancellation successful" });
-      } else {
-        const screen = "";
-        const encodedId = Buffer.from(notification_id.toString()).toString(
-          "base64"
-        );
-        await createUserBackgroundAction(
-          userId,
-          encodedId,
-          screen,
-          serviceBooked
-        );
-        console.error("No FCM tokens to send the message to.");
-        return res.status(200).json({
-          message: "Cancellation successful, but no FCM tokens found.",
-        });
+        const response = await getMessaging().sendEachForMulticast(multicastMessage);
+        // Log or handle FCM response errors as needed
+      } catch (error) {
+        console.error("Error sending notifications:", error);
       }
-    } else {
-      return res.status(205).json({
-        message:
-          "Cancellation not performed. Either invalid ID or already canceled.",
-      });
     }
+
+    // Background action regardless of FCM tokens
+    await createUserBackgroundAction(
+      user_id,
+      encodedUserNotificationId,
+      "",
+      service_booked
+    );
+
+    return res.status(200).json({ message: "Cancellation successful" });
   } catch (error) {
-    // Rollback the transaction in case of error
     await client.query("ROLLBACK");
     console.error("Error processing request:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+
+
+
+//main before
+// const workerNavigationCancel = async (req, res) => {
+//   const { notification_id } = req.body;
+//   const encodedUserNotificationId = Buffer.from(
+//     notification_id.toString()
+//   ).toString("base64");
+
+//   try {
+//     // Begin a transaction
+//     await client.query("BEGIN");
+
+//     // First query: UPDATE and INSERT operations
+//     const combinedQuery = await client.query(
+//       `
+//       WITH updated AS (
+//         UPDATE accepted
+//         SET user_navigation_cancel_status = 'workercanceled'
+//         WHERE notification_id = $1
+//         RETURNING 
+//           accepted_id, 
+//           notification_id, 
+//           user_id, 
+//           user_notification_id, 
+//           longitude, 
+//           latitude, 
+//           created_at, 
+//           worker_id, 
+//           complete_status,
+//           service_booked
+//           time,
+//           discount,
+//           total_cost,
+//           tip_amount
+//       ),
+//       inserted AS (
+//         INSERT INTO completenotifications (
+//           accepted_id, 
+//           notification_id, 
+//           user_id, 
+//           user_notification_id, 
+//           longitude, 
+//           latitude, 
+//           created_at, 
+//           worker_id, 
+//           complete_status,
+//           service_booked, 
+//           time,
+//           discount,
+//           total_cost,
+//           tip_amount
+//         )
+//         SELECT 
+//           accepted_id, 
+//           notification_id, 
+//           user_id, 
+//           user_notification_id, 
+//           longitude, 
+//           latitude, 
+//           created_at, 
+//           worker_id, 
+//           'workercanceled', 
+//           service_booked, 
+//           time,
+//           discount,
+//           total_cost,
+//           tip_amount
+//         FROM updated
+//         RETURNING user_id, notification_id, service_booked
+//       )
+//       SELECT i.user_id, f.fcm_token
+//       FROM inserted i
+//       JOIN "user" w ON w.user_id = i.user_id
+//       JOIN userfcm f ON f.user_id = w.user_id;
+//       `,
+//       [notification_id]
+//     );
+
+//     // Second query: DELETE operation
+//     const deleteResult = await client.query(
+//       `
+//       DELETE FROM accepted
+//       WHERE notification_id = $1
+//       RETURNING *;
+//     `,
+//       [notification_id]
+//     );
+
+//     // Commit the transaction
+//     await client.query("COMMIT");
+
+//     if (combinedQuery.rowCount > 0) {
+//       const userId = combinedQuery.rows[0].user_id;
+//       const serviceBooked = combinedQuery.rows[0].service_booked;
+
+//       const fcmTokens = combinedQuery.rows.map((row) => row.fcm_token);
+
+//       if (fcmTokens.length > 0) {
+//         // Create the multicast message object for FCM tokens
+//         const multicastMessage = {
+//           tokens: fcmTokens,
+//           notification: {
+//             title: "Click Solver",
+//             body: `Sorry for this, User cancelled the Service.`,
+//           },
+//           data: {
+//             screen: "Home",
+//           },
+//         };
+
+//         try {
+//           // Send the message to multiple tokens using sendEachForMulticast
+//           const response = await getMessaging().sendEachForMulticast(
+//             multicastMessage
+//           );
+
+//           // Log the responses for each token
+//           response.responses.forEach((res, index) => {
+//             if (res.success) {
+//               // Optionally log successful sends
+//               // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
+//             } else {
+//               console.error(
+//                 `Error sending message to token ${fcmTokens[index]}:`,
+//                 res.error
+//               );
+//             }
+//           });
+//         } catch (error) {
+//           console.error("Error sending notifications:", error);
+//         }
+
+//         const screen = "";
+//         const encodedId = Buffer.from(notification_id.toString()).toString(
+//           "base64"
+//         );
+//         await createUserBackgroundAction(
+//           userId,
+//           encodedId,
+//           screen,
+//           serviceBooked
+//         );
+
+//         return res.status(200).json({ message: "Cancellation successful" });
+//       } else {
+//         const screen = "";
+//         const encodedId = Buffer.from(notification_id.toString()).toString(
+//           "base64"
+//         );
+//         await createUserBackgroundAction(
+//           userId,
+//           encodedId,
+//           screen,
+//           serviceBooked
+//         );
+//         console.error("No FCM tokens to send the message to.");
+//         return res.status(200).json({
+//           message: "Cancellation successful, but no FCM tokens found.",
+//         });
+//       }
+//     } else {
+//       return res.status(205).json({
+//         message:
+//           "Cancellation not performed. Either invalid ID or already canceled.",
+//       });
+//     }
+//   } catch (error) {
+//     // Rollback the transaction in case of error
+//     await client.query("ROLLBACK");
+//     console.error("Error processing request:", error);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+// };
 
 const workCompletedRequest = async (req, res) => {
   const { notification_id } = req.body;
@@ -8319,6 +8985,123 @@ const workCompletedRequest = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+// const workerNavigationCancel = async (req, res) => {
+//   const { notification_id, offer_code } = req.body;
+//   const encodedUserNotificationId = Buffer.from(notification_id.toString()).toString("base64");
+
+//   try {
+//     await client.query("BEGIN");
+//     console.log("Transaction started for notification_id:", notification_id);
+
+//     const combinedQuery = await client.query(
+//       `
+//       WITH updated AS (
+//         UPDATE accepted
+//         SET user_navigation_cancel_status = 'workercanceled'
+//         WHERE notification_id = $1
+//         RETURNING 
+//           accepted_id, user_id, user_notification_id,
+//           longitude, latitude, created_at, worker_id,
+//           service_booked, time, discount, total_cost,
+//           tip_amount, coupons_applied
+//       ),
+//       inserted AS (
+//         INSERT INTO completenotifications (
+//           accepted_id, notification_id, user_id, user_notification_id,
+//           longitude, latitude, created_at, worker_id, complete_status,
+//           service_booked, time, discount, total_cost, tip_amount
+//         )
+//         SELECT 
+//           accepted_id, $1, user_id, user_notification_id,
+//           longitude, latitude, created_at, worker_id, 'workercanceled',
+//           service_booked, time, discount, total_cost, tip_amount
+//         FROM updated
+//         RETURNING user_id, service_booked
+//       ),
+//       user_updated AS (
+//         UPDATE "user" AS u
+//         SET offers_applied = (
+//           SELECT jsonb_agg(
+//             CASE
+//               WHEN elem->>'offer_code' = $2 THEN elem || '{"status": "pending"}'
+//               ELSE elem
+//             END
+//           )
+//           FROM jsonb_array_elements(u.offers_applied) AS elem
+//         )
+//         WHERE u.user_id IN (SELECT user_id FROM updated)
+//           AND EXISTS (
+//             SELECT 1 FROM updated a
+//             WHERE a.user_id = u.user_id
+//               AND a.coupons_applied IS NOT NULL
+//               AND EXISTS (
+//                 SELECT 1 FROM jsonb_array_elements(a.coupons_applied) AS ac
+//                 WHERE ac->>'offer_code' = $2
+//               )
+//           )
+//         RETURNING u.user_id
+//       ),
+//       deleted AS (
+//         DELETE FROM accepted WHERE notification_id = $1 RETURNING *
+//       )
+//       SELECT 
+//         i.user_id, 
+//         f.fcm_token, 
+//         i.service_booked
+//       FROM inserted i
+//       JOIN "user" w ON w.user_id = i.user_id
+//       JOIN userfcm f ON f.user_id = w.user_id;
+//       `,
+//       [notification_id, offer_code]
+//     );
+
+//     await client.query("COMMIT");
+//     console.log("Transaction committed successfully for notification_id:", notification_id);
+
+//     if (combinedQuery.rows.length === 0) {
+//       return res.status(205).json({
+//         message: "Cancellation not performed. Either invalid ID or already canceled."
+//       });
+//     }
+
+//     const { user_id, service_booked, fcm_token } = combinedQuery.rows[0];
+//     const fcmTokens = combinedQuery.rows.map(row => row.fcm_token).filter(Boolean);
+
+//     // FCM Notification Handling
+//     if (fcmTokens.length > 0) {
+//       try {
+//         const multicastMessage = {
+//           tokens: fcmTokens,
+//           notification: {
+//             title: "Click Solver",
+//             body: "Sorry for this, User cancelled the Service.",
+//           },
+//           data: { screen: "Home" },
+//         };
+//         const response = await getMessaging().sendEachForMulticast(multicastMessage);
+//         // ... (keep existing error logging for FCM)
+//       } catch (error) {
+//         console.error("Error sending notifications:", error);
+//       }
+//     }
+
+//     // Background action regardless of FCM tokens
+//     await createUserBackgroundAction(
+//       user_id,
+//       encodedUserNotificationId,
+//       "",
+//       service_booked
+//     );
+
+//     return res.status(200).json({ message: "Cancellation successful" });
+
+//   } catch (error) {
+//     await client.query("ROLLBACK");
+//     console.error("Error processing request:", error);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+// };
 
 const addWorker = async (worker) => {
   const { name, phone_number } = worker;
@@ -9064,7 +9847,7 @@ async function getWorkerLocations(workerIds) {
 
 // above is the main
 const getWorkersNearby = async (req, res) => {
-  console.log("called")
+
   try {
     const user_id = req.user.id;
     const {
@@ -9075,9 +9858,11 @@ const getWorkersNearby = async (req, res) => {
       alternatePhoneNumber,
       serviceBooked,
       discount,
-      tipAmount
+      tipAmount,
+      offer
 
     } = req.body;
+    console.log("called",offer)
     // console.log(tipAmount)
     const created_at = getCurrentTimestamp();
     const serviceArray = JSON.stringify(serviceBooked);
@@ -9089,7 +9874,7 @@ const getWorkersNearby = async (req, res) => {
 
     /**
      *  ┌───────────────────────────────────────────────────────┐
-     *  │  1) Single Query #1: Combine user fetch + insert +     │
+     *  │  1) Single Query #1: Combine user fetch + insert +    │
      *  │     matching subservices retrieval via CTEs           │
      *  └───────────────────────────────────────────────────────┘
      */
@@ -9253,7 +10038,7 @@ const getWorkersNearby = async (req, res) => {
       INSERT INTO notifications (
         user_notification_id, user_id, worker_id,
         longitude, latitude, created_at, pin, service_booked,
-        discount, total_cost, tip_amount
+        discount,coupons_applied, total_cost, tip_amount
       )
       SELECT
         $1,  -- user_notification_id
@@ -9265,6 +10050,7 @@ const getWorkersNearby = async (req, res) => {
         $6,  -- pin
         $7,  -- serviceArray
         $9,  -- discount
+        $12,
         $10,  -- total_cost
         $11
       FROM UNNEST($8::int[]) AS w(worker_id)
@@ -9289,10 +10075,33 @@ const getWorkersNearby = async (req, res) => {
       nearbyWorkers, // $8 :: int[]
       discount, // $9
       totalCost, // $10
-      tipAmount
+      tipAmount,
+      offer
     ];
 
     const result2 = await client.query(query2, query2Params);
+    if(offer){
+      const offerCodeValue = offer.offer_code;
+      console.log("offers applied changes",offerCodeValue)
+      const queryText = `
+        UPDATE "user" AS u
+        SET offers_used = (
+          SELECT jsonb_agg(
+            CASE
+              WHEN elem->>'offer_code' = $1
+                THEN elem || '{"status":"applied"}'
+              ELSE elem
+            END
+          )
+          FROM jsonb_array_elements(u.offers_used) elem
+        )
+        WHERE u.user_id = $2
+      `;
+
+      const values = [offerCodeValue, user_id];
+
+      await client.query(queryText, values);
+    }
     const tokens = result2.rows[0].tokens || [];
     // console.log("tok",tokens)
 
@@ -12169,6 +12978,28 @@ const processPayment = async (req, res) => {
   try {
     const end_time = new Date();
 
+    // if(offer){
+    //   const offerCodeValue = offer.offer_code
+    //   const queryText = `
+    //     UPDATE "user" AS u
+    //     SET offers_used = (
+    //       SELECT jsonb_agg(
+    //         CASE
+    //           WHEN elem->>'offer_code' = $1
+    //             THEN elem || '{"status":"used"}'
+    //           ELSE elem
+    //         END
+    //       )
+    //       FROM jsonb_array_elements(u.offers_used) elem
+    //     )
+    //     WHERE u.user_id = $2
+    //   `;
+
+    //   const values = [offerCodeValue, userId];
+
+    //   await client.query(queryText, values);
+    // }
+
     /**
      * Multi-CTE query steps:
      * 1) update_servicecall
@@ -12618,13 +13449,19 @@ const processPayment = async (req, res) => {
 
 const submitFeedback = async (req, res) => {
   try {
-    const { notification_id, rating, comment } = req.body;
-    const user_id = req.user.id;
-
-    // Validate required fields
-    if (!notification_id || !rating || !user_id) {
+    // Convert and validate inputs
+    const rawNotificationId = req.body.notification_id;
+    const rawRating = req.body.rating;
+    const rawUserId = req.user.id;
+    
+    // Convert to numbers and check for validity
+    const notification_id = parseInt(rawNotificationId, 10);
+    const rating = parseInt(rawRating, 10);
+    const user_id = parseInt(rawUserId, 10);
+    
+    if (isNaN(notification_id) || isNaN(rating) || isNaN(user_id)) {
       return res.status(400).json({
-        message: "Notification ID, rating, and user ID are required.",
+        message: "Notification ID, rating, and user ID must be valid numbers.",
       });
     }
 
@@ -12653,7 +13490,7 @@ const submitFeedback = async (req, res) => {
       SELECT * FROM updated_worker;
     `;
 
-    const values = [notification_id, rating, comment || null, user_id];
+    const values = [notification_id, rating, req.body.comment || null, user_id];
     const result = await client.query(query, values);
 
     if (result.rowCount === 0) {
@@ -12679,6 +13516,7 @@ const submitFeedback = async (req, res) => {
     res.status(500).json({ message: "Internal server error.", error: error.message });
   }
 };
+
 
 
 
@@ -13727,22 +14565,21 @@ const workerWorkingStatusUpdated = async (req, res) => {
       },
       android: {
         priority: "high",
-        notification: {
-          channelId: "silent_channel",  // Use a channel created for silent notifications
-          priority: "min",              // Minimizes the notification prominence
-          visibility: "secret"          // Hides it from the status bar
-        }
+        // notification: {
+        //   channelId: "silent_channel",  // Use a channel created for silent notifications
+        //   priority: "min",              // Minimizes the notification prominence
+        //   visibility: "secret"          // Hides it from the status bar
+        // }
       },
       apns: {
         payload: {
           aps: {
-            contentAvailable: true, // Ensures the app processes the notification silently
-            sound: ""               // No sound will be played
+            contentAvailable: true // Ensures the app processes the notification silently
+            // Remove the sound property to avoid errors for silent notifications.
           }
         }
       }
     };
-    
 
     // Send notifications using sendEachForMulticast
     try {
@@ -13767,6 +14604,7 @@ const workerWorkingStatusUpdated = async (req, res) => {
     return res.status(500).json({ message: "Internal server error", error });
   }
 };
+
 
 
 const WorkerWorkInProgressDetails = async (req, res) => {
@@ -14464,6 +15302,397 @@ const administratorDetails = async (req, res) => {
 };
 
 
+// const fetchOffers = async (req, res) => {
+//   try {
+//     const  user_id  = req.user.id;
+//     const role = req.user && req.user.role ? req.user.role : 'user';
+
+//     const query = `
+//       SELECT 
+//         o.offer_code,
+//         o.title,
+//         o.description,
+//         o.discount_percentage,
+//         o.min_booking_amount,
+//         o.max_discount_amount,
+//         o.start_date,
+//         o.end_date,
+//         o.applicable_for,
+//         CASE 
+//           WHEN o.offer_code ILIKE '%WELCOME%' THEN 
+//             CASE 
+//               -- Check if offer_code exists in offers_used AND status is 'applied' or 'used'
+//               WHEN EXISTS (
+//                 SELECT 1 
+//                 FROM jsonb_array_elements(u.offers_used) AS used_offer
+//                 WHERE used_offer->>'offer_code' = o.offer_code
+//                 AND (used_offer->>'status' = 'applied' OR used_offer->>'status' = 'used')
+//               ) 
+//               THEN false 
+//               ELSE true 
+//             END
+//           ELSE true
+//         END AS eligible
+//       FROM offers o
+//       LEFT JOIN (
+//         SELECT offers_used FROM "user" WHERE user_id = $1
+//       ) u ON true
+//       WHERE o.is_active = TRUE
+//         AND o.start_date <= NOW()
+//         AND o.end_date >= NOW()
+//         AND (o.applicable_for = 'both' OR o.applicable_for = $2);
+//     `;
+
+//     const values = [user_id, role];
+//     const result = await client.query(query, values);
+//     const offers = result.rows;
+
+//     return res.status(200).json({
+//       success: true,
+//       offers,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching offers:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Internal Server Error",
+//     });
+//   }
+// };
+
+const fetchOffers = async (req, res) => {
+  try {
+    const user_id = req.user.id;
+    const role = req.user && req.user.role ? req.user.role : 'user';
+
+    const query = `
+      SELECT 
+        o.offer_code,
+        o.title,
+        o.description,
+        o.discount_percentage,
+        o.min_booking_amount,
+        o.max_discount_amount,
+        o.start_date,
+        o.end_date,
+        o.applicable_for
+      FROM offers o
+      LEFT JOIN (
+        SELECT offers_used 
+        FROM "user" 
+        WHERE user_id = $1
+      ) u ON true
+      WHERE o.is_active = TRUE
+        AND o.start_date <= NOW()
+        AND o.end_date >= NOW()
+        AND (o.applicable_for = 'both' OR o.applicable_for = $2)
+        AND (
+          -- For offers that contain "WELCOME" in the offer_code,
+          -- check that no matching entry in offers_used has a status of "applied" or "used"
+          o.offer_code NOT ILIKE '%WELCOME%' OR
+          (
+            NOT EXISTS (
+              SELECT 1 
+              FROM jsonb_array_elements(u.offers_used) AS used_offer
+              WHERE used_offer->>'offer_code' = o.offer_code
+                AND (used_offer->>'status' = 'applied' OR used_offer->>'status' = 'used')
+            )
+          )
+        );
+    `;
+
+    const values = [user_id, role];
+    const result = await client.query(query, values);
+    const offers = result.rows;
+
+    return res.status(200).json({
+      success: true,
+      offers,
+    });
+  } catch (error) {
+    console.error("Error fetching offers:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+
+// const offerValidation = async (req, res) => {
+//   try {
+//     const user_id = req.user.id;
+//     const { offer_code, totalAmount } = req.body;
+
+//     if (!user_id || !offer_code || totalAmount == null) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Missing required parameters: user_id, offer_code, or totalAmount",
+//       });
+//     }
+
+//     // ======================
+//     // 1) Check or Create offers_used entry for WELCOME
+//     // ======================
+//     let userOffers = null;
+//     if (offer_code.includes("WELCOME")) {
+//       const userQuery = `SELECT offers_used FROM "user" WHERE user_id = $1`;
+//       const result = await client.query(userQuery, [user_id]);
+
+//       if (result.rowCount === 0) {
+//         return res.status(404).json({
+//           success: false,
+//           message: "User not found",
+//         });
+//       }
+
+//       const offersUsed = result.rows[0].offers_used || [];
+//       userOffers = offersUsed; // Keep it for later usage
+
+//       // Check if any "WELCOME" code is already used
+//       const alreadyUsed = offersUsed.some(
+//         (item) =>
+//           item.offer_code === offer_code &&
+//           (item.status === "applied" || item.status === "used")
+//       );
+//       if (alreadyUsed) {
+//         return res.status(200).json({
+//           valid: false,
+//           error: "Offer already used",
+//           discountAmount: 0,
+//           newTotal: Number(totalAmount),
+//         });
+//       }
+
+//       // If code is not present in any status, add a "pending" entry
+//       const exists = offersUsed.some((item) => item.offer_code === offer_code);
+//       if (!exists) {
+//         const updateQuery = `
+//           UPDATE "user"
+//           SET offers_used = COALESCE(offers_used, '[]'::jsonb) || $1::jsonb
+//           WHERE user_id = $2
+//         `;
+//         const newEntry = JSON.stringify([{ offer_code, status: "pending", quantity: 0 }]);
+//         await client.query(updateQuery, [newEntry, user_id]);
+//       }
+//     }
+
+//     // ======================
+//     // 2) For NON-“WELCOME” codes, we still want to record in offers_used if not present
+//     // ======================
+//     if (!offer_code.includes("WELCOME")) {
+//       const userQuery = `SELECT offers_used FROM "user" WHERE user_id = $1`;
+//       const result = await client.query(userQuery, [user_id]);
+
+//       if (result.rowCount === 0) {
+//         return res.status(404).json({
+//           success: false,
+//           message: "User not found",
+//         });
+//       }
+
+//       // Reuse userOffers if we already fetched (WELCOME scenario) else from DB
+//       const offersUsed = userOffers != null ? userOffers : result.rows[0].offers_used || [];
+
+//       // If the code is missing, insert a "pending" entry
+//       const notPresent = !offersUsed.some((item) => item.offer_code === offer_code);
+//       if (notPresent) {
+//         const updateQuery = `
+//           UPDATE "user"
+//           SET offers_used = COALESCE(offers_used, '[]'::jsonb) || $1::jsonb
+//           WHERE user_id = $2
+//         `;
+//         const newEntry = JSON.stringify([{ offer_code, status: "pending", quantity: 0 }]);
+//         await client.query(updateQuery, [newEntry, user_id]);
+//       }
+//     }
+
+//     // ======================
+//     // 3) Fetch offer details from offers table
+//     // ======================
+//     const offerDetailQuery = `
+//       SELECT 
+//         discount_percentage,
+//         min_booking_amount,
+//         max_discount_amount
+//       FROM offers
+//       WHERE offer_code = $1
+//         AND is_active = TRUE
+//         AND start_date <= NOW()
+//         AND end_date >= NOW()
+//       LIMIT 1
+//     `;
+//     const offerDetailResult = await client.query(offerDetailQuery, [offer_code]);
+
+//     if (offerDetailResult.rowCount === 0) {
+//       // No active / valid offer found
+//       return res.status(200).json({
+//         valid: false,
+//         error: "Offer not valid or expired",
+//         discountAmount: 0,
+//         newTotal: Number(totalAmount),
+//       });
+//     }
+
+//     const {
+//       discount_percentage,
+//       min_booking_amount,
+//       max_discount_amount,
+//     } = offerDetailResult.rows[0];
+
+//     // ======================
+//     // 4) Check min booking amount
+//     // ======================
+//     if (Number(totalAmount) < Number(min_booking_amount)) {
+//       return res.status(200).json({
+//         valid: false,
+//         error: `Minimum booking amount required is ₹${min_booking_amount}`,
+//         discountAmount: 0,
+//         newTotal: Number(totalAmount),
+//       });
+//     }
+
+//     // ======================
+//     // 5) Calculate discount
+//     // ======================
+//     const discountRate = Number(discount_percentage);
+//     let discountCalc = (Number(totalAmount) * discountRate) / 100;
+//     const maxDiscount = Number(max_discount_amount);
+//     if (discountCalc > maxDiscount) {
+//       discountCalc = maxDiscount;
+//     }
+//     const newTotal = Number(totalAmount) - discountCalc;
+
+//     // ======================
+//     // 6) Return success
+//     // ======================
+//     return res.status(200).json({
+//       valid: true,
+//       discountAmount: discountCalc,
+//       newTotal,
+//       error: null,
+//     });
+//   } catch (error) {
+//     console.error("Error in offer validation:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Internal Server Error",
+//     });
+//   }
+// };
+
+const offerValidation = async (req, res) => {
+  try {
+    const user_id = req.user.id;
+    const { offer_code, totalAmount } = req.body;
+
+    if (!user_id || !offer_code || totalAmount == null) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required parameters: user_id, offer_code, or totalAmount",
+      });
+    }
+
+    // 1) First check offer validity to avoid unnecessary user queries
+    const offerDetailQuery = `
+      SELECT discount_percentage, min_booking_amount, max_discount_amount 
+      FROM offers 
+      WHERE offer_code = $1 
+        AND is_active = TRUE 
+        AND start_date <= NOW() 
+        AND end_date >= NOW() 
+      LIMIT 1`;
+    const offerResult = await client.query(offerDetailQuery, [offer_code]);
+
+    if (offerResult.rowCount === 0) {
+      return res.status(200).json({
+        valid: false,
+        error: "Offer not valid or expired",
+        discountAmount: 0,
+        newTotal: Number(totalAmount),
+      });
+    }
+
+    // 2) Single user query for all subsequent checks
+    const userQuery = `SELECT user_id, offers_used FROM "user" WHERE user_id = $1`;
+    const userResult = await client.query(userQuery, [user_id]);
+
+    if (userResult.rowCount === 0) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const user = userResult.rows[0];
+    const offersUsed = user.offers_used || [];
+
+    // 3) WELCOME offer specific validation
+    if (offer_code.includes("WELCOME")) {
+      const hasUsedWelcome = offersUsed.some(
+        item => item.offer_code === offer_code && 
+        (item.status === "applied" || item.status === "used")
+      );
+
+      if (hasUsedWelcome) {
+        return res.status(200).json({
+          valid: false,
+          error: "Offer already used",
+          discountAmount: 0,
+          newTotal: Number(totalAmount),
+        });
+      }
+    }
+
+    // 4) Single conditional update for missing offers using JSONB operations
+    const offerExists = offersUsed.some(item => item.offer_code === offer_code);
+    if (!offerExists) {
+      const updateQuery = `
+        UPDATE "user"
+        SET offers_used = COALESCE(offers_used, '[]'::jsonb) || $1::jsonb
+        WHERE user_id = $2
+        AND NOT EXISTS (
+          SELECT 1 
+          FROM jsonb_array_elements(COALESCE(offers_used, '[]'::jsonb)) AS item
+          WHERE item->>'offer_code' = $3
+        )`;
+        await client.query(
+          updateQuery,
+          [
+            JSON.stringify([{ offer_code, status: "pending", quantity: 0 }]),
+            user_id,
+            offer_code
+          ]
+        );        
+    }
+
+    // 5) Final validation and calculation
+    const { discount_percentage, min_booking_amount, max_discount_amount } = offerResult.rows[0];
+
+    if (Number(totalAmount) < Number(min_booking_amount)) {
+      return res.status(200).json({
+        valid: false,
+        error: `Minimum booking amount required is ₹${min_booking_amount}`,
+        discountAmount: 0,
+        newTotal: Number(totalAmount),
+      });
+    }
+
+    const discountCalc = Math.min(
+      (Number(totalAmount) * Number(discount_percentage)) / 100,
+      Number(max_discount_amount)
+    );
+    const newTotal = Number(totalAmount) - discountCalc;
+
+    return res.status(200).json({
+      valid: true,
+      discountAmount: discountCalc,
+      newTotal,
+      error: null,
+    });
+
+  } catch (error) {
+    console.error("Error in offer validation:", error);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
 
 
 
@@ -14631,5 +15860,7 @@ module.exports = {
   callMasking,
   workerProfileScreenDetails,
   workerProfileUpdate,
-  profileChangesSubmit
+  profileChangesSubmit,
+  fetchOffers,
+  offerValidation
 };

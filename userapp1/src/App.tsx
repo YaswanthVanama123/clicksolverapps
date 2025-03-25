@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {AppState, Platform, View, ActivityIndicator } from 'react-native';
+import { AppState, Platform, View, ActivityIndicator,Button } from 'react-native';
 import { NavigationContainer, CommonActions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -15,11 +15,20 @@ import {
   PERMISSIONS,
   RESULTS,
 } from 'react-native-permissions';
+// 1) Import i18n to initialize
+import './i18n/i18n';
+
+// 2) Import helper to change language
+import { changeAppLanguage } from './i18n/languageChange';
+
 import Feather from 'react-native-vector-icons/Feather';
-import Entypo from 'react-native-vector-icons/Entypo';
+import Entypo from 'react-native-vector-icons/Entypo'; 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-// Import ThemeProvider and useTheme hook from our global context
+// Polyfill for btoa using base-64 library (install with: npm install base-64)
+import { encode as btoa } from 'base-64';
+
+// Import ThemeProvider and useTheme hook from your global context
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 
 // Import all screens and components
@@ -55,14 +64,24 @@ import PaymentScreenRazor from './Components/PaymentScreenRazor';
 import AboutCS from './Components/AboutCS';
 import ServiceBookingOngoingItem from './Components/ServiceBookingOngoingItem';
 import ChatScreen from './Components/ChatScreen';
+import LanguageSelector from './Components/LanguageSelector';
+import CodePush from 'react-native-code-push';
+
+const codePushOptions = {
+  checkFrequency: CodePush.CheckFrequency.ON_APP_START,
+  deploymentKey: '9osws50ZWw1_SwJJi-EynN9Xpz0mJlO43mKHPQ',
+};
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-function TabNavigator() {
-  // Use global theme to update tab styles dynamically
-  const { isDarkMode } = useTheme();
 
+
+/** 
+ * Bottom Tab Navigator
+ */
+function TabNavigator() {
+  const { isDarkMode } = useTheme();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -103,18 +122,45 @@ function TabNavigator() {
     >
       <Tab.Screen name="Home" component={ServiceApp} options={{ headerShown: false }} />
       <Tab.Screen name="Bookings" component={RecentServices} options={{ headerShown: false }} />
-      <Tab.Screen name="Tracking" component={ServiceTrackingListScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Tracking" component={ServiceInProgress} options={{ headerShown: false }} />
       <Tab.Screen name="Account" component={ProfileScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
   );
 }
 
+/**
+ * Main App Component
+ */
 function App() {
-  const navigationRef = useRef<any>(null);
-  const [initialRoute, setInitialRoute] = useState<string | null>(null);
+  const navigationRef = useRef(null);
+  const [initialRoute, setInitialRoute] = useState(null);
+  const [isNavReady, setIsNavReady] = useState(false);
 
-  // Request all required permissions
+  /**
+   * Process pending notification from storage.
+   */
+  const processPendingNotification = async () => {
+    try {
+      const pending = await EncryptedStorage.getItem('pendingNotification');
+      if (pending) {
+        const remoteMessage = JSON.parse(pending);
+        console.log('Processing pending notification:', remoteMessage);
+        await handleNotificationNavigation(remoteMessage);
+        await EncryptedStorage.removeItem('pendingNotification');
+        console.log('Pending notification processed and removed.');
+      } else {
+        console.log('No pending notification found.');
+      }
+    } catch (error) {
+      console.error('Error processing pending notification:', error);
+    }
+  };
+
+  /**
+   * Request all required permissions
+   */
   async function requestAllPermissions() {
+    console.log('Requesting permissions...');
     if (Platform.OS === 'android') {
       const androidPermissions = [
         PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
@@ -130,8 +176,6 @@ function App() {
       if (permissionsToRequest.length > 0) {
         const newStatuses = await requestMultiple(permissionsToRequest);
         console.log('Updated Android Permission Statuses:', newStatuses);
-      } else {
-        console.log('All necessary Android permissions are already granted.');
       }
       if (Platform.Version >= 33) {
         const { status } = await requestNotifications(['alert', 'sound', 'badge']);
@@ -152,325 +196,216 @@ function App() {
       if (permissionsToRequest.length > 0) {
         const newStatuses = await requestMultiple(iosPermissions);
         console.log('Updated iOS Permission Statuses:', newStatuses);
-      } else {
-        console.log('All necessary iOS permissions are already granted.');
       }
     }
   }
 
-  // Get FCM token and store it in the backend if needed.
+  /**
+   * Get FCM token and store it in the backend if needed.
+   */
   async function getTokens() {
     try {
       const token = await messaging().getToken();
-      console.log("token", token);
+      console.log('FCM token:', token);
       const fcm = await EncryptedStorage.getItem('fcm_token');
       const cs_token = await EncryptedStorage.getItem('cs_token');
       console.log('Stored FCM token:', fcm);
       if (!fcm && cs_token) {
-        const token = await messaging().getToken();
         await EncryptedStorage.setItem('fcm_token', token);
-        const cs_token = await EncryptedStorage.getItem('cs_token');
-        if (cs_token) {
-          await axios.post(
-            `https://backend.clicksolver.com/api/user/store-fcm-token`,
-            { fcmToken: token },
-            { headers: { Authorization: `Bearer ${cs_token}` } }
-          );
-        }
+        await axios.post(
+          'https://backend.clicksolver.com/api/user/store-fcm-token',
+          { fcmToken: token },
+          { headers: { Authorization: `Bearer ${cs_token}` } }
+        );
       }
     } catch (error) {
       console.error('Error storing FCM token in the backend:', error);
     }
   }
 
-  // Store notification in backend
-  async function storeNotificationInBackend(notification: any) {
+  /**
+   * Store a notification locally and optionally in the backend.
+   */
+  async function storeNotificationLocally(notification) {
     try {
-      const pcs_token = await EncryptedStorage.getItem('cs_token');
-      const fcmToken = await EncryptedStorage.getItem('fcm_token');
-      await axios.post(
-        `https://backend.clicksolver.com/api/user/store-notification`,
-        { notification, fcmToken },
-        { headers: { Authorization: `Bearer ${pcs_token}` } }
-      );
-      console.log('Notification stored in backend:', notification);
-    } catch (error) {
-      console.error('Failed to store notification in backend:', error);
-    }
-  }
-
-  // Store notification locally and then backend
-  async function storeNotificationLocally(notification: any) {
-    try {
-      const existingNotifications = await EncryptedStorage.getItem('notifications');
-      let notifications = existingNotifications ? JSON.parse(existingNotifications) : [];
+      const existing = await EncryptedStorage.getItem('notifications');
+      const notifications = existing ? JSON.parse(existing) : [];
       notifications.push(notification);
       await EncryptedStorage.setItem('notifications', JSON.stringify(notifications));
       console.log('Notification stored locally:', notification);
-      storeNotificationInBackend(notification);
+      // Optionally: call your backend API here.
     } catch (error) {
       console.error('Failed to store notification locally:', error);
     }
   }
 
-  // Navigate based on notification data
-  // async function handleNotificationNavigation(remoteMessage: any) {
-  //   if (!remoteMessage || !remoteMessage.data) return;
-  //   const notificationId = remoteMessage.data.notification_id;
-  //   const encodedNotificationId = btoa(notificationId);
-  //   const screen = remoteMessage.data.screen;
-  //   if (!navigationRef.current || !screen) {
-  //     return;
-  //   }
-  //   console.log('Navigating based on notification to screen:', screen);
-  //   const navigationActions: any = {
-  //     UserNavigation: () =>
-  //       navigationRef.current.dispatch(
-  //         CommonActions.navigate('UserNavigation', {
-  //           encodedId: encodedNotificationId,
-  //         })
-  //       ),
-  //     worktimescreen: () =>
-  //       navigationRef.current.dispatch(
-  //         CommonActions.navigate('ServiceInProgress', {
-  //           encodedId: encodedNotificationId,
-  //         })
-  //       ),
-  //     Paymentscreen: () =>
-  //       navigationRef.current.dispatch(
-  //         CommonActions.navigate('Paymentscreen', {
-  //           encodedId: encodedNotificationId,
-  //         })
-  //       ),
-  //     Home: () => {
-  //       if (encodedNotificationId) {
-  //         navigationRef.current.dispatch(
-  //           CommonActions.reset({
-  //             index: 0,
-  //             routes: [
-  //               {
-  //                 name: 'Tabs',
-  //                 state: {
-  //                   routes: [
-  //                     {
-  //                       name: 'Home',
-  //                       params: { encodedId: encodedNotificationId },
-  //                     },
-  //                   ],
-  //                 },
-  //               },
-  //             ],
-  //           })
-  //         );
-  //       } else {
-  //         navigationRef.current.dispatch(
-  //           CommonActions.reset({
-  //             index: 0,
-  //             routes: [
-  //               {
-  //                 name: 'Tabs',
-  //                 state: {
-  //                   routes: [{ name: 'Home' }],
-  //                 },
-  //               },
-  //             ],
-  //           })
-  //         );
-  //       }
-  //     },
-  //   };
-  //   if (navigationActions[screen]) {
-  //     navigationActions[screen]();
-  //   }
-  // }
-
-  async function handleNotificationNavigation(remoteMessage: any) {
-    if (!remoteMessage || !remoteMessage.data) return;
-    const notificationId = remoteMessage.data.notification_id;
-    const encodedNotificationId = btoa(notificationId); // Use proper base64 encoding
-    const screen = remoteMessage.data.screen;
-    if (!navigationRef.current || !screen) {
+  /**
+   * Navigate based on notification data.
+   */
+  async function handleNotificationNavigation(remoteMessage) {
+    if (!remoteMessage || !remoteMessage.data) {
+      console.log('No valid remoteMessage data for navigation.');
       return;
     }
-    console.log('Navigating based on notification to screen:', screen);
-    
-    // Define navigation actions for each screen
-    const navigationActions: any = {
+    const { notification_id: notificationId, screen } = remoteMessage.data;
+    if (!notificationId || !screen || !navigationRef.current) {
+      console.log('Missing notificationId, screen, or navigation ref.');
+      return;
+    }
+    const encodedId = btoa(notificationId);
+    console.log('Navigating based on notification to screen:', screen, 'with id:', encodedId);
+    const actions = {
       UserNavigation: () =>
         navigationRef.current.dispatch(
-          CommonActions.navigate('UserNavigation', {
-            encodedId: encodedNotificationId,
-          })
+          CommonActions.navigate('UserNavigation', { encodedId })
         ),
       worktimescreen: () =>
         navigationRef.current.dispatch(
-          CommonActions.navigate('ServiceInProgress', {
-            encodedId: encodedNotificationId,
-          })
+          CommonActions.navigate('ServiceInProgress', { encodedId })
         ),
       Paymentscreen: () =>
         navigationRef.current.dispatch(
-          CommonActions.navigate('Paymentscreen', {
-            encodedId: encodedNotificationId,
-          })
+          CommonActions.navigate('Paymentscreen', { encodedId })
         ),
-      Home: () => {
+      Home: () =>
         navigationRef.current.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [
-              { 
-                name: 'Tabs',
-                params: { screen: 'Home', params: { encodedId: encodedNotificationId } }
-              }
-            ],
+            routes: [{
+              name: 'Tabs',
+              params: { screen: 'Home', params: { encodedId } },
+            }],
           })
-        );
-      },
+        ),
     };
-  
-    if (navigationActions[screen]) {
-      navigationActions[screen]();
+    if (actions[screen]) {
+      actions[screen]();
+      console.log('Navigation action executed for screen:', screen);
+    } else {
+      console.log('No navigation action defined for screen:', screen);
     }
   }
 
-    // Add AppState handling for background notifications
-    useEffect(() => {
-      const handleAppStateChange = async (nextAppState: string) => {
-        if (nextAppState === 'active') {
-          try {
-            const pending = await EncryptedStorage.getItem('pendingNotification');
-            if (pending) {
-              const remoteMessage = JSON.parse(pending);
-              await handleNotificationNavigation(remoteMessage);
-              await EncryptedStorage.removeItem('pendingNotification');
-            }
-          } catch (error) {
-            console.error('Error handling pending notification:', error);
-          }
-        } 
-      };
-  
-      const subscription = AppState.addEventListener('change', handleAppStateChange);
-      return () => subscription.remove();
-    }, []);
-  
-
+  /**
+   * Listen for AppState changes.
+   */
   useEffect(() => {
+    const handleAppStateChange = async (nextAppState) => {
+      console.log('AppState changed to:', nextAppState);
+      if (nextAppState === 'active' && isNavReady) {
+        console.log('App is active and navigation is ready. Processing pending notification.');
+        await processPendingNotification();
+      }
+    };
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription.remove();
+  }, [isNavReady]);
+
+  /**
+   * CodePush updates
+   */
+  useEffect(() => {
+    CodePush.sync({
+      installMode: CodePush.InstallMode.IMMEDIATE,
+      updateDialog: true,
+    });
+  }, []);
+
+  /**
+   * FCM & Push Notification Configuration
+   */
+  useEffect(() => {
+    // Configure local push notifications.
     PushNotification.configure({
       onNotification: function (notification) {
+        console.log('PushNotification onNotification:', notification);
         if (notification.userInteraction) {
           handleNotificationNavigation({ data: notification.data });
         }
       },
+      popInitialNotification: true,
+      requestPermissions: false,
     });
-
     requestAllPermissions();
     getTokens();
 
+    // Create channels if needed.
     PushNotification.createChannel(
       {
         channelId: 'default-channel-id',
         channelName: 'Default Channel',
-        channelDescription: 'A default channel',
-        soundName: 'default',
-        importance: 4,
-        vibrate: true,
       },
-      created => console.log(`createChannel returned '${created}'`)
+      created => console.log(`Default channel created: ${created}`)
     );
-
     PushNotification.createChannel(
       {
         channelId: 'silent_channel',
         channelName: 'Silent Channel',
-        channelDescription: 'A channel for silent notifications',
-        soundName: 'default',
-        importance: 1, // Low importance so it doesn't pop up
+        importance: 1,
         vibrate: false,
       },
-      created => console.log(`Silent channel created: '${created}'`)
-    ); 
+      created => console.log(`Silent channel created: ${created}`)
+    );
 
+    // Handle foreground messages.
     const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
-      console.log('A new FCM message arrived!', JSON.stringify(remoteMessage));
+      console.log('FCM foreground message:', JSON.stringify(remoteMessage));
       await handleNotificationNavigation(remoteMessage);
       const notification = {
         title: remoteMessage.notification?.title || 'No title',
         body: remoteMessage.notification?.body || 'No body',
         data: remoteMessage.data,
-        userNotificationId: remoteMessage.data.user_notification_id,
-        receivedAt: new Intl.DateTimeFormat('en-IN', {
-          timeZone: 'Asia/Kolkata',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: false,
-        }).format(new Date()),
+        receivedAt: new Date().toISOString(),
       };
       storeNotificationLocally(notification);
       PushNotification.localNotification({
         channelId: 'default-channel-id',
         title: notification.title,
         message: notification.body,
-        playSound: true,
-        soundName: 'default',
         data: remoteMessage.data,
-        userInfo: remoteMessage.data,
       });
     });
 
+    // Handle background messages (data-only payloads).
     messaging().setBackgroundMessageHandler(async remoteMessage => {
-      console.log('Message handled in the background!', JSON.stringify(remoteMessage));
-      await handleNotificationNavigation(remoteMessage);
+      console.log('FCM background message:', JSON.stringify(remoteMessage));
+      try {
+        // Save pending notification for later processing.
+        await EncryptedStorage.setItem('pendingNotification', JSON.stringify(remoteMessage));
+        console.log('Stored pending notification in EncryptedStorage.');
+      } catch (error) {
+        console.error('Error storing pending notification:', error);
+      }
       const notification = {
         title: remoteMessage.notification?.title || 'No title',
         body: remoteMessage.notification?.body || 'No body',
-        receivedAt: new Intl.DateTimeFormat('en-IN', {
-          timeZone: 'Asia/Kolkata',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: false,
-        }).format(new Date()),
+        data: remoteMessage.data,
+        receivedAt: new Date().toISOString(),
       };
       storeNotificationLocally(notification);
     });
 
-    messaging()
-      .getInitialNotification()
-      .then(async remoteMessage => {
-        if (remoteMessage) {
-          console.log('Notification caused app to open from quit state:', JSON.stringify(remoteMessage));
-          await handleNotificationNavigation(remoteMessage);
-          const notification = {
-            title: remoteMessage.notification?.title || 'No title',
-            body: remoteMessage.notification?.body || 'No body',
-            receivedAt: new Intl.DateTimeFormat('en-IN', {
-              timeZone: 'Asia/Kolkata',
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-              hour12: false,
-            }).format(new Date()),
-          };
-          storeNotificationLocally(notification);
-        }
-      });
-
-    const unsubscribeOnNotificationOpenedApp = messaging().onNotificationOpenedApp(async remoteMessage => {
-      console.log('Notification opened from background state:', JSON.stringify(remoteMessage));
-      await handleNotificationNavigation(remoteMessage);
+    // If app was opened from a quit state by tapping the notification.
+    messaging().getInitialNotification().then(async remoteMessage => {
+      if (remoteMessage) {
+        console.log('Opened from quit state with notification:', JSON.stringify(remoteMessage));
+        await handleNotificationNavigation(remoteMessage);
+        const notification = {
+          title: remoteMessage.notification?.title || 'No title',
+          body: remoteMessage.notification?.body || 'No body',
+          receivedAt: new Date().toISOString(),
+        };
+        storeNotificationLocally(notification);
+      }
     });
+
+    // Listen when a user taps a notification while app is in background.
+    const unsubscribeOnNotificationOpenedApp = messaging().onNotificationOpenedApp(
+      async remoteMessage => {
+        console.log('Notification opened from background:', JSON.stringify(remoteMessage));
+        await handleNotificationNavigation(remoteMessage);
+      }
+    );
 
     return () => {
       unsubscribeOnMessage();
@@ -478,6 +413,9 @@ function App() {
     };
   }, []);
 
+  /**
+   * Check onboarding status and set initial route.
+   */
   useEffect(() => {
     const checkOnboarding = async () => {
       try {
@@ -490,7 +428,7 @@ function App() {
           navigationRef.current?.navigate('OnboardingScreen');
         }
       } catch (error) {
-        console.error('Error retrieving tokens:', error);
+        console.error('Error retrieving onboarding status:', error);
         setInitialRoute('Login');
         navigationRef.current?.navigate('Login');
       }
@@ -498,8 +436,12 @@ function App() {
     checkOnboarding();
   }, []);
 
+  /**
+   * Hide SplashScreen once app is ready.
+   */
   useEffect(() => {
     SplashScreen.hide();
+    console.log('SplashScreen hidden.');
   }, []);
 
   if (!initialRoute) {
@@ -510,15 +452,30 @@ function App() {
     );
   }
 
+
+  /**
+   * Render App with NavigationContainer's onReady callback
+   */
   return (
     <ThemeProvider>
-      <NavigationContainer ref={navigationRef}>
+      <NavigationContainer
+        ref={navigationRef}
+        onReady={async () => {
+          console.log('NavigationContainer is ready.');
+          setIsNavReady(true);
+          await processPendingNotification();
+        }}
+      >
+        {/* <LanguageSelector /> */}
+
         <Stack.Navigator initialRouteName={initialRoute}>
           <Stack.Screen name="Tabs" component={TabNavigator} options={{ headerShown: false }} />
-          <Stack.Screen name="UserLocation" component={UserLocation} options={{ headerShown: false }} />
+          <Stack.Screen name="LanguageSelector" component={LanguageSelector} options={{ title: 'Select Language' }} />
           <Stack.Screen name="OnboardingScreen" component={OnboardingScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
           <Stack.Screen name="VerificationScreen" component={VerificationScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="SignUpScreen" component={SignUpScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="UserLocation" component={UserLocation} options={{ headerShown: false }} />
           <Stack.Screen name="OrderScreen" component={OrderScreen} options={{ headerShown: false }} />
           <Stack.Screen name="DeleteAccount" component={AccountDelete} options={{ headerShown: false }} />
           <Stack.Screen name="ReferralScreen" component={ReferralScreen} options={{ headerShown: false }} />
@@ -532,7 +489,6 @@ function App() {
           <Stack.Screen name="RecentServices" component={RecentServices} options={{ headerShown: false }} />
           <Stack.Screen name="serviceCategory" component={PaintingServices} options={{ headerShown: false }} />
           <Stack.Screen name="SearchItem" component={SearchItem} options={{ headerShown: false }} />
-          <Stack.Screen name="SignupDetails" component={SignUpScreen} options={{ headerShown: false }} />
           <Stack.Screen name="LocationSearch" component={LocationSearch} options={{ headerShown: false }} />
           <Stack.Screen name="EditProfile" component={EditProfile} options={{ headerShown: false }} />
           <Stack.Screen name="ServiceTrackingItem" component={ServiceTrackingItemScreen} options={{ headerShown: false }} />
@@ -543,11 +499,10 @@ function App() {
           <Stack.Screen name="AboutCS" component={AboutCS} options={{ headerShown: false }} />
           <Stack.Screen name="ServiceBookingOngoingItem" component={ServiceBookingOngoingItem} options={{ headerShown: false }} />
           <Stack.Screen name="ChatScreen" component={ChatScreen} options={{ headerShown: false }} />
-          
         </Stack.Navigator>
       </NavigationContainer>
     </ThemeProvider>
   );
 }
 
-export default App;
+export default CodePush(codePushOptions)(App);

@@ -38,7 +38,9 @@ const placesClient = new Places('iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT');
 const UserLocation = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { serviceName, suggestion, savings, tipAmount } = route.params;
+  // Extract offer from route params along with other parameters
+  const { serviceName, suggestion, savings, tipAmount, offer } = route.params;
+  console.log("user location",route.params)
 
   const { isDarkMode } = useTheme(); // get isDarkMode
   const styles = dynamicStyles(isDarkMode); // pass into our style function
@@ -440,6 +442,8 @@ const UserLocation = () => {
                   location,
                   discount,
                   tipAmount,
+                  // Pass the offer object (if it exists)
+                  offer: offer || null,
                 },
               },
             ],
@@ -507,7 +511,7 @@ const UserLocation = () => {
             placeholder="Search location ..."
             placeholderTextColor={isDarkMode ? '#ccc' : '#1D2951'}
             onFocus={() =>
-              navigation.replace('LocationSearch', { serviceName, savings, tipAmount })
+              navigation.replace('LocationSearch', { serviceName, savings, tipAmount, offer })
             }
             value={inputText}
             onChangeText={setInputText}
@@ -572,7 +576,14 @@ const UserLocation = () => {
               keyExtractor={(item, index) => index.toString()}
             />
           </View>
-          {/* <View style={styles.horizantalLine} /> */}
+          {/* Display offer information if available 
+          {offer && (
+            <View style={styles.offerInfoContainer}>
+              <Text style={styles.offerInfoText}>
+                Offer applied: {offer.offer_code} – You saved ₹{offer.discountAmount}
+              </Text>
+            </View>
+          )}*/}
           <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmLocation}>
             {confirmLoading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />

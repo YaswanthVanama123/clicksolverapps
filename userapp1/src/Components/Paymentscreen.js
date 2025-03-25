@@ -12,6 +12,7 @@ import {
   Alert,
   ActivityIndicator,
   useWindowDimensions,
+  AppState,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
@@ -26,6 +27,7 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 // Import the theme hook
 import { useTheme } from '../context/ThemeContext';
+import messaging from '@react-native-firebase/messaging';
 
 const Payment = ({ route }) => {
   const { width } = useWindowDimensions();
@@ -43,16 +45,20 @@ const Payment = ({ route }) => {
   const [vocherModal, setVocherModal] = useState(false);
   const [paymentModal, setPaymentModal] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [decodedId, setDecodedId] = useState(null);
   const [discount, setDiscount] = useState(0);
   const [totalCost, setTotalCost] = useState(0);
   const [value, setValue] = useState('');
   const [paymentDetails, setPaymentDetails] = useState({});
+  const [appState, setAppState] = useState(AppState.currentState);
+
   const navigation = useNavigation();
   const { encodedId } = route.params || {};
 
-  // Fetch Payment Details from server
+  // Fetch Payment Details from server using decodedId
   const fetchPaymentDetails = useCallback(async (decodedId) => {
     try {
+      console.log('[Payment] Fetching payment details for:', decodedId);
       const response = await axios.post(
         'https://backend.clicksolver.com/api/payment/details',
         { notification_id: decodedId }
@@ -80,23 +86,144 @@ const Payment = ({ route }) => {
       });
 
       setServiceArray(service_booked || []);
+      console.log('[Payment] Payment details updated successfully.');
     } catch (error) {
-      console.error('Error fetching payment details:', error);
+      console.error('[Payment] Error fetching payment details:', error);
     }
   }, []);
 
-  // Decode ID and fetch details
+  // Decode the encodedId and fetch payment details
   useEffect(() => {
     if (encodedId) {
-      const decoded = atob(encodedId);
-      fetchPaymentDetails(decoded);
+      try {
+        const decoded = atob(encodedId);
+        console.log('[Payment] Decoded encodedId:', decoded);
+        setDecodedId(decoded);
+        fetchPaymentDetails(decoded);
+      } catch (error) {
+        console.error('[Payment] Error decoding Base64:', error);
+      }
     }
   }, [encodedId, fetchPaymentDetails]);
 
-  // Handle back press => go to home
+  // ------------------ Notification Handling ------------------
+  const handleNotificationData = (data) => {
+    if (data && data.notification_id && decodedId) {
+      console.log('[Payment] Notification data received:', data);
+      if (data.notification_id.toString() === decodedId) {
+        // Re-encode id for navigation if needed
+        // const encodedNotificationId = Buffer.from(
+        //   data.notification_id.toString(),
+        //   'utf-8'
+        // ).toString('base64');
+        console.log(
+          '[Payment] Notification id matches decodedId. Navigating to Home with encoded id:',
+          
+        );
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              { 
+                name: 'Tabs', 
+                state: { 
+                  routes: [
+                    { 
+                      name: 'Home',
+                      params: { decodedId: encodedId }
+                    }
+                  ]
+                }
+              } 
+            ],
+          })
+        );        
+      }
+    }
+  };
+
+  // Handle cold start notifications
+  useEffect(() => {
+    messaging()
+      .getInitialNotification()
+      .then((remoteMessage) => {
+        if (remoteMessage && remoteMessage.data) {
+          console.log('[Payment] Cold start notification:', remoteMessage);
+          handleNotificationData(remoteMessage.data);
+        }
+      });
+  }, [decodedId]);
+
+  // Listen for foreground notifications
+  useEffect(() => {
+    const unsubscribeForeground = messaging().onMessage((remoteMessage) => {
+      if (remoteMessage && remoteMessage.data) {
+        console.log('[Payment] Foreground notification:', remoteMessage);
+        handleNotificationData(remoteMessage.data);
+      }
+    });
+    return () => unsubscribeForeground();
+  }, [decodedId]);
+
+  // Listen for notifications when the app is in background and tapped
+  useEffect(() => {
+    const unsubscribeOpened = messaging().onNotificationOpenedApp((remoteMessage) => {
+      if (remoteMessage && remoteMessage.data) {
+        console.log('[Payment] Notification opened from background:', remoteMessage);
+        handleNotificationData(remoteMessage.data);
+      }
+    });
+    return () => unsubscribeOpened();
+  }, [decodedId, navigation]);
+  // ------------------ End Notification Handling ------------------
+
+  // AppState listener: Re-fetch payment details when app comes to the foreground
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState) => {
+      console.log(`[Payment] AppState changed from ${appState} to ${nextAppState}`);
+      if ((appState === 'inactive' || appState === 'background') && nextAppState === 'active') {
+        console.log('[Payment] App came to the foreground. Re-fetching payment details...');
+        
+        if (decodedId) {
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                { 
+                  name: 'Tabs', 
+                  state: { 
+                    routes: [
+                      { 
+                        name: 'Home',
+                        params: { encodedId: decodedId }
+                      }
+                    ]
+                  }
+                } 
+              ],
+            })
+          ); 
+          
+          // fetchPaymentDetails(decodedId);
+        }
+      }
+      setAppState(nextAppState);
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    console.log('[Payment] AppState listener added.');
+
+    return () => {
+      console.log('[Payment] Removing AppState listener.');
+      subscription.remove();
+    };
+  }, [appState, decodedId, fetchPaymentDetails]);
+
+  // Handle back press => navigate to Home
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
+        console.log('[Payment] Hardware back press detected, navigating to Home.');
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
@@ -112,15 +239,17 @@ const Payment = ({ route }) => {
 
   const toggleVocher = () => {
     setVocherModal(!vocherModal);
+    console.log('[Payment] Toggled voucher modal:', !vocherModal);
   };
 
   const togglePayment = () => {
     setPaymentModal(!paymentModal);
+    console.log('[Payment] Toggled payment modal:', !paymentModal);
   };
 
   // Example coupon logic
   const applyCoupon = () => {
-    console.log('Apply coupon code: ', value);
+    console.log('[Payment] Apply coupon code:', value);
     // Implement your coupon logic here
   };
 
@@ -146,21 +275,6 @@ const Payment = ({ route }) => {
       <View style={styles.mainContainer}>
         <ScrollView style={styles.container}>
           {/* Header */}
-          {/* <View style={styles.header}>
-            <TouchableOpacity
-              onPress={() =>
-                navigation.dispatch(
-                  CommonActions.reset({
-                    index: 0,
-                    routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-                  })
-                )
-              }
-            >
-              <FontAwesome6 name="arrow-left-long" size={20} color={isDarkMode ? '#fff' : "#212121"} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Payment Screen</Text>
-          </View> */}
           <View style={styles.header}>
             <TouchableOpacity style={styles.leftIcon} onPress={onBackPress}>
               <FontAwesome6 name="arrow-left-long" size={20} color="#9e9e9e" />
@@ -338,7 +452,7 @@ const Payment = ({ route }) => {
       </View>
     </SafeAreaView>
   );
-}
+};
 
 /**
  * DYNAMIC STYLES with Dark Theme Support
@@ -353,32 +467,14 @@ function dynamicStyles(width, isDarkMode) {
     },
     mainContainer: {
       flex: 1,
-      backgroundColor: isDarkMode ? '#121212' : '#F5F5F5',
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
     },
     container: {
       flex: 1,
-      backgroundColor: isDarkMode ? '#121212' : '#F5F5F5',
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
     },
-    /* Header */
-    // header: {
-    //   padding: isTablet ? 15 : 10,
-    //   flexDirection: 'row',
-    //   gap: 15,
-    //   alignItems: 'center',
-    //   backgroundColor: isDarkMode ? '#121212' : '#fff',
-    //   elevation: 1,
-    //   marginBottom: 4,
-    //   borderBottomWidth: 1,
-    //   borderBottomColor: isDarkMode ? '#333' : '#EEE',
-    // },
-    // headerTitle: {
-    //   color: isDarkMode ? '#fff' : '#212121',
-    //   fontSize: isTablet ? 18 : 16,
-    //   fontFamily: 'RobotoSlab-SemiBold',
-    //   textAlign: 'center',
-    // },
     header: {
-      paddingTop:20,
+      paddingTop: 20,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
@@ -394,7 +490,6 @@ function dynamicStyles(width, isDarkMode) {
       fontSize: isTablet ? 20 : 17,
       fontWeight: 'bold',
     },
-    /* Service Summary */
     serviceSummary: {
       padding: isTablet ? 20 : 16,
       backgroundColor: isDarkMode ? '#1e1e1e' : '#FFF',
@@ -429,7 +524,7 @@ function dynamicStyles(width, isDarkMode) {
       fontFamily: 'RobotoSlab-Regular',
     },
     detailsBox: {
-      backgroundColor: isDarkMode ? '#2c2c2c' : '#F9F9F9',
+      backgroundColor: isDarkMode ? '#2c2c2c' : '#FFFFFF',
       padding: 10,
       borderRadius: 8,
       width: '100%',
@@ -469,7 +564,6 @@ function dynamicStyles(width, isDarkMode) {
       fontSize: isTablet ? 14 : 13,
       marginTop: 6,
     },
-    /* Payment Summary */
     paymentSummary: {
       backgroundColor: isDarkMode ? '#1e1e1e' : '#FFF',
       margin: isTablet ? 20 : 16,
@@ -540,7 +634,6 @@ function dynamicStyles(width, isDarkMode) {
     payTextTotal: {
       fontFamily: 'RobotoSlab-Medium',
     },
-    /* Voucher Section */
     voucherContainer: {
       backgroundColor: isDarkMode ? '#1e1e1e' : '#FFF',
       padding: isTablet ? 20 : 16,
@@ -609,7 +702,6 @@ function dynamicStyles(width, isDarkMode) {
     applyButtonTextInactive: {
       color: '#9e9e9e',
     },
-    /* Notice Section */
     noticeTextContainer: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -621,7 +713,6 @@ function dynamicStyles(width, isDarkMode) {
       fontFamily: 'RobotoSlab-Medium',
       fontSize: isTablet ? 14 : 12,
     },
-    /* Bottom Payment Bar */
     buttonAmmountContainer: {
       backgroundColor: isDarkMode ? '#1e1e1e' : '#FFFFFF',
       width: '100%',

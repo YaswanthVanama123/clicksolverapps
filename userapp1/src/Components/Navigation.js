@@ -31,12 +31,14 @@ import {
   CommonActions,
   useFocusEffect,
 } from '@react-navigation/native';
+import { encode } from 'base-64';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Entypo from 'react-native-vector-icons/Entypo';
 import polyline from '@mapbox/polyline';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useTheme} from '../context/ThemeContext'; // Your theme hook
+import messaging from '@react-native-firebase/messaging';
 
 // Local images
 const startMarker = require('../assets/start-marker.png');
@@ -498,6 +500,111 @@ const Navigation = () => {
       subscription.remove();
     };
   }, [cameraBounds]);
+
+
+  // ------------------ Notification Handling ------------------
+  // This useEffect listens for notifications in all states.
+  // If notification.data.notification_id matches decodedId, it encodes the id and navigates to the target screen.
+  useEffect(() => {
+    if (!decodedId) return; // Do not register listeners until decodedId is set
+
+    const handleNotificationData = (data) => {
+      if (data && data.notification_id) {
+        if (data.notification_id.toString() === decodedId) {
+
+          const encodedNotificationId = encode(notification_id.toString());
+
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                {
+                  name: data.screen, // Use target screen from notification payload
+                  params: { encodedId: encodedNotificationId },
+                },
+              ],
+            })
+          );
+        }
+      }
+    };
+
+    // Cold start notifications
+    messaging()
+      .getInitialNotification()
+      .then((remoteMessage) => {
+        if (remoteMessage && remoteMessage.data) {
+          console.log('[Navigation] Cold start notification:', remoteMessage);
+          handleNotificationData(remoteMessage.data);
+        }
+      });
+
+    // Foreground notifications
+    const unsubscribeForeground = messaging().onMessage((remoteMessage) => {
+      if (remoteMessage && remoteMessage.data) {
+        console.log('[Navigation] Foreground notification:', remoteMessage);
+        handleNotificationData(remoteMessage.data);
+      }
+    });
+
+    // Notifications tapped from background
+    const unsubscribeOpened = messaging().onNotificationOpenedApp((remoteMessage) => {
+      if (remoteMessage && remoteMessage.data) {
+        console.log('[Navigation] Notification opened from background:', remoteMessage);
+        handleNotificationData(remoteMessage.data);
+      }
+    });
+
+    return () => {
+      unsubscribeForeground();
+      unsubscribeOpened();
+    };
+  }, [decodedId, navigation]);
+ 
+
+    // ----------------- Additional AppState Listener for Pending Notifications -----------------
+    useEffect(() => {
+      const subscription = AppState.addEventListener('change', async (nextAppState) => {
+        if (nextAppState === 'active') {
+          console.log('[Navigation] App became active. Checking for pending notifications...');
+          try {
+            const pending = await EncryptedStorage.getItem('pendingNotification');
+            if (pending) {
+              const remoteMessage = JSON.parse(pending);
+              console.log('[Navigation] Found pending notification:', remoteMessage);
+              if (remoteMessage.data) {
+                // Send encodedId as decodedId as requested
+
+                const encodedNotificationId = encode(notification_id.toString());
+
+                navigation.dispatch(
+                  CommonActions.reset({
+                    index: 0,
+                    routes: [
+                      {
+                        name: remoteMessage.data.screen,
+                        params: { encodedId: encodedNotificationId },
+                      },
+                    ],
+                  })
+                );
+              }
+              await EncryptedStorage.removeItem('pendingNotification');
+            }
+          } catch (error) {
+            console.error('[Navigation] Error handling pending notification:', error);
+          }
+        }
+      });
+      console.log('[Navigation] Additional AppState listener added for pending notifications.');
+      return () => {
+        console.log('[Navigation] Removing additional AppState listener for pending notifications.');
+        subscription.remove();
+      };
+    }, [navigation]);
+
+  // ------------------ End Notification Handling ------------------
+
 
   // Cancel booking
   const handleCancelBooking = useCallback(async () => {

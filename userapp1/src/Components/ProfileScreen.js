@@ -329,6 +329,11 @@ const ProfileScreen = () => {
           />
           <AboutCSMenuItem 
             styles={styles}
+            text="Language"
+            onPress={() => navigation.push('LanguageSelector')}
+          />
+          <AboutCSMenuItem 
+            styles={styles}
             text="About CS"
             onPress={() => navigation.push('AboutCS')}
           />

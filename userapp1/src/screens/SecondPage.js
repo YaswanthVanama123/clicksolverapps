@@ -9,6 +9,7 @@ import {
   Modal,
   TextInput,
   useWindowDimensions,
+  Button,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -23,14 +24,23 @@ import crashlytics from '@react-native-firebase/crashlytics';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import QuickSearch from '../Components/QuickSearch';
 import { useFocusEffect } from '@react-navigation/native';
-// Import global theme hook
 import { useTheme } from '../context/ThemeContext';
+
+// 1. Import i18n (this initializes translation)
+import '../i18n/i18n';
+// 2. Import the helper to change language
+import { changeAppLanguage } from '../i18n/languageChange';
+// 3. Import useTranslation hook from react-i18next
+import { useTranslation } from 'react-i18next';
 
 function ServiceApp({ navigation, route }) {
   const { width, height } = useWindowDimensions();
   const { isDarkMode } = useTheme();
+  const { t } = useTranslation();
   const styles = dynamicStyles(width, height, isDarkMode);
-  const [profile,setProfile] = useState("");
+
+  // State variables for backend data and feedback
+  const [profile, setProfile] = useState("");
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [greeting, setGreeting] = useState('');
@@ -45,12 +55,13 @@ function ServiceApp({ navigation, route }) {
 
   const scrollViewRef = useRef(null);
 
+  // Sample special offers (with translations)
   const specialOffers = useMemo(
     () => [
       {
         id: '1',
         title: '20%',
-        subtitle: 'New User Special',
+        subtitle: t('new_user_special') || 'New User Special',
         description:
           'New users get a 20% discount on their first booking across any service category.',
         imageBACKENDAP:
@@ -61,7 +72,7 @@ function ServiceApp({ navigation, route }) {
       {
         id: '2',
         title: '50%',
-        subtitle: 'Summer Sale',
+        subtitle: t('summer_sale') || 'Summer Sale',
         description:
           'Get a 50% discount on all services booked during the summer season.',
         imageBACKENDAP:
@@ -72,7 +83,7 @@ function ServiceApp({ navigation, route }) {
       {
         id: '3',
         title: '30%',
-        subtitle: 'Refer a Friend',
+        subtitle: t('refer_a_friend') || 'Refer a Friend',
         description:
           'Refer a friend and get 30% off on your next service booking.',
         imageBACKENDAP:
@@ -81,7 +92,7 @@ function ServiceApp({ navigation, route }) {
         color: '#2196F3',
       },
     ],
-    [],
+    [isDarkMode, t],
   );
 
   useEffect(() => {
@@ -112,23 +123,23 @@ function ServiceApp({ navigation, route }) {
     }, [])
   );
 
+  // Fetch tracking details from the backend
   const fetchTrackDetails = async () => {
     try {
-      const cs_token = await EncryptedStorage.getItem('cs_token'); 
-      console.log(cs_token)
+      const cs_token = await EncryptedStorage.getItem('cs_token');
+      console.log('cs_token:', cs_token);
       if (cs_token) {
         const response = await axios.get(
           'https://backend.clicksolver.com/api/user/track/details',
           {
             headers: { Authorization: `Bearer ${cs_token}` },
-          }, 
+          }
         );
         const track = response?.data?.track || [];
-        const { user,profile } = response.data;
-        console.log("res",response.data);
-        console.log("Fetched Profile URL:", profile);
+        const { user, profile } = response.data;
+        console.log("Track response:", response.data);
         setName(user || response.data);
-        setProfile(profile) 
+        setProfile(profile);
         setMessageBoxDisplay(track.length > 0);
         setTrackScreen(track);
       }
@@ -137,6 +148,7 @@ function ServiceApp({ navigation, route }) {
     }
   };
 
+  // Fetch available service categories from the backend
   const fetchServices = async () => {
     try {
       setLoading(true);
@@ -170,24 +182,26 @@ function ServiceApp({ navigation, route }) {
     navigation.push('serviceCategory', { serviceObject: serviceId });
   };
 
+  // Set greeting text and icon based on time of day, using translations
   const setGreetingBasedOnTime = () => {
     const currentHour = new Date().getHours();
-    let greetingMessage = 'Good Day';
+    let greetingMessage = t('good_day') || 'Good Day';
     let icon = <Icon name="sunny-sharp" size={14} color="#F24E1E" />;
     if (currentHour < 12) {
-      greetingMessage = 'Good Morning';
+      greetingMessage = t('good_morning') || 'Good Morning';
       icon = <Icon name="sunny-sharp" size={16} color="#F24E1E" />;
     } else if (currentHour < 17) {
-      greetingMessage = 'Good Afternoon';
+      greetingMessage = t('good_afternoon') || 'Good Afternoon';
       icon = <Feather name="sunset" size={16} color="#F24E1E" />;
     } else {
-      greetingMessage = 'Good Evening';
+      greetingMessage = t('good_evening') || 'Good Evening';
       icon = <MaterialIcons name="nights-stay" size={16} color={isDarkMode ? "#fff" : "#000"} />;
     }
     setGreeting(greetingMessage);
     setGreetingIcon(icon);
   };
 
+  // Render special offers
   const renderSpecialOffers = () => {
     return specialOffers.map(offer => (
       <View
@@ -209,6 +223,7 @@ function ServiceApp({ navigation, route }) {
     ));
   };
 
+  // Render service cards from backend data
   const renderServices = () => {
     if (loading) {
       return (
@@ -236,13 +251,14 @@ function ServiceApp({ navigation, route }) {
           <TouchableOpacity
             style={styles.bookButton}
             onPress={() => handleBookCommander(service.service_name)}>
-            <Text style={styles.bookButtonText}>Book Now ➔</Text>
+            <Text style={styles.bookButtonText}>{t('book_now') || 'Book Now ➔'}</Text>
           </TouchableOpacity>
         </View>
       </View>
     ));
   };
 
+  // Submit user feedback
   const submitFeedback = async () => {
     try {
       const response = await axios.post(
@@ -275,24 +291,30 @@ function ServiceApp({ navigation, route }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        {/* Language Selector Button – navigates to a dedicated LanguageSelector screen */}
+        <View style={{ alignSelf: 'flex-end', margin: 10 }}>
+          <Button
+            title={t('change_language') || "Change Language"}
+            onPress={() => navigation.navigate('LanguageSelector')}
+          />
+        </View>
+
         {/* Header Row */}
         <View style={styles.header}>
           <View style={styles.userInfo}>
-            <TouchableOpacity   onPress={() =>
-    navigation.navigate('Tabs', {
-      screen: 'Account',
-    })
-  }>
+            <TouchableOpacity onPress={() =>
+              navigation.navigate('Tabs', { screen: 'Account' })
+            }>
               {profile ? 
-              <View>
-                <Image source={{uri : profile}} style={styles.image} />
-              </View>
+                <View>
+                  <Image source={{ uri: profile }} style={styles.image} />
+                </View>
               :
-              <View style={styles.userInitialCircle}>
-                <Text style={styles.userInitialText}>
-                  {name?.charAt?.(0)?.toUpperCase() || 'U'}
-                </Text>
-              </View>  
+                <View style={styles.userInitialCircle}>
+                  <Text style={styles.userInitialText}>
+                    {name?.charAt?.(0)?.toUpperCase() || 'U'}
+                  </Text>
+                </View>  
               }
             </TouchableOpacity>
             <View style={styles.greeting}>
@@ -323,7 +345,7 @@ function ServiceApp({ navigation, route }) {
           {/* Special Offers */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Special Offers</Text>
+              <Text style={styles.sectionTitle}>{t('special_offers') || 'Special Offers'}</Text>
             </View>
             <ScrollView
               horizontal
@@ -336,7 +358,7 @@ function ServiceApp({ navigation, route }) {
           {/* Services */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Services</Text>
+              <Text style={styles.sectionTitle}>{t('services') || 'Services'}</Text>
             </View>
             {renderServices()}
           </View>
@@ -355,7 +377,6 @@ function ServiceApp({ navigation, route }) {
                 style={[
                   styles.messageBoxContainer,
                   {
-                    // Ensure the container doesn't grow too large
                     width: trackScreen.length > 1 ? width * 0.8 : width * 0.88,
                     marginRight: trackScreen.length > 1 ? 10 : 0,
                   },
@@ -370,40 +391,40 @@ function ServiceApp({ navigation, route }) {
                     alternatePhoneNumber: item.alternatePhoneNumber,
                     serviceBooked: item.serviceBooked,
                     location: item.location,
-                  }) 
+                    offer: item.offer,
+                  })
                 }>
                 <View style={styles.messageBox1}>
                   <View style={styles.startingContainer}>
-                  <View style={styles.timeContainer}>
-                                  {item.screen === 'Paymentscreen' ? (
-                                    <Foundation name="paypal" size={24} color="#ffffff" />
-                                  ) : item.screen === 'UserNavigation' ? (
-                                    <MaterialCommunityIcons
-                                      name="truck"
-                                      size={24}
-                                      color="#ffffff"
-                                    />
-                                  ) : item.screen === 'userwaiting' ? (
-                                    <Feather name="search" size={24} color="#ffffff" />
-                                  ) : item.screen === 'OtpVerification' ? (
-                                    <Feather name="shield" size={24} color="#ffffff" />
-                                  ) : item.screen === 'worktimescreen' ? (
-                                    <MaterialCommunityIcons
-                                      name="hammer"
-                                      size={24}
-                                      color="#ffffff"
-                                    /> 
-                                  ) : (
-                                    <Feather name="alert-circle" size={24} color={isDarkMode ? "#fff" : "#000"} />
-                                  )}
-                                </View>
+                    <View style={styles.timeContainer}>
+                      {item.screen === 'Paymentscreen' ? (
+                        <Foundation name="paypal" size={24} color="#ffffff" />
+                      ) : item.screen === 'UserNavigation' ? (
+                        <MaterialCommunityIcons
+                          name="truck"
+                          size={24}
+                          color="#ffffff"
+                        />
+                      ) : item.screen === 'userwaiting' ? (
+                        <Feather name="search" size={24} color="#ffffff" />
+                      ) : item.screen === 'OtpVerification' ? (
+                        <Feather name="shield" size={24} color="#ffffff" />
+                      ) : item.screen === 'worktimescreen' ? (
+                        <MaterialCommunityIcons
+                          name="hammer"
+                          size={24}
+                          color="#ffffff"
+                        /> 
+                      ) : (
+                        <Feather name="alert-circle" size={24} color={isDarkMode ? "#fff" : "#000"} />
+                      )}
+                    </View>
 
                     <View style={{ marginLeft: 10 }}>
                       <Text
-                        style={styles.serviceBookedText} // <-- Our new style
+                        style={styles.serviceBookedText}
                         numberOfLines={1}
-                        ellipsizeMode="tail"
-                      >
+                        ellipsizeMode="tail">
                         {item.serviceBooked && item.serviceBooked.length > 0
                           ? item.serviceBooked
                               .slice(0, 2)

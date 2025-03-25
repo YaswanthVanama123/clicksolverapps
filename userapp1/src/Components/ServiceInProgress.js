@@ -8,7 +8,6 @@ import {
   StyleSheet,
   BackHandler,
   Modal,
-  ActivityIndicator,
   useWindowDimensions,
   AppState 
 } from 'react-native';
@@ -38,15 +37,15 @@ const ServiceInProgressScreen = () => {
   const { encodedId } = route.params;
   const navigation = useNavigation();
 
-  // 1) Decode `encodedId`
+  // Decode encodedId
   useEffect(() => {
     if (encodedId) {
       setDecodedId(atob(encodedId));
     }
   }, [encodedId]);
 
-  // 2) Define fetchBookings function to fetch data from backend
-  const fetchBookings = async () => {
+  // Use useCallback to keep fetchBookings stable
+  const fetchBookings = useCallback(async () => {
     if (!decodedId) return;
     try {
       const response = await axios.post(
@@ -54,10 +53,10 @@ const ServiceInProgressScreen = () => {
         { decodedId }
       );
       const data = response.data[0];
-      console.log("data",data); 
+      console.log("data", data); 
       setDetails(data);
 
-      // Build a combined array of services with status
+      // Map services with their statuses
       const mappedServices = data.service_booked.map((serviceBookedItem) => {
         const statusItem = data.service_status.find(
           (s) => s.serviceName === serviceBookedItem.serviceName
@@ -80,14 +79,14 @@ const ServiceInProgressScreen = () => {
     } catch (error) {
       console.error('Error fetching bookings data:', error);
     }
-  };
-
-  // 3) Fetch bookings when decodedId changes
-  useEffect(() => {
-    fetchBookings();
   }, [decodedId]);
 
-  // 4) Listen for incoming notifications; if notification.data has "status", call fetchBookings
+  // Fetch bookings when decodedId changes
+  useEffect(() => {
+    fetchBookings();
+  }, [decodedId, fetchBookings]);
+
+  // Foreground notification handler
   useEffect(() => {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
       console.log('FCM notification received in ServiceInProgressScreen:', remoteMessage);
@@ -97,45 +96,56 @@ const ServiceInProgressScreen = () => {
       }
     });
     return () => unsubscribe();
-  }, [decodedId]);
+  }, [fetchBookings]);
 
-
+  // Corrected background notification handler
   useEffect(() => {
     messaging().setBackgroundMessageHandler(async remoteMessage => {
       console.log('[ServiceInProgress] Background FCM:', remoteMessage);
-      // Optionally store a flag or do partial updates
-    });
-  }, []);
+      // If the notification has a status flag (or any other key you check)
+      if (remoteMessage.data && remoteMessage.data.status) {
+        console.log('Background notification has status data. Storing pending notification...');
 
-  // 5) onNotificationOpenedApp
+        // Optionally trigger a data refresh
+        fetchBookings();
+      }else{
+        try {
+          console.log('Background notification has payment data. Storing pending notification...');
+          await EncryptedStorage.setItem('pendingNotification', JSON.stringify(remoteMessage));
+          console.log('Pending notification stored from ServiceInProgress.');
+        } catch (error) {
+          console.error('Error storing pending notification in ServiceInProgress:', error);
+        }
+      }
+    });
+  }, [fetchBookings]);
+
+  // Handle notifications opened when the app is in the background
   useEffect(() => {
     const unsubscribeOpened = messaging().onNotificationOpenedApp(async remoteMessage => {
       console.log('[ServiceInProgress] onNotificationOpenedApp:', remoteMessage);
-      // Possibly fetch or navigate
       fetchBookings();
     });
     return () => unsubscribeOpened();
   }, [fetchBookings]);
 
-
+  // Listen for app state changes to trigger a refresh when coming to foreground
   useEffect(() => {
     const handleAppStateChange = nextAppState => {
       if (appState.match(/inactive|background/) && nextAppState === 'active') {
         console.log('[ServiceInProgress] App has come to the foreground');
-        fetchBookings(); // re-fetch
+        fetchBookings(); // re-fetch data
       }
       setAppState(nextAppState);
     };
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
-
     return () => {
       subscription.remove();
     };
   }, [appState, fetchBookings]);
 
-
-  // 5) Generate timeline data
+  // Generate timeline data for each service
   const generateTimelineData = (status) => {
     const statusKeys = ['accept', 'arrived', 'workCompleted'];
     const statusDisplayNames = {
@@ -152,7 +162,7 @@ const ServiceInProgressScreen = () => {
     }));
   };
 
-  // 6) Confirm completion
+  // Confirm service completion
   const handleCompleteClick = () => {
     setConfirmationModalVisible(true);
   };
@@ -171,7 +181,7 @@ const ServiceInProgressScreen = () => {
     }
   };
 
-  // 7) On hardware back => go home
+  // Override hardware back button to go home
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -188,10 +198,9 @@ const ServiceInProgressScreen = () => {
     }, [navigation])
   );
 
-  // 8) Format date strings
+  // Format date strings
   const formatDate = (dateString) => {
     if (!dateString) return 'Pending';
-    console.log("date",dateString)
     const date = new Date(dateString);
     const options = {
       year: 'numeric',
@@ -294,7 +303,6 @@ const ServiceInProgressScreen = () => {
                 const timelineData = generateTimelineData(service.status);
                 return (
                   <View style={styles.ServiceCardsContainer} key={index}>
-                    {/* Service image + info */}
                     <View style={styles.technicianContainer}>
                       <Image source={{ uri: service.image }} style={styles.technicianImage} />
                       <View style={styles.technicianDetails}>
@@ -391,9 +399,7 @@ const ServiceInProgressScreen = () => {
   );
 };
 
-/**
- * DYNAMIC STYLES with Dark Theme Support
- */
+// Dynamic styles with dark theme support
 function dynamicStyles(width, isDarkMode) {
   const isTablet = width >= 600;
 
@@ -409,7 +415,6 @@ function dynamicStyles(width, isDarkMode) {
     scrollContainer: {
       flex: 1,
     },
-    /* Header */
     headerContainer: {
       backgroundColor: isDarkMode ? '#121212' : '#ffffff',
       paddingVertical: isTablet ? 20 : 15,
@@ -430,7 +435,6 @@ function dynamicStyles(width, isDarkMode) {
       fontSize: isTablet ? 20 : 18,
       fontFamily: 'RobotoSlab-SemiBold',
     },
-    /* Technician / Profile Container */
     profileContainer: {
       flexDirection: 'column',
       backgroundColor: isDarkMode ? '#1e1e1e' : '#fff',
@@ -476,7 +480,6 @@ function dynamicStyles(width, isDarkMode) {
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 14 : 12,
     },
-    /* Lottie Container */
     lottieContainer: {
       alignItems: 'center',
       marginVertical: isTablet ? 24 : 20,
@@ -485,7 +488,6 @@ function dynamicStyles(width, isDarkMode) {
       width: '100%',
       height: isTablet ? 250 : 200,
     },
-    /* Complete Button */
     button: {
       backgroundColor: '#ff4500',
       paddingVertical: isTablet ? 12 : 10,
@@ -499,7 +501,6 @@ function dynamicStyles(width, isDarkMode) {
       fontSize: isTablet ? 16 : 14,
       fontFamily: 'RobotoSlab-Medium',
     },
-    /* Service Details Container */
     serviceDetailsContainer: {
       flexDirection: 'column',
       backgroundColor: isDarkMode ? '#1e1e1e' : '#fff',
@@ -539,7 +540,6 @@ function dynamicStyles(width, isDarkMode) {
       fontFamily: 'RobotoSlab-Medium',
       color: isDarkMode ? '#fff' : '#212121',
     },
-    /* Service Card */
     ServiceCardsContainer: {
       flexDirection: 'column',
       marginVertical: isTablet ? 12 : 10,
@@ -547,7 +547,6 @@ function dynamicStyles(width, isDarkMode) {
       padding: isTablet ? 18 : 15,
       borderRadius: 10,
     },
-    /* Timeline Section */
     sectionContainer: {
       marginTop: 10,
     },
@@ -597,7 +596,6 @@ function dynamicStyles(width, isDarkMode) {
       color: isDarkMode ? '#ccc' : '#4a4a4a',
       fontFamily: 'RobotoSlab-Regular',
     },
-    /* Confirmation Modal */
     modalOverlay: {
       flex: 1,
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -659,4 +657,3 @@ function dynamicStyles(width, isDarkMode) {
 }
 
 export default ServiceInProgressScreen;
- 

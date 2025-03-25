@@ -16,30 +16,52 @@ import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import Entypo from 'react-native-vector-icons/Entypo';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Places } from 'ola-maps';
-import { useTheme } from '../context/ThemeContext'; // Import theme context for Dark Mode
+import { useTheme } from '../context/ThemeContext';
+
+// 1) Import i18n initialization so translations load
+import '../i18n/i18n';
+// 2) Import useTranslation hook to get the translation function
+import { useTranslation } from 'react-i18next';
 
 const placesClient = new Places('iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT');
 
 const LocationSearch = () => {
-  // 1) Grab screen dimensions
+  // 3) Use the useTranslation hook
+  const { t } = useTranslation();
+
+  // 4) Grab screen dimensions and dark mode state
   const { width } = useWindowDimensions();
-  const { isDarkMode } = useTheme(); // Get Dark Mode status
+  const { isDarkMode } = useTheme();
   const styles = dynamicStyles(width, isDarkMode);
 
+  // Local state
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [noResults, setNoResults] = useState(false);
   const [serviceArray, setServiceArray] = useState([]);
-  
+
+  // Navigation and route
   const route = useRoute();
   const navigation = useNavigation();
   const inputRef = useRef(null);
 
-  // Destructure route params
-  const { serviceName, savings, tipAmount } = route.params;
+  // Destructure route params (e.g., serviceName, savings, tipAmount, offer)
+  const { serviceName, savings, tipAmount, offer } = route.params || {};
 
-  // Autocomplete function (debounced)
+  // Focus the text input on mount
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  // If we have serviceName, store it in local state
+  useEffect(() => {
+    if (serviceName) {
+      setServiceArray(serviceName);
+    }
+  }, [serviceName]);
+
+  // Autocomplete logic with debouncing
   useEffect(() => {
     const fetchSuggestions = async () => {
       if (!query.trim()) {
@@ -72,24 +94,25 @@ const LocationSearch = () => {
       }
     };
 
-    const delaySearch = setTimeout(fetchSuggestions, 300); // Debounce to reduce API calls
+    const delaySearch = setTimeout(fetchSuggestions, 300); // Debounce
     return () => clearTimeout(delaySearch);
   }, [query]);
 
-  // Navigate back to UserLocation including savings and tipAmount
+  // Navigate back to UserLocation, passing route params
   const goBackToUserLocation = useCallback(
     (extraParams = {}) => {
       navigation.replace('UserLocation', {
         serviceName,
         savings,
         tipAmount,
+        offer: offer || null,
         ...extraParams,
       });
     },
-    [navigation, serviceName, savings, tipAmount]
+    [navigation, serviceName, savings, tipAmount, offer]
   );
 
-  // On back press
+  // On hardware back press
   useFocusEffect(
     useCallback(() => {
       const handleBackPress = () => {
@@ -97,21 +120,10 @@ const LocationSearch = () => {
         return true;
       };
       BackHandler.addEventListener('hardwareBackPress', handleBackPress);
-      return () => BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
+      return () =>
+        BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
     }, [goBackToUserLocation])
   );
-
-  // Store the service name if available
-  useEffect(() => {
-    if (serviceName) {
-      setServiceArray(serviceName);
-    }
-  }, [serviceName]);
-
-  // Focus input on mount
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
 
   // On suggestion press
   const handleSuggestionPress = useCallback(
@@ -123,7 +135,7 @@ const LocationSearch = () => {
     [goBackToUserLocation]
   );
 
-  // Render suggestion item
+  // Render each suggestion
   const renderItem = useCallback(
     ({ item }) => (
       <TouchableOpacity style={styles.item} onPress={() => handleSuggestionPress(item)}>
@@ -139,7 +151,7 @@ const LocationSearch = () => {
         </TouchableOpacity>
       </TouchableOpacity>
     ),
-    [handleSuggestionPress]
+    [handleSuggestionPress, isDarkMode]
   );
 
   return (
@@ -152,7 +164,8 @@ const LocationSearch = () => {
         <TextInput
           ref={inputRef}
           style={styles.searchInput}
-          placeholder="Search for a location..."
+          // Use translation for placeholder
+          placeholder={t('search_placeholder') || 'Search for a location...'}
           placeholderTextColor={isDarkMode ? '#ccc' : '#1D2951'}
           value={query}
           onChangeText={setQuery}
@@ -168,7 +181,9 @@ const LocationSearch = () => {
         <ActivityIndicator size="large" color="#FF5722" style={styles.loader} />
       ) : noResults ? (
         <View style={styles.noResults}>
-          <Text style={styles.noResultsText}>No locations found</Text>
+          <Text style={styles.noResultsText}>
+            {t('no_locations_found') || 'No locations found'}
+          </Text>
         </View>
       ) : (
         <FlatList

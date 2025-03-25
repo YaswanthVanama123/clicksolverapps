@@ -18,7 +18,7 @@ import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import {
   CommonActions,
-  useFocusEffect,
+  useFocusEffect, 
   useNavigation,
 } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';

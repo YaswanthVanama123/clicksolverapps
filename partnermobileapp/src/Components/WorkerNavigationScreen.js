@@ -177,9 +177,19 @@ const WorkerNavigationScreen = () => {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          }),
+            routes: [
+              {
+                name: 'Tabs',
+                state: {
+                  index: 0, 
+                  routes: [{ name: 'Home' }],
+                },
+              },
+            ],
+          })
         );
+        
+        
         return true;
       };
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
@@ -225,9 +235,18 @@ const WorkerNavigationScreen = () => {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          }),
+            routes: [
+              {
+                name: 'Tabs',
+                state: {
+                  index: 0, 
+                  routes: [{ name: 'Home' }],
+                },
+              },
+            ],
+          })
         );
+        
       }
     } catch (error) {
       console.error('Error checking cancellation status:', error);
@@ -316,9 +335,18 @@ const WorkerNavigationScreen = () => {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          }),
+            routes: [
+              {
+                name: 'Tabs',
+                state: {
+                  index: 0, 
+                  routes: [{ name: 'Home' }],
+                },
+              },
+            ],
+          })
         );
+        
       } else {
         Alert.alert('Cancellation failed', 'Your cancellation time of 2 minutes is over.');
       }

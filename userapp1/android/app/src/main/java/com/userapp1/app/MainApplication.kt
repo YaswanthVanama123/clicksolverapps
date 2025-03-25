@@ -10,7 +10,7 @@ import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.load
 import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import com.facebook.react.defaults.DefaultReactNativeHost
 import com.facebook.soloader.SoLoader
-// import org.devio.rn.splashscreen.SplashScreenReactPackage // Use this for react-native-splash-screen >= 0.3.1
+import com.microsoft.codepush.react.CodePush  // Import CodePush
 
 class MainApplication : Application(), ReactApplication {
 
@@ -18,9 +18,9 @@ class MainApplication : Application(), ReactApplication {
       object : DefaultReactNativeHost(this) {
         override fun getPackages(): List<ReactPackage> =
             PackageList(this).packages.apply {
-              // Packages that cannot be autolinked yet can be added manually here, for example:
+              // Add any packages that cannot be autolinked here, for example:
               // add(MyReactNativePackage())
-              // add(SplashScreenReactPackage()) // Add this line
+              // add(SplashScreenReactPackage()) // If using react-native-splash-screen
             }
 
         override fun getJSMainModuleName(): String = "index"
@@ -29,6 +29,11 @@ class MainApplication : Application(), ReactApplication {
 
         override val isNewArchEnabled: Boolean = BuildConfig.IS_NEW_ARCHITECTURE_ENABLED
         override val isHermesEnabled: Boolean = BuildConfig.IS_HERMES_ENABLED
+
+        // Override getJSBundleFile() so that CodePush can determine the JS bundle location.
+        override fun getJSBundleFile(): String {
+          return CodePush.getJSBundleFile()
+        }
       }
 
   override val reactHost: ReactHost

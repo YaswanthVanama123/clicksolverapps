@@ -10,6 +10,7 @@ import {
   Image,
   Modal,
   ActivityIndicator,
+  AppState
 } from 'react-native';
 import axios from 'axios';
 import messaging from '@react-native-firebase/messaging';
@@ -29,6 +30,7 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 // Import the theme hook
 import {useTheme} from '../context/ThemeContext';
+import { off } from 'process';
 
 Mapbox.setAccessToken(
   'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw',
@@ -40,6 +42,7 @@ const WaitingUser = () => {
 
   const route = useRoute();
   const navigation = useNavigation();
+
   const [decodedId, setDecodedId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('waiting');
@@ -60,9 +63,13 @@ const WaitingUser = () => {
   const [selectedReason, setSelectedReason] = useState('');
   const [discount, setDiscount] = useState(0);
   const [tipAmount, setTipAmount] = useState(0);
+  const [appState, setAppState] = useState(AppState.currentState);
   // New state to handle backend operations loading
   const [backendLoading, setBackendLoading] = useState(false);
+  // New state to manage the offer object
+  const [offer, setOffer] = useState(null);
 
+  // Decode encodedData if available
   useEffect(() => {
     if (
       encodedData &&
@@ -80,6 +87,7 @@ const WaitingUser = () => {
     }
   }, [encodedData]);
 
+  // Extract parameters including offer from route.params
   useEffect(() => {
     console.log('screen params', route.params);
     const {
@@ -91,7 +99,8 @@ const WaitingUser = () => {
       serviceBooked,
       location,
       discount,
-      tipAmount
+      tipAmount,
+      offer, // Extract the offer object if provided
     } = route.params;
     setCity(city);
     setArea(area); 
@@ -102,6 +111,7 @@ const WaitingUser = () => {
     setLocation(location);
     setDiscount(discount);
     setTipAmount(tipAmount);
+    setOffer(offer || null); // Save the offer object in state
   }, []);
 
   const fetchData = async () => {
@@ -114,7 +124,8 @@ const WaitingUser = () => {
       serviceBooked, 
       location,  
       discount,
-      tipAmount 
+      tipAmount,
+      offer ,
     } = route.params;
     setCity(city);  
     setArea(area); 
@@ -124,25 +135,28 @@ const WaitingUser = () => {
     setService(serviceBooked);    
     setLocation(location);  
     setDiscount(discount);  
-    setTipAmount(tipAmount);  
+    setTipAmount(tipAmount);
+    setOffer(offer || null);
     setBackendLoading(true); 
     try {
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       if (!jwtToken) { 
         return;
       }
-      console.log("tip", tipAmount);
+      console.log("tip", tipAmount,"offer",offer);
+      // Include the offer object in the payload
       const response = await axios.post(
         `https://backend.clicksolver.com/api/workers-nearby`,
         {   
           area,
-          city, 
+          city,  
           pincode, 
           alternateName,      
           alternatePhoneNumber,
           serviceBooked,
           discount,
-          tipAmount
+          tipAmount,
+          offer, // Pass the offer object if available
         },
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
@@ -171,7 +185,8 @@ const WaitingUser = () => {
               alternatePhoneNumber,
               location,
               discount,
-              tipAmount
+              tipAmount,
+              offer, // Also pass the offer object here
             },
             {headers: {Authorization: `Bearer ${jwtToken}`}},
           );
@@ -227,7 +242,7 @@ const WaitingUser = () => {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
           `https://backend.clicksolver.com/api/user/action/cancel`,
-          {encodedId: encodedData, screen: 'userwaiting'},
+          {encodedId: encodedData, screen: 'userwaiting',offer},
           {headers: {Authorization: `Bearer ${cs_token}`}},
         );
       }
@@ -275,7 +290,7 @@ const WaitingUser = () => {
         const cs_token = await EncryptedStorage.getItem('cs_token');
         await axios.post(
           `https://backend.clicksolver.com/api/user/action/cancel`,
-          {encodedId: encodedData, screen: 'userwaiting'},
+          {encodedId: encodedData, screen: 'userwaiting',offer},
           {headers: {Authorization: `Bearer ${cs_token}`}},
         );
 
@@ -304,10 +319,10 @@ const WaitingUser = () => {
       const cs_token = await EncryptedStorage.getItem('cs_token');
       await axios.post(
         `https://backend.clicksolver.com/api/user/action/cancel`,
-        {encodedId: encodedData, screen: 'userwaiting'},
+        {encodedId: encodedData, screen: 'userwaiting',offer},  
         {headers: {Authorization: `Bearer ${cs_token}`}},
       );
-
+ 
       await fetchData();
     } catch (error) {
       console.error('Error in cancel and retry:', error);
@@ -316,24 +331,23 @@ const WaitingUser = () => {
     }
   };
 
-  // Inside your WaitingUser component (or similar)
-  useEffect(() => {
-  // Function to handle notification data
-  const handleNotificationData = (data) => {
+// ------------------ Notification Handling ------------------
+  const handleNotification = (data) => {
     if (data && data.notification_id && decodedId) {
-      // Compare notification_id (as string) with your decodedId
+      // Compare the notification_id (as string) with decodedId
       if (data.notification_id.toString() === decodedId) {
+        // Encode the notification_id to create an encodedId
         const encodedNotificationId = Buffer.from(
           data.notification_id.toString(),
           'utf-8'
         ).toString('base64');
-
+        // Navigate to the target screen from notification data with params
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
             routes: [
               {
-                name: data.screen, // the target screen from notification data
+                name: data.screen, // target screen specified in notification data
                 params: { encodedId: encodedNotificationId, service: service },
               },
             ],
@@ -342,39 +356,97 @@ const WaitingUser = () => {
       }
     }
   };
+  
 
-  // 1. Check if the app was opened from a quit state by a notification
-  messaging()
-    .getInitialNotification()
-    .then(remoteMessage => {
-      if (remoteMessage && remoteMessage.data) {
-        console.log('App opened from quit state by notification:', remoteMessage);
-        handleNotificationData(remoteMessage.data);
-      }
-    });
+    // 1. Handle notification if the app is launched from a quit state
+    useEffect(() => {
+      messaging()
+        .getInitialNotification()
+        .then(remoteMessage => {
+          if (remoteMessage && remoteMessage.data) {
+            console.log('App opened from quit state by notification:', remoteMessage);
+            handleNotification(remoteMessage.data);
+          }
+        });
+    }, [decodedId, navigation, service]);
+    
+    // 2. Listen for foreground notifications
+    useEffect(() => {
+      const unsubscribeForeground = messaging().onMessage(async remoteMessage => {
+        if (remoteMessage && remoteMessage.data) {
+          console.log('Foreground notification received:', remoteMessage);
+          handleNotification(remoteMessage.data);
+        }
+      });
+      return () => unsubscribeForeground();
+    }, [decodedId, navigation, service]);
+    
+    // 3. Listen for when a notification is opened from the background
+    useEffect(() => {
+      const unsubscribeBackground = messaging().onNotificationOpenedApp(remoteMessage => {
+        if (remoteMessage && remoteMessage.data) {
+          console.log('Notification opened from background:', remoteMessage);
+          handleNotification(remoteMessage.data);
+        }
+      });
+      return () => {
+        unsubscribeBackground();
+      };
+    }, [decodedId, navigation, service]);
 
-  // 2. Listener for foreground messages
-  const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
-    if (remoteMessage && remoteMessage.data) {
-      console.log('Foreground notification received:', remoteMessage);
-      handleNotificationData(remoteMessage.data);
-    }
-  });
 
-  // 3. Listener for when the app is in background and the user taps the notification
-  const unsubscribeOnNotificationOpened = messaging().onNotificationOpenedApp(remoteMessage => {
-    if (remoteMessage && remoteMessage.data) {
-      console.log('Notification opened from background:', remoteMessage);
-      handleNotificationData(remoteMessage.data);
-    }
-  });
-
-  // Clean up the listeners on unmount
-  return () => {
-    unsubscribeOnMessage();
-    unsubscribeOnNotificationOpened();
-  };
-}, [decodedId, navigation, service]);
+    useEffect(() => {
+      const handleAppStateChange = async (nextAppState) => {
+        console.log(`[WaitingUser] AppState changed to ${nextAppState}`);
+        if (nextAppState === 'active') {
+          console.log('[WaitingUser] App became active. Checking for pending notifications...');
+          try {
+            const pending = await EncryptedStorage.getItem('pendingNotification');
+            if (pending) {
+              const remoteMessage = JSON.parse(pending);
+              console.log('[WaitingUser] Found pending notification:', remoteMessage);
+              if (remoteMessage.data) {
+                if (
+                  remoteMessage.data.notification_id.toString() === decodedId &&
+                  remoteMessage.data.screen === 'UserNavigation'
+                ) {
+                  console.log('[WaitingUser] Condition met. Navigating to UserNavigation with encodedId:', encodedData);
+                  navigation.dispatch(
+                    CommonActions.reset({
+                      index: 0,
+                      routes: [
+                        {
+                          name: 'UserNavigation',
+                          params: { encodedId: encodedData },
+                        },
+                      ],
+                    })
+                  );
+                } else {
+                  console.log('[WaitingUser] Pending notification does not meet condition; refreshing data...');
+             
+                }
+              }
+              await EncryptedStorage.removeItem('pendingNotification');
+            } else {
+              console.log('[WaitingUser] No pending notification found. Refreshing data...');
+            
+            }
+          } catch (error) {
+            console.error('[WaitingUser] Error handling pending notification:', error);
+          }
+        }
+      };
+    
+      const subscription = AppState.addEventListener('change', handleAppStateChange);
+      console.log('[WaitingUser] AppState listener added for pending notifications.');
+      return () => {
+        console.log('[WaitingUser] Removing AppState listener for pending notifications.');
+        subscription.remove();
+      };
+    }, [decodedId, encodedData, navigation]);
+  
+  
 
   useEffect(() => {
     let intervalId;
@@ -410,7 +482,6 @@ const WaitingUser = () => {
   
           console.log('API Response:', response.status);
   
-          // If status code is 201: accepted
           if (response.status === 201) {
             setStatus('accepted');
   
@@ -421,20 +492,19 @@ const WaitingUser = () => {
             const encodedNotificationId = Buffer.from(notification_id.toString(), 'utf-8').toString('base64');
             const cs_token = await EncryptedStorage.getItem('cs_token');
   
-            // Cancel the previous waiting action
             await axios.post(
               `https://backend.clicksolver.com/api/user/action/cancel`,
-              { encodedId: encodedData, screen: 'userwaiting' },
+              { encodedId: encodedData, screen: 'userwaiting',offer },
               { headers: { Authorization: `Bearer ${cs_token}` } }
             );
   
-            // Proceed with the accepted action
             await axios.post(
               `https://backend.clicksolver.com/api/user/action`,
               {
                 encodedId: encodedNotificationId,
                 screen: 'UserNavigation',
                 serviceBooked: service,
+                offer, // Pass the offer object if available
               },
               { headers: { Authorization: `Bearer ${cs_token}` } }
             );
@@ -445,13 +515,12 @@ const WaitingUser = () => {
                 routes: [
                   {
                     name: 'UserNavigation',
-                    params: { encodedId: encodedNotificationId, service: service },
+                    params: { encodedId: encodedNotificationId, service: service, offer },
                   },
                 ],
               })
             );
           } else if (response.status === 200) {
-            // 200 means still waiting
             setStatus('waiting');
           }
         } catch (error) {
@@ -466,23 +535,21 @@ const WaitingUser = () => {
         decodedId !== 'No workersverified found within 2 km radius'
       ) {
         console.log("Decoded ID when screen focused:", decodedId);
-        checkStatus(); // Initial call when screen is focused
+        checkStatus();
   
-        // Set interval to call checkStatus every 1m50s (110,000ms)
         intervalId = setInterval(() => {
           console.log("Checking status again...");
           checkStatus();
         }, 110000);
       }
   
-      // Cleanup function to clear interval when screen loses focus
       return () => {
         if (intervalId) {
           clearInterval(intervalId);
           console.log("Interval cleared as screen lost focus.");
         }
       };
-    }, [decodedId, navigation]) // Dependencies for re-execution when focused
+    }, [decodedId, navigation, service, offer])
   );
 
   useFocusEffect(
@@ -501,17 +568,12 @@ const WaitingUser = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const storedTime = await EncryptedStorage.getItem(
-          `estimatedTime${service}`,
-        );
+        const storedTime = await EncryptedStorage.getItem(`estimatedTime${service}`);
         console.log('Stored Time:', storedTime);
 
         if (!storedTime) {
           const currentTime = Date.now();
-          await EncryptedStorage.setItem(
-            `estimatedTime${service}`,
-            currentTime.toString(),
-          );
+          await EncryptedStorage.setItem(`estimatedTime${service}`, currentTime.toString());
           setTimeLeft(600);
         } else {
           const savedTime = parseInt(storedTime, 10);
@@ -537,9 +599,7 @@ const WaitingUser = () => {
   const formatTime = seconds => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    return `${String(minutes).padStart(2, '0')}:${String(
-      remainingSeconds,
-    ).padStart(2, '0')}`;
+    return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
   };
 
   return (
@@ -639,9 +699,7 @@ const WaitingUser = () => {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.reasonButton}
-              onPress={() =>
-                handleSelectReason('More time to assign a commander')
-              }>
+              onPress={() => handleSelectReason('More time to assign a commander')}>
               <Text style={styles.reasonText}>More time to assign a commander</Text>
               <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
             </TouchableOpacity>
