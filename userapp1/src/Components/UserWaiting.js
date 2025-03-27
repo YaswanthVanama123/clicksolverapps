@@ -31,6 +31,9 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
 // Import the theme hook
 import {useTheme} from '../context/ThemeContext';
 import { off } from 'process';
+import '../i18n/i18n';
+// Import useTranslation hook
+import { useTranslation } from 'react-i18next';
 
 Mapbox.setAccessToken(
   'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw',
@@ -42,7 +45,7 @@ const WaitingUser = () => {
 
   const route = useRoute();
   const navigation = useNavigation();
-
+  const { t } = useTranslation();
   const [decodedId, setDecodedId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('waiting');
@@ -602,148 +605,278 @@ const WaitingUser = () => {
     return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
   };
 
+  // return (
+  //   <View style={styles.container}>
+  //     {/* Map View Section */}
+  //     <Mapbox.MapView style={styles.map}>
+  //       <Mapbox.Camera zoomLevel={16} centerCoordinate={location} />
+  //       <Mapbox.MarkerView coordinate={location}>
+  //         <Image
+  //           source={{
+  //             uri: 'https://i.postimg.cc/ZRdQkj5d/Screenshot-2024-11-13-164652-removebg-preview.png',
+  //           }}
+  //           style={styles.markerImage}
+  //         />
+  //       </Mapbox.MarkerView>
+  //     </Mapbox.MapView>
+
+  //     {/* Message Box Section */}
+  //     <View style={styles.messageBox}>
+  //       <View style={styles.innerButton}>
+  //         <View style={styles.addingMessageBox} />
+  //       </View>
+  //       <View style={styles.textContainer}>
+  //         <View style={styles.detailsContainer}>
+  //           <View style={styles.rowAlignment}>
+  //             <Text style={styles.searchingText}>
+  //               Looking best commander for you
+  //             </Text>
+  //           </View>
+  //           <View style={styles.rowSpaceAlignment}>
+  //             <View style={styles.rowAlignment}>
+  //               <Text style={styles.serviceName}>Service Booked</Text>
+  //             </View>
+  //             <TouchableOpacity
+  //               style={styles.cancelButton}
+  //               onPress={handleManualCancel}>
+  //               <Text style={styles.cancelButtonText}>Cancel</Text>
+  //             </TouchableOpacity>
+  //           </View>
+  //         </View>
+  //       </View>
+  //       <View style={styles.horizontalLine} />
+  //       <View style={styles.loadingContainer}>
+  //         {loading && (
+  //           <LottieView
+  //             source={require('../assets/waitingLoading.json')}
+  //             autoPlay
+  //             loop
+  //             style={styles.loadingAnimation}
+  //           />
+  //         )}
+  //       </View>
+  //     </View>
+
+  //     {backendLoading && (
+  //       <View style={styles.activityIndicatorOverlay}>
+  //         <ActivityIndicator size="large" color="#0000ff" />
+  //       </View>
+  //     )}
+
+  //     {/* Modal for Cancellation Reasons */}
+  //     <Modal
+  //       animationType="slide"
+  //       transparent={true}
+  //       visible={modalVisible}
+  //       onRequestClose={() => setModalVisible(false)}>
+  //       <View style={styles.modalOverlay}>
+  //         <TouchableOpacity
+  //           onPress={() => setModalVisible(false)}
+  //           style={styles.backButtonContainer}>
+  //           <AntDesign name="arrowleft" size={20} color={isDarkMode ? '#fff' : 'black'} />
+  //         </TouchableOpacity>
+  //         <View style={styles.modalContainer}>
+  //           <Text style={styles.modalTitle}>
+  //             What is the reason for your cancellation?
+  //           </Text>
+  //           <Text style={styles.modalSubtitle}>
+  //             Could you let us know why you're canceling?
+  //           </Text>
+  //           <TouchableOpacity
+  //             style={styles.reasonButton}
+  //             onPress={() => handleSelectReason('Found a better price')}>
+  //             <Text style={styles.reasonText}>Found a better price</Text>
+  //             <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
+  //           </TouchableOpacity>
+  //           <TouchableOpacity
+  //             style={styles.reasonButton}
+  //             onPress={() => handleSelectReason('Wrong work location')}>
+  //             <Text style={styles.reasonText}>Wrong work location</Text>
+  //             <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
+  //           </TouchableOpacity>
+  //           <TouchableOpacity
+  //             style={styles.reasonButton}
+  //             onPress={() => handleSelectReason('Wrong service booked')}>
+  //             <Text style={styles.reasonText}>Wrong service booked</Text>
+  //             <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
+  //           </TouchableOpacity>
+  //           <TouchableOpacity
+  //             style={styles.reasonButton}
+  //             onPress={() => handleSelectReason('More time to assign a commander')}>
+  //             <Text style={styles.reasonText}>More time to assign a commander</Text>
+  //             <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
+  //           </TouchableOpacity>
+  //           <TouchableOpacity
+  //             style={styles.reasonButton}
+  //             onPress={() => handleSelectReason('Others')}>
+  //             <Text style={styles.reasonText}>Others</Text>
+  //             <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
+  //           </TouchableOpacity>
+  //         </View>
+  //       </View>
+  //     </Modal>
+
+  //     {/* Confirmation Modal */}
+  //     <Modal
+  //       animationType="slide"
+  //       transparent={true}
+  //       visible={confirmationModalVisible}
+  //       onRequestClose={() => setConfirmationModalVisible(false)}>
+  //       <View style={styles.modalOverlay}>
+  //         <View style={styles.crossContainer}>
+  //           <TouchableOpacity
+  //             onPress={() => setConfirmationModalVisible(false)}
+  //             style={styles.backButtonContainer}>
+  //             <Entypo name="cross" size={20} color={isDarkMode ? '#fff' : 'black'} />
+  //           </TouchableOpacity>
+  //         </View>
+  //         <View style={styles.confirmationModalContainer}>
+  //           <Text style={styles.confirmationTitle}>
+  //             Are you sure you want to cancel this Service?
+  //           </Text>
+  //           <Text style={styles.confirmationSubtitle}>
+  //             Please avoid canceling – we’re working to connect you with the best expert to solve your problem.
+  //           </Text>
+  //           <TouchableOpacity
+  //             style={styles.confirmButton}
+  //             onPress={handleCancelBooking}>
+  //             <Text style={styles.confirmButtonText}>Cancel my service</Text>
+  //           </TouchableOpacity>
+  //         </View>
+  //       </View>
+  //     </Modal>
+  //   </View>
+  // );
   return (
     <View style={styles.container}>
-      {/* Map View Section */}
-      <Mapbox.MapView style={styles.map}>
-        <Mapbox.Camera zoomLevel={16} centerCoordinate={location} />
-        <Mapbox.MarkerView coordinate={location}>
-          <Image
-            source={{
-              uri: 'https://i.postimg.cc/ZRdQkj5d/Screenshot-2024-11-13-164652-removebg-preview.png',
-            }}
-            style={styles.markerImage}
-          />
-        </Mapbox.MarkerView>
-      </Mapbox.MapView>
+    {/* Map View Section */}
+    <Mapbox.MapView style={styles.map}>
+      <Mapbox.Camera zoomLevel={16} centerCoordinate={location} />
+      <Mapbox.MarkerView coordinate={location}>
+        <Image
+          source={{
+            uri: 'https://i.postimg.cc/ZRdQkj5d/Screenshot-2024-11-13-164652-removebg-preview.png',
+          }}
+          style={styles.markerImage}
+        />
+      </Mapbox.MarkerView>
+    </Mapbox.MapView>
 
-      {/* Message Box Section */}
-      <View style={styles.messageBox}>
-        <View style={styles.innerButton}>
-          <View style={styles.addingMessageBox} />
-        </View>
-        <View style={styles.textContainer}>
-          <View style={styles.detailsContainer}>
-            <View style={styles.rowAlignment}>
-              <Text style={styles.searchingText}>
-                Looking best commander for you
-              </Text>
-            </View>
-            <View style={styles.rowSpaceAlignment}>
-              <View style={styles.rowAlignment}>
-                <Text style={styles.serviceName}>Service Booked</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={handleManualCancel}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
+    {/* Message Box Section */}
+    <View style={styles.messageBox}>
+      <View style={styles.innerButton}>
+        <View style={styles.addingMessageBox} />
+      </View>
+      <View style={styles.textContainer}>
+        <View style={styles.detailsContainer}>
+          <View style={styles.rowAlignment}>
+            <Text style={styles.searchingText}>
+              {t('looking_for_commander') || 'Looking best commander for you'}
+            </Text>
           </View>
-        </View>
-        <View style={styles.horizontalLine} />
-        <View style={styles.loadingContainer}>
-          {loading && (
-            <LottieView
-              source={require('../assets/waitingLoading.json')}
-              autoPlay
-              loop
-              style={styles.loadingAnimation}
-            />
-          )}
+          <View style={styles.rowSpaceAlignment}>
+            <View style={styles.rowAlignment}>
+              <Text style={styles.serviceName}>{t('service_booked') || 'Service Booked'}</Text>
+            </View>
+            <TouchableOpacity style={styles.cancelButton} onPress={handleManualCancel}>
+              <Text style={styles.cancelButtonText}>{t('cancel') || 'Cancel'}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
+      <View style={styles.horizontalLine} />
+      <View style={styles.loadingContainer}>
+        {loading && (
+          <LottieView
+            source={require('../assets/waitingLoading.json')}
+            autoPlay
+            loop
+            style={styles.loadingAnimation}
+          />
+        )}
+      </View>
+    </View>
 
-      {backendLoading && (
-        <View style={styles.activityIndicatorOverlay}>
-          <ActivityIndicator size="large" color="#0000ff" />
-        </View>
-      )}
+    {backendLoading && (
+      <View style={styles.activityIndicatorOverlay}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    )}
 
-      {/* Modal for Cancellation Reasons */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity
-            onPress={() => setModalVisible(false)}
-            style={styles.backButtonContainer}>
-            <AntDesign name="arrowleft" size={20} color={isDarkMode ? '#fff' : 'black'} />
+    {/* Modal for Cancellation Reasons */}
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={modalVisible}
+      onRequestClose={() => setModalVisible(false)}>
+      <View style={styles.modalOverlay}>
+        <TouchableOpacity
+          onPress={() => setModalVisible(false)}
+          style={styles.backButtonContainer}>
+          <AntDesign name="arrowleft" size={20} color={isDarkMode ? '#fff' : 'black'} />
+        </TouchableOpacity>
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalTitle}>
+            {t('cancellation_reason_question') || 'What is the reason for your cancellation?'}
+          </Text>
+          <Text style={styles.modalSubtitle}>
+            {t('cancellation_reason_subtitle') || "Could you let us know why you're canceling?"}
+          </Text>
+          <TouchableOpacity style={styles.reasonButton} onPress={() => handleSelectReason(t('reason_better_price') || 'Found a better price')}>
+            <Text style={styles.reasonText}>{t('reason_better_price') || 'Found a better price'}</Text>
+            <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
           </TouchableOpacity>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>
-              What is the reason for your cancellation?
-            </Text>
-            <Text style={styles.modalSubtitle}>
-              Could you let us know why you're canceling?
-            </Text>
-            <TouchableOpacity
-              style={styles.reasonButton}
-              onPress={() => handleSelectReason('Found a better price')}>
-              <Text style={styles.reasonText}>Found a better price</Text>
-              <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.reasonButton}
-              onPress={() => handleSelectReason('Wrong work location')}>
-              <Text style={styles.reasonText}>Wrong work location</Text>
-              <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.reasonButton}
-              onPress={() => handleSelectReason('Wrong service booked')}>
-              <Text style={styles.reasonText}>Wrong service booked</Text>
-              <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.reasonButton}
-              onPress={() => handleSelectReason('More time to assign a commander')}>
-              <Text style={styles.reasonText}>More time to assign a commander</Text>
-              <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.reasonButton}
-              onPress={() => handleSelectReason('Others')}>
-              <Text style={styles.reasonText}>Others</Text>
-              <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.reasonButton} onPress={() => handleSelectReason(t('reason_wrong_location') || 'Wrong work location')}>
+            <Text style={styles.reasonText}>{t('reason_wrong_location') || 'Wrong work location'}</Text>
+            <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.reasonButton} onPress={() => handleSelectReason(t('reason_wrong_service') || 'Wrong service booked')}>
+            <Text style={styles.reasonText}>{t('reason_wrong_service') || 'Wrong service booked'}</Text>
+            <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.reasonButton} onPress={() => handleSelectReason(t('reason_more_time') || 'More time to assign a commander')}>
+            <Text style={styles.reasonText}>{t('reason_more_time') || 'More time to assign a commander'}</Text>
+            <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.reasonButton} onPress={() => handleSelectReason(t('reason_others') || 'Others')}>
+            <Text style={styles.reasonText}>{t('reason_others') || 'Others'}</Text>
+            <AntDesign name="right" size={16} color={isDarkMode ? '#fff' : '#4a4a4a'} />
+          </TouchableOpacity>
         </View>
-      </Modal>
+      </View>
+    </Modal>
 
-      {/* Confirmation Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={confirmationModalVisible}
-        onRequestClose={() => setConfirmationModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.crossContainer}>
-            <TouchableOpacity
-              onPress={() => setConfirmationModalVisible(false)}
-              style={styles.backButtonContainer}>
-              <Entypo name="cross" size={20} color={isDarkMode ? '#fff' : 'black'} />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.confirmationModalContainer}>
-            <Text style={styles.confirmationTitle}>
-              Are you sure you want to cancel this Service?
-            </Text>
-            <Text style={styles.confirmationSubtitle}>
-              Please avoid canceling – we’re working to connect you with the best expert to solve your problem.
-            </Text>
-            <TouchableOpacity
-              style={styles.confirmButton}
-              onPress={handleCancelBooking}>
-              <Text style={styles.confirmButtonText}>Cancel my service</Text>
-            </TouchableOpacity>
-          </View>
+    {/* Confirmation Modal */}
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={confirmationModalVisible}
+      onRequestClose={() => setConfirmationModalVisible(false)}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.crossContainer}>
+          <TouchableOpacity onPress={() => setConfirmationModalVisible(false)} style={styles.backButtonContainer}>
+            <Entypo name="cross" size={20} color={isDarkMode ? '#fff' : 'black'} />
+          </TouchableOpacity>
         </View>
-      </Modal>
+        <View style={styles.confirmationModalContainer}>
+          <Text style={styles.confirmationTitle}>
+            {t('cancel_service_confirmation') || 'Are you sure you want to cancel this Service?'}
+          </Text>
+          <Text style={styles.confirmationSubtitle}>
+            {t('cancel_service_warning') ||
+              "Please avoid canceling – we’re working to connect you with the best expert to solve your problem."}
+          </Text>
+          <TouchableOpacity style={styles.confirmButton} onPress={handleCancelBooking}>
+            <Text style={styles.confirmButtonText}>
+              {t('cancel_my_service') || 'Cancel my service'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
     </View>
   );
+
 };
 
 function dynamicStyles(isDarkMode) {

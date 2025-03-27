@@ -16,19 +16,19 @@ import {
 import Mapbox from '@rnmapbox/maps';
 import Geolocation from 'react-native-geolocation-service';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  CommonActions,
-  useNavigation,
-  useFocusEffect,
-  useRoute,
-} from '@react-navigation/native';
+import { CommonActions, useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import EvilIcons from 'react-native-vector-icons/AntDesign';
 import Octicons from 'react-native-vector-icons/Octicons';
 import { Places } from 'ola-maps';
-import { useTheme } from '../context/ThemeContext'; // <-- import theme hook
+import { useTheme } from '../context/ThemeContext';
+
+// Import i18n so translations are loaded
+import '../i18n/i18n';
+// Import useTranslation hook
+import { useTranslation } from 'react-i18next';
 
 Mapbox.setAccessToken(
   'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw'
@@ -38,13 +38,16 @@ const placesClient = new Places('iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT');
 const UserLocation = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  // Extract offer from route params along with other parameters
-  const { serviceName, suggestion, savings, tipAmount, offer } = route.params;
-  console.log("user location",route.params)
+  // Extract route params including serviceName, savings, tipAmount, offer, and suggestion if any
+  const { serviceName, savings, tipAmount, offer, suggestion } = route.params;
+  console.log("UserLocation route params", route.params);
 
-  const { isDarkMode } = useTheme(); // get isDarkMode
-  const styles = dynamicStyles(isDarkMode); // pass into our style function
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(isDarkMode);
+  // Get translation function
+  const { t } = useTranslation();
 
+  // Local state variables
   const [service, setService] = useState([]);
   const [discount, setDiscount] = useState(0);
   const [location, setLocation] = useState(null);
@@ -56,8 +59,6 @@ const UserLocation = () => {
   const [pincode, setPincode] = useState('');
   const [alternatePhoneNumber, setAlternatePhoneNumber] = useState('');
   const [alternateName, setAlternateName] = useState('');
-
-  // Errors for complete address modal
   const [cityError, setCityError] = useState('');
   const [areaError, setAreaError] = useState('');
   const [pincodeError, setPincodeError] = useState('');
@@ -65,13 +66,12 @@ const UserLocation = () => {
   const [nameError, setNameError] = useState('');
   const [inputText, setInputText] = useState(suggestion ? suggestion.title : '');
   const [showMessageBox, setShowMessageBox] = useState(false);
-
-  // New state for the out-of-geofence modal
   const [showOutOfPolygonModal, setShowOutOfPolygonModal] = useState(false);
 
   const mapRef = useRef(null);
+  const screenHeight = Dimensions.get('window').height;
 
-  // Define example polygon geofences
+  // Example polygon geofences
   const polygonGeofences = [
     {
       id: 'zone1',
@@ -176,14 +176,13 @@ const UserLocation = () => {
         yi = polygon[i][1];
       const xj = polygon[j][0],
         yj = polygon[j][1];
-      const intersect =
-        yi > y !== yj > y &&
-        x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+      const intersect = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
       if (intersect) inside = !inside;
     }
     return inside;
   };
 
+  // Set service and discount from route params
   useEffect(() => {
     if (serviceName) {
       setService(serviceName);
@@ -194,6 +193,7 @@ const UserLocation = () => {
     }
   }, [route.params]);
 
+  // Request location permission and get current position
   useEffect(() => {
     const requestLocationPermission = async () => {
       try {
@@ -201,31 +201,29 @@ const UserLocation = () => {
           const granted = await PermissionsAndroid.request(
             PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
             {
-              title: 'Location Permission',
-              message: 'This app needs access to your location',
-              buttonNeutral: 'Ask Me Later',
-              buttonNegative: 'Cancel',
-              buttonPositive: 'OK',
+              title: t('location_permission_title') || 'Location Permission',
+              message: t('location_permission_message') || 'This app needs access to your location',
+              buttonNeutral: t('ask_me_later') || 'Ask Me Later',
+              buttonNegative: t('cancel') || 'Cancel',
+              buttonPositive: t('ok') || 'OK',
             }
           );
           if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-            console.log('Location permission denied');
+            console.log(t('location_permission_denied') || 'Location permission denied');
             setLocationLoading(false);
             return;
           }
         }
         Geolocation.getCurrentPosition(
           position => {
-            const { latitude, longitude } = suggestion
-              ? suggestion
-              : position.coords;
+            const { latitude, longitude } = suggestion ? suggestion : position.coords;
             fetchAndSetPlaceDetails(latitude, longitude);
             setLocation([longitude, latitude]);
             sendDataToServer(longitude, latitude);
             setLocationLoading(false);
           },
           error => {
-            console.error('Geolocation error:', error);
+            console.error(t('geolocation_error') || 'Geolocation error:', error);
             setLocationLoading(false);
           },
           { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
@@ -237,8 +235,9 @@ const UserLocation = () => {
     };
 
     requestLocationPermission();
-  }, [suggestion]);
+  }, [suggestion, t]);
 
+  // Handle Android back press
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -251,24 +250,21 @@ const UserLocation = () => {
     }, [])
   );
 
+  // Reverse geocode using Ola Maps API
   const fetchAndSetPlaceDetails = useCallback(async (latitude, longitude) => {
     try {
       const response = await placesClient.reverse_geocode(latitude, longitude);
-
       if (response && response.body && response.body.results.length > 0) {
         const place = response.body.results[0];
         const addressComponents = place.address_components;
-
         const pincode =
           addressComponents.find(component =>
             component.types.includes('postal_code')
           )?.long_name || '';
-
         let city =
           addressComponents.find(component =>
             component.types.includes('locality')
           )?.long_name || '';
-
         if (!city) {
           city =
             addressComponents.find(component =>
@@ -281,27 +277,27 @@ const UserLocation = () => {
               component.types.includes('administrative_area_level_2')
             )?.long_name || '';
         }
-
         let area = place.formatted_address || '';
 
-        console.log('Extracted Location Details:', { city, area, pincode });
+        console.log(t('extracted_location_details') || 'Extracted Location Details:', { city, area, pincode });
 
         setCity(city);
         setArea(area);
         setPincode(pincode);
       } else {
-        console.warn('No address details found.');
+        console.warn(t('no_address_found') || 'No address details found.');
       }
     } catch (error) {
-      console.error('Failed to fetch place details:', error);
+      console.error(t('failed_to_fetch_place_details') || 'Failed to fetch place details:', error);
     }
-  }, []);
+  }, [t]);
 
+  // Send location data to backend
   const sendDataToServer = useCallback(async (longitude, latitude) => {
     try {
       const token = await EncryptedStorage.getItem('cs_token');
       if (!token) {
-        console.error('No token found');
+        console.error(t('no_token_found') || 'No token found');
         return;
       }
       const response = await axios.post(
@@ -310,13 +306,14 @@ const UserLocation = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (response.status === 200) {
-        console.log('User location sent successfully');
+        console.log(t('location_sent_successfully') || 'User location sent successfully');
       }
     } catch (error) {
-      console.error('Failed to send user location:', error);
+      console.error(t('failed_to_send_location') || 'Failed to send user location:', error);
     }
-  }, []);
+  }, [t]);
 
+  // Handle crosshairs press to re-fetch location
   const handleCrosshairsPress = () => {
     setInputText('');
     Geolocation.getCurrentPosition(
@@ -327,12 +324,13 @@ const UserLocation = () => {
         fetchAndSetPlaceDetails(latitude, longitude);
       },
       error => {
-        console.error('Geolocation error:', error);
+        console.error(t('geolocation_error') || 'Geolocation error:', error);
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
     );
   };
 
+  // Confirm location and check if it lies within any polygon geofence
   const handleConfirmLocation = async () => {
     setConfirmLoading(true);
     if (location) {
@@ -349,7 +347,7 @@ const UserLocation = () => {
     try {
       const token = await EncryptedStorage.getItem('cs_token');
       if (!token) {
-        console.error('No token found');
+        console.error(t('no_token_found') || 'No token found');
         setConfirmLoading(false);
         return;
       }
@@ -358,24 +356,25 @@ const UserLocation = () => {
       });
       if (response.status === 200) {
         const data = response.data;
-        console.log('User data fetched:', data);
+        console.log(t('user_data_fetched') || 'User data fetched:', data);
         setAlternatePhoneNumber(data.phone_number || '');
         setAlternateName(data.name);
       } else {
-        console.warn('Unexpected response:', response);
+        console.warn(t('unexpected_response') || 'Unexpected response:', response);
       }
     } catch (error) {
-      console.error('Failed to fetch user data:', error);
+      console.error(t('failed_to_fetch_user_data') || 'Failed to fetch user data:', error);
       setShowMessageBox(false);
     }
     setConfirmLoading(false);
   };
 
+  // Handle "Remind Me" when location is out-of-service
   const handleRemindMe = async () => {
     try {
       const token = await EncryptedStorage.getItem('cs_token');
       if (!token) {
-        console.error('No token found');
+        console.error(t('no_token_found') || 'No token found');
         setShowOutOfPolygonModal(false);
         return;
       }
@@ -384,9 +383,9 @@ const UserLocation = () => {
         { area, city },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log('Reminder sent successfully:', response.data);
+      console.log(t('reminder_sent') || 'Reminder sent successfully:', response.data);
     } catch (error) {
-      console.error('Failed to send reminder:', error);
+      console.error(t('failed_to_send_reminder') || 'Failed to send reminder:', error);
     } finally {
       setShowOutOfPolygonModal(false);
     }
@@ -404,23 +403,23 @@ const UserLocation = () => {
     setPhoneError('');
     setNameError('');
     if (!city) {
-      setCityError('City is required.');
+      setCityError(t('city_required') || 'City is required.');
       hasError = true;
     }
     if (!area) {
-      setAreaError('Area is required.');
+      setAreaError(t('area_required') || 'Area is required.');
       hasError = true;
     }
     if (!pincode) {
-      setPincodeError('Pincode is required.');
+      setPincodeError(t('pincode_required') || 'Pincode is required.');
       hasError = true;
     }
     if (!alternatePhoneNumber) {
-      setPhoneError('Phone number is required.');
+      setPhoneError(t('phone_required') || 'Phone number is required.');
       hasError = true;
     }
     if (!alternateName) {
-      setNameError('Name is required.');
+      setNameError(t('name_required') || 'Name is required.');
       hasError = true;
     }
     if (!hasError) {
@@ -442,7 +441,6 @@ const UserLocation = () => {
                   location,
                   discount,
                   tipAmount,
-                  // Pass the offer object (if it exists)
                   offer: offer || null,
                 },
               },
@@ -475,26 +473,25 @@ const UserLocation = () => {
       return (
         <View style={styles.serviceItem}>
           <Text style={styles.serviceName} numberOfLines={2}>
-            {item.serviceName}
-          </Text>
+          { t(`singleService_${item.main_service_id}`) || item.serviceName }
+          </Text> 
           <Text style={styles.cost}>
             <Text style={styles.strikeThrough}>₹{item.totalCost}</Text>  ₹{finalCost}
           </Text>
-        </View>
+        </View> 
       );
     } else {
       return (
         <View style={styles.serviceItem}>
           <Text style={styles.serviceName} numberOfLines={2}>
-            {item.serviceName}
+          { t(`singleService_${item.main_service_id}`) || item.serviceName }
+            
           </Text>
           <Text style={styles.cost}>₹{item.totalCost}</Text>
         </View>
       );
     }
   };
-
-  const screenHeight = Dimensions.get('window').height;
 
   return (
     <SafeAreaView style={styles.page}>
@@ -508,25 +505,25 @@ const UserLocation = () => {
           </View>
           <TextInput
             style={styles.searchBox}
-            placeholder="Search location ..."
+            placeholder={t('search_location') || 'Search location ...'}
             placeholderTextColor={isDarkMode ? '#ccc' : '#1D2951'}
+            value={inputText}
+            onChangeText={setInputText}
             onFocus={() =>
               navigation.replace('LocationSearch', { serviceName, savings, tipAmount, offer })
             }
-            value={inputText}
-            onChangeText={setInputText}
           />
-          <TouchableOpacity onPress={() => setSuggestionName('')}>
+          <TouchableOpacity onPress={() => setSuggestionName({})}>
             <EvilIcons name="hearto" size={20} color="#808080" />
           </TouchableOpacity>
         </View>
       </View>
 
-      <View style={[styles.container, { height: screenHeight * 0.75 }]}>
+      <View style={[styles.container, { height: Dimensions.get('window').height * 0.75 }]}>
         <Mapbox.MapView
           ref={mapRef}
           style={styles.map}
-          zoomEnabled={true}
+          zoomEnabled
           styleURL="mapbox://styles/mapbox/streets-v11"
           onPress={handlePressLocation}
         >
@@ -567,7 +564,7 @@ const UserLocation = () => {
         )}
       </View>
 
-      <View style={[styles.bookingCard, { height: screenHeight * 0.3 }]}>
+      <View style={[styles.bookingCard, { height: Dimensions.get('window').height * 0.3 }]}>
         <View>
           <View style={styles.flatContainer}>
             <FlatList
@@ -576,19 +573,11 @@ const UserLocation = () => {
               keyExtractor={(item, index) => index.toString()}
             />
           </View>
-          {/* Display offer information if available 
-          {offer && (
-            <View style={styles.offerInfoContainer}>
-              <Text style={styles.offerInfoText}>
-                Offer applied: {offer.offer_code} – You saved ₹{offer.discountAmount}
-              </Text>
-            </View>
-          )}*/}
           <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmLocation}>
             {confirmLoading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.confirmButtonText}>Confirm Location</Text>
+              <Text style={styles.confirmButtonText}>{t('confirm_location') || 'Confirm Location'}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -603,18 +592,17 @@ const UserLocation = () => {
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Location Not Serviceable</Text>
+              <Text style={styles.modalTitle}>{t('location_not_serviceable') || 'Location Not Serviceable'}</Text>
               <Text style={styles.modalMessage}>
-                We are not in {city || 'this'} location. Please choose another
-                location or tap "Remind Me" to get a notification when service
-                is available.
+                {t('location_not_available', { city: city || t('this') || 'this' }) ||
+                  `We are not in ${city || 'this'} location. Please choose another location or tap "Remind Me" to get a notification when service is available.`}
               </Text>
               <View style={{ flexDirection: 'row', justifyContent: 'space-around', width: '100%' }}>
                 <TouchableOpacity style={styles.modalCancelButton} onPress={handleCancelOutModal}>
-                  <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                  <Text style={styles.modalCancelButtonText}>{t('cancel') || 'Cancel'}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.modalButton} onPress={handleRemindMe}>
-                  <Text style={styles.modalButtonText}>Remind Me</Text>
+                  <Text style={styles.modalButtonText}>{t('remind_me') || 'Remind Me'}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -634,49 +622,51 @@ const UserLocation = () => {
               {confirmLoading ? (
                 <View style={styles.loadingContent}>
                   <ActivityIndicator size="large" color="#FF5722" />
-                  <Text style={styles.loadingText}>Fetching details...</Text>
+                  <Text style={styles.loadingText}>{t('fetching_details') || 'Fetching details...'}</Text>
                 </View>
               ) : (
                 <>
-                  <Text style={styles.completeAddressHead}>Enter complete address!</Text>
-                  <Text style={styles.label}>City</Text>
+                  <Text style={styles.completeAddressHead}>
+                    {t('enter_complete_address') || 'Enter complete address!'}
+                  </Text>
+                  <Text style={styles.label}>{t('city') || 'City'}</Text>
                   <View style={styles.inputView}>
                     <TextInput
                       style={styles.input}
-                      placeholder="City"
+                      placeholder={t('city_placeholder') || 'City'}
                       placeholderTextColor={isDarkMode ? '#aaa' : '#000'}
                       value={city}
                       onChangeText={setCity}
                     />
                     {cityError ? <Text style={styles.errorText}>{cityError}</Text> : null}
                   </View>
-                  <Text style={styles.label}>Area</Text>
+                  <Text style={styles.label}>{t('area') || 'Area'}</Text>
                   <View style={styles.inputView}>
                     <TextInput
                       style={styles.input}
-                      placeholder="Area"
+                      placeholder={t('area_placeholder') || 'Area'}
                       placeholderTextColor={isDarkMode ? '#aaa' : '#000'}
                       value={area}
                       onChangeText={setArea}
                     />
                     {areaError ? <Text style={styles.errorText}>{areaError}</Text> : null}
                   </View>
-                  <Text style={styles.label}>Pincode</Text>
+                  <Text style={styles.label}>{t('pincode') || 'Pincode'}</Text>
                   <View style={styles.inputView}>
                     <TextInput
                       style={styles.input}
-                      placeholder="Pincode"
+                      placeholder={t('pincode_placeholder') || 'Pincode'}
                       placeholderTextColor={isDarkMode ? '#aaa' : '#000'}
                       value={pincode}
                       onChangeText={setPincode}
                     />
                     {pincodeError ? <Text style={styles.errorText}>{pincodeError}</Text> : null}
                   </View>
-                  <Text style={styles.label}>Phone number</Text>
+                  <Text style={styles.label}>{t('phone_number') || 'Phone number'}</Text>
                   <View style={styles.inputView}>
                     <TextInput
                       style={styles.input}
-                      placeholder="Alternate phone number"
+                      placeholder={t('alternate_phone') || 'Alternate phone number'}
                       placeholderTextColor={isDarkMode ? '#aaa' : '#000'}
                       keyboardType="phone-pad"
                       value={alternatePhoneNumber}
@@ -684,11 +674,11 @@ const UserLocation = () => {
                     />
                     {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
                   </View>
-                  <Text style={styles.label}>Name</Text>
+                  <Text style={styles.label}>{t('name') || 'Name'}</Text>
                   <View style={styles.inputView}>
                     <TextInput
                       style={styles.input}
-                      placeholder="Alternate name"
+                      placeholder={t('alternate_name') || 'Alternate name'}
                       placeholderTextColor={isDarkMode ? '#aaa' : '#000'}
                       value={alternateName}
                       onChangeText={setAlternateName}
@@ -696,7 +686,7 @@ const UserLocation = () => {
                     {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
                   </View>
                   <TouchableOpacity style={styles.bookButton} onPress={handleBookCommander}>
-                    <Text style={styles.bookButtonText}>Book Commander</Text>
+                    <Text style={styles.bookButtonText}>{t('book_commander') || 'Book Commander'}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.closeButton} onPress={() => setShowMessageBox(false)}>
                     <Text style={styles.closeButtonText}>×</Text>
@@ -717,10 +707,6 @@ const UserLocation = () => {
   );
 };
 
-/** 
- * Dynamic styles for Dark/Light Mode 
- * Adjust it for device widths if needed.
- */
 const dynamicStyles = (isDarkMode) =>
   StyleSheet.create({
     page: {

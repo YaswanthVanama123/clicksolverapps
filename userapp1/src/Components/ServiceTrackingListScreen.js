@@ -6,31 +6,119 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  BackHandler,
-  Modal,
   ActivityIndicator,
   useWindowDimensions,
   TouchableWithoutFeedback,
-  Keyboard,
   FlatList,
 } from 'react-native';
+import '../i18n/i18n';
+import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LottieView from 'lottie-react-native';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
 import uuid from 'react-native-uuid';
-import { useNavigation, useRoute, CommonActions, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import messaging from '@react-native-firebase/messaging';
-// Import theme hook
 import { useTheme } from '../context/ThemeContext';
+import i18n from '../i18n/i18n';
+
+const ServiceItemCard = ({ item, styles, tab }) => {
+  const navigation = useNavigation();
+  const { t } = useTranslation();
+
+  const isCancelled =
+    item.complete_status === "cancel" ||
+    item.complete_status === "usercanceled" ||
+    item.complete_status === "workercanceled";
+
+  const buttonLabel = isCancelled
+    ? t('cancelled') || 'Cancelled'
+    : t('view_details') || 'View Details';
+  const disabled = isCancelled;
+
+  const serviceName =
+    item.service_booked && item.service_booked.length > 0
+      ? item.service_booked[0]?.serviceName
+      : t('unknown_service') || 'Unknown Service';
+
+  const imageUrl =
+    item.service_booked && item.service_booked.length > 0
+      ? item.service_booked[0].imageUrl
+      : null;
+
+  return (
+    <View style={styles.cardContainer}>
+      <Image
+        style={styles.cardImage}
+        source={imageUrl ? { uri: imageUrl } : null}
+      />
+      <View style={styles.cardInfo}>
+        <Text style={styles.cardTitle} numberOfLines={1}>
+          {serviceName}
+        </Text>
+        <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
+        <Text style={styles.cardPrice}>₹{item.total_cost}</Text>
+      </View>
+      <TouchableOpacity
+        style={[styles.cardButton, disabled && styles.cardButtonDisabled]}
+        onPress={() => {
+          if (!disabled) {
+            if (tab === t('ongoing') || tab === 'Ongoing') {
+              navigation.push('ServiceBookingOngoingItem', {
+                tracking_id: item.notification_id,
+              });
+            } else {
+              navigation.push('serviceBookingItem', {
+                tracking_id: item.notification_id,
+              });
+            }
+          }
+        }}
+        disabled={disabled}
+      >
+        <Text style={[styles.cardButtonText, disabled && styles.cardButtonTextDisabled]}>
+          {buttonLabel}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+const ErrorRetryView = ({ onRetry, styles }) => {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.errorContainer}>
+      <Icon name="error-outline" size={48} color="#FF0000" />
+      <Text style={styles.errorText}>
+        {t('something_went_wrong') || 'Something went wrong. Please try again.'}
+      </Text>
+      <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+        <Text style={styles.retryButtonText}>{t('retry') || 'Retry'}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 const ServiceTrackingListScreen = () => {
   const { width, height } = useWindowDimensions();
   const { isDarkMode } = useTheme();
+  const { t } = useTranslation();
   const styles = dynamicStyles(width, height, isDarkMode);
+  const navigation = useNavigation();
+
+  // Define raw filter options (backend status values)
+  const rawFilterOptions = ['Collected Item', 'Work started', 'Work Completed'];
+
+  // Mapping from raw status key to its translated text for display
+  const statusTranslationMapping = {
+    'Collected Item': t('collected_item') || 'Collected Item',
+    'Work started': t('work_started') || 'Work Started',
+    'Work Completed': t('work_completed') || 'Work Completed',
+  };
 
   const [serviceData, setServiceData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
@@ -39,11 +127,7 @@ const ServiceTrackingListScreen = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [tokenFound, setTokenFound] = useState(true);
-  const navigation = useNavigation();
 
-  const filterOptions = ['Collected Item', 'Work started', 'Work Completed'];
-
-  // Fetch Bookings
   const fetchBookings = async () => {
     setLoading(true);
     setError(false);
@@ -75,12 +159,10 @@ const ServiceTrackingListScreen = () => {
     }
   };
 
-  // Initial data fetch
   useEffect(() => {
     fetchBookings();
   }, []);
 
-  // Listen for FCM notifications. If notification.data has a "status" key, call fetchBookings.
   useEffect(() => {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
       console.log('FCM notification received in ServiceTrackingListScreen:', remoteMessage);
@@ -92,23 +174,27 @@ const ServiceTrackingListScreen = () => {
     return () => unsubscribe();
   }, []);
 
-  const formatDate = (created_at) => {
-    const date = new Date(created_at);
-    const monthNames = [
-      'January','February','March','April','May','June',
-      'July','August','September','October','November','December',
-    ];
-    return `${monthNames[date.getMonth()]} ${String(date.getDate()).padStart(2, '0')}, ${date.getFullYear()}`;
+  const formatDate = (dateString) => {
+    if (!dateString) return t('pending') || 'Pending';
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat(i18n.language, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true,
+    }).format(date);
   };
 
   const handleCardPress = (trackingId) => {
     navigation.push('ServiceTrackingItem', { tracking_id: trackingId });
   };
 
-  const toggleFilter = (status) => {
-    const updatedFilters = selectedFilters.includes(status)
-      ? selectedFilters.filter((s) => s !== status)
-      : [...selectedFilters, status];
+  const toggleFilter = (statusKey) => {
+    const updatedFilters = selectedFilters.includes(statusKey)
+      ? selectedFilters.filter((s) => s !== statusKey)
+      : [...selectedFilters, statusKey];
 
     setSelectedFilters(updatedFilters);
 
@@ -145,28 +231,36 @@ const ServiceTrackingListScreen = () => {
         />
       </View>
       <View style={styles.itemTextContainer}>
-        <Text style={styles.itemTitle}>{item.service_status}</Text>
+        <Text style={styles.itemTitle}>
+          {item.service_status === 'Work Completed'
+            ? t('work_completed') || 'Completed'
+            : item.service_status === 'Work started'
+            ? t('in_progress') || 'In Progress'
+            : item.service_status === 'Collected Item'
+            ? t('collected_item') || 'Item Collected'
+            : t('on_the_way') || 'On the Way'}
+        </Text>
         <Text style={styles.itemDate}>{formatDate(item.created_at)}</Text>
         <Text style={styles.itemDate}>{item.tracking_key}</Text>
       </View>
       <View
         style={[
           styles.statusLabel,
-          item.service_status === 'Collected Item'
-            ? styles.inProgress
-            : item.service_status === 'Work Completed'
+          item.service_status === 'Work Completed'
             ? styles.completed
+            : item.service_status === 'Work started'
+            ? styles.inProgress
             : styles.onTheWay,
         ]}
       >
         <Text style={styles.statusText}>
           {item.service_status === 'Work Completed'
-            ? 'Completed'
+            ? t('work_completed') || 'Completed'
             : item.service_status === 'Work started'
-            ? 'In Progress'
+            ? t('in_progress') || 'In Progress'
             : item.service_status === 'Collected Item'
-            ? 'Item Collected'
-            : 'On the Way'}
+            ? t('collected_item') || 'Item Collected'
+            : t('on_the_way') || 'On the Way'}
         </Text>
       </View>
     </TouchableOpacity>
@@ -179,7 +273,9 @@ const ServiceTrackingListScreen = () => {
           {/* Header */}
           <View style={styles.headerContainer}>
             <Icon name="arrow-back" size={24} color={isDarkMode ? '#fff' : '#000'} />
-            <Text style={styles.headerTitle}>Service Tracking</Text>
+            <Text style={styles.headerTitle}>
+              {t('service_tracking') || 'Service Tracking'}
+            </Text>
             <TouchableOpacity onPress={() => setIsFilterVisible(!isFilterVisible)}>
               <Icon name="filter-list" size={24} color={isDarkMode ? '#fff' : '#000'} />
             </TouchableOpacity>
@@ -188,8 +284,10 @@ const ServiceTrackingListScreen = () => {
           {/* Filter Dropdown */}
           {isFilterVisible && (
             <View style={styles.dropdownContainer}>
-              <Text style={styles.dropdownTitle}>PROJECT TYPE</Text>
-              {filterOptions.map((option, index) => (
+              <Text style={styles.dropdownTitle}>
+                {t('project_type') || 'PROJECT TYPE'}
+              </Text>
+              {rawFilterOptions.map((option, index) => (
                 <TouchableOpacity
                   key={index}
                   style={styles.dropdownOption}
@@ -204,7 +302,9 @@ const ServiceTrackingListScreen = () => {
                     size={20}
                     color="#4a4a4a"
                   />
-                  <Text style={styles.dropdownText}>{option}</Text>
+                  <Text style={styles.dropdownText}>
+                    {statusTranslationMapping[option]}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -221,25 +321,22 @@ const ServiceTrackingListScreen = () => {
                   style={styles.loadingAnimation}
                 />
               </View>
-            ) : error ? (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>
-                  Something went wrong. Please try again.
-                </Text>
-                <TouchableOpacity style={styles.retryButton} onPress={fetchBookings}>
-                  <Text style={styles.retryButtonText}>Retry</Text>
-                </TouchableOpacity>
-              </View>
             ) : !tokenFound || filteredData.length === 0 ? (
               <View style={styles.noDataContainer}>
                 <Icon name="search-off" size={48} color="#888" />
-                <Text style={styles.noDataText}>No trackings available</Text>
+                <Text style={styles.noDataText}>
+                  {tokenFound
+                    ? t('no_results_found') || 'No results found'
+                    : t('no_trackings_available') || 'No trackings available'}
+                </Text>
               </View>
+            ) : error ? (
+              <ErrorRetryView onRetry={fetchBookings} styles={styles} />
             ) : (
               <FlatList
                 data={filteredData}
                 renderItem={renderItem}
-                keyExtractor={() => uuid.v4()}
+                keyExtractor={(item, index) => `${item.notification_id}_${index}`}
                 contentContainerStyle={styles.listContainer}
               />
             )}
@@ -252,7 +349,6 @@ const ServiceTrackingListScreen = () => {
 
 const dynamicStyles = (width, height, isDarkMode) => {
   const isTablet = width >= 600;
-
   return StyleSheet.create({
     safeArea: {
       flex: 1,

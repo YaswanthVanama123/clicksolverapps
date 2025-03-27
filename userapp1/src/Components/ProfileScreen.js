@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -20,9 +20,15 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import EvilIcons from 'react-native-vector-icons/EvilIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-// Import global theme hook
+// Global theme hook
 import { useTheme } from '../context/ThemeContext';
 
+// Import i18n initialization (ensure this file initializes i18next)
+import '../i18n/i18n';
+// Import the translation hook
+import { useTranslation } from 'react-i18next';
+
+// Helper function to upload an image
 const uploadImage = async (uri) => {
   const apiKey = '287b4ba48139a6a59e75b5a8266bbea2';
   const apiUrl = 'https://api.imgbb.com/1/upload';
@@ -59,20 +65,21 @@ const ProfileScreen = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-
-  // Global theme state
-  const { isDarkMode, toggleTheme } = useTheme();
-
-  // State to control the bottom-sheet modal
+  // State to control the logout confirmation modal
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
+  // Global theme values
+  const { isDarkMode, toggleTheme } = useTheme();
   const styles = dynamicStyles(isDarkMode);
 
+  // Get translation function
+  const { t } = useTranslation();
+
+  // Fetch profile details from backend
   const fetchProfileDetails = async () => {
     try {
       setLoading(true);
       setError(false);
-
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       if (!jwtToken) {
         setIsLoggedIn(false);
@@ -80,13 +87,11 @@ const ProfileScreen = () => {
         return;
       }
       setIsLoggedIn(true);
-
       const response = await axios.post(
         'https://backend.clicksolver.com/api/user/profile',
         {},
-        { headers: { Authorization: `Bearer ${jwtToken}` } },
+        { headers: { Authorization: `Bearer ${jwtToken}` } }
       );
-
       const { name, email, phone_number, profile } = response.data;
       setImage(profile);
       setAccount({
@@ -97,7 +102,6 @@ const ProfileScreen = () => {
       });
     } catch (err) {
       console.error('Error fetching profile details:', err);
-      // If unauthorized, clear token and redirect or update state
       if (err.response && err.response.status === 401) {
         await EncryptedStorage.removeItem('cs_token');
         setIsLoggedIn(false);
@@ -109,21 +113,21 @@ const ProfileScreen = () => {
     }
   };
 
-  // Re-fetch profile details when screen is focused
+  // Re-fetch profile details whenever the screen is focused
   useFocusEffect(
     useCallback(() => {
       fetchProfileDetails();
     }, [])
   );
 
-  // Edit / Upload profile image
+  // Handle image editing (uploading a new profile image)
   const handleEditImage = async () => {
     const options = { mediaType: 'photo', quality: 0.8 };
     launchImageLibrary(options, async (response) => {
       if (response.didCancel) {
         console.log('User cancelled image picker');
       } else if (response.errorMessage) {
-        console.error('ImagePicker Error: ', response.errorMessage);
+        console.error('ImagePicker Error:', response.errorMessage);
       } else if (response.assets && response.assets.length > 0) {
         const uri = response.assets[0].uri;
         try {
@@ -139,25 +143,26 @@ const ProfileScreen = () => {
             setAccount((prev) => ({ ...prev, profileImage: uploadedUrl }));
           }
         } catch (error) {
-          console.error('Error uploading image: ', error);
+          console.error('Error uploading image:', error);
         }
       }
     });
   };
 
+  // Handle logout
   const handleLogout = async () => {
     try {
       const fcm_token = await EncryptedStorage.getItem('fcm_token');
       if (fcm_token) {
         await axios.post('https://backend.clicksolver.com/api/userLogout', { fcm_token });
       }
-      // Replace multiRemove with individual removeItem calls
       await EncryptedStorage.removeItem('cs_token');
       await EncryptedStorage.removeItem('fcm_token');
       await EncryptedStorage.removeItem('notifications');
       await EncryptedStorage.removeItem('messageBox');
       setIsLoggedIn(false);
       setLogoutModalVisible(false);
+      navigation.navigate('Login');
     } catch (err) {
       console.error('Error logging out:', err);
     }
@@ -169,19 +174,19 @@ const ProfileScreen = () => {
   if (!isLoggedIn) {
     return (
       <View style={styles.loginContainer}>
-        <Text style={styles.profileTitle}>Profile</Text>
+        <Text style={styles.profileTitle}>{t('profile')}</Text>
         <TouchableOpacity style={styles.loginButton} onPress={() => navigation.push('Login')}>
-          <Text style={styles.loginButtonText}>Login or Sign up</Text>
+          <Text style={styles.loginButtonText}>{t('login_or_signup')}</Text>
         </TouchableOpacity>
         <View style={styles.optionsContainer}>
-        <View style={styles.menuItem}>
+          <View style={styles.menuItem}>
             <Ionicons
               name={isDarkMode ? 'moon-outline' : 'sunny-outline'}
               size={22}
               color={styles.toggleIconColor}
             />
             <Text style={[styles.menuText, { marginLeft: 12 }]}>
-              {isDarkMode ? 'Dark Theme' : 'Light Theme'}
+              {isDarkMode ? t('dark_theme') : t('light_theme')}
             </Text>
             <TouchableOpacity
               style={[
@@ -198,10 +203,8 @@ const ProfileScreen = () => {
               />
             </TouchableOpacity>
           </View>
-          <HelpMenuItem styles={styles} text="Help & Support" onPress={() => navigation.push('Help')} />
-          <AboutCSMenuItem styles={styles} text="About CS" onPress={() => console.log('Navigate to About CS')} />
-
-            
+          <HelpMenuItem styles={styles} text={t('help_and_support')} onPress={() => navigation.push('Help')} />
+          <AboutCSMenuItem styles={styles} text={t('about_cs')} onPress={() => navigation.push('AboutCS')} />
         </View>
       </View>
     );
@@ -226,9 +229,9 @@ const ProfileScreen = () => {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Something went wrong. Please try again.</Text>
+          <Text style={styles.errorText}>{t('something_went_wrong')}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchProfileDetails}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryButtonText}>{t('retry')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -283,7 +286,7 @@ const ProfileScreen = () => {
               color={styles.toggleIconColor}
             />
             <Text style={[styles.menuText, { marginLeft: 12 }]}>
-              {isDarkMode ? 'Dark Theme' : 'Light Theme'}
+              {isDarkMode ? t('dark_theme') : t('light_theme')}
             </Text>
             <TouchableOpacity
               style={[
@@ -302,42 +305,14 @@ const ProfileScreen = () => {
           </View>
 
           {/* Menu Items */}
-          <ProfileMenuItem
-            styles={styles}
-            text="My Services"
-            onPress={() => navigation.push('RecentServices')}
-          />
-          <HelpMenuItem
-            styles={styles}
-            text="Help & Support"
-            onPress={() => navigation.push('Help')}
-          />
-          <DeleteAccountMenuItem
-            styles={styles}
-            text="Account Delete"
-            onPress={() => navigation.push('DeleteAccount', { details: account })}
-          />
-          <EditProfileMenuItem
-            styles={styles}
-            text="Edit Profile"
-            onPress={() => navigation.push('EditProfile', { details: account })}
-          />
-          <ReferEarnMenuItem
-            styles={styles}
-            text="Refer & Earn"
-            onPress={() => navigation.push('ReferralScreen')}
-          />
-          <AboutCSMenuItem 
-            styles={styles}
-            text="Language"
-            onPress={() => navigation.push('LanguageSelector')}
-          />
-          <AboutCSMenuItem 
-            styles={styles}
-            text="About CS"
-            onPress={() => navigation.push('AboutCS')}
-          />
-          <LogoutMenuItem styles={styles} text="Logout" onPress={confirmLogout} />
+          <ProfileMenuItem styles={styles} text={t('my_services')} onPress={() => navigation.push('RecentServices')} />
+          <HelpMenuItem styles={styles} text={t('help_and_support')} onPress={() => navigation.push('Help')} />
+          <DeleteAccountMenuItem styles={styles} text={t('account_delete')} onPress={() => navigation.push('DeleteAccount', { details: account })} />
+          <EditProfileMenuItem styles={styles} text={t('edit_profile')} onPress={() => navigation.push('EditProfile', { details: account })} />
+          <ReferEarnMenuItem styles={styles} text={t('refer_and_earn')} onPress={() => navigation.push('ReferralScreen')} />
+          <AboutCSMenuItem styles={styles} text={t('change_language')} onPress={() => navigation.push('LanguageSelector')} />
+          <AboutCSMenuItem styles={styles} text={t('about_cs')} onPress={() => navigation.push('AboutCS')} />
+          <LogoutMenuItem styles={styles} text={t('logout')} onPress={confirmLogout} />
         </View>
       </ScrollView>
 
@@ -351,15 +326,13 @@ const ProfileScreen = () => {
         <TouchableOpacity style={styles.bottomSheetOverlay} activeOpacity={1} onPress={closeModal}>
           <View style={styles.bottomSheetContainer}>
             <View style={styles.bottomSheetCard}>
-              <Text style={styles.bottomSheetTitle}>Logout</Text>
-              <Text style={styles.bottomSheetMessage}>
-                Are you sure you want to log out?
-              </Text>
+              <Text style={styles.bottomSheetTitle}>{t('logout_confirmation')}</Text>
+              <Text style={styles.bottomSheetMessage}>{t('logout_confirmation_message')}</Text>
               <TouchableOpacity style={styles.logoutConfirmButton} onPress={handleLogout}>
-                <Text style={styles.logoutConfirmButtonText}>Yes, Logout</Text>
+                <Text style={styles.logoutConfirmButtonText}>{t('yes_logout')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.logoutCancelButton} onPress={closeModal}>
-                <Text style={styles.logoutCancelButtonText}>Cancel</Text>
+                <Text style={styles.logoutCancelButtonText}>{t('cancel')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -369,7 +342,7 @@ const ProfileScreen = () => {
   );
 };
 
-/* Menu Item Components */
+// Menu Item Components
 const ProfileMenuItem = ({ text, onPress, styles }) => (
   <TouchableOpacity style={styles.menuItem} onPress={onPress}>
     <Ionicons name="bookmarks-outline" size={22} color={styles.iconColor} />

@@ -17,31 +17,44 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
+import i18n from 'i18next';
+import '../i18n/i18n';
+import { useTranslation } from 'react-i18next';
 
 // Helper: format the date
-const formatDate = (created_at) => {
-  const date = new Date(created_at);
-  const monthNames = [
-    'January','February','March','April','May','June',
-    'July','August','September','October','November','December',
-  ];
-  return `${monthNames[date.getMonth()]} ${String(date.getDate()).padStart(2, '0')}, ${date.getFullYear()}`;
+const formatDate = (dateString) => {
+  if (!dateString) return 'Pending';
+
+  const date = new Date(dateString);
+
+  return new Intl.DateTimeFormat(i18n.language, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: true,
+  }).format(date);
 };
 
 // Card component for a single service item
 const ServiceItemCard = ({ item, styles, tab }) => {
   const navigation = useNavigation();
-  const isCancelled = item.complete_status === "cancel" || item.complete_status === "usercanceled" || item.complete_status === "workercanceled";
-  let buttonLabel = 'View Details';
+  const { t } = useTranslation();
+  const isCancelled =
+    item.complete_status === 'cancel' ||
+    item.complete_status === 'usercanceled' ||
+    item.complete_status === 'workercanceled';
+  let buttonLabel = t('view_details') || 'View Details';
   let disabled = false;
   if (isCancelled) {
-    buttonLabel = 'Cancelled';
+    buttonLabel = t('cancelled') || 'Cancelled';
     disabled = true;
   }
   const serviceName =
     item.service_booked && item.service_booked.length > 0
-      ? item.service_booked[0]?.serviceName
-      : 'Unknown Service';
+      ? item.service_booked[0]?.main_service_id
+      : t('unknown_service') || 'Unknown Service';
   const imageUrl =
     item.service_booked && item.service_booked.length > 0
       ? item.service_booked[0].imageUrl
@@ -50,22 +63,20 @@ const ServiceItemCard = ({ item, styles, tab }) => {
     <View style={styles.cardContainer}>
       <Image
         style={styles.cardImage}
-        source={ imageUrl ? { uri: imageUrl } : null }
+        source={imageUrl ? { uri: imageUrl } : null}
       />
       <View style={styles.cardInfo}>
         <Text style={styles.cardTitle} numberOfLines={1}>
-          {serviceName}
+          {t(`singleService_${serviceName}`) || serviceName}
         </Text>
         <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
-        <Text style={styles.cardPrice}>
-          ₹{item.total_cost}
-        </Text>
+        <Text style={styles.cardPrice}>₹{item.total_cost}</Text>
       </View>
       <TouchableOpacity
         style={[styles.cardButton, disabled && styles.cardButtonDisabled]}
         onPress={() => {
           if (!disabled) {
-            if (tab === 'Ongoing') {
+            if (tab === 'ongoing') {
               navigation.push('ServiceBookingOngoingItem', {
                 tracking_id: item.notification_id,
               });
@@ -78,7 +89,12 @@ const ServiceItemCard = ({ item, styles, tab }) => {
         }}
         disabled={disabled}
       >
-        <Text style={[styles.cardButtonText, disabled && styles.cardButtonTextDisabled]}>
+        <Text
+          style={[
+            styles.cardButtonText,
+            disabled && styles.cardButtonTextDisabled,
+          ]}
+        >
           {buttonLabel}
         </Text>
       </TouchableOpacity>
@@ -87,22 +103,39 @@ const ServiceItemCard = ({ item, styles, tab }) => {
 };
 
 // A reusable component to display the error view with retry
-const ErrorRetryView = ({ onRetry, styles }) => (
-  <View style={styles.errorContainer}>
-    <MaterialIcons name="error-outline" size={48} color="#FF0000" />
-    <Text style={styles.errorText}>Something went wrong. Please try again.</Text>
-    <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-      <Text style={styles.retryButtonText}>Retry</Text>
-    </TouchableOpacity>
-  </View>
-);
+const ErrorRetryView = ({ onRetry, styles }) => {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.errorContainer}>
+      <MaterialIcons name="error-outline" size={48} color="#FF0000" />
+      <Text style={styles.errorText}>
+        {t('something_went_wrong') ||
+          'Something went wrong. Please try again.'}
+      </Text>
+      <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+        <Text style={styles.retryButtonText}>
+          {t('retry') || 'Retry'}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 const RecentServices = () => {
   const { width, height } = useWindowDimensions();
   const { isDarkMode } = useTheme();
   const styles = dynamicStyles(width, height, isDarkMode);
-  const TABS = ['Ongoing', 'Completed', 'Cancelled'];
-  const [selectedTab, setSelectedTab] = useState('Ongoing');
+  const { t } = useTranslation();
+
+  // Define tabs as objects with an id and label
+  const TABS = [
+    { id: 'ongoing', label: t('ongoing') || 'Ongoing' },
+    { id: 'completed', label: t('completed') || 'Completed' },
+    { id: 'cancelled', label: t('cancelled') || 'Cancelled' },
+  ];
+
+  // Set selectedTab to the identifier of the first tab
+  const [selectedTab, setSelectedTab] = useState(TABS[0].id);
   const [bookingsData, setBookingsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -119,13 +152,13 @@ const RecentServices = () => {
       const token = await EncryptedStorage.getItem('cs_token');
       if (!token) {
         setTokenFound(false);
-        setBookingsData([]); // clear bookings data
+        setBookingsData([]);
         setLoading(false);
         return;
       }
       setTokenFound(true);
       let response;
-      if (selectedTab === 'Ongoing') {
+      if (selectedTab === 'ongoing') {
         response = await axios.get(
           `https://backend.clicksolver.com/api/user/ongoingBookings`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -152,23 +185,34 @@ const RecentServices = () => {
 
   const getFilteredData = () => {
     let data = [];
-    if (selectedTab === 'Completed') {
-      data = bookingsData.filter(item => item.complete_status !== "cancel" && item.complete_status !== "usercanceled" && item.complete_status !== "workercanceled");
-    }
-     else if (selectedTab === 'Cancelled') {
-      data = bookingsData.filter(item => item.complete_status === "cancel" || item.complete_status === "usercanceled" || item.complete_status === "workercanceled");
+    if (selectedTab === 'completed') {
+      data = bookingsData.filter(
+        (item) =>
+          item.complete_status !== 'cancel' &&
+          item.complete_status !== 'usercanceled' &&
+          item.complete_status !== 'workercanceled'
+      );
+    } else if (selectedTab === 'cancelled') {
+      data = bookingsData.filter(
+        (item) =>
+          item.complete_status === 'cancel' ||
+          item.complete_status === 'usercanceled' ||
+          item.complete_status === 'workercanceled'
+      );
     } else {
       data = bookingsData;
     }
     if (searchActive && searchText.trim()) {
       const lowerSearch = searchText.toLowerCase();
-      data = data.filter(item => {
+      data = data.filter((item) => {
         if (
           item.service_booked &&
           item.service_booked.length > 0 &&
           item.service_booked[0].serviceName
         ) {
-          return item.service_booked[0].serviceName.toLowerCase().includes(lowerSearch);
+          return item.service_booked[0].serviceName
+            .toLowerCase()
+            .includes(lowerSearch);
         }
         return false;
       });
@@ -183,14 +227,20 @@ const RecentServices = () => {
     <SafeAreaView style={styles.safeArea}>
       {/* TOP BAR */}
       <View style={styles.topBar}>
-        <Text style={styles.topBarTitle}>My Services</Text>
+        <Text style={styles.topBarTitle}>
+          {t('my_services') || 'My Services'}
+        </Text>
         <TouchableOpacity
           onPress={() => {
             setSearchActive(!searchActive);
             setSearchText('');
           }}
         >
-          <Icon name="search" size={24} color={isDarkMode ? '#fff' : '#000'} />
+          <Icon
+            name="search"
+            size={24}
+            color={isDarkMode ? '#fff' : '#000'}
+          />
         </TouchableOpacity>
       </View>
 
@@ -199,7 +249,7 @@ const RecentServices = () => {
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search services..."
+            placeholder={t('search_services') || 'Search services...'}
             placeholderTextColor="#999"
             value={searchText}
             onChangeText={setSearchText}
@@ -207,16 +257,24 @@ const RecentServices = () => {
         </View>
       ) : (
         <View style={styles.tabContainer}>
-          {TABS.map((tab) => {
-            const active = tab === selectedTab;
+          {TABS.map((tabItem) => {
+            const active = tabItem.id === selectedTab;
             return (
               <TouchableOpacity
-                key={tab}
-                style={[styles.tabButton, active && styles.tabButtonActive]}
-                onPress={() => setSelectedTab(tab)}
+                key={tabItem.id}
+                style={[
+                  styles.tabButton,
+                  active && styles.tabButtonActive,
+                ]}
+                onPress={() => setSelectedTab(tabItem.id)}
               >
-                <Text style={[styles.tabButtonText, active && styles.tabButtonTextActive]}>
-                  {tab}
+                <Text
+                  style={[
+                    styles.tabButtonText,
+                    active && styles.tabButtonTextActive,
+                  ]}
+                >
+                  {tabItem.label}
                 </Text>
               </TouchableOpacity>
             );
@@ -233,20 +291,32 @@ const RecentServices = () => {
         ) : !tokenFound ? (
           <View style={styles.noDataContainer}>
             <MaterialIcons name="search-off" size={48} color="#888" />
-            <Text style={styles.noDataText}>No data available</Text>
+            <Text style={styles.noDataText}>
+              {t('no_data_available') || 'No data available'}
+            </Text>
           </View>
         ) : error ? (
           <ErrorRetryView onRetry={fetchBookings} styles={styles} />
         ) : filteredData.length === 0 ? (
           <View style={styles.noDataContainer}>
             <MaterialIcons name="search-off" size={48} color="#888" />
-            <Text style={styles.noDataText}>No results found</Text>
+            <Text style={styles.noDataText}>
+              {t('no_results_found') || 'No results found'}
+            </Text>
           </View>
         ) : (
           <FlatList
             data={filteredData}
-            keyExtractor={(item, index) => `${item.notification_id}_${index}`}
-            renderItem={({ item }) => <ServiceItemCard item={item} styles={styles} tab={selectedTab} />}
+            keyExtractor={(item, index) =>
+              `${item.notification_id}_${index}`
+            }
+            renderItem={({ item }) => (
+              <ServiceItemCard
+                item={item}
+                styles={styles}
+                tab={selectedTab}
+              />
+            )}
             contentContainerStyle={styles.listContent}
           />
         )}

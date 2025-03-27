@@ -18,7 +18,6 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Foundation from 'react-native-vector-icons/Foundation';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
-import uuid from 'react-native-uuid';
 import LottieView from 'lottie-react-native';
 import crashlytics from '@react-native-firebase/crashlytics';
 import EncryptedStorage from 'react-native-encrypted-storage';
@@ -63,6 +62,7 @@ function ServiceApp({ navigation, route }) {
         title: '20%',
         subtitle: t('new_user_special') || 'New User Special',
         description:
+          t('new_user_special_description') ||
           'New users get a 20% discount on their first booking across any service category.',
         imageBACKENDAP:
           'https://i.postimg.cc/HsGnL9F1/58d3ebe039b0649cfcabe95ae59f4328.png',
@@ -74,6 +74,7 @@ function ServiceApp({ navigation, route }) {
         title: '50%',
         subtitle: t('summer_sale') || 'Summer Sale',
         description:
+          t('summer_sale_description') ||
           'Get a 50% discount on all services booked during the summer season.',
         imageBACKENDAP:
           'https://i.postimg.cc/rwtnJ3vB/b08a4579e19f4587bc9915bc0f7502ee.png',
@@ -85,6 +86,7 @@ function ServiceApp({ navigation, route }) {
         title: '30%',
         subtitle: t('refer_a_friend') || 'Refer a Friend',
         description:
+          t('refer_a_friend_description') ||
           'Refer a friend and get 30% off on your next service booking.',
         imageBACKENDAP:
           'https://i.postimg.cc/Kzwh9wZC/4c63fba81d3b7ef9ca889096ad629283.png',
@@ -94,6 +96,7 @@ function ServiceApp({ navigation, route }) {
     ],
     [isDarkMode, t],
   );
+    
 
   useEffect(() => {
     crashlytics().log('ServiceApp component mounted');
@@ -157,11 +160,11 @@ function ServiceApp({ navigation, route }) {
         'https://backend.clicksolver.com/api/servicecategories'
       );
       crashlytics().log('Services fetched successfully');
-      const servicesWithIds = response.data.map(service => ({
-        ...service,
-        id: uuid.v4(),
-      }));
-      setServices(servicesWithIds);
+      // const servicesWithIds = response.data.map(service => ({
+      //   ...service,
+      //   id: service.service_id,
+      // }));
+      setServices(response.data);
     } catch (error) {
       crashlytics().recordError(error);
       console.error('Detailed Error:', error.toJSON ? error.toJSON() : error);
@@ -178,8 +181,8 @@ function ServiceApp({ navigation, route }) {
     navigation.push('Help');
   };
 
-  const handleBookCommander = serviceId => {
-    navigation.push('serviceCategory', { serviceObject: serviceId });
+  const handleBookCommander = (serviceId,id) => {
+    navigation.push('serviceCategory', { serviceObject: serviceId ,id});
   };
 
   // Set greeting text and icon based on time of day, using translations
@@ -238,7 +241,7 @@ function ServiceApp({ navigation, route }) {
       );
     }
     return services.map(service => (
-      <View key={service.id} style={styles.serviceCard}>
+      <View key={service.service_id} style={styles.serviceCard}>
         <Image
           source={{
             uri: service.service_urls || 'https://via.placeholder.com/100x100',
@@ -247,10 +250,10 @@ function ServiceApp({ navigation, route }) {
           resizeMode="stretch"
         />
         <View style={styles.serviceDetails}>
-          <Text style={styles.serviceTitle}>{service.service_name}</Text>
+          <Text style={styles.serviceTitle}> { t(`service_${service.service_id}`) || service.service_name }</Text>
           <TouchableOpacity
             style={styles.bookButton}
-            onPress={() => handleBookCommander(service.service_name)}>
+            onPress={() => handleBookCommander(service.service_name,service.service_id)}>
             <Text style={styles.bookButtonText}>{t('book_now') || 'Book Now ➔'}</Text>
           </TouchableOpacity>
         </View>
@@ -292,12 +295,12 @@ function ServiceApp({ navigation, route }) {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {/* Language Selector Button – navigates to a dedicated LanguageSelector screen */}
-        <View style={{ alignSelf: 'flex-end', margin: 10 }}>
+        {/* <View style={{ alignSelf: 'flex-end', margin: 10 }}>
           <Button
             title={t('change_language') || "Change Language"}
             onPress={() => navigation.navigate('LanguageSelector')}
           />
-        </View>
+        </View> */}
 
         {/* Header Row */}
         <View style={styles.header}>
@@ -464,10 +467,11 @@ function ServiceApp({ navigation, route }) {
                 <Icon name="close" size={20} color="#FFFFFF" />
               </TouchableOpacity>
               <Text style={styles.modalTitle}>
-                How was the quality of your Service?
+                {t('feedback_modal_title') || 'How was the quality of your Service?'}
               </Text>
               <Text style={styles.modalSubtitle}>
-                Your answer is anonymous. This helps us improve our service.
+                {t('feedback_modal_subtitle') ||
+                  'Your answer is anonymous. This helps us improve our service.'}
               </Text>
               <View style={styles.starsContainer}>
                 {[1, 2, 3, 4, 5].map(star => (
@@ -485,7 +489,7 @@ function ServiceApp({ navigation, route }) {
               </View>
               <TextInput
                 style={styles.commentBox}
-                placeholder="Write your comment here..."
+                placeholder={t('feedback_placeholder') || 'Write your comment here...'}
                 placeholderTextColor={isDarkMode ? '#A9A9A9' : '#A9A9A9'}
                 multiline
                 value={comment}
@@ -493,15 +497,20 @@ function ServiceApp({ navigation, route }) {
               />
               <View style={styles.modalButtons}>
                 <TouchableOpacity onPress={closeModal} style={styles.notNowButton}>
-                  <Text style={styles.notNowText}>Not now</Text>
+                  <Text style={styles.notNowText}>
+                    {t('feedback_not_now') || 'Not now'}
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={submitFeedback} style={styles.submitButton}>
-                  <Text style={styles.submitText}>Submit</Text>
+                  <Text style={styles.submitText}>
+                    {t('feedback_submit') || 'Submit'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
         </Modal>
+
       </View>
     </SafeAreaView>
   );

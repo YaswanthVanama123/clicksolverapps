@@ -257,7 +257,7 @@ const OrderScreen = () => {
                 resizeMode="cover"
               />
               <View style={styles.itemInfoContainer}>
-                <Text style={styles.itemName}>{service.serviceName}</Text>
+                <Text style={styles.itemName}> { t(`singleService_${service.main_service_id}`) || service.serviceName }</Text>
                 <Text style={styles.itemPrice}>₹{service.totalCost}</Text>
               </View>
               <View style={styles.quantityPriceContainer}>

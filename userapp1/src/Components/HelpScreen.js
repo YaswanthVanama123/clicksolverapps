@@ -13,46 +13,76 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { CommonActions, useNavigation } from '@react-navigation/native';
-import LinearGradient from 'react-native-linear-gradient'; // For better button styling
+import LinearGradient from 'react-native-linear-gradient';
 import axios from 'axios';
 import { useTheme } from '../context/ThemeContext';
-
-const steps = [
-  { number: '1', title: 'Choose Category', description: 'Browse service categories' },
-  { number: '2', title: 'Select Service', description: 'Choose exactly what you need' },
-  { number: '3', title: 'Confirm Location', description: 'Share your service location' },
-  { number: '4', title: 'Worker Assigned', description: 'A nearby worker will accept' },
-  { number: '5', title: 'Worker Arrives', description: 'Track the worker’s arrival' },
-  { number: '6', title: 'Verify & Begin', description: 'Start service after verification' },
-];
+// Import the translation hook from react-i18next
+import { useTranslation } from 'react-i18next';
 
 const HelpScreen = () => {
   const { width } = useWindowDimensions();
   const { isDarkMode } = useTheme();
   const styles = dynamicStyles(width, isDarkMode);
   const navigation = useNavigation();
+  const { t } = useTranslation();
+
   const [loadingCall, setLoadingCall] = useState(false);
+
+  // Define steps array within the component to allow translation of texts
+  const steps = [
+    {
+      number: '1',
+      title: t('choose_category') || 'Choose Category',
+      description: t('browse_service_categories') || 'Browse service categories',
+    },
+    {
+      number: '2',
+      title: t('select_service') || 'Select Service',
+      description: t('choose_exactly_what_you_need') || 'Choose exactly what you need',
+    },
+    {
+      number: '3',
+      title: t('confirm_location') || 'Confirm Location',
+      description: t('share_service_location') || 'Share your service location',
+    },
+    {
+      number: '4',
+      title: t('worker_assigned') || 'Worker Assigned',
+      description: t('worker_assigned_desc') || 'A nearby worker will accept',
+    },
+    {
+      number: '5',
+      title: t('worker_arrives') || 'Worker Arrives',
+      description: t('track_worker_arrival') || 'Track the worker’s arrival',
+    },
+    {
+      number: '6',
+      title: t('verify_and_begin') || 'Verify & Begin',
+      description: t('start_service_verification') || 'Start service after verification',
+    },
+  ];
 
   const handleEmailPress = () => {
     Linking.openURL('mailto:customer.support@clicksolver.com').catch(() =>
-      Alert.alert('Error', 'Unable to open mail app')
+      Alert.alert(t('error') || 'Error', t('unable_to_open_mail_app') || 'Unable to open mail app')
     );
   };
 
   const handleCallPress = async () => {
     setLoadingCall(true);
     try {
+      // Uncomment and update the axios call if you want to fetch the phone number from the backend
       // const response = await axios.get('https://backend.clicksolver.com/customer/care');
       const phoneNumber = "7981793632";
       if (phoneNumber) {
         Linking.openURL(`tel:${phoneNumber}`).catch(() =>
-          Alert.alert('Error', 'Unable to open dialer')
+          Alert.alert(t('error') || 'Error', t('unable_to_open_dialer') || 'Unable to open dialer')
         );
       } else {
-        Alert.alert('Error', 'No phone number received');
+        Alert.alert(t('error') || 'Error', t('no_phone_number_received') || 'No phone number received');
       }
     } catch {
-      Alert.alert('Error', 'Failed to retrieve phone number');
+      Alert.alert(t('error') || 'Error', t('failed_to_retrieve_phone_number') || 'Failed to retrieve phone number');
     } finally {
       setLoadingCall(false);
     }
@@ -65,7 +95,9 @@ const HelpScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#fff' : '#212121'} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Help & Support</Text>
+        <Text style={styles.headerTitle}>
+          {t('help_support') || 'Help & Support'}
+        </Text>
         <TouchableOpacity onPress={handleEmailPress}>
           <Ionicons name="mail-outline" size={24} color="#ff4500" />
         </TouchableOpacity> 
@@ -73,7 +105,9 @@ const HelpScreen = () => {
 
       {/* Steps Section */}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Text style={styles.subheading}>Follow these simple steps to get started</Text>
+        <Text style={styles.subheading}>
+          {t('follow_steps') || 'Follow these simple steps to get started'}
+        </Text>
 
         {steps.map((step, index) => (
           <View key={index} style={styles.stepContainer}>
@@ -88,7 +122,8 @@ const HelpScreen = () => {
         ))}
 
         {/* CTA Button */}
-        <TouchableOpacity style={styles.ctaButton}         
+        <TouchableOpacity
+          style={styles.ctaButton}
           onPress={() => {
             navigation.dispatch(
               CommonActions.reset({
@@ -96,9 +131,12 @@ const HelpScreen = () => {
                 routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
               })
             );
-        }}>
+          }}
+        >
           <LinearGradient colors={['#ff5722', '#ff4500']} style={styles.gradientButton}>
-            <Text style={styles.ctaButtonText}>Book a Service Now</Text>
+            <Text style={styles.ctaButtonText}>
+              {t('book_service_now') || 'Book a Service Now'}
+            </Text>
           </LinearGradient>
         </TouchableOpacity>
       </ScrollView>
@@ -157,7 +195,7 @@ function dynamicStyles(width, isDarkMode) {
       alignItems: 'center',
       backgroundColor: isDarkMode ? '#2c2c2c' : '#ffffff',
       padding: isTablet ? 16 : 14,
-      borderRadius: 50, // Smooth circular edges
+      borderRadius: 50,
       marginBottom: isTablet ? 18 : 15,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },

@@ -31,6 +31,9 @@ import {
   CommonActions,
   useFocusEffect,
 } from '@react-navigation/native';
+import '../i18n/i18n';
+// Import useTranslation hook to access the translation function
+import { useTranslation } from 'react-i18next';
 import { encode } from 'base-64';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
@@ -71,7 +74,7 @@ const Navigation = () => {
   const [showUpArrowService, setShowUpArrowService] = useState(false);
   const [showDownArrowService, setShowDownArrowService] = useState(false);
   const [isLoading, setIsLoading] = useState(false); // Loading indicator
-
+  const { t } = useTranslation();
   // Camera ref for calling fitBounds
   const cameraRef = useRef(null);
 
@@ -747,345 +750,362 @@ const Navigation = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        {/* Map Container */}
-        <View style={styles.mapContainer}>
-          {locationDetails ? (
-            <Mapbox.MapView
-              style={styles.map}
-              styleURL={Mapbox.StyleURL.Street}
-              onDidFinishRenderingMapFully={() => {
-                if (cameraRef.current && cameraBounds) {
-                  cameraRef.current.fitBounds(
-                    [cameraBounds.sw[0], cameraBounds.sw[1]],
-                    [cameraBounds.ne[0], cameraBounds.ne[1]],
-                    50
-                  );
-                }
+    <View style={styles.container}>
+      {/* Map Container */}
+      <View style={styles.mapContainer}>
+        {locationDetails ? (
+          <Mapbox.MapView
+            style={styles.map}
+            styleURL={Mapbox.StyleURL.Street}
+            onDidFinishRenderingMapFully={() => {
+              if (cameraRef.current && cameraBounds) {
+                cameraRef.current.fitBounds(
+                  [cameraBounds.sw[0], cameraBounds.sw[1]],
+                  [cameraBounds.ne[0], cameraBounds.ne[1]],
+                  50
+                );
+              }
+            }}
+          >
+            <Mapbox.Camera ref={cameraRef} />
+            <Mapbox.Images
+              images={{
+                'start-point-icon': startMarker,
+                'end-point-icon': endMarker,
               }}
-            >
-              <Mapbox.Camera ref={cameraRef} />
-              <Mapbox.Images
-                images={{
-                  'start-point-icon': startMarker,
-                  'end-point-icon': endMarker,
-                }}
-              />
-              {markers && (
-                <Mapbox.ShapeSource id="markerSource" shape={markers}>
-                  <Mapbox.SymbolLayer
-                    id="markerLayer"
-                    style={{
-                      iconImage: ['get', 'icon'],
-                      iconSize: ['get', 'iconSize'],
-                      iconAllowOverlap: true,
-                      iconAnchor: 'bottom',
-                      iconOffset: [0, -10],
-                    }}
-                  />
-                </Mapbox.ShapeSource>
-              )}
-              {routeData && (
-                <Mapbox.ShapeSource id="routeSource" shape={routeData}>
-                  <Mapbox.LineLayer
-                    id="routeLine"
-                    style={{
-                      lineColor: 'red',
-                      lineWidth: 6,
-                      lineCap: 'round',
-                      lineJoin: 'round',
-                    }}
-                  />
-                </Mapbox.ShapeSource>
-              )}
-            </Mapbox.MapView>
-          ) : (
-            <View style={styles.loadingContainer}>
-              <Text style={{color: isDarkMode ? '#fff' : '#000'}}>
-                Loading Map...
+            />
+            {markers && (
+              <Mapbox.ShapeSource id="markerSource" shape={markers}>
+                <Mapbox.SymbolLayer
+                  id="markerLayer"
+                  style={{
+                    iconImage: ['get', 'icon'],
+                    iconSize: ['get', 'iconSize'],
+                    iconAllowOverlap: true,
+                    iconAnchor: 'bottom',
+                    iconOffset: [0, -10],
+                  }}
+                />
+              </Mapbox.ShapeSource>
+            )}
+            {routeData && (
+              <Mapbox.ShapeSource id="routeSource" shape={routeData}>
+                <Mapbox.LineLayer
+                  id="routeLine"
+                  style={{
+                    lineColor: 'red',
+                    lineWidth: 6,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                  }}
+                />
+              </Mapbox.ShapeSource>
+            )}
+          </Mapbox.MapView>
+        ) : (
+          <View style={styles.loadingContainer}>
+            <Text style={{ color: isDarkMode ? '#fff' : '#000' }}>
+              {t('loading_map') || 'Loading Map...'}
+            </Text>
+          </View>
+        )}
+
+        {/* Absolute Refresh Button on the Map */}
+        <TouchableOpacity
+          style={styles.refreshContainer}
+          onPress={handleRefresh}
+          disabled={isLoading}
+          activeOpacity={0.7}
+        >
+          <Animated.View style={{ transform: [{ rotate: spin }] }}>
+            <MaterialIcons
+              name="refresh"
+              size={22}
+              color={isDarkMode ? '#fff' : '#212121'}
+            />
+          </Animated.View>
+        </TouchableOpacity>
+      </View>
+
+      {/* Bottom Card */}
+      <View style={styles.detailsContainer}>
+        <View style={styles.minimumChargesContainer}>
+          <Text style={styles.serviceFare}>
+            {t('commander_on_way') || 'Commander on the way'}
+          </Text>
+        </View>
+
+        <View style={styles.firstContainer}>
+          <View style={styles.locationContainer}>
+            <Image
+              source={{
+                uri: 'https://i.postimg.cc/qvJw8Kzy/Screenshot-2024-11-13-170828-removebg-preview.png',
+              }}
+              style={styles.locationPinImage}
+            />
+            <View style={styles.locationDetails}>
+              <Text style={styles.locationAddress} numberOfLines={3}>
+                {addressDetails.area}
               </Text>
             </View>
-          )}
-
-          {/* Absolute Refresh Button on the Map */}
-          <TouchableOpacity
-            style={styles.refreshContainer}
-            onPress={handleRefresh}
-            disabled={isLoading}
-            activeOpacity={0.7}
-          >
-            <Animated.View style={{transform: [{rotate: spin}]}}>
-              <MaterialIcons
-                name="refresh"
-                size={22}
-                color={isDarkMode ? '#fff' : '#212121'}
-              />
-            </Animated.View>
-          </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Bottom Card */}
-        <View style={styles.detailsContainer}>
-          <View style={styles.minimumChargesContainer}>
-            <Text style={styles.serviceFare}>Commander on the way</Text>
-          </View>
+        {/* Service & Profile Row */}
+        <View style={styles.serviceDetails}>
+          {/* LEFT SECTION: Service list, PIN, Cancel */}
+          <View style={styles.leftSection}>
+            <Text style={styles.serviceType}>{t('service') || 'Service'}</Text>
 
-          <View style={styles.firstContainer}>
-            <View style={styles.locationContainer}>
-              <Image
-                source={{
-                  uri: 'https://i.postimg.cc/qvJw8Kzy/Screenshot-2024-11-13-170828-removebg-preview.png',
-                }}
-                style={styles.locationPinImage}
-              />
-              <View style={styles.locationDetails}>
-                <Text style={styles.locationAddress} numberOfLines={3}>
-                  {addressDetails.area}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Service & Profile Row */}
-          <View style={styles.serviceDetails}>
-            {/* LEFT SECTION: Service list, PIN, Cancel */}
-            <View style={styles.leftSection}>
-              <Text style={styles.serviceType}>Service</Text>
-
-              {/* Scrollable Services List */}
-              <View style={styles.servicesListContainer}>
-                {showUpArrowService && (
-                  <View style={styles.arrowUpContainer}>
-                    <Entypo
-                      name="chevron-small-up"
-                      size={20}
-                      color={isDarkMode ? '#ccc' : '#9e9e9e'}
-                    />
-                  </View>
-                )}
-                <ScrollView
-                  style={styles.servicesNamesContainer}
-                  contentContainerStyle={styles.servicesNamesContent}
-                  onScroll={handleServiceScroll}
-                  scrollEventThrottle={16}
-                >
-                  {serviceArray.map((serviceItem, index) => (
-                    <View key={index} style={styles.serviceItem}>
-                      <Text style={styles.serviceText}>
-                        {serviceItem.serviceName}
-                      </Text>
-                    </View>
-                  ))}
-                </ScrollView>
-                {showDownArrowService && (
-                  <View style={styles.arrowDownContainer}>
-                    <Entypo
-                      name="chevron-small-down"
-                      size={20}
-                      color={isDarkMode ? '#ccc' : '#9e9e9e'}
-                    />
-                  </View>
-                )}
-              </View>
-
-              {/* PIN Section */}
-              <View style={styles.pinContainer}>
-                <Text style={styles.pinText}>PIN</Text>
-                <View style={styles.pinBoxesContainer}>
-                  {pin.split('').map((digit, index) => (
-                    <View key={index} style={styles.pinBox}>
-                      <Text style={styles.pinNumber}>{digit}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-
-              {/* Cancel Button */}
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={handleCancelModal}
-              >
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* RIGHT SECTION: Worker Profile & Info */}
-            <View style={styles.rightSection}>
-              {/* Profile Image */}
-              <View style={styles.profileImage}>
-                {addressDetails.profile && (
-                  <Image
-                    source={{uri: addressDetails.profile}}
-                    style={styles.image}
+            {/* Scrollable Services List */}
+            <View style={styles.servicesListContainer}>
+              {showUpArrowService && (
+                <View style={styles.arrowUpContainer}>
+                  <Entypo
+                    name="chevron-small-up"
+                    size={20}
+                    color={isDarkMode ? '#ccc' : '#9e9e9e'}
                   />
-                )}
+                </View>
+              )}
+              <ScrollView
+                style={styles.servicesNamesContainer}
+                contentContainerStyle={styles.servicesNamesContent}
+                onScroll={handleServiceScroll}
+                scrollEventThrottle={16}
+              >
+                {serviceArray.map((serviceItem, index) => (
+                  <View key={index} style={styles.serviceItem}>
+                    <Text style={styles.serviceText}>
+                    { t(`singleService_${serviceItem.main_service_id}`) || serviceItem.serviceName }
+                     
+                    </Text>
+                  </View>
+                ))}
+              </ScrollView>
+              {showDownArrowService && (
+                <View style={styles.arrowDownContainer}>
+                  <Entypo
+                    name="chevron-small-down"
+                    size={20}
+                    color={isDarkMode ? '#ccc' : '#9e9e9e'}
+                  />
+                </View>
+              )}
+            </View>
+
+            {/* PIN Section */}
+            <View style={styles.pinContainer}>
+              <Text style={styles.pinText}>{t('pin') || 'PIN'}</Text>
+              <View style={styles.pinBoxesContainer}>
+                {pin.split('').map((digit, index) => (
+                  <View key={index} style={styles.pinBox}>
+                    <Text style={styles.pinNumber}>{digit}</Text>
+                  </View>
+                ))}
               </View>
+            </View>
 
-              {/* Worker Name */}
-              <Text style={styles.workerName}>{addressDetails.name}</Text>
+            {/* Cancel Button */}
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={handleCancelModal}
+            >
+              <Text style={styles.cancelText}>{t('cancel') || 'Cancel'}</Text>
+            </TouchableOpacity>
+          </View>
 
-              {/* Rating */}
-              {addressDetails.rating !== undefined && (
-                <View style={styles.ratingContainer}>
-                  <Text style={styles.ratingNumber}>
-                    {Number(addressDetails.rating).toFixed(1)}
+          {/* RIGHT SECTION: Worker Profile & Info */}
+          <View style={styles.rightSection}>
+            {/* Profile Image */}
+            <View style={styles.profileImage}>
+              {addressDetails.profile && (
+                <Image
+                  source={{ uri: addressDetails.profile }}
+                  style={styles.image}
+                />
+              )}
+            </View>
+
+            {/* Worker Name */}
+            <Text style={styles.workerName}>{addressDetails.name}</Text>
+
+            {/* Rating */}
+            {addressDetails.rating !== undefined && (
+              <View style={styles.ratingContainer}>
+                <Text style={styles.ratingNumber}>
+                  {Number(addressDetails.rating).toFixed(1)}
+                </Text>
+                {renderFractionalStars(Number(addressDetails.rating))}
+              </View>
+            )}
+
+            {/* Service Count */}
+            {addressDetails.serviceCounts !== undefined &&
+              addressDetails.serviceCounts > 0 && (
+                <View style={styles.ServiceContainer}>
+                  <Text style={styles.ServiceNumber}>
+                    {t('no_of_services') || 'No of Services:'}{' '}
+                    <Text style={styles.ratingNumber}>
+                      {Number(addressDetails.serviceCounts)}
+                    </Text>
                   </Text>
-                  {renderFractionalStars(Number(addressDetails.rating))}
                 </View>
               )}
 
-              {/* Service Count */}
-              {addressDetails.serviceCounts !== undefined &&
-                addressDetails.serviceCounts > 0 && (
-                  <View style={styles.ServiceContainer}>
-                    <Text style={styles.ServiceNumber}>
-                      No of Services:{' '}
-                      <Text style={styles.ratingNumber}>
-                        {Number(addressDetails.serviceCounts)}
-                      </Text>
-                    </Text>
-                  </View>
-                )}
-
-              {/* Icons (Call / Message) */}
-              <View style={styles.iconsContainer}>
-                <TouchableOpacity style={styles.actionButton} onPress={phoneCall}>
-                  <MaterialIcons name="call" size={18} color="#FF5722" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton} onPress={messageChatting}>
-                  <AntDesign name="message1" size={18} color="#FF5722" />
-                </TouchableOpacity>
-              </View>
+            {/* Icons (Call / Message) */}
+            <View style={styles.iconsContainer}>
+              <TouchableOpacity style={styles.actionButton} onPress={phoneCall}>
+                <MaterialIcons name="call" size={18} color="#FF5722" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionButton} onPress={messageChatting}>
+                <AntDesign name="message1" size={18} color="#FF5722" />
+              </TouchableOpacity>
             </View>
           </View>
         </View>
+      </View>
 
-        {/* Cancellation Reason Modal */}
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={closeModal}
-        >
-          <View style={styles.modalOverlay}>
+      {/* Cancellation Reason Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            onPress={closeModal}
+            style={styles.backButtonContainer}
+          >
+            <AntDesign
+              name="arrowleft"
+              size={20}
+              color={isDarkMode ? '#fff' : 'black'}
+            />
+          </TouchableOpacity>
+
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>
+              {t('cancellation_reason_title') ||
+                'What is the reason for your cancellation?'}
+            </Text>
+            <Text style={styles.modalSubtitle}>
+              {t('cancellation_reason_subtitle') ||
+                "Could you let us know why you're canceling?"}
+            </Text>
+
             <TouchableOpacity
-              onPress={closeModal}
+              style={styles.reasonButton}
+              onPress={openConfirmationModal}
+            >
+              <Text style={styles.reasonText}>
+                {t('found_better_price') || 'Found a better price'}
+              </Text>
+              <AntDesign
+                name="right"
+                size={16}
+                color={isDarkMode ? '#fff' : '#4a4a4a'}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.reasonButton}
+              onPress={openConfirmationModal}
+            >
+              <Text style={styles.reasonText}>
+                {t('wrong_location') || 'Wrong work location'}
+              </Text>
+              <AntDesign
+                name="right"
+                size={16}
+                color={isDarkMode ? '#fff' : '#4a4a4a'}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.reasonButton}
+              onPress={openConfirmationModal}
+            >
+              <Text style={styles.reasonText}>
+                {t('wrong_service') || 'Wrong service booked'}
+              </Text>
+              <AntDesign
+                name="right"
+                size={16}
+                color={isDarkMode ? '#fff' : '#4a4a4a'}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.reasonButton}
+              onPress={openConfirmationModal}
+            >
+              <Text style={styles.reasonText}>
+                {t('more_time') || 'More time to assign a commander'}
+              </Text>
+              <AntDesign
+                name="right"
+                size={16}
+                color={isDarkMode ? '#fff' : '#4a4a4a'}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.reasonButton}
+              onPress={openConfirmationModal}
+            >
+              <Text style={styles.reasonText}>
+                {t('others') || 'Others'}
+              </Text>
+              <AntDesign
+                name="right"
+                size={16}
+                color={isDarkMode ? '#fff' : '#4a4a4a'}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Confirmation Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={confirmationModalVisible}
+        onRequestClose={closeConfirmationModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.crossContainer}>
+            <TouchableOpacity
+              onPress={closeConfirmationModal}
               style={styles.backButtonContainer}
             >
-              <AntDesign
-                name="arrowleft"
+              <Entypo
+                name="cross"
                 size={20}
                 color={isDarkMode ? '#fff' : 'black'}
               />
             </TouchableOpacity>
-
-            <View style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>
-                What is the reason for your cancellation?
-              </Text>
-              <Text style={styles.modalSubtitle}>
-                Could you let us know why you're canceling?
-              </Text>
-
-              <TouchableOpacity
-                style={styles.reasonButton}
-                onPress={openConfirmationModal}
-              >
-                <Text style={styles.reasonText}>Found a better price</Text>
-                <AntDesign
-                  name="right"
-                  size={16}
-                  color={isDarkMode ? '#fff' : '#4a4a4a'}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.reasonButton}
-                onPress={openConfirmationModal}
-              >
-                <Text style={styles.reasonText}>Wrong work location</Text>
-                <AntDesign
-                  name="right"
-                  size={16}
-                  color={isDarkMode ? '#fff' : '#4a4a4a'}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.reasonButton}
-                onPress={openConfirmationModal}
-              >
-                <Text style={styles.reasonText}>Wrong service booked</Text>
-                <AntDesign
-                  name="right"
-                  size={16}
-                  color={isDarkMode ? '#fff' : '#4a4a4a'}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.reasonButton}
-                onPress={openConfirmationModal}
-              >
-                <Text style={styles.reasonText}>
-                  More time to assign a commander
-                </Text>
-                <AntDesign
-                  name="right"
-                  size={16}
-                  color={isDarkMode ? '#fff' : '#4a4a4a'}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.reasonButton}
-                onPress={openConfirmationModal}
-              >
-                <Text style={styles.reasonText}>Others</Text>
-                <AntDesign
-                  name="right"
-                  size={16}
-                  color={isDarkMode ? '#fff' : '#4a4a4a'}
-                />
-              </TouchableOpacity>
-            </View>
           </View>
-        </Modal>
 
-        {/* Confirmation Modal */}
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={confirmationModalVisible}
-          onRequestClose={closeConfirmationModal}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.crossContainer}>
-              <TouchableOpacity
-                onPress={closeConfirmationModal}
-                style={styles.backButtonContainer}
-              >
-                <Entypo
-                  name="cross"
-                  size={20}
-                  color={isDarkMode ? '#fff' : 'black'}
-                />
-              </TouchableOpacity>
-            </View>
+          <View style={styles.confirmationModalContainer}>
+            <Text style={styles.confirmationTitle}>
+              {t('confirmation_title') ||
+                'Are you sure you want to cancel this Service?'}
+            </Text>
+            <Text style={styles.confirmationSubtitle}>
+              {t('confirmation_subtitle') ||
+                'Please avoid canceling – we’re working to connect you with the best expert to solve your problem.'}
+            </Text>
 
-            <View style={styles.confirmationModalContainer}>
-              <Text style={styles.confirmationTitle}>
-                Are you sure you want to cancel this Service?
+            <TouchableOpacity
+              style={styles.confirmButton}
+              onPress={handleCancelBooking}
+            >
+              <Text style={styles.confirmButtonText}>
+                {t('cancel_service') || 'Cancel my service'}
               </Text>
-              <Text style={styles.confirmationSubtitle}>
-                Please avoid canceling – we’re working to connect you with the best expert to solve your problem.
-              </Text>
-
-              <TouchableOpacity
-                style={styles.confirmButton}
-                onPress={handleCancelBooking}
-              >
-                <Text style={styles.confirmButtonText}>Cancel my service</Text>
-              </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
           </View>
-        </Modal>
+        </View>
+      </Modal>
       </View>
     </SafeAreaView>
   );

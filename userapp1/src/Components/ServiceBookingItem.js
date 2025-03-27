@@ -13,12 +13,14 @@ import {
 import Icon from 'react-native-vector-icons/FontAwesome6';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, CommonActions, useRoute } from '@react-navigation/native';
-
 import axios from 'axios';
 import Entypo from 'react-native-vector-icons/Entypo';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../context/ThemeContext'; // Import the theme hook
+import { useTheme } from '../context/ThemeContext';
+
+// Import the useTranslation hook from react-i18next
+import { useTranslation } from 'react-i18next';
 
 const ServiceBookingItem = () => {
   // Get screen dimensions
@@ -26,6 +28,9 @@ const ServiceBookingItem = () => {
   // Get dark mode flag from context and pass it to dynamicStyles
   const { isDarkMode } = useTheme();
   const styles = dynamicStyles(width, height, isDarkMode);
+
+  // Initialize translation hook
+  const { t } = useTranslation();
 
   const [details, setDetails] = useState({});
   const [serviceArray, setServiceArray] = useState([]);
@@ -54,12 +59,12 @@ const ServiceBookingItem = () => {
     outputRange: ['0deg', '180deg'],
   });
 
-  // Mapping for status display names
+  // Mapping for status display names using translation keys
   const statusDisplayNames = {
-    accept: 'Commander Accepted',
-    arrived: 'Commander Arrived',
-    workCompleted: 'Work Completed',
-    paymentCompleted: 'Payment Completed',
+    accept: t('commander_accepted') || 'Commander Accepted',
+    arrived: t('commander_arrived') || 'Commander Arrived',
+    workCompleted: t('work_completed') || 'Work Completed',
+    paymentCompleted: t('payment_completed') || 'Payment Completed',
   };
 
   // Timeline data generation based on status object
@@ -67,8 +72,9 @@ const ServiceBookingItem = () => {
     const statusKeys = Object.keys(status);
     const currentStatusIndex = statusKeys.findIndex((key) => status[key] === null);
     return statusKeys.map((statusKey, index) => ({
+      key: statusKey,
       title: statusDisplayNames[statusKey],
-      time: status[statusKey],
+      time: status[statusKey] || null,
       iconColor:
         index <= currentStatusIndex || currentStatusIndex === -1
           ? '#ff4500'
@@ -78,7 +84,7 @@ const ServiceBookingItem = () => {
           ? '#ff4500'
           : '#a1a1a1',
     }));
-  }, [status]);
+  }, [status, statusDisplayNames]);
 
   useEffect(() => {
     const fetchBookingDetails = async () => {
@@ -89,7 +95,7 @@ const ServiceBookingItem = () => {
           { tracking_id },
         );
         const { data } = response.data;
-        console.log("data", data);
+        console.log("servive data", data);
         setStatus(data.time || {});
         setDetails(data);
         setServiceArray(data.service_booked);
@@ -122,19 +128,19 @@ const ServiceBookingItem = () => {
             size={20}
             color={isDarkMode ? '#fff' : '#212121'}
             style={styles.backIcon}
-                                    onPress={() => {
-                                      navigation.dispatch(
-                                        CommonActions.reset({
-                                          index: 0,
-                                          routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-                                        })
-                                      );
-                                    }} 
+            onPress={() => {
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
+                })
+              );
+            }}
           />
-          <Text style={styles.headerText}>Service Trackings</Text>
+          <Text style={styles.headerText}>{t('service_trackings') || 'Service Trackings'}</Text>
         </View>
 
-        <ScrollView> 
+        <ScrollView>
           {/* User Profile */}
           <View style={styles.profileContainer}>
             <View style={styles.profileImage}>
@@ -154,11 +160,11 @@ const ServiceBookingItem = () => {
 
           {/* Service Details */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionBookedTitle}>Service Details</Text>
+            <Text style={styles.sectionBookedTitle}>{t('service_details') || 'Service Details'}</Text>
             <View style={styles.innerContainer}>
               {serviceArray.map((service, index) => (
                 <Text key={index} style={styles.serviceDetail}>
-                  {service.serviceName}
+                 { t(`singleService_${service.main_service_id}`) || service.serviceName } 
                 </Text>
               ))}
             </View>
@@ -169,7 +175,7 @@ const ServiceBookingItem = () => {
           {/* Service Timeline */}
           <View style={styles.sectionContainer}>
             <View style={styles.serviceTimeLineContainer}>
-              <Text style={styles.sectionTitle}>Service Timeline</Text>
+              <Text style={styles.sectionTitle}>{t('service_timeline') || 'Service Timeline'}</Text>
             </View>
             <View style={styles.innerContainerLine}>
               {getTimelineData.map((item, index) => (
@@ -195,7 +201,7 @@ const ServiceBookingItem = () => {
                   <View style={styles.timelineTextContainer}>
                     <Text style={styles.timelineText}>{item.title}</Text>
                     <Text style={styles.timelineTime}>
-                      {item.time ? item.time : 'Pending'}
+                      {item.time ? item.time : t('pending') || 'Pending'}
                     </Text>
                   </View>
                 </View>
@@ -207,7 +213,7 @@ const ServiceBookingItem = () => {
 
           {/* Address */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Address</Text>
+            <Text style={styles.sectionTitle}>{t('address') || 'Address'}</Text>
             <View style={styles.addressContainer}>
               <Image
                 source={{
@@ -227,9 +233,11 @@ const ServiceBookingItem = () => {
               style={styles.paymentSummaryContainer}
               onPress={togglePaymentDetails}
               accessibilityRole="button"
-              accessibilityLabel="Toggle Payment Details"
+              accessibilityLabel={t('toggle_payment_details') || 'Toggle Payment Details'}
             >
-              <Text style={styles.sectionPaymentTitle}>Payment Details</Text>
+              <Text style={styles.sectionPaymentTitle}>
+                {t('payment_details') || 'Payment Details'}
+              </Text>
               <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
                 <Entypo name="chevron-small-right" size={20} color="#ff4500" />
               </Animated.View>
@@ -242,7 +250,7 @@ const ServiceBookingItem = () => {
                 <View style={styles.PaymentItemContainer}>
                   {serviceArray.map((service, index) => (
                     <View key={index} style={styles.paymentRow}>
-                      <Text style={styles.paymentLabelHead}>{service.serviceName}</Text>
+                      <Text style={styles.paymentLabelHead}> { t(`singleService_${service.main_service_id}`) || service.serviceName }</Text>
                       <Text style={styles.paymentValue}>
                         ₹{service.cost.toFixed(2)}
                       </Text>
@@ -250,12 +258,14 @@ const ServiceBookingItem = () => {
                   ))}
                   {details.discount > 0 && (
                     <View style={styles.paymentRow}>
-                      <Text style={styles.paymentLabel}>Cashback (5%)</Text>
+                      <Text style={styles.paymentLabel}>
+                        {t('cashback')} {/* Translation key for "Cashback" */}
+                      </Text>
                       <Text style={styles.paymentValue}>₹{details.discount}</Text>
                     </View>
                   )}
                   <View style={styles.paymentRow}>
-                    <Text style={styles.paymentValue}>Grand Total</Text>
+                    <Text style={styles.paymentValue}>{t('grand_total') || 'Grand Total'}</Text>
                     <Text style={styles.paymentValue}>₹{details.total_cost}</Text>
                   </View>
                 </View>
@@ -265,7 +275,7 @@ const ServiceBookingItem = () => {
 
           {/* Pay Button */}
           <TouchableOpacity style={styles.payButton} disabled>
-            <Text style={styles.payButtonText}>PAYED</Text>
+            <Text style={styles.payButtonText}>{t('payed') || 'PAYED'}</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>

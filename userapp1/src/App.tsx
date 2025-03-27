@@ -122,7 +122,7 @@ function TabNavigator() {
     >
       <Tab.Screen name="Home" component={ServiceApp} options={{ headerShown: false }} />
       <Tab.Screen name="Bookings" component={RecentServices} options={{ headerShown: false }} />
-      <Tab.Screen name="Tracking" component={ServiceInProgress} options={{ headerShown: false }} />
+      <Tab.Screen name="Tracking" component={ServiceTrackingListScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Account" component={ProfileScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
   );

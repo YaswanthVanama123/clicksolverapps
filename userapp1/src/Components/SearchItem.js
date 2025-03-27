@@ -23,23 +23,23 @@ import {
 } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-// Import the theme hook
 import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const SearchItem = () => {
-  // Get screen dimensions
   const { width, height } = useWindowDimensions();
-  // Get dark mode flag from context and generate dynamic styles accordingly
   const { isDarkMode } = useTheme();
+  const { t } = useTranslation();
   const styles = dynamicStyles(width, height, isDarkMode);
 
-  const initialPlaceholder = 'Search for ';
+  // Using translation keys for placeholder & additional texts
+  const initialPlaceholder = t('searchFor') + ' ';
   const additionalTexts = [
-    'electrician',
-    'plumber',
-    'cleaning services',
-    'painter',
-    'mechanic',
+    t('electrician'),
+    t('plumber'),
+    t('cleaningServices'),
+    t('painter'),
+    t('mechanic'),
   ];
 
   const [placeholderText, setPlaceholderText] = useState(initialPlaceholder);
@@ -54,19 +54,19 @@ const SearchItem = () => {
   const navigation = useNavigation();
 
   const trendingSearches = [
-    'Professional cleaning',
-    'Electricians',
-    'Plumbers',
-    'Salon',
-    'Carpenters',
-    'Washing machine repair',
-    'Refrigerator repair',
-    'RO repair',
-    'Furniture assembly',
-    'Microwave repair',
+    t('trendingProfessionalCleaning'),
+    t('trendingElectricians'),
+    t('trendingPlumbers'),
+    t('trendingSalon'),
+    t('trendingCarpenters'),
+    t('trendingWashingMachineRepair'),
+    t('trendingRefrigeratorRepair'),
+    t('trendingRORepair'),
+    t('trendingFurnitureAssembly'),
+    t('trendingMicrowaveRepair'),
   ];
 
-  // Placeholder animation logic
+  // Animate placeholder text letter by letter
   const updatePlaceholder = useCallback(() => {
     const word = additionalTexts[currentIndex];
     if (currentWordIndex < word.length) {
@@ -149,9 +149,11 @@ const SearchItem = () => {
 
   const handleServiceClick = useCallback(
     (item) => {
+      console.log("push",item)
       storeRecentService(item);
       navigation.push('ServiceBooking', {
         serviceName: item.service_category,
+        id:item.main_service_id  // here changed 
       });
     },
     [navigation, storeRecentService]
@@ -170,9 +172,9 @@ const SearchItem = () => {
         style={styles.suggestionImage}
       />
       <View style={styles.textContainer}>
-        <Text style={styles.SuggestionText}>{item.service_tag}</Text>
+        <Text style={styles.SuggestionText}>{ t(`singleService_${item.main_service_id}`) || item.service_tag }</Text>
         <Text style={styles.SuggestionDescription} numberOfLines={2}>
-          {item.service_details?.about}
+       { t(`descriptionSingleService_${item.main_service_id}`) || item.service_details?.about }
         </Text>
       </View>
     </TouchableOpacity>
@@ -185,13 +187,15 @@ const SearchItem = () => {
       onPress={() =>
         navigation.push('ServiceBooking', {
           serviceName: item.service_category,
+          id:item.main_service_id 
         })
       }
     >
+    
       <View style={styles.recentIcon}>
         <Entypo name="back-in-time" size={30} color="#d7d7d7" />
       </View>
-      <Text style={styles.recentText}>{item.service_tag}</Text>
+      <Text style={styles.recentText}>{ t(`singleService_${item.main_service_id}`) || item.service_tag }</Text>
     </TouchableOpacity>
   );
 
@@ -212,7 +216,8 @@ const SearchItem = () => {
         return false;
       };
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      return () =>
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
     }, [navigation])
   );
 
@@ -274,13 +279,13 @@ const SearchItem = () => {
             !loading && (
               <View style={styles.noResultsContainer}>
                 <MaterialIcons name="search-off" size={45} color={isDarkMode ? "#fff" : "#000"} />
-                <Text style={styles.noResultsText}>No results found</Text>
+                <Text style={styles.noResultsText}>{t('noResultsFound')}</Text>
                 <Text style={styles.noResultsSubText}>
-                  We couldn't find what you were looking for. Please check your keywords again!
+                  {t('noResultsDescription')}
                 </Text>
                 <View style={[styles.horizontalLine, { width, height: 8 }]} />
                 <View style={styles.trendingSearchesContainer}>
-                  <Text style={styles.sectionTitle}>Trending searches</Text>
+                  <Text style={styles.sectionTitle}>{t('trendingSearches')}</Text>
                   <View style={styles.trendingItemsContainer}>
                     {renderTrendingSearches()}
                   </View>
@@ -290,14 +295,14 @@ const SearchItem = () => {
           {searchQuery.length === 0 && suggestions.length === 0 && (
             <View style={styles.searchSuggestionsContainer}>
               <View style={styles.recentSearchesContainer}>
-                <Text style={styles.sectionTitle}>Recents</Text>
+                <Text style={styles.sectionTitle}>{t('recents')}</Text>
                 {recentSearches.map((item, index) =>
                   renderRecentSearchItem(item, index)
                 )}
               </View>
               <View style={[styles.horizontalLine, { width, height: 8 }]} />
               <View style={styles.trendingSearchesContainer}>
-                <Text style={styles.sectionTitle}>Trending searches</Text>
+                <Text style={styles.sectionTitle}>{t('trendingSearches')}</Text>
                 <View style={styles.trendingItemsContainer}>
                   {renderTrendingSearches()}
                 </View>

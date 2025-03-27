@@ -16,18 +16,22 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Entypo from 'react-native-vector-icons/Entypo';
 import axios from 'axios';
-import { useNavigation, useRoute, CommonActions, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import messaging from '@react-native-firebase/messaging'; // Import FCM messaging
-// Import the theme hook
+import messaging from '@react-native-firebase/messaging';
 import { useTheme } from '../context/ThemeContext';
+// Import the useTranslation hook from react-i18next
+import { useTranslation } from 'react-i18next';
 
 const ServiceTrackingItemScreen = () => {
-  // 1) Get screen width & height
+  // Screen dimensions
   const { width, height } = useWindowDimensions();
-  // 2) Get dark mode flag and generate dynamic styles
+  // Dark mode flag & dynamic styles
   const { isDarkMode } = useTheme();
   const styles = dynamicStyles(width, height, isDarkMode);
+
+  // Initialize translation hook
+  const { t } = useTranslation();
 
   const [details, setDetails] = useState({});
   const [serviceArray, setServiceArray] = useState([]);
@@ -67,17 +71,22 @@ const ServiceTrackingItemScreen = () => {
     }
   };
 
-  // Build timeline data
+  // Build timeline data using translation for status titles.
   const getTimelineData = useMemo(() => {
-    const statuses = ['Collected Item', 'Work started', 'Work Completed', 'Delivered'];
-    const currentStatusIndex = statuses.indexOf(details.service_status);
+    // Define keys and fallback English labels.
+    const timelineKeys = ['collected_item', 'work_started', 'work_completed', 'delivered'];
+    const fallbackStatuses = ['Collected Item', 'Work Started', 'Work Completed', 'Delivered'];
+    // Create translated statuses while preserving fallback for index matching.
+    const statuses = timelineKeys.map((key, index) => t(key) || fallbackStatuses[index]);
+    // Use fallbackStatuses for index matching (assuming service_status is in English)
+    const currentStatusIndex = fallbackStatuses.indexOf(details.service_status);
     return statuses.map((status, index) => ({
       title: status,
       time: '', // You can update this if needed
       iconColor: index <= currentStatusIndex ? '#ff4500' : '#a1a1a1',
       lineColor: index <= currentStatusIndex ? '#ff4500' : '#a1a1a1',
     }));
-  }, [details.service_status]);
+  }, [details.service_status, t]);
 
   useEffect(() => {
     Animated.timing(rotateAnimation, {
@@ -92,7 +101,7 @@ const ServiceTrackingItemScreen = () => {
     outputRange: ['0deg', '180deg'],
   });
 
-  // Extract fetchBookings as a function so it can be reused
+  // Fetch booking details
   const fetchBookings = async () => {
     try {
       setLoading(true);
@@ -112,12 +121,11 @@ const ServiceTrackingItemScreen = () => {
     }
   };
 
-  // Fetch data on mount or when tracking_id changes
   useEffect(() => {
     fetchBookings();
   }, [tracking_id]);
 
-  // Listen for FCM notifications. If notification.data contains a "status" key, call fetchBookings.
+  // Listen for FCM notifications and refresh data if status key exists.
   useEffect(() => {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
       console.log('FCM notification received in ServiceTrackingItemScreen:', remoteMessage);
@@ -138,7 +146,6 @@ const ServiceTrackingItemScreen = () => {
     });
   }, []);
 
-  // Show loader if still fetching
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -168,7 +175,9 @@ const ServiceTrackingItemScreen = () => {
               );
             }} 
           />
-          <Text style={styles.headerText}>Service Trackings</Text>
+          <Text style={styles.headerText}>
+            {t('service_trackings') || 'Service Trackings'}
+          </Text>
         </View>
 
         <ScrollView>
@@ -190,7 +199,9 @@ const ServiceTrackingItemScreen = () => {
 
           {/* PIN */}
           <View style={styles.pinContainer}>
-            <Text style={styles.pinText}>PIN</Text>
+            <Text style={styles.pinText}>
+              {t('pin') || 'PIN'}
+            </Text>
             <View style={styles.pinBoxesContainer}>
               {pin.split('').map((digit, index) => (
                 <View key={index} style={styles.pinBox}>
@@ -204,11 +215,13 @@ const ServiceTrackingItemScreen = () => {
 
           {/* Service Details */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionBookedTitle}>Service Details</Text>
+            <Text style={styles.sectionBookedTitle}>
+              {t('service_details') || 'Service Details'}
+            </Text>
             <View style={styles.innerContainer}>
               {serviceArray.map((service, index) => (
                 <Text key={index} style={styles.serviceDetail}>
-                  {service.serviceName}
+                  { t(`singleService_${service.main_service_id}`) || service.serviceName }
                 </Text>
               ))}
             </View>
@@ -218,11 +231,13 @@ const ServiceTrackingItemScreen = () => {
 
           {/* Additional Info Section */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Additional Info</Text>
+            <Text style={styles.sectionTitle}>
+              {t('additional_info') || 'Additional Info'}
+            </Text>
             <View style={styles.additionalInfoContainer}>
               {details.data?.estimatedDuration ? (
                 <Text style={styles.infoText}>
-                  Estimated Time: {details.data.estimatedDuration}
+                  {t('estimated_time') || 'Estimated Time:'} {details.data.estimatedDuration}
                 </Text>
               ) : null}
               {details.data?.image ? (
@@ -239,7 +254,9 @@ const ServiceTrackingItemScreen = () => {
           {/* Service Timeline */}
           <View style={styles.sectionContainer}>
             <View style={styles.serviceTimeLineContainer}>
-              <Text style={styles.sectionTitle}>Service Timeline</Text>
+              <Text style={styles.sectionTitle}>
+                {t('service_timeline') || 'Service Timeline'}
+              </Text>
             </View>
             <View style={styles.innerContainerLine}>
               {getTimelineData.map((item, index) => (
@@ -273,7 +290,9 @@ const ServiceTrackingItemScreen = () => {
 
           {/* Address */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Address</Text>
+            <Text style={styles.sectionTitle}>
+              {t('address') || 'Address'}
+            </Text>
             <View style={styles.addressContainer}>
               <Image
                 source={{
@@ -293,9 +312,11 @@ const ServiceTrackingItemScreen = () => {
               style={styles.paymentSummaryContainer}
               onPress={togglePaymentDetails}
               accessibilityRole="button"
-              accessibilityLabel="Toggle Payment Details"
+              accessibilityLabel={t('toggle_payment_details') || 'Toggle Payment Details'}
             >
-              <Text style={styles.sectionPaymentTitle}>Payment Details</Text>
+              <Text style={styles.sectionPaymentTitle}>
+                {t('payment_details') || 'Payment Details'}
+              </Text>
               <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
                 <Entypo name="chevron-small-right" size={20} color="#ff4500" />
               </Animated.View>
@@ -308,7 +329,7 @@ const ServiceTrackingItemScreen = () => {
                 {serviceArray.map((service, index) => (
                   <View key={index} style={styles.paymentRow}>
                     <Text style={styles.paymentLabelHead}>
-                      {service.serviceName}
+                    { t(`singleService_${service.main_service_id}`) || service.serviceName }
                     </Text>
                     <Text style={styles.paymentValue}>
                       ₹{service.cost.toFixed(2)}
@@ -317,12 +338,16 @@ const ServiceTrackingItemScreen = () => {
                 ))}
                 {details.discount > 0 && (
                   <View style={styles.paymentRow}>
-                    <Text style={styles.paymentLabel}>Discount</Text>
+                    <Text style={styles.paymentLabel}>
+                      {t('discount') || 'Discount'}
+                    </Text>
                     <Text style={styles.paymentValue}>₹{details.discount}</Text>
                   </View>
                 )}
                 <View style={styles.paymentRow}>
-                  <Text style={styles.paymentLabel}>Grand Total</Text>
+                  <Text style={styles.paymentLabel}>
+                    {t('grand_total') || 'Grand Total'}
+                  </Text>
                   <Text style={styles.paymentValue}>₹{details.total_cost}</Text>
                 </View>
               </View>
@@ -330,7 +355,9 @@ const ServiceTrackingItemScreen = () => {
           </View>
 
           <TouchableOpacity style={styles.payButton} onPress={openPhonePeScanner}>
-            <Text style={styles.payButtonText}>PAY</Text>
+            <Text style={styles.payButtonText}>
+              {t('pay') || 'PAY'}
+            </Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -378,6 +405,7 @@ function dynamicStyles(width, height, isDarkMode) {
       marginVertical: isTablet ? 20 : 15,
       paddingLeft: isTablet ? 20 : 16,
     },
+    profileImage: {},
     image: {
       width: isTablet ? 70 : 60,
       height: isTablet ? 70 : 60,
@@ -608,4 +636,3 @@ function dynamicStyles(width, height, isDarkMode) {
 }
 
 export default ServiceTrackingItemScreen;
- 

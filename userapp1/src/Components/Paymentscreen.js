@@ -14,6 +14,8 @@ import {
   useWindowDimensions,
   AppState,
 } from 'react-native';
+import '../i18n/i18n';
+import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   useNavigation,
@@ -35,6 +37,7 @@ const Payment = ({ route }) => {
   const styles = dynamicStyles(width, isDarkMode);
 
   const [paymentMethod, setPaymentMethod] = useState('');
+    const { t } = useTranslation();
   const [couponCode, setCouponCode] = useState('');
   const [totalAmount, setTotalAmount] = useState(0);
   const [gstAmount, setGstAmount] = useState(0);
@@ -279,12 +282,12 @@ const Payment = ({ route }) => {
             <TouchableOpacity style={styles.leftIcon} onPress={onBackPress}>
               <FontAwesome6 name="arrow-left-long" size={20} color="#9e9e9e" />
             </TouchableOpacity>
-            <Text style={styles.screenName}>Payment Screen</Text>
+            <Text style={styles.screenName}>{t('payment_screen') || 'Payment Screen'}</Text>
           </View>
 
           {/* Service Summary Section */}
           <View style={styles.serviceSummary}>
-            <Text style={styles.summaryTitle}>Service Summary</Text>
+            <Text style={styles.summaryTitle}>{t('service_summary') || 'Service Summary'}</Text>
             <View style={styles.profileContainer}>
               <Image
                 source={{ uri: paymentDetails.profile }}
@@ -294,15 +297,14 @@ const Payment = ({ route }) => {
                 <Text style={styles.nameText}>{paymentDetails.name}</Text>
               </View>
             </View>
-
             <View style={styles.detailsBox}>
               <View style={styles.rowContainer}>
                 <View>
-                  <Text style={styles.detailsTitle}>Commander Name</Text>
+                  <Text style={styles.detailsTitle}>{t('commander_name') || 'Commander Name'}</Text>
                   <Text style={styles.commanderName}>{paymentDetails.name}</Text>
                 </View>
                 <View>
-                  <Text style={styles.detailsTitle}>Services</Text>
+                  <Text style={styles.detailsTitle}>{t('services') || 'Services'}</Text>
                   {serviceArray.map((service, index) => (
                     <Text
                       key={index}
@@ -310,13 +312,13 @@ const Payment = ({ route }) => {
                       numberOfLines={2}
                       ellipsizeMode="tail"
                     >
-                      {service.serviceName}
+                      { t(`singleService_${service.main_service_id}`) || service.serviceName }
+               
                     </Text>
                   ))}
                 </View>
               </View>
-
-              <Text style={styles.detailsTitle}>Location</Text>
+              <Text style={styles.detailsTitle}>{t('location') || 'Location'}</Text>
               <Text style={styles.locationText}>{paymentDetails.area}</Text>
             </View>
           </View>
@@ -324,7 +326,7 @@ const Payment = ({ route }) => {
           {/* Payment Summary Section */}
           <View style={styles.paymentSummary}>
             <View style={styles.paymentSummaryContainer}>
-              <Text style={styles.summaryTitle}>Payment Summary</Text>
+              <Text style={styles.summaryTitle}>{t('payment_summary') || 'Payment Summary'}</Text>
               <TouchableOpacity onPress={togglePayment}>
                 <Entypo name="chevron-small-right" size={20} color="#d5d5d5" />
               </TouchableOpacity>
@@ -335,35 +337,33 @@ const Payment = ({ route }) => {
                 <View style={styles.breakdownColumnContainer}>
                   {serviceArray.map((service, index) => (
                     <View key={index} style={styles.breakdownContainer}>
-                      <Text style={styles.breakdownItem}>{service.serviceName}</Text>
+                      <Text style={styles.breakdownItem}>{ t(`singleService_${service.main_service_id}`) || service.serviceName }</Text>
                       <Text style={styles.breakdownPrice}>
                         ₹ {service.cost?.toFixed(2) || '0.00'}
                       </Text>
                     </View>
                   ))}
                 </View>
-                {/* Example if you had GST/CGST */}
                 <View style={styles.breakdownContainer}>
-                  <Text style={styles.breakdownItem}>GST</Text>
+                <Text style={styles.breakdownItem}>{t('gst')}</Text>
                   <Text style={styles.breakdownPrice}>₹ 0.00</Text>
                 </View>
                 <View style={styles.breakdownContainer}>
-                  <Text style={styles.breakdownItem}>CGST</Text>
+                <Text style={styles.breakdownItem}>{t('cgst')}</Text>
                   <Text style={styles.breakdownPrice}>₹ 0.00</Text>
                 </View>
-
-                {/* If discount > 0, show it */}
                 {discount > 0 && (
                   <View style={styles.breakdownContainer}>
-                    <Text style={styles.breakdownItem}>Cashback</Text>
+                    <Text style={styles.breakdownItem}>{t('cashback') || 'Cashback'}</Text>
                     <Text style={styles.breakdownPrice}>- ₹ {discount}</Text>
                   </View>
                 )}
-
                 <View style={styles.separatorLine} />
                 <View style={styles.grandTotalContainer}>
-                  <Text style={styles.paidViaText}>Paid Via Scan</Text>
-                  <Text style={styles.grandTotalText}>Grand Total ₹ {totalCost}</Text>
+                  <Text style={styles.paidViaText}>{t('paid_via_scan') || 'Paid Via Scan'}</Text>
+                  <Text style={styles.grandTotalText}>
+                    {t('grand_total') || 'Grand Total'} ₹ {totalCost}
+                  </Text>
                 </View>
               </>
             ) : (
@@ -374,7 +374,7 @@ const Payment = ({ route }) => {
                   </View>
                   <View>
                     <Text style={styles.payText}>
-                      To Pay ₹ <Text style={styles.payTextTotal}>{totalCost}</Text>
+                      {t('to_pay') || 'To Pay'} ₹ <Text style={styles.payTextTotal}>{totalCost}</Text>
                     </Text>
                   </View>
                 </View>
@@ -387,13 +387,12 @@ const Payment = ({ route }) => {
             <View style={styles.backIconContainer}>
               <View style={styles.voucherIconContainer}>
                 <Icon name="ticket-outline" size={24} color="#6E6E6E" />
-                <Text style={styles.voucherText}>Add Coupon to get cashback</Text>
+                <Text style={styles.voucherText}>{t('add_coupon') || 'Add Coupon to get cashback'}</Text>
               </View>
               <TouchableOpacity onPress={toggleVocher}>
                 <Entypo name="chevron-small-right" size={20} color="#d5d5d5" />
               </TouchableOpacity>
             </View>
-
             {vocherModal && (
               <View style={styles.vocherAddContainer}>
                 <View style={styles.inputContainer}>
@@ -404,7 +403,7 @@ const Payment = ({ route }) => {
                     ]}
                     value={value}
                     onChangeText={(text) => setValue(text)}
-                    placeholder="Enter voucher code"
+                    placeholder={t('enter_voucher') || 'Enter voucher code'}
                     placeholderTextColor="#A0A0A0"
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
@@ -423,7 +422,7 @@ const Payment = ({ route }) => {
                         value ? styles.applyButtonTextActive : styles.applyButtonTextInactive,
                       ]}
                     >
-                      APPLY
+                      {t('apply') || 'Apply'}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -434,7 +433,7 @@ const Payment = ({ route }) => {
           <View style={styles.noticeTextContainer}>
             <Icon name="alert-circle-outline" size={16} color={isDarkMode ? '#fff' : "#212121"} />
             <Text style={styles.noticeText}>
-              Spare parts are not included in this payment
+              {t('spare_parts_excluded') || 'Spare parts are not included in this payment'}
             </Text>
           </View>
         </ScrollView>
@@ -442,11 +441,11 @@ const Payment = ({ route }) => {
         {/* Bottom Bar for Payment */}
         <View style={styles.buttonAmmountContainer}>
           <View>
-            <Text style={styles.serviceCostText}>Service cost</Text>
+            <Text style={styles.serviceCostText}>{t('service_cost') || 'Service cost'}</Text>
             <Text style={styles.cost}>₹ {totalCost}</Text>
           </View>
           <TouchableOpacity style={styles.payButton} onPress={openPhonePeScanner}>
-            <Text style={styles.payButtonText}>Pay Now</Text>
+            <Text style={styles.payButtonText}>{t('pay_now') || 'Pay Now'}</Text>
           </TouchableOpacity>
         </View>
       </View>

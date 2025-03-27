@@ -2,14 +2,16 @@ import React from 'react';
 import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
-// Import theme hook for dark mode support
 import { useTheme } from '../context/ThemeContext';
+// Import the translation hook
+import { useTranslation } from 'react-i18next';
 
 const LOGO_URL = 'https://i.postimg.cc/hjjpy2SW/Button-1.png';
 
 const AboutCS = () => {
   const navigation = useNavigation();
   const { isDarkMode } = useTheme();
+  const { t } = useTranslation();
   const styles = dynamicStyles(isDarkMode);
 
   return (
@@ -19,23 +21,24 @@ const AboutCS = () => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon name="arrow-back" size={24} color={isDarkMode ? '#fff' : "#333"} />
         </TouchableOpacity>
-        <Text style={styles.headerText}>About Us</Text>
+        <Text style={styles.headerText}>
+          {t('about_us') || 'About Us'}
+        </Text>
       </View>
 
       {/* Content */}
       <View style={styles.content}>
         <Text style={styles.description}>
-          Welcome to Clicksolver! We are dedicated to delivering innovative solutions that streamline your digital experience.
-          Our platform is designed to empower you to solve complex challenges with simple clicks, enhancing productivity
-          and driving success.
+          {t('about_description_1') ||
+            'Welcome to Clicksolver! We are dedicated to delivering innovative solutions that streamline your digital experience. Our platform is designed to empower you to solve complex challenges with simple clicks, enhancing productivity and driving success.'}
         </Text>
         <Text style={styles.description}>
-          At Clicksolver, our mission is to simplify tasks and transform the way you work. With a focus on intuitive design
-          and cutting-edge technology, we strive to provide tools that are both powerful and user-friendly.
+          {t('about_description_2') ||
+            'At Clicksolver, our mission is to simplify tasks and transform the way you work. With a focus on intuitive design and cutting-edge technology, we strive to provide tools that are both powerful and user-friendly.'}
         </Text>
         <Text style={styles.description}>
-          Thank you for choosing Clicksolver as your trusted partner in navigating the digital world. We are committed to
-          continuous improvement and excellence, ensuring that your journey with us is as smooth and rewarding as possible.
+          {t('about_description_3') ||
+            'Thank you for choosing Clicksolver as your trusted partner in navigating the digital world. We are committed to continuous improvement and excellence, ensuring that your journey with us is as smooth and rewarding as possible.'}
         </Text>
       </View>
 

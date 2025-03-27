@@ -45,12 +45,14 @@ const PaintingServices = () => {
 
   const [subservice, setSubServices] = useState([]);
   const [name, setName] = useState('');
+  const [sid,setId] = useState(null)
   const [loading, setLoading] = useState(true);
 
   // When the component mounts, extract serviceObject from route params and fetch backend data.
   useEffect(() => {
     if (route.params) {
       setName(route.params.serviceObject);
+      setId(route.params.id)
       fetchServices(route.params.serviceObject);
     }
   }, [route.params]);
@@ -82,11 +84,11 @@ const PaintingServices = () => {
         'https://backend.clicksolver.com/api/individual/service',
         { serviceObject }
       );
-      const servicesWithIds = response.data.map((service) => ({
-        ...service,
-        id: uuid.v4(),
-      }));
-      setSubServices(servicesWithIds);
+      // const servicesWithIds = response.data.map((service) => ({
+      //   ...service,
+      //   id: uuid.v4(),
+      // }));
+      setSubServices(response.data);
     } catch (error) {
       console.error('Error fetching services:', error);
     } finally {
@@ -95,7 +97,7 @@ const PaintingServices = () => {
   }, []);
 
   const handleBookCommander = useCallback(
-    async (serviceId) => {
+    async (serviceId,id) => {
       try {
         // Check if notifications are enabled
         PushNotification.checkPermissions((permissions) => {
@@ -124,7 +126,7 @@ const PaintingServices = () => {
               { cancelable: false }
             );
           } else {
-            proceedToBookCommander(serviceId);
+            proceedToBookCommander(serviceId,id);
           }
         });
       } catch (error) {
@@ -135,9 +137,11 @@ const PaintingServices = () => {
   );
 
   const proceedToBookCommander = useCallback(
-    async (serviceId) => {
+    async (serviceId,id) => {
+      console.log("book",serviceId,id)
       navigation.push('ServiceBooking', {
         serviceName: serviceId,
+        id:id
       });
     },
     [navigation]
@@ -165,26 +169,26 @@ const PaintingServices = () => {
           <TouchableOpacity onPress={handleBack} style={styles.iconContainer}>
             <Icon name="arrow-back" size={24} color={isDarkMode ? '#fff' : '#000'} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{name}</Text>
+          <Text style={styles.headerTitle}> { t(`service_${sid}`) || name }</Text>
           <TouchableOpacity onPress={handleSearch} style={styles.iconContainer}>
             <Icon name="search" size={24} color={isDarkMode ? '#fff' : '#000'} />
           </TouchableOpacity>
         </View>
 
         {/* Language Selector Button */}
-        <View style={{ alignSelf: 'flex-end', marginVertical: 10 }}>
+        {/* <View style={{ alignSelf: 'flex-end', marginVertical: 10 }}>
           <Button
             title={t('change_language') || 'Change Language'}
             onPress={() => navigation.navigate('LanguageSelector')}
           />
-        </View>
+        </View> */}
 
         {/* Banner */}
         <View style={styles.banner}>
           <View style={styles.bannerText}>
             <View style={styles.bannerDetails}>
-              <Text style={styles.bannerPrice}>Just 49/-</Text>
-              <Text style={styles.bannerDescription}>{name}</Text>
+            <Text style={styles.bannerPrice}>{t('just_49') || 'Just 49/-'}</Text>
+              <Text style={styles.bannerDescription}>{ t(`service_${sid}`) || name }</Text>
               <Text style={styles.bannerInfo}>
                 {t('just_pay') || 'Just pay to book a Commander Inspection!'}
               </Text>
@@ -212,13 +216,14 @@ const PaintingServices = () => {
         <ScrollView style={styles.services}>
           {subservice.map((service) => (
             <ServiceItem
-              key={service.id}
+              key={service.service_id}
               title={service.service_name}
               imageUrl={service.service_urls}
               handleBookCommander={handleBookCommander}
               serviceId={service.service_name}
               isDarkMode={isDarkMode}
               t={t}  // Pass translation function to the item
+              id={service.service_id}
             />
           ))}
         </ScrollView>
@@ -228,7 +233,7 @@ const PaintingServices = () => {
 };
 
 const ServiceItem = React.memo(
-  ({ title, imageUrl, handleBookCommander, serviceId, isDarkMode, t }) => {
+  ({ title, imageUrl, handleBookCommander, serviceId, isDarkMode, t,id }) => {
     const { width } = useWindowDimensions();
     const itemStyles = dynamicStyles(width, undefined, isDarkMode);
 
@@ -242,10 +247,10 @@ const ServiceItem = React.memo(
           />
         </View>
         <View style={itemStyles.serviceInfo}>
-          <Text style={itemStyles.serviceTitle}>{title}</Text>
+          <Text style={itemStyles.serviceTitle}>{ t(`IndivService_${id}`) || title }</Text>
           <TouchableOpacity
             style={itemStyles.bookNow}
-            onPress={() => handleBookCommander(serviceId)}
+            onPress={() => handleBookCommander(serviceId,id)}
           >
             <Text style={itemStyles.bookNowText}>
               {t('book_now') || 'Book Now ➔'}

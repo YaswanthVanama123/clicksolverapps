@@ -16,8 +16,9 @@ import { useRoute, useNavigation, CommonActions } from '@react-navigation/native
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-// Import theme hook for dark mode support
 import { useTheme } from '../context/ThemeContext';
+// Import the translation hook from react-i18next
+import { useTranslation } from 'react-i18next';
 
 const AccountDelete = () => {
   const { width, height } = useWindowDimensions();
@@ -25,11 +26,13 @@ const AccountDelete = () => {
   const styles = dynamicStyles(width, height, isDarkMode);
 
   const navigation = useNavigation();
+  const { t } = useTranslation();
+
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [updateLoading, setUpdateLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false); // Modal visibility state
+  const [modalVisible, setModalVisible] = useState(false);
 
   const route = useRoute();
 
@@ -40,7 +43,7 @@ const AccountDelete = () => {
     setFullName(details.name);
   };
 
-  // Function that actually updates the profile (in this case, deletes the account)
+  // Function to delete the account (update profile)
   const updateProfile = async () => {
     try {
       setUpdateLoading(true);
@@ -72,7 +75,7 @@ const AccountDelete = () => {
     }
   };
 
-  // Logout function: clear tokens and navigate to Login
+  // Logout: clear tokens and navigate to Login
   const handleLogout = async () => {
     try {
       const fcm_token = await EncryptedStorage.getItem('fcm_token');
@@ -93,12 +96,12 @@ const AccountDelete = () => {
     }
   };
 
-  // Open the confirmation modal when Delete Account is pressed
+  // Open the confirmation modal
   const openConfirmationModal = () => {
     setModalVisible(true);
   };
 
-  // Close modal and then proceed with update (delete)
+  // Close modal and proceed with account deletion
   const handleUpdate = () => {
     setModalVisible(false);
     updateProfile();
@@ -118,12 +121,16 @@ const AccountDelete = () => {
             color={isDarkMode ? '#fff' : '#000'}
             onPress={() => navigation.goBack()}
           />
-          <Text style={styles.headerText}>Account Delete</Text>
+          <Text style={styles.headerText}>
+            {t('account_delete') || 'Account Delete'}
+          </Text>
         </View>
 
         <View style={styles.form}>
           <View>
-            <Text style={styles.label}>Full Name</Text>
+            <Text style={styles.label}>
+              {t('full_name') || 'Full Name'}
+            </Text>
             <TextInput
               style={styles.input}
               value={fullName}
@@ -134,7 +141,9 @@ const AccountDelete = () => {
           </View>
 
           <View>
-            <Text style={styles.label}>Email Address</Text>
+            <Text style={styles.label}>
+              {t('email_address') || 'Email Address'}
+            </Text>
             <View style={styles.inputWithIcon}>
               <Icon name="email" size={20} color="gray" />
               <TextInput
@@ -148,7 +157,9 @@ const AccountDelete = () => {
           </View>
 
           <View>
-            <Text style={styles.label}>Phone Number</Text>
+            <Text style={styles.label}>
+              {t('phone_number') || 'Phone Number'}
+            </Text>
             <View style={styles.phoneInputContainer}>
               <Image
                 source={{
@@ -176,7 +187,9 @@ const AccountDelete = () => {
             {updateLoading ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>Delete Account</Text>
+              <Text style={styles.buttonText}>
+                {t('delete_account') || 'Delete Account'}
+              </Text>
             )}
           </TouchableOpacity>
         </View>
@@ -189,28 +202,31 @@ const AccountDelete = () => {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        {/* 
-          The modal container is anchored to the bottom 
-          (flex-end), and the content has top-radius. 
-        */}
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Confirm Delete</Text>
+            <Text style={styles.modalTitle}>
+              {t('confirm_delete') || 'Confirm Delete'}
+            </Text>
             <Text style={styles.modalMessage}>
-              Are you sure you want to delete your profile?
+              {t('confirm_delete_message') ||
+                'Are you sure you want to delete your profile?'}
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, { backgroundColor: '#ccc' }]}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={styles.modalButtonText}>Cancel</Text>
+                <Text style={styles.modalButtonText}>
+                  {t('cancel') || 'Cancel'}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, { backgroundColor: '#FF4500' }]}
                 onPress={handleUpdate}
               >
-                <Text style={styles.modalButtonText}>Delete</Text>
+                <Text style={styles.modalButtonText}>
+                  {t('delete') || 'Delete'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -319,18 +335,15 @@ const dynamicStyles = (width, height, isDarkMode) => {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Medium',
     },
-    /* 
-      Updated modal container to appear at the bottom 
-    */
     modalContainer: {
       flex: 1,
-      justifyContent: 'flex-end', // anchor to bottom
+      justifyContent: 'flex-end',
       backgroundColor: 'rgba(0,0,0,0.5)',
     },
     modalContent: {
       backgroundColor: isDarkMode ? '#1e1e1e' : '#fff',
       padding: 20,
-      borderTopLeftRadius: 20, // top round corners
+      borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
       alignItems: 'center',
       width: '100%',

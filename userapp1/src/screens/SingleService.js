@@ -34,7 +34,7 @@ import { useTranslation } from 'react-i18next';
 const SingleService = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { serviceName } = route.params;
+  const { serviceName,id } = route.params;
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { isDarkMode } = useTheme();
@@ -54,14 +54,14 @@ const SingleService = () => {
   // Fetch details from API
   const fetchDetails = useCallback(async () => {
     try {
-      console.log('serviceName', serviceName);
+      console.log('serviceName', serviceName,id);
       const response = await axios.post(
         'https://backend.clicksolver.com/api/single/service',
         { serviceName }
       );
       const { relatedServices } = response.data;
       setServices(relatedServices);
-
+ 
       // Initialize quantity to 0 for each service
       setQuantities(
         relatedServices.reduce((acc, item) => {
@@ -70,7 +70,7 @@ const SingleService = () => {
         }, {})
       );
       setLoading(false);
-      console.log('single', relatedServices);
+      // console.log('single', relatedServices);
     } catch (error) {
       console.error('Error fetching services:', error);
       setLoading(false);
@@ -231,7 +231,7 @@ const SingleService = () => {
         {/* Service Title & Info */}
         <View style={styles.serviceHeader}>
           <View style={styles.serviceDetails}>
-            <Text style={styles.serviceTitle}>{serviceName}</Text>
+            <Text style={styles.serviceTitle}> { t(`IndivService_${id}`) || serviceName }</Text>
             <View style={styles.priceContainer}>
               <Text style={styles.Sparetext}>
                 {t('spare_text') || 'Spare parts, if required, will incur additional charges'}
@@ -258,10 +258,10 @@ const SingleService = () => {
               <TouchableOpacity key={srv.main_service_id} style={styles.recomendedCard}>
                 <View style={styles.recomendedCardDetails}>
                   <Text style={styles.recomendedCardDetailsHead}>
-                    {srv.service_tag}
+                     { t(`singleService_${srv.main_service_id}`) || srv.service_tag }
                   </Text>
                   <Text style={styles.recomendedCardDetailsDescription} numberOfLines={2}>
-                    {srv.service_details.about}
+                     { t(`descriptionSingleService_${srv.main_service_id}`) || srv.service_details.about }
                   </Text>
                   <Text style={styles.recomendedCardDetailsRating}>
                     ₹{srv.cost}
@@ -318,7 +318,9 @@ const SingleService = () => {
             <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
               <View style={styles.itemContainers}>
                 {bookedServices.map((srv, idx) => (
+                  
                   <View key={idx} style={styles.itemContainer}>
+                   
                     {srv.url ? (
                       <Image
                         source={{ uri: srv.url }}
@@ -334,10 +336,12 @@ const SingleService = () => {
                     )}
                     <View style={styles.descriptionContainer}>
                       <Text style={styles.recomendedCardDetailsHead} numberOfLines={3}>
-                        {srv.serviceName}
+                      { t(`singleService_${srv.main_service_id}`) || srv.serviceName }
+                        
                       </Text>
                       <Text style={styles.recomendedCardDetailsDescription} numberOfLines={2}>
-                        {srv.description}
+                      { t(`descriptionSingleService_${srv.main_service_id}`) || srv.description }
+                 
                       </Text>
                       <View style={styles.addButton}>
                         <TouchableOpacity onPress={() => handleQuantityChange(srv.main_service_id, -1)}>

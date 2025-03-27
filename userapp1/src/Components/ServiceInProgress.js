@@ -11,6 +11,8 @@ import {
   useWindowDimensions,
   AppState 
 } from 'react-native';
+import i18n from 'i18next';
+
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import messaging from '@react-native-firebase/messaging';
 import LottieView from 'lottie-react-native';
@@ -23,6 +25,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // Import theme hook
 import { useTheme } from '../context/ThemeContext';
 
+import '../i18n/i18n';
+// Import useTranslation hook
+import { useTranslation } from 'react-i18next';
+
 const ServiceInProgressScreen = () => {
   const { width } = useWindowDimensions();
   const { isDarkMode } = useTheme();
@@ -32,7 +38,7 @@ const ServiceInProgressScreen = () => {
   const [services, setServices] = useState([]);
   const [decodedId, setDecodedId] = useState(null);
   const [confirmationModalVisible, setConfirmationModalVisible] = useState(false);
-
+  const { t } = useTranslation();
   const route = useRoute();
   const { encodedId } = route.params;
   const navigation = useNavigation();
@@ -149,10 +155,11 @@ const ServiceInProgressScreen = () => {
   const generateTimelineData = (status) => {
     const statusKeys = ['accept', 'arrived', 'workCompleted'];
     const statusDisplayNames = {
-      accept: 'In Progress',
-      arrived: 'Work Started',
-      workCompleted: 'Work Completed',
+      accept: t('in_progress') || 'In Progress',
+      arrived: t('work_started') || 'Work Started',
+      workCompleted: t('work_completed') || 'Work Completed',
     };
+    
     return statusKeys.map((statusKey) => ({
       key: statusKey,
       title: statusDisplayNames[statusKey],
@@ -199,19 +206,35 @@ const ServiceInProgressScreen = () => {
   );
 
   // Format date strings
+  // const formatDate = (dateString) => {
+  //   if (!dateString) return 'Pending';
+  //   const date = new Date(dateString);
+  //   const options = {
+  //     year: 'numeric',
+  //     month: 'long',
+  //     day: 'numeric',
+  //     hour: 'numeric',
+  //     minute: 'numeric',
+  //     hour12: true,
+  //   };
+  //   return date.toLocaleString('en-US', options);
+  // };
+
   const formatDate = (dateString) => {
-    if (!dateString) return 'Pending';
+    if (!dateString) return t('pending') || 'Pending';
+  
     const date = new Date(dateString);
-    const options = {
+  
+    return new Intl.DateTimeFormat(i18n.language, {
       year: 'numeric',
-      month: 'long',
+      month: 'long', // will translate e.g. "March" => "मार्च" in Hindi
       day: 'numeric',
       hour: 'numeric',
       minute: 'numeric',
       hour12: true,
-    };
-    return date.toLocaleString('en-US', options);
+    }).format(date);
   };
+  
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -221,7 +244,7 @@ const ServiceInProgressScreen = () => {
           <FontAwesome6
             name="arrow-left-long"
             size={20}
-            color={isDarkMode ? '#fff' : "#212121"}
+            color={isDarkMode ? '#fff' : '#212121'}
             style={styles.leftIcon}
             onPress={() => {
               navigation.dispatch(
@@ -232,9 +255,11 @@ const ServiceInProgressScreen = () => {
               );
             }}
           />
-          <Text style={styles.headerText}>Service In Progress</Text>
+          <Text style={styles.headerText}>
+            {t('service_in_progress') || 'Service In Progress'}
+          </Text>
         </View>
-
+  
         {/* Content */}
         <ScrollView style={styles.scrollContainer}>
           {/* Profile / Technician Info */}
@@ -242,22 +267,36 @@ const ServiceInProgressScreen = () => {
             <View style={styles.technicianContainer}>
               <Image
                 source={{
-                  uri: details.profile || 'https://i.postimg.cc/mZnDzdqJ/IMG-20240929-WA0024.jpg',
+                  uri:
+                    details.profile ||
+                    'https://i.postimg.cc/mZnDzdqJ/IMG-20240929-WA0024.jpg',
                 }}
                 style={styles.technicianImage}
               />
               <View style={styles.technicianDetails}>
-                <Text style={styles.technicianName}>{details.name || 'Technician'}</Text>
-                <Text style={styles.technicianTitle}>Certified Technician</Text>
+                <Text style={styles.technicianName}>
+                  {details.name || t('technician') || 'Technician'}
+                </Text>
+                <Text style={styles.technicianTitle}>
+                  {t('certified_technician') || 'Certified Technician'}
+                </Text>
               </View>
             </View>
-            <Text style={styles.estimatedCompletion}>Estimated Completion: 2 hours</Text>
-            <Text style={styles.statusText}>
-              Status: Working on {services.map((service) => service.name).join(', ')} ...
+            <Text style={styles.estimatedCompletion}>
+              {t('estimated_completion') || 'Estimated Completion: 2 hours'}
             </Text>
-          </View>
+            <Text style={styles.statusText}>
+              {t('status') || 'Status:'}{' '}
+              {(services.length > 0
+                  ? services.map((service) => t(`singleService_${service.id}`) || service.name).join(', ')
+                  : t('pending') || 'Pending'
+                )}{' '}
 
-          {/* Lottie / Loading Animation */}
+              
+            </Text> 
+          </View>
+  
+          {/* Loading Animation */}
           <View style={styles.lottieContainer}>
             <LottieView
               source={require('../assets/serviceLoading.json')}
@@ -266,37 +305,45 @@ const ServiceInProgressScreen = () => {
               style={styles.loadingAnimation}
             />
           </View>
-
+  
           {/* Complete Button */}
           <TouchableOpacity style={styles.button} onPress={handleCompleteClick}>
-            <Text style={styles.buttonText}>Service Completed</Text>
+            <Text style={styles.buttonText}>
+              {t('service_completed') || 'Service Completed'}
+            </Text>
           </TouchableOpacity>
-
+  
           {/* Service Details */}
           <View style={styles.serviceDetailsContainer}>
             <View style={styles.serviceDetailsHeaderContainer}>
-              <Text style={styles.serviceDetailsTitle}>Service Details</Text>
+              <Text style={styles.serviceDetailsTitle}>
+                {t('service_details') || 'Service Details'}
+              </Text>
               <TouchableOpacity>
                 <Icon name="keyboard-arrow-right" size={24} color="#ff4500" />
               </TouchableOpacity>
             </View>
-
+  
             {/* Additional Info */}
             <View style={styles.iconDetailsContainer}>
               <View style={styles.detailsRow}>
                 <Icon name="calendar-today" size={20} color="#ff4500" />
                 <Text style={styles.detailText}>
-                  Work started <Text style={styles.highlight}>{formatDate(details.created_at)}</Text>
+                  {t('work_started') || 'Work started'}{' '}
+                  <Text style={styles.highlight}>
+                    {formatDate(details.created_at)}
+                  </Text>
                 </Text>
               </View>
               <View style={styles.detailsRow}>
                 <Icon name="location-on" size={20} color="#ff4500" />
                 <Text style={styles.detailText}>
-                  Location: <Text style={styles.highlight}>{details.area}</Text>
+                  {t('location') || 'Location'}:{' '}
+                  <Text style={styles.highlight}>{details.area}</Text>
                 </Text>
               </View>
             </View>
-
+  
             {/* Services & Timelines */}
             <View>
               {services.map((service, index) => {
@@ -304,27 +351,39 @@ const ServiceInProgressScreen = () => {
                 return (
                   <View style={styles.ServiceCardsContainer} key={index}>
                     <View style={styles.technicianContainer}>
-                      <Image source={{ uri: service.image }} style={styles.technicianImage} />
+                      <Image
+                        source={{ uri: service.image }}
+                        style={styles.technicianImage}
+                      />
                       <View style={styles.technicianDetails}>
-                        <Text style={styles.technicianName}>{service.name}</Text>
-                        <Text style={styles.technicianTitle}>Quantity: {service.quantity}</Text>
+                        <Text style={styles.technicianName}>
+                          { t(`singleService_${service.id}`) || service.name }
+                        </Text>
+                        <Text style={styles.technicianTitle}>
+                          {t('quantity') || 'Quantity'}: {service.quantity}
+                        </Text>
                       </View>
                     </View>
-
+  
                     <Text style={styles.statusText}>
-                      Service Status:{' '}
+                      {t('service_status') || 'Service Status:'}{' '}
                       <Text style={styles.highlight}>
-                        {timelineData.find((item) => item.time)?.title || 'Pending'}
+                        {timelineData.find((item) => item.time)?.title ||
+                          t('pending') ||
+                          'Pending'}
                       </Text>
                     </Text>
                     <Text style={styles.statusText}>
-                      Estimated Completion: <Text style={styles.highlight}>2 hours</Text>
+                      {t('estimated_completion') || 'Estimated Completion:'}{' '}
+                      {/* <Text style={styles.highlight}>2 hours</Text> */}
                     </Text>
-
+  
                     {/* Timeline */}
                     <View style={styles.sectionContainer}>
                       <View style={styles.serviceTimeLineContainer}>
-                        <Text style={styles.sectionTitle}>Service Timeline</Text>
+                        <Text style={styles.sectionTitle}>
+                          {t('service_timeline') || 'Service Timeline'}
+                        </Text>
                       </View>
                       <View style={styles.innerContainerLine}>
                         {timelineData.map((item) => (
@@ -346,9 +405,11 @@ const ServiceInProgressScreen = () => {
                             </View>
                             <View style={styles.timelineContent}>
                               <View style={styles.timelineTextContainer}>
-                                <Text style={styles.timelineText}>{item.title}</Text>
+                                <Text style={styles.timelineText}>
+                                  {item.title}
+                                </Text>
                                 <Text style={styles.timelineTime}>
-                                  {item.time ? formatDate(item.time) : 'Pending'}
+                                  {item.time ? formatDate(item.time) : t('pending') || 'Pending'}
                                 </Text>
                               </View>
                             </View>
@@ -362,7 +423,7 @@ const ServiceInProgressScreen = () => {
             </View>
           </View>
         </ScrollView>
-
+  
         {/* Confirmation Modal */}
         <Modal
           animationType="slide"
@@ -372,23 +433,30 @@ const ServiceInProgressScreen = () => {
         >
           <View style={styles.modalOverlay}>
             <View style={styles.confirmationModalContainer}>
-              <Text style={styles.confirmationTitle}>Confirm Service Completion</Text>
+              <Text style={styles.confirmationTitle}>
+                {t('confirm_service_completion') ||
+                  'Confirm Service Completion'}
+              </Text>
               <Text style={styles.confirmationSubtitle}>
-                Are you sure you want to mark the service as completed? Once done,
-                we will no longer track its progress.
+                {t('confirm_service_completion_message') ||
+                  'Are you sure you want to mark the service as completed? Once done, we will no longer track its progress.'}
               </Text>
               <View style={styles.modalButtonsContainer}>
                 <TouchableOpacity
                   style={styles.modalButtonCancel}
                   onPress={() => setConfirmationModalVisible(false)}
                 >
-                  <Text style={styles.modalButtonTextCancel}>Cancel</Text>
+                  <Text style={styles.modalButtonTextCancel}>
+                    {t('cancel') || 'Cancel'}
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.modalButtonConfirm}
                   onPress={handleConfirmComplete}
                 >
-                  <Text style={styles.modalButtonTextConfirm}>Confirm</Text>
+                  <Text style={styles.modalButtonTextConfirm}>
+                    {t('confirm') || 'Confirm'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -397,6 +465,7 @@ const ServiceInProgressScreen = () => {
       </View>
     </SafeAreaView>
   );
+  
 };
 
 // Dynamic styles with dark theme support

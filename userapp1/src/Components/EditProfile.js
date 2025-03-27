@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,35 +10,39 @@ import {
   ActivityIndicator,
   useWindowDimensions,
   Modal,
+  ScrollView,
 } from 'react-native';
 import { useRoute, useNavigation, CommonActions } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-// Import the theme hook for dark mode support
 import { useTheme } from '../context/ThemeContext';
+// Import translation hook
+import { useTranslation } from 'react-i18next';
 
 const EditProfile = () => {
   const { width, height } = useWindowDimensions();
   const { isDarkMode } = useTheme();
   const styles = dynamicStyles(width, height, isDarkMode);
-
+  
   const navigation = useNavigation();
+  const { t } = useTranslation();
+  
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [updateLoading, setUpdateLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false); // Modal visibility state
-
+  const [modalVisible, setModalVisible] = useState(false);
+  
   const route = useRoute();
-
+  
   const fetchProfileDetails = async () => {
     const { details } = route.params;
     setEmail(details.email);
     setPhone(details.phoneNumber);
     setFullName(details.name);
   };
-
+  
   // Function to update the profile
   const updateProfile = async () => {
     try {
@@ -71,96 +75,106 @@ const EditProfile = () => {
       setUpdateLoading(false);
     }
   };
-
+  
   // Open the confirmation modal when Update Profile is pressed
   const openConfirmationModal = () => {
     setModalVisible(true);
   };
-
-  // Close modal and then proceed with update
+  
+  // Close modal and proceed with update
   const handleUpdate = () => {
     setModalVisible(false);
     updateProfile();
   };
-
+  
   useEffect(() => {
     fetchProfileDetails();
   }, []);
-
+  
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Icon
-          name="arrow-back"
-          size={24}
-          color={isDarkMode ? '#fff' : '#000'}
-          onPress={() => navigation.goBack()}
-        />
-        <Text style={styles.headerText}>Edit Profile</Text>
-      </View>
-
-      {/* The form section remains the same */}
-      <View style={styles.form}>
-        <View>
-          <Text style={styles.label}>Full Name</Text>
-          <TextInput
-            style={styles.input}
-            value={fullName}
-            onChangeText={setFullName}
-            testID="fullName-input"
+      <ScrollView>
+        <View style={styles.header}>
+          <Icon
+            name="arrow-back"
+            size={24}
+            color={isDarkMode ? '#fff' : '#000'}
+            onPress={() => navigation.goBack()}
           />
+          <Text style={styles.headerText}>
+            {t('edit_profile') || 'Edit Profile'}
+          </Text>
         </View>
-
-        <View>
-          <Text style={styles.label}>Email Address</Text>
-          <View style={styles.inputWithIcon}>
-            <Icon name="email" size={20} color="gray" />
+  
+        <View style={styles.form}>
+          <View>
+            <Text style={styles.label}>
+              {t('full_name') || 'Full Name'}
+            </Text>
             <TextInput
-              style={styles.inputText}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
+              style={styles.input}
+              value={fullName}
+              onChangeText={setFullName}
+              testID="fullName-input"
             />
           </View>
-        </View>
-
-        <View>
-          <Text style={styles.label}>Phone Number</Text>
-          <View style={styles.phoneInputContainer}>
-            <Image
-              source={{
-                uri: 'https://upload.wikimedia.org/wikipedia/en/thumb/4/41/Flag_of_India.svg/1200px-Flag_of_India.svg.png',
-              }}
-              style={styles.flagIcon}
-            />
-            <Text style={styles.callingCode}>+ 91</Text>
-            <TextInput
-              style={styles.phoneInput}
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              editable={false}
-              selectTextOnFocus={false}
-            />
+  
+          <View>
+            <Text style={styles.label}>
+              {t('email_address') || 'Email Address'}
+            </Text>
+            <View style={styles.inputWithIcon}>
+              <Icon name="email" size={20} color="gray" />
+              <TextInput
+                style={styles.inputText}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+              />
+            </View>
+          </View>
+  
+          <View>
+            <Text style={styles.label}>
+              {t('phone_number') || 'Phone Number'}
+            </Text>
+            <View style={styles.phoneInputContainer}>
+              <Image
+                source={{
+                  uri: 'https://upload.wikimedia.org/wikipedia/en/thumb/4/41/Flag_of_India.svg/1200px-Flag_of_India.svg.png',
+                }}
+                style={styles.flagIcon}
+              />
+              <Text style={styles.callingCode}>+ 91</Text>
+              <TextInput
+                style={styles.phoneInput}
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                editable={false}
+                selectTextOnFocus={false}
+              />
+            </View>
           </View>
         </View>
-      </View>
+      </ScrollView>
+        <View style={styles.bottomButtonContainer}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={openConfirmationModal}
+            disabled={updateLoading}
+          >
+            {updateLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>
+                {t('update_profile') || 'Update Profile'}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
 
-      {/* The button is now placed at the bottom */}
-      <View style={styles.bottomButtonContainer}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={openConfirmationModal}
-          disabled={updateLoading}
-        >
-          {updateLoading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Update Profile</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-
+  
       {/* Modal for confirmation */}
       <Modal
         animationType="slide"
@@ -168,28 +182,30 @@ const EditProfile = () => {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        {/* 
-          The modal container is now anchored to the bottom 
-          (flex-end), and the content has top-radius. 
-        */}
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Confirm Update</Text>
+            <Text style={styles.modalTitle}>
+              {t('confirm_update') || 'Confirm Update'}
+            </Text>
             <Text style={styles.modalMessage}>
-              Are you sure you want to update your profile?
+              {t('confirm_update_message') || 'Are you sure you want to update your profile?'}
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, { backgroundColor: '#ccc' }]}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={styles.modalButtonText}>Cancel</Text>
+                <Text style={styles.modalButtonText}>
+                  {t('cancel') || 'Cancel'}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, { backgroundColor: '#FF4500' }]}
                 onPress={handleUpdate}
               >
-                <Text style={styles.modalButtonText}>Update</Text>
+                <Text style={styles.modalButtonText}>
+                  {t('update') || 'Update'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -198,7 +214,7 @@ const EditProfile = () => {
     </SafeAreaView>
   );
 };
-
+  
 const dynamicStyles = (width, height, isDarkMode) => {
   const isTablet = width >= 600;
   return StyleSheet.create({
@@ -302,18 +318,15 @@ const dynamicStyles = (width, height, isDarkMode) => {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Medium',
     },
-    /* 
-      Updated modal container to appear at the bottom 
-    */
     modalContainer: {
       flex: 1,
-      justifyContent: 'flex-end', // anchor to bottom
+      justifyContent: 'flex-end',
       backgroundColor: 'rgba(0,0,0,0.5)',
     },
     modalContent: {
       backgroundColor: isDarkMode ? '#1e1e1e' : '#fff',
       padding: 20,
-      borderTopLeftRadius: 20, // top round corners
+      borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
       alignItems: 'center',
       width: '100%',

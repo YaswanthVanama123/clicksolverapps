@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
@@ -23,8 +22,9 @@ import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import Contacts from 'react-native-contacts';
 import { useNavigation } from '@react-navigation/native';
-// Import theme hook for dark mode support
 import { useTheme } from '../context/ThemeContext';
+// Import the translation hook
+import { useTranslation } from 'react-i18next';
 
 const ReferralScreen = () => {
   const [contacts, setContacts] = useState([]);
@@ -37,6 +37,7 @@ const ReferralScreen = () => {
   const { isDarkMode } = useTheme();
   const styles = dynamicStyles(width, height, isDarkMode);
   const navigation = useNavigation();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const fetchReferrals = async () => {
@@ -69,7 +70,7 @@ const ReferralScreen = () => {
             .map((item, index) => ({
               id: index,
               name: item.name,
-              status: item.status_completed ? 'Completed' : 'Pending',
+              status: item.status_completed ? t('completed') || 'Completed' : t('pending') || 'Pending',
             }));
           setReferrals(transformedData);
         } else {
@@ -81,7 +82,7 @@ const ReferralScreen = () => {
     };
 
     fetchReferrals();
-  }, []);
+  }, [t]);
 
   // ------------------ COPY & SHARE HELPERS ------------------
   const copyCodeToClipboard = () => {
@@ -94,9 +95,10 @@ const ReferralScreen = () => {
 
   const shareReferralCode = async () => {
     try {
-      const result = await Share.share({
-        message: `Join me on this amazing app! Use my referral code: ${referralCode}. Download the app now: ${referralLink}`,
-      });
+      const message =
+        t('share_message', { referralCode, referralLink }) ||
+        `Join me on this amazing app! Use my referral code: ${referralCode}. Download the app now: ${referralLink}`;
+      const result = await Share.share({ message });
       if (result.action === Share.sharedAction && result.activityType) {
         console.log('Shared with activity type:', result.activityType);
       } else if (result.action === Share.dismissedAction) {
@@ -108,14 +110,16 @@ const ReferralScreen = () => {
   };
 
   const shareViaWhatsApp = () => {
-    const message = `Join me on this amazing app! Use my referral code: ${referralCode}. Download the app now: ${referralLink}`;
+    const message =
+      t('share_message', { referralCode, referralLink }) ||
+      `Join me on this amazing app! Use my referral code: ${referralCode}. Download the app now: ${referralLink}`;
     const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
     Linking.canOpenURL(whatsappUrl)
       .then(supported => {
         if (supported) {
           Linking.openURL(whatsappUrl);
         } else {
-          console.log('WhatsApp is not installed or not supported on this device.');
+          console.log(t('whatsapp_not_installed') || 'WhatsApp is not installed or not supported on this device.');
         }
       })
       .catch(err => console.error('Error opening WhatsApp:', err));
@@ -123,7 +127,9 @@ const ReferralScreen = () => {
 
   const inviteViaSMS = phoneNumber => {
     if (!phoneNumber) return;
-    const smsMessage = `Join me on this amazing app! Use my referral code: ${referralCode}. Download the app now: ${referralLink}`;
+    const smsMessage =
+      t('share_message', { referralCode, referralLink }) ||
+      `Join me on this amazing app! Use my referral code: ${referralCode}. Download the app now: ${referralLink}`;
     const url = `sms:${phoneNumber}?body=${encodeURIComponent(smsMessage)}`;
     Linking.openURL(url).catch(err => {
       console.error('Error launching SMS app:', err);
@@ -136,11 +142,11 @@ const ReferralScreen = () => {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
         {
-          title: 'Contacts Access Permission',
-          message: 'We need access to your contacts to let you invite friends.',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
+          title: t('contacts_permission_title') || 'Contacts Access Permission',
+          message: t('contacts_permission_message') || 'We need access to your contacts to let you invite friends.',
+          buttonNeutral: t('ask_me_later') || 'Ask Me Later',
+          buttonNegative: t('cancel') || 'Cancel',
+          buttonPositive: t('ok') || 'OK',
         }
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
@@ -174,7 +180,7 @@ const ReferralScreen = () => {
         <Text
           style={[
             styles.referralStatus,
-            item.status === 'Pending'
+            item.status === (t('pending') || 'Pending')
               ? styles.statusPending
               : styles.statusCompleted,
           ]}
@@ -205,7 +211,7 @@ const ReferralScreen = () => {
           style={styles.inviteButton}
           onPress={() => inviteViaSMS(phoneNumber)}
         >
-          <Text style={styles.inviteButtonText}>Invite</Text>
+          <Text style={styles.inviteButtonText}>{t('invite') || 'Invite'}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -220,10 +226,10 @@ const ReferralScreen = () => {
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#fff' : "#212121"} />
           </TouchableOpacity>
-          <Text style={styles.mainTitle}>Refer Friends</Text>
-          <Text style={styles.subTitle}>Invite your friends</Text>
+          <Text style={styles.mainTitle}>{t('refer_friends') || 'Refer Friends'}</Text>
+          <Text style={styles.subTitle}>{t('invite_your_friends') || 'Invite your friends'}</Text>
           <Text style={styles.subDescription}>
-            ...to the cool new way of managing money!
+            {t('sub_description') || '...to the cool new way of managing money!'}
           </Text>
         </View>
 
@@ -232,19 +238,19 @@ const ReferralScreen = () => {
           <View style={styles.cardRow}>
             <Ionicons name="document-text-outline" size={20} color="#fff" />
             <Text style={styles.cardRowText}>
-              Share your referral link or code with a friend.
+              {t('share_referral_link') || 'Share your referral link or code with a friend.'}
             </Text>
           </View>
           <View style={styles.cardRow}>
             <Ionicons name="person-add-outline" size={20} color="#fff" />
             <Text style={styles.cardRowText}>
-              Your friend joins using your link or code.
+              {t('friend_joins') || 'Your friend joins using your link or code.'}
             </Text>
           </View>
           <View style={styles.cardRow}>
             <Ionicons name="gift-outline" size={20} color="#fff" />
             <Text style={styles.cardRowText}>
-              Both you and your friend enjoy amazing benefits.
+              {t('enjoy_benefits') || 'Both you and your friend enjoy amazing benefits.'}
             </Text>
           </View>
         </View>
@@ -255,13 +261,13 @@ const ReferralScreen = () => {
             style={[styles.tab, !showContacts && styles.activeTab]}
             onPress={() => setShowContacts(false)}
           >
-            <Text style={styles.tabText}>Your Referrals</Text>
+            <Text style={styles.tabText}>{t('your_referrals') || 'Your Referrals'}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, showContacts && styles.activeTab]}
             onPress={fetchContacts}
           >
-            <Text style={styles.tabText}>Invite Contacts</Text>
+            <Text style={styles.tabText}>{t('invite_contacts') || 'Invite Contacts'}</Text>
           </TouchableOpacity>
         </View>
 
@@ -276,7 +282,7 @@ const ReferralScreen = () => {
                 contentContainerStyle={{ paddingBottom: 20 }}
               />
             ) : (
-              <Text style={styles.noDataText}>No referrals yet.</Text>
+              <Text style={styles.noDataText}>{t('no_referrals') || 'No referrals yet.'}</Text>
             )
           ) : (
             <FlatList
@@ -290,7 +296,7 @@ const ReferralScreen = () => {
 
         {/* Referral Code + Copy Section */}
         <View style={styles.referralCodeContainer}>
-          <Text style={styles.referralLabel}>Your Code:</Text>
+          <Text style={styles.referralLabel}>{t('your_code') || 'Your Code:'}</Text>
           <TouchableOpacity
             style={styles.referralCodeBox}
             onPress={copyCodeToClipboard}
@@ -309,22 +315,13 @@ const ReferralScreen = () => {
 
         {/* Share Buttons */}
         <View style={styles.shareButtonsContainer}>
-          <TouchableOpacity
-            style={styles.shareButton}
-            onPress={shareViaWhatsApp}
-          >
+          <TouchableOpacity style={styles.shareButton} onPress={shareViaWhatsApp}>
             <Ionicons name="logo-whatsapp" size={22} color="#fff" />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.shareButton}
-            onPress={copyLinkToClipboard}
-          >
+          <TouchableOpacity style={styles.shareButton} onPress={copyLinkToClipboard}>
             <Ionicons name="link-outline" size={22} color="#fff" />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.shareButton}
-            onPress={shareReferralCode}
-          >
+          <TouchableOpacity style={styles.shareButton} onPress={shareReferralCode}>
             <Ionicons name="share-social-outline" size={22} color="#fff" />
           </TouchableOpacity>
         </View>
