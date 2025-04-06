@@ -286,16 +286,16 @@ const Navigation = () => {
 
         if (response.data === 'true') {
           const cs_token = await EncryptedStorage.getItem('cs_token');
-          await axios.post(
-            'https://backend.clicksolver.com/api/user/action',
-            {
-              encodedId: encodedData,
-              screen: 'worktimescreen',
-            },
-            {
-              headers: {Authorization: `Bearer ${cs_token}`},
-            },
-          );
+          // await axios.post(
+          //   'https://backend.clicksolver.com/api/user/action',
+          //   {
+          //     encodedId: encodedData,
+          //     screen: 'worktimescreen',
+          //   },
+          //   {
+          //     headers: {Authorization: `Bearer ${cs_token}`},
+          //   },
+          // );
 
           navigation.dispatch(
             CommonActions.reset({
@@ -514,7 +514,7 @@ const Navigation = () => {
     const handleNotificationData = (data) => {
       if (data && data.notification_id) {
         if (data.notification_id.toString() === decodedId) {
-
+          const notification_id = data.notification_id
           const encodedNotificationId = encode(notification_id.toString());
 
           navigation.dispatch(
@@ -621,16 +621,16 @@ const Navigation = () => {
       );
       if (response.status === 200) {
         const cs_token = await EncryptedStorage.getItem('cs_token');
-        await axios.post(
-          'https://backend.clicksolver.com/api/user/action',
-          {
-            encodedId: encodedData,
-            screen: '',
-          },
-          {
-            headers: {Authorization: `Bearer ${cs_token}`},
-          },
-        );
+        // await axios.post(
+        //   'https://backend.clicksolver.com/api/user/action',
+        //   {
+        //     encodedId: encodedData,
+        //     screen: '',
+        //   },
+        //   {
+        //     headers: {Authorization: `Bearer ${cs_token}`},
+        //   },
+        // );
 
         navigation.dispatch(
           CommonActions.reset({

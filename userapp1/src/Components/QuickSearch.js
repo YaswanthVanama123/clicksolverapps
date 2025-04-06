@@ -58,7 +58,7 @@ const QuickSearch = () => {
       <TextInput
         style={styles.searchInput}
         placeholder={placeholderText}
-        placeholderTextColor={isDarkMode ? "#aaa" : "#000"}
+        placeholderTextColor={isDarkMode ? "#fff" : "#000"}
         fontFamily="RobotoSlab-Medium"
         value={searchQuery}
         onChangeText={handleInputChange}

@@ -5,11 +5,12 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import { useNavigation, useRoute, CommonActions, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import EncryptedStorage from 'react-native-encrypted-storage';
 
-import { changeAppLanguage } from '../i18n/languageChange'; 
+import { changeAppLanguage } from '../i18n/languageChange';
+import { useTheme } from '../context/ThemeContext';
 
 const LanguageSelector = () => {
   // List of supported languages
@@ -19,9 +20,12 @@ const LanguageSelector = () => {
     { label: 'తెలుగు', code: 'te' },
   ];
 
+  const { isDarkMode } = useTheme();
+  const styles = dynamicStyles(isDarkMode);
+  const navigation = useNavigation();
+  
   // We’ll store the language code (e.g., 'en', 'hi', 'te') in state
   const [selectedLanguage, setSelectedLanguage] = useState(null);
-    const navigation = useNavigation();
 
   // Load the saved language code from EncryptedStorage when the component mounts
   useEffect(() => {
@@ -54,12 +58,12 @@ const LanguageSelector = () => {
     try {
       await EncryptedStorage.setItem('selectedLanguage', selectedLanguage);
       console.log('Language saved:', selectedLanguage);
-            navigation.dispatch(
-              CommonActions.reset({
-                index: 0,
-                routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
-              }),
-            );
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
+        }),
+      );
     } catch (error) {
       console.log('Error saving language to EncryptedStorage:', error);
     }
@@ -109,64 +113,68 @@ const LanguageSelector = () => {
   );
 };
 
-export default LanguageSelector;
+const dynamicStyles = (isDarkMode) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: isDarkMode ? '#121212' : '#F5F6FA',
+      paddingHorizontal: 20,
+      paddingTop: 40,
+    },
+    headerText: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      marginBottom: 20,
+      color: isDarkMode ? '#fff' : '#000',
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: isDarkMode ? '#ccc' : '#555',
+      marginBottom: 8,
+    },
+    selectedLanguageContainer: {
+      backgroundColor: isDarkMode ? '#1e1e1e' : '#fff',
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      marginBottom: 20,
+      borderWidth: 1,
+      borderColor: isDarkMode ? '#444' : '#ddd',
+    },
+    selectedLanguageText: {
+      fontSize: 16,
+      fontWeight: '500',
+      color: isDarkMode ? '#fff' : '#000',
+    },
+    languageItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: isDarkMode ? '#1e1e1e' : '#fff',
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      marginBottom: 10,
+      borderWidth: 1,
+      borderColor: isDarkMode ? '#444' : '#ddd',
+    },
+    languageText: {
+      fontSize: 16,
+      color: isDarkMode ? '#fff' : '#000',
+    },
+    saveButton: {
+      backgroundColor: '#ff5722',
+      paddingVertical: 14,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginTop: 20,
+    },
+    saveButtonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  });
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F6FA',
-    paddingHorizontal: 20,
-    paddingTop: 40,
-  },
-  headerText: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#555',
-    marginBottom: 8,
-  },
-  selectedLanguageContainer: {
-    backgroundColor: '#fff',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  selectedLanguageText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  languageItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  languageText: {
-    fontSize: 16,
-  },
-  saveButton: {
-    backgroundColor: '#ff5722',
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+export default LanguageSelector;

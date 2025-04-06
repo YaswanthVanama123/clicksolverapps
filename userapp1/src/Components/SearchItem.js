@@ -252,7 +252,7 @@ const SearchItem = () => {
               ref={inputRef}
               style={styles.searchInput}
               placeholder={placeholderText}
-              placeholderTextColor={isDarkMode ? "#aaa" : "#000"}
+              placeholderTextColor={isDarkMode ? "#fff" : "#000"}
               value={searchQuery}
               onChangeText={handleInputChange}
               onFocus={() => setIsFocused(true)}

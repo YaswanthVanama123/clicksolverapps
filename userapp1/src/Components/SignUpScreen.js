@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -16,7 +16,7 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import {useRoute, useNavigation, CommonActions} from '@react-navigation/native';
+import { useRoute, useNavigation, CommonActions } from '@react-navigation/native';
 
 const BG_IMAGE_URL = 'https://i.postimg.cc/rFFQLGRh/Picsart-24-10-01-15-38-43-205.jpg';
 
@@ -29,12 +29,14 @@ const SignUpScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
 
+  // Extract optional parameters: phone_number, serviceName and id
+  const { phone_number, serviceName, id } = route.params || {};
+
   useEffect(() => {
-    const { phone_number } = route.params || {};
     if (phone_number) {
       setPhoneNumber(phone_number);
     }
-  }, [route.params]);
+  }, [phone_number]);
 
   const handleSignUp = async () => {
     try {
@@ -56,12 +58,29 @@ const SignUpScreen = () => {
           message || 'You have signed up successfully!'
         );
 
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
-        );
+        // Check if serviceName and id exist to navigate to ServiceBooking screen with these params.
+        if (serviceName && id) {
+                      navigation.dispatch(
+                        CommonActions.reset({
+                          index: 0,
+                          routes: [
+                            {name: 'ServiceBooking', params: {serviceName,id}},
+                          ],
+                        }),
+                      );
+        } else {
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                {
+                  name: 'Tabs',
+                  state: { routes: [{ name: 'Home' }] },
+                },
+              ],
+            })
+          );
+        }
       }
     } catch (error) {
       console.error('Sign up error:', error);
@@ -76,8 +95,6 @@ const SignUpScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* On iOS, use "padding" so fields shift nicely.
-            On Android, we skip or use "height" to avoid extra resizing. */}
         <KeyboardAvoidingView
           style={styles.keyboardAvoidingView}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -117,8 +134,7 @@ const SignUpScreen = () => {
                 keyboardType="email-address"
               />
 
-              {/* If you want to show the phone number again, you can add another InputField here */}
-
+              {/* Optional Referral Code Field */}
               <InputField
                 placeholder="Referral Code (Optional)"
                 value={referralCode}

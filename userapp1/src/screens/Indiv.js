@@ -21,7 +21,6 @@ import {
 } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
-import uuid from 'react-native-uuid';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import LottieView from 'lottie-react-native';
 import PushNotification from 'react-native-push-notification';
@@ -346,7 +345,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
       gap: 10,
       padding: isTablet ? 15 : 10,
       borderRadius: 10,
-      backgroundColor: isDarkMode ? '#333' : '#fff',
+      backgroundColor: isDarkMode ? '#121212' : '#fff',
       marginBottom: isTablet ? 15 : 10,
     },
     serviceImageContainer: {},

@@ -10,6 +10,7 @@ import {
   Modal,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import Entypo from 'react-native-vector-icons/Entypo'
 import axios from 'axios';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LottieView from 'lottie-react-native';
@@ -205,6 +206,7 @@ const ProfileScreen = () => {
           </View>
           <HelpMenuItem styles={styles} text={t('help_and_support')} onPress={() => navigation.push('Help')} />
           <AboutCSMenuItem styles={styles} text={t('about_cs')} onPress={() => navigation.push('AboutCS')} />
+          <LanguageChangeMenuItem styles={styles} text={t('change_language')} onPress={() => navigation.push('LanguageSelector')} />
         </View>
       </View>
     );
@@ -261,7 +263,7 @@ const ProfileScreen = () => {
 
           {/* Email Field */}
           <View style={styles.inputContainer}>
-            <MaterialIcons name="email" size={24} color="#4a4a4a" />
+            <MaterialIcons name="email" size={24} color={isDarkMode ? '#fff' : '#4a4a4a'} />
             <TextInput value={account.email} editable={false} style={styles.input} />
           </View>
 
@@ -310,13 +312,13 @@ const ProfileScreen = () => {
           <DeleteAccountMenuItem styles={styles} text={t('account_delete')} onPress={() => navigation.push('DeleteAccount', { details: account })} />
           <EditProfileMenuItem styles={styles} text={t('edit_profile')} onPress={() => navigation.push('EditProfile', { details: account })} />
           <ReferEarnMenuItem styles={styles} text={t('refer_and_earn')} onPress={() => navigation.push('ReferralScreen')} />
-          <AboutCSMenuItem styles={styles} text={t('change_language')} onPress={() => navigation.push('LanguageSelector')} />
+          <LanguageChangeMenuItem styles={styles} text={t('change_language')} onPress={() => navigation.push('LanguageSelector')} />
           <AboutCSMenuItem styles={styles} text={t('about_cs')} onPress={() => navigation.push('AboutCS')} />
           <LogoutMenuItem styles={styles} text={t('logout')} onPress={confirmLogout} />
         </View>
       </ScrollView>
 
-      {/* Logout Confirmation Modal */}
+      {/* Logout Confirmation Modal */} 
       <Modal
         visible={logoutModalVisible}
         animationType="slide"
@@ -389,6 +391,14 @@ const LogoutMenuItem = ({ text, onPress, styles }) => (
   <TouchableOpacity style={styles.menuItem} onPress={onPress}>
     <MaterialIcons name="logout" size={22} color="#FF0000" />
     <Text style={styles.menuLogoutText}>{text}</Text>
+  </TouchableOpacity>
+);
+
+const LanguageChangeMenuItem = ({ text, onPress, styles }) => (
+  <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+    <Entypo name="language" size={22} color={styles.iconColor} />
+    
+    <Text style={styles.menuText}>{text}</Text>
   </TouchableOpacity>
 );
 

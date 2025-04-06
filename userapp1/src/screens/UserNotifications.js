@@ -4,14 +4,12 @@ import {
   Text,
   FlatList,
   StyleSheet,
-  Dimensions,
   TouchableOpacity,
   ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import moment from 'moment';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
@@ -19,9 +17,7 @@ import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import { useTheme } from '../context/ThemeContext';
 
 const UserNotifications = () => {
-  // 1) Grab width & height from useWindowDimensions
   const { width, height } = useWindowDimensions();
-  // 2) Get dark mode flag and generate dynamic styles
   const { isDarkMode } = useTheme();
   const styles = dynamicStyles(width, height, isDarkMode);
 
@@ -29,15 +25,74 @@ const UserNotifications = () => {
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
 
+  // Updated: Handle both ISO and custom date formats.
+  const parseCustomDate = (dateString) => {
+    // If date string contains 'T', assume it's ISO formatted.
+    if (dateString.includes('T')) {
+      return new Date(dateString);
+    }
+    try {
+      const [datePart, timePart] = dateString.split(',');
+      if (!datePart || !timePart) return null;
+      const [day, month, year] = datePart.trim().split('/');
+      const [hour, minute, second] = timePart.trim().split(':');
+      const d = parseInt(day, 10);
+      const m = parseInt(month, 10) - 1; // JavaScript months are 0-based.
+      const y = parseInt(year, 10);
+      const hh = parseInt(hour, 10);
+      const mm = parseInt(minute, 10);
+      const ss = parseInt(second, 10);
+      return new Date(y, m, d, hh, mm, ss);
+    } catch (error) {
+      console.warn('Failed to parse date:', error);
+      return null;
+    }
+  };
+
+  // Helper: Check if two dates are on the same calendar day.
+  const isSameDay = (date1, date2) => {
+    return (
+      date1.getDate() === date2.getDate() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getFullYear() === date2.getFullYear()
+    );
+  };
+
+  // Helper: Format a date into a 12-hour time (e.g., "02:30 PM").
+  const formatTime12Hour = (date) => {
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    const paddedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+    return `${hours}:${paddedMinutes} ${ampm}`;
+  };
+
+  // Helper: Format a date as "DD/MM/YYYY".
+  const formatDateDMY = (date) => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   const fetchNotifications = async () => {
     try {
       setLoading(true);
       const storedNotifications = await EncryptedStorage.getItem('notifications');
-      const parsedNotifications = storedNotifications
-        ? JSON.parse(storedNotifications)
-        : [];
-      // Reverse the parsedNotifications array
-      const reversedNotifications = parsedNotifications.reverse();
+      const parsedNotifications = storedNotifications ? JSON.parse(storedNotifications) : [];
+      
+      // Filter notifications:
+      // - Remove if receivedAt is missing.
+      // - Remove if title is empty or equals "No title" (case-insensitive).
+      const filtered = parsedNotifications.filter((item) => {
+        if (!item.receivedAt) return false;
+        if (!item.title || item.title.trim() === '' || item.title.trim().toLowerCase() === 'no title') return false;
+        return true;
+      });
+      
+      // Reverse notifications for newest-first display.
+      const reversedNotifications = filtered.reverse();
       setNotificationsArray(reversedNotifications);
       console.log('User notifications:', reversedNotifications);
     } catch (error) {
@@ -53,14 +108,14 @@ const UserNotifications = () => {
   }, []);
 
   const renderItem = ({ item }) => {
-    // Specify the format of receivedAt
-    const receivedAtFormat = 'DD/MM/YYYY, HH:mm:ss';
-    // Parse date using the specified format
-    const isToday = moment(item.receivedAt, receivedAtFormat).isSame(moment(), 'day');
-    const displayDate = isToday
-      ? 'Today'
-      : moment(item.receivedAt, receivedAtFormat).format('DD/MM/YYYY');
-    const displayTime = moment(item.receivedAt, receivedAtFormat).format('hh:mm A');
+    const dateObj = parseCustomDate(item.receivedAt);
+    // If the date fails to parse, skip rendering this item.
+    if (!dateObj) return null;
+
+    const now = new Date();
+    const isToday = isSameDay(dateObj, now);
+    const displayDate = isToday ? 'Today' : formatDateDMY(dateObj);
+    const displayTime = formatTime12Hour(dateObj);
 
     return (
       <View style={styles.notificationCardContainer}>
@@ -69,9 +124,7 @@ const UserNotifications = () => {
             <Icon name="notifications" size={24} color="#ff4500" />
           </View>
           <View style={styles.notificationContent}>
-            <Text style={styles.notificationTitle}>
-              {item.title || 'No Title'}
-            </Text>
+            <Text style={styles.notificationTitle}>{item.title}</Text>
             <View style={styles.timeContainer}>
               <Text style={styles.notificationDate}>{displayDate}</Text>
               <Text style={styles.notificationTime}>{displayTime}</Text>
@@ -87,10 +140,7 @@ const UserNotifications = () => {
     <View style={styles.notificationMainContainer}>
       {/* Header with Back Button */}
       <View style={styles.headerContainer}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <FontAwesome6 name="arrow-left-long" size={24} color={isDarkMode ? '#fff' : "#4a4a4a"} />
         </TouchableOpacity>
         <Text style={styles.header}>Notifications</Text>
@@ -113,9 +163,6 @@ const UserNotifications = () => {
   );
 };
 
-/**
- * A helper function that returns a StyleSheet based on screen width/height and dark mode.
- */
 function dynamicStyles(width, height, isDarkMode) {
   const isTablet = width >= 600;
   return StyleSheet.create({

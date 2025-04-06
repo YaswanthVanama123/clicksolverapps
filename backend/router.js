@@ -165,7 +165,11 @@ const {
   workerProfileUpdate,
   profileChangesSubmit,
   fetchOffers,
-  offerValidation
+  offerValidation,
+  translateText,
+  getRoute,
+  initiateCall,
+  getServiceBookingUserItemDetails
 } = require("./controller.js");
 
 const router = express.Router();
@@ -177,6 +181,8 @@ const { authAdminMiddleware } = require("./src/middlewares/authAdminMiddleware.j
 
 // Define the route for getting service details
 router.post("/single/service", getServiceByName);
+
+router.post("/route",getRoute)
 
 router.post('/worker/call', phoneCall);
 router.post('/user/call', UserPhoneCall);
@@ -265,6 +271,10 @@ router.post(
 );
 
 router.post("/service/booking/item/details", getServiceBookingItemDetails);
+
+router.post("/service/booking/user/item/details", getServiceBookingUserItemDetails);
+
+
 
 router.post("/service/ongoing/booking/item/details", getServiceOngoingItemDetails);
 
@@ -398,68 +408,69 @@ router.post(
 
 router.post("/worker/earnings", authenticateWorkerToken, getWorkerEarnings);
 
-router.post("/payment/details", async (req, res) => {
-  const { notification_id } = req.body;
-  console.log(notification_id);
-  // const { start_time, end_time } = await paymentDetails(notification_id);
-  // console.log(start_time);
-  // const { time_worked } = getTimeDifferenceInIST(start_time, end_time);
-  // const totalAmount = calculatePayment(time_worked);
+// router.post("/payment/details", async (req, res) => {
+//   const { notification_id } = req.body;
+//   // const { start_time, end_time } = await paymentDetails(notification_id);
+//   // console.log(start_time);
+//   // const { time_worked } = getTimeDifferenceInIST(start_time, end_time);
+//   // const totalAmount = calculatePayment(time_worked);
 
-  const workerDetails = await getWorkerDetails(notification_id);
-  console.log(workerDetails);
+//   const workerDetails = await getWorkerDetails(notification_id);
+//   console.log(workerDetails);
 
-  if (workerDetails.error) {
-    return res.status(404).json({ message: workerDetails.error });
-  }
+//   if (workerDetails.error) {
+//     return res.status(404).json({ message: workerDetails.error });
+//   }
 
-  const {
-    name,
-    area,
-    city,
-    pincode,
-    service_booked,
-    discount,
-    // gstAmount,
-    // cgstAmount,
-    // discountAmount,
-    // fetchedFinalTotalAmount,
-    profile,
-    total_cost
-  } = workerDetails; 
+//   const {
+//     name,
+//     area,
+//     city,
+//     pincode,
+//     service_booked,
+//     discount,
+//     // gstAmount,
+//     // cgstAmount,
+//     // discountAmount,
+//     // fetchedFinalTotalAmount,
+//     profile,
+//     total_cost
+//   } = workerDetails; 
 
-  res.json({
-    // start_time,
-    // end_time,
-    // time_worked,
-    // totalAmount,
-    // total_cost,
-    // service_booked,
-    // name,
-    // area,
-    // city,
-    // pincode,
-    // gstAmount,
-    // cgstAmount,
-    // discountAmount,
-    // fetchedFinalTotalAmount,
-    // profile,
+//   res.json({
+//     // start_time,
+//     // end_time,
+//     // time_worked,
+//     // totalAmount,
+//     // total_cost,
+//     // service_booked,
+//     // name,
+//     // area,
+//     // city,
+//     // pincode,
+//     // gstAmount,
+//     // cgstAmount,
+//     // discountAmount,
+//     // fetchedFinalTotalAmount,
+//     // profile,
 
-    name,
-    area,
-    city,
-    pincode,
-    service_booked,
-    discount,
-    // gstAmount,
-    // cgstAmount,
-    // discountAmount,
-    // fetchedFinalTotalAmount,
-    profile,
-    total_cost
+//     name,
+//     area,
+//     city,
+//     pincode,
+//     service_booked,
+//     discount,
+//     // gstAmount,
+//     // cgstAmount,
+//     // discountAmount,
+//     // fetchedFinalTotalAmount,
+//     profile,
+//     total_cost
 
-  });
-});
+//   });
+// });
+
+router.post("/payment/details",  getWorkerDetails);
 
 router.post('/userLogout', userLogout);
 
@@ -757,6 +768,8 @@ router.post("/worker/store-fcm-token", authenticateWorkerToken, storeFcmToken);
 
 router.post("/user/store-fcm-token", authenticateToken, storeUserFcmToken);
 
+router.post("/initiateCall",initiateCall);
+
 router.post(
   "/worker/store-notification",
   authenticateWorkerToken,
@@ -784,6 +797,9 @@ router.get(
   authenticateWorkerToken,
   getWorkerNotifications
 );
+
+router.post('/translate', translateText);
+
 
 router.get("/user/notifications", authenticateToken, getUserNotifications);
 

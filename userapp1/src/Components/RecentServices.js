@@ -250,7 +250,7 @@ const RecentServices = () => {
           <TextInput
             style={styles.searchInput}
             placeholder={t('search_services') || 'Search services...'}
-            placeholderTextColor="#999"
+            placeholderTextColor={isDarkMode ? '#fff' : '#4a4a4a'}
             value={searchText}
             onChangeText={setSearchText}
           />

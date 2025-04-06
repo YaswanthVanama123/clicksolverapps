@@ -32,10 +32,10 @@ import { changeAppLanguage } from '../i18n/languageChange';
 // 3. Import useTranslation hook from react-i18next
 import { useTranslation } from 'react-i18next';
 
-function ServiceApp({ navigation, route }) {
+function ServiceApp({ navigation, route }) { 
   const { width, height } = useWindowDimensions();
   const { isDarkMode } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const styles = dynamicStyles(width, height, isDarkMode);
 
   // State variables for backend data and feedback
@@ -96,11 +96,33 @@ function ServiceApp({ navigation, route }) {
     ],
     [isDarkMode, t],
   );
+
+
+    // NEW: Function to translate user name if target language is not English
+    const translateUserName = async (userName, targetLang) => {
+      if (targetLang.toLowerCase() === 'en') {
+        return userName;
+      }
+      try {
+        const response = await axios.post('https://backend.clicksolver.com/api/translate', {
+          text: userName,
+          fromLang: 'en',
+          toLang: targetLang  // send as "toLang" instead of "targetLang"
+        });
+        if (response.data && response.data.translatedText) {
+          return response.data.translatedText;
+        }
+      } catch (error) {
+        console.error('Translation error:', error);
+      }
+      return userName;
+    };
+    
     
 
-  useEffect(() => {
-    crashlytics().log('ServiceApp component mounted');
-  }, []);
+  // useEffect(() => {
+  //   crashlytics.log('ServiceApp component mounted');
+  // }, []);
 
   useEffect(() => {
     const { encodedId } = route.params || {};
@@ -126,7 +148,8 @@ function ServiceApp({ navigation, route }) {
     }, [])
   );
 
-  // Fetch tracking details from the backend
+  // Fetch tracking details from the backend 
+  // When fetching tracking details, send the user's name for translation if needed.
   const fetchTrackDetails = async () => {
     try {
       const cs_token = await EncryptedStorage.getItem('cs_token');
@@ -135,13 +158,18 @@ function ServiceApp({ navigation, route }) {
         const response = await axios.get(
           'https://backend.clicksolver.com/api/user/track/details',
           {
-            headers: { Authorization: `Bearer ${cs_token}` },
+            headers: { Authorization: `Bearer ${cs_token}` }, 
           }
-        );
+        ); 
         const track = response?.data?.track || [];
+        console.log(track)
         const { user, profile } = response.data;
         console.log("Track response:", response.data);
-        setName(user || response.data);
+        // Get the target language from your app settings (assuming i18n.language holds the code)
+        const targetLang = i18n.language || 'en';
+        // Translate the user's name if needed
+        const translatedName = await translateUserName(user || response.data, targetLang);
+        setName(translatedName);
         setProfile(profile);
         setMessageBoxDisplay(track.length > 0);
         setTrackScreen(track);
@@ -151,25 +179,26 @@ function ServiceApp({ navigation, route }) {
     }
   };
 
+
   // Fetch available service categories from the backend
   const fetchServices = async () => {
     try {
       setLoading(true);
-      crashlytics().log('Attempting to fetch services from API');
+      // log('Attempting to fetch services from API');
       const response = await axios.get(
         'https://backend.clicksolver.com/api/servicecategories'
       );
-      crashlytics().log('Services fetched successfully');
+      // log('Services fetched successfully');
       // const servicesWithIds = response.data.map(service => ({
       //   ...service,
       //   id: service.service_id,
       // }));
       setServices(response.data);
     } catch (error) {
-      crashlytics().recordError(error);
+      recordError(error);
       console.error('Detailed Error:', error.toJSON ? error.toJSON() : error);
     } finally {
-      setLoading(false);
+      setLoading(false); 
     }
   };
 
@@ -214,10 +243,10 @@ function ServiceApp({ navigation, route }) {
           <Text style={[styles.offerTitle, { color: '#ff4500' }]}>
             {offer.title}
           </Text>
-          <Text style={[styles.offerSubtitle, { color: isDarkMode ? '#ccc' : '#4a4a4a' }]}>
+          <Text style={[styles.offerSubtitle, { color: isDarkMode ? '#4a4a4a' : '#4a4a4a' }]}>
             {offer.subtitle}
           </Text>
-          <Text style={[styles.offerDescription, { color: isDarkMode ? '#ccc' : '#4a4a4a' }]}>
+          <Text style={[styles.offerDescription, { color: isDarkMode ? '#4a4a4a' : '#4a4a4a' }]}>
             {offer.description}
           </Text>
         </View>
@@ -403,50 +432,38 @@ function ServiceApp({ navigation, route }) {
                       {item.screen === 'Paymentscreen' ? (
                         <Foundation name="paypal" size={24} color="#ffffff" />
                       ) : item.screen === 'UserNavigation' ? (
-                        <MaterialCommunityIcons
-                          name="truck"
-                          size={24}
-                          color="#ffffff"
-                        />
+                        <MaterialCommunityIcons name="truck" size={24} color="#ffffff" />
                       ) : item.screen === 'userwaiting' ? (
                         <Feather name="search" size={24} color="#ffffff" />
                       ) : item.screen === 'OtpVerification' ? (
                         <Feather name="shield" size={24} color="#ffffff" />
                       ) : item.screen === 'worktimescreen' ? (
-                        <MaterialCommunityIcons
-                          name="hammer"
-                          size={24}
-                          color="#ffffff"
-                        /> 
+                        <MaterialCommunityIcons name="hammer" size={24} color="#ffffff" />
                       ) : (
                         <Feather name="alert-circle" size={24} color={isDarkMode ? "#fff" : "#000"} />
                       )}
                     </View>
 
                     <View style={{ marginLeft: 10 }}>
-                      <Text
-                        style={styles.serviceBookedText}
-                        numberOfLines={1}
-                        ellipsizeMode="tail">
+                      <Text style={styles.serviceBookedText} numberOfLines={1} ellipsizeMode="tail">
                         {item.serviceBooked && item.serviceBooked.length > 0
                           ? item.serviceBooked
                               .slice(0, 2)
-                              .map(service => service.serviceName)
-                              .join(', ') +
-                            (item.serviceBooked.length > 2 ? '...' : '')
-                          : 'Service Booked'}
+                              .map(service =>  t(`singleService_${service.main_service_id}`) || service.serviceName )
+                              .join(', ') + (item.serviceBooked.length > 2 ? '...' : '')
+                          : t('service_booked', 'Service Booked')}
                       </Text>
 
                       <Text style={styles.textContainerTextCommander}>
                         {item.screen === 'Paymentscreen'
-                          ? 'Payment in progress'
+                          ? t('payment_in_progress', 'Payment in progress')
                           : item.screen === 'UserNavigation'
-                          ? 'Commander is on the way'
+                          ? t('commander_on_the_way', 'Commander is on the way')
                           : item.screen === 'OtpVerification'
-                          ? 'User is waiting for your help'
+                          ? t('user_waiting_for_help', 'User is waiting for your help')
                           : item.screen === 'worktimescreen'
-                          ? 'Work in progress'
-                          : 'Nothing'}
+                          ? t('work_in_progress', 'Work in progress')
+                          : t('nothing', 'Nothing')}
                       </Text>
                     </View>
                   </View>
@@ -645,7 +662,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
       gap: 10,
       padding: 10,
       borderRadius: 10,
-      backgroundColor: isDarkMode ? '#333' : '#fff',
+      backgroundColor: isDarkMode ? '#121212' : '#fff',
       marginBottom: 10,
     },
     serviceImg: {
@@ -718,9 +735,15 @@ const dynamicStyles = (width, height, isDarkMode) => {
       marginLeft: 10,
       width: '80%',
     },
+    serviceBookedText: {
+      fontSize: isTablet ? 14 : 12,
+      color: isDarkMode ? '#fff' : '#9e9e9e',
+      fontFamily: 'RobotoSlab-Regular',
+      marginLeft: 10,
+    },
     textContainerTextCommander: {
       fontSize: isTablet ? 14 : 12,
-      color: isDarkMode ? '#ccc' : '#9e9e9e',
+      color: isDarkMode ? '#fff' : '#9e9e9e',
       fontFamily: 'RobotoSlab-Regular',
       marginLeft: 10,
     },

@@ -7,6 +7,7 @@ import axios from 'axios';
 import messaging from '@react-native-firebase/messaging';
 import PushNotification from 'react-native-push-notification';
 import EncryptedStorage from 'react-native-encrypted-storage';
+import { useTranslation } from 'react-i18next';
 import SplashScreen from 'react-native-splash-screen';
 import {
   checkMultiple,
@@ -37,7 +38,6 @@ import WaitingUser from './Components/UserWaiting';
 import Navigation from './Components/Navigation';
 import ServiceInProgress from './Components/ServiceInProgress';
 import Payment from './Components/Paymentscreen';
-import Rating from './Components/RatingScreen';
 import ServiceApp from './screens/SecondPage';
 import PaintingServices from './screens/Indiv';
 import SearchItem from './Components/SearchItem';
@@ -58,7 +58,6 @@ import ReferralScreen from './Components/ReferralScreen';
 import OnboardingScreen from './Components/OnboardingScreen';
 import OrderScreen from './Components/OrderScreen';
 import Myrefferals from './Components/Myrefferals';
-import Help from './Components/Help';
 import VerificationScreen from './Components/VerificationScreen';
 import PaymentScreenRazor from './Components/PaymentScreenRazor';
 import AboutCS from './Components/AboutCS';
@@ -82,6 +81,7 @@ const Tab = createBottomTabNavigator();
  */
 function TabNavigator() {
   const { isDarkMode } = useTheme();
+    const { t } = useTranslation();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -120,12 +120,12 @@ function TabNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Home" component={ServiceApp} options={{ headerShown: false }} />
-      <Tab.Screen name="Bookings" component={RecentServices} options={{ headerShown: false }} />
-      <Tab.Screen name="Tracking" component={ServiceTrackingListScreen} options={{ headerShown: false }} />
-      <Tab.Screen name="Account" component={ProfileScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Home" component={ServiceApp} options={{ headerShown: false, tabBarLabel: t('tab_home', 'Home'), }} />
+      <Tab.Screen name="Bookings" component={RecentServices} options={{ headerShown: false,  tabBarLabel: t('tab_bookings', 'Bookings'), }} />
+      <Tab.Screen name="Tracking" component={ServiceTrackingListScreen} options={{ headerShown: false, tabBarLabel: t('tab_tracking', 'Tracking'), }} />
+      <Tab.Screen name="Account" component={ProfileScreen} options={{ headerShown: false, tabBarLabel: t('tab_account', 'Account'), }} />
     </Tab.Navigator>
-  );
+  ); 
 }
 
 /**
@@ -211,12 +211,18 @@ function App() {
       const cs_token = await EncryptedStorage.getItem('cs_token');
       console.log('Stored FCM token:', fcm);
       if (!fcm && cs_token) {
-        await EncryptedStorage.setItem('fcm_token', token);
-        await axios.post(
+        
+        const response = await axios.post(
           'https://backend.clicksolver.com/api/user/store-fcm-token',
           { fcmToken: token },
           { headers: { Authorization: `Bearer ${cs_token}` } }
         );
+        if(response.status === 200){
+          await EncryptedStorage.setItem('fcm_token', token);
+        }
+        
+      } else{
+        console.log('already Stored FCM token:', fcm);
       }
     } catch (error) {
       console.error('Error storing FCM token in the backend:', error);
@@ -470,7 +476,7 @@ function App() {
 
         <Stack.Navigator initialRouteName={initialRoute}>
           <Stack.Screen name="Tabs" component={TabNavigator} options={{ headerShown: false }} />
-          <Stack.Screen name="LanguageSelector" component={LanguageSelector} options={{ title: 'Select Language' }} />
+          <Stack.Screen name="LanguageSelector" component={LanguageSelector} options={{  headerShown: false }} />
           <Stack.Screen name="OnboardingScreen" component={OnboardingScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
           <Stack.Screen name="VerificationScreen" component={VerificationScreen} options={{ headerShown: false }} />
@@ -484,7 +490,6 @@ function App() {
           <Stack.Screen name="UserNavigation" component={Navigation} options={{ headerShown: false }} />
           <Stack.Screen name="worktimescreen" component={ServiceInProgress} options={{ headerShown: false }} />
           <Stack.Screen name="Paymentscreen" component={Payment} options={{ headerShown: false }} />
-          <Stack.Screen name="Rating" component={Rating} options={{ headerShown: false }} />
           <Stack.Screen name="ServiceBooking" component={SingleService} options={{ headerShown: false }} />
           <Stack.Screen name="RecentServices" component={RecentServices} options={{ headerShown: false }} />
           <Stack.Screen name="serviceCategory" component={PaintingServices} options={{ headerShown: false }} />

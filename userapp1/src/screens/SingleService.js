@@ -394,7 +394,7 @@ const SingleService = () => {
                 style={styles.loginProceedButton}
                 onPress={() => {
                   setLoginModalVisible(false);
-                  navigation.push('Login');
+                  navigation.push('Login', { serviceName, id });
                 }}>
                 <Text style={styles.loginProceedText}>{t('login') || 'Login'}</Text>
               </TouchableOpacity>
@@ -460,7 +460,7 @@ const dynamicStyles = (width, isDarkMode) => {
       resizeMode: 'cover',
     },
     serviceHeader: {
-      backgroundColor: isDarkMode ? '#333' : '#fff',
+      backgroundColor: isDarkMode ? '#121212' : '#fff',
     },
     serviceDetails: {
       padding: isTablet ? 25 : 20,

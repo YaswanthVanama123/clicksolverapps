@@ -27,8 +27,8 @@ android {
         applicationId "com.userapp1"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 100
-        versionName "1.60"
+        versionCode 112
+        versionName "1.72"
         manifestPlaceholders = [
         CodePushDeploymentKey: "9osws50ZWw1_SwJJi-EynN9Xpz0mJlO43mKHPQ" // Replace with your Production key
     ]
@@ -58,6 +58,14 @@ android {
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+        freeCompilerArgs += ["-Xskip-metadata-version-check"]
     }
 }
 

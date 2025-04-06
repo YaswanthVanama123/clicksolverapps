@@ -700,7 +700,7 @@ const UserLocation = () => {
 
       <View style={styles.crosshairsContainer}>
         <TouchableOpacity onPress={handleCrosshairsPress}>
-          <FontAwesome6 name="location-crosshairs" size={24} color="#000" />
+          <FontAwesome6 name="location-crosshairs" size={24} color={isDarkMode ? "#f7f7f7" : "gray"} />
         </TouchableOpacity>
       </View>
     </SafeAreaView>

@@ -301,6 +301,17 @@
   "contacts_permission_title": "Contacts Access Permission",
   "contacts_permission_message": "We need access to your contacts to let you invite friends.",
   "whatsapp_not_installed": "WhatsApp is not installed or not supported on this device.",
+  "payment_in_progress": "Payment in progress",
+  "commander_on_the_way": "Commander is on the way",
+  "user_waiting_for_help": "User is waiting for your help",
+  "work_in_progress": "Work in progress",
+  "nothing": "Nothing",
+  "tab_home": "Home",
+  "tab_bookings": "Bookings",
+  "tab_tracking": "Tracking",
+  "tab_account": "Account",
+    "recents": "Recents",
+  "trendingSearches": "Trending Searches",
 
 
 

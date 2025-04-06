@@ -124,7 +124,17 @@
   "pincode_required": "पिनकोड आवश्यक है।",
   "phone_required": "फ़ोन नंबर आवश्यक है।",
   "name_required": "नाम आवश्यक है।",
-
+  "payment_in_progress": "भुगतान प्रगति पर है",
+  "commander_on_the_way": "कमान्डर रास्ते में है",
+  "user_waiting_for_help": "उपयोगकर्ता आपकी सहायता का इंतजार कर रहा है",
+  "work_in_progress": "काम चल रहा है",
+  "nothing": "कुछ नहीं",
+  "tab_home": "होम",
+  "tab_bookings": "बुकिंग्स",
+  "tab_tracking": "ट्रैकिंग",
+  "tab_account": "खाता",
+    "recents": "हाल के",
+  "trendingSearches": "ट्रेंडिंग खोजें",
 
 
 

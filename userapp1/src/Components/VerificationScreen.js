@@ -20,7 +20,8 @@ import { useTheme } from '../context/ThemeContext';
 const VerificationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { phoneNumber, verificationId } = route.params;
+  // Extract phoneNumber, verificationId and optional serviceName, id from route params
+  const { phoneNumber, verificationId, serviceName, id } = route.params;
   const { width, height } = useWindowDimensions();
   const { isDarkMode } = useTheme();
   const styles = dynamicStyles(width, height, isDarkMode);
@@ -64,21 +65,48 @@ const VerificationScreen = () => {
         }
       );
       if (validateResponse.data.message === 'OTP Verified') {
+        console.log("OTP verified");
         const loginResponse = await axios.post(
           'https://backend.clicksolver.com/api/user/login',
           { phone_number: phoneNumber }
         );
+        console.log("Login response status:", loginResponse.status);
         if (loginResponse.status === 200) {
           const { token } = loginResponse.data;
           await EncryptedStorage.setItem('cs_token', token);
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-            })
-          );
+          // If optional serviceName and id are provided, navigate to SingleService; otherwise, to Home
+          if (serviceName && id) {
+
+
+                      navigation.dispatch(
+                        CommonActions.reset({
+                          index: 0,
+                          routes: [
+                            {name: 'ServiceBooking', params: {serviceName,id}},
+                          ],
+                        }),
+                      );
+          } else {
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [
+                  {
+                    name: 'Tabs',
+                    state: {
+                      routes: [{ name: 'Home' }],
+                    },
+                  },
+                ],
+              })
+            );
+          }
         } else if (loginResponse.status === 205) {
-          navigation.navigate('SignupDetails', { phone_number: phoneNumber });
+          // When navigating to SignUpScreen, also send optional serviceName and id if available
+          navigation.navigate('SignUpScreen', {
+            phone_number: phoneNumber,
+            ...(serviceName && id ? { serviceName, id } : {}),
+          });
         }
       } else {
         alert('Invalid OTP, please try again.');
@@ -171,7 +199,7 @@ const VerificationScreen = () => {
               <Entypo name="facebook" size={15} color={isDarkMode ? '#fff' : "#9e9e9e"} />
               <Entypo name="instagram" size={15} color={isDarkMode ? '#fff' : "#9e9e9e"} />
             </View>
-            <Text style={styles.email}>Clicksolver@yahoo.com</Text>
+            <Text style={styles.email}>customer.support@clicksolver.com</Text>
           </View>
         </View>
       </View>

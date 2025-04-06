@@ -14,13 +14,26 @@ const {
 } = require("./src/utils/generateToken.js");
 const { response } = require("express");
 const request = require("request");
-const { off } = require("process");
+const { off, constrainedMemory } = require("process");
+const { v4: uuidv4 } = require('uuid');
 
 // Telesign API credentials
 const customerId = "1D0C4D6D-48D8-40A2-BD9D-CE2160F6B3E9";
 const apiKey =
   "BQXK2DGbESmYMvO0JC2sNAd9AtOTh48AwaPZIWL7bd8o8mB63TjwAJ/BhNxO3/YD6pjjZFQR5j6Ke1wEA1TCew==";
 const smsEndpoint = `https://rest-api.telesign.com/v1/messaging`;
+
+
+// translatorController.js
+// const subscriptionKey = process.env.AZURE_TRANSLATOR_SUBSCRIPTION_KEY;
+// const region = process.env.AZURE_TRANSLATOR_REGION;
+// const endpoint = process.env.AZURE_TRANSLATOR_ENDPOINT;
+// const apiVersion = process.env.AZURE_TRANSLATOR_API_VERSION || '3.0';
+
+const subscriptionKey = '1rFYPImsvNSHdC4MqvEUBYCUdJNaiCOAObvtk2N6fGhJ3BtIItNxJQQJ99BCACGhslBXJ3w3AAAbACOGxFd0';
+const region = 'centralindia';
+const endpoint = 'https://api.cognitive.microsofttranslator.com';
+const apiVersion =  '3.0';
 
 
 // Initialize Razorpay
@@ -103,6 +116,64 @@ const createOrder = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+
+const getRoute = async (req, res) => {
+  try {
+    // Expect payload:
+    // { startPoint: [lng, lat], endPoint: [lng, lat] }
+    const { startPoint, endPoint } = req.body;
+    console.log('Request body:', req.body);
+
+    if (
+      !startPoint ||
+      !endPoint ||
+      !Array.isArray(startPoint) ||
+      !Array.isArray(endPoint) ||
+      startPoint.length !== 2 ||
+      endPoint.length !== 2
+    ) {
+      return res.status(400).json({
+        error:
+          'Missing or invalid parameters: startPoint and endPoint are required as arrays [lng, lat].',
+      });
+    }
+
+    // Destructure values from the arrays.
+    const [startLng, startLat] = startPoint;
+    const [endLng, endLat] = endPoint;
+
+    // Ola Maps API key
+    const apiKey = process.env.OLA_API_KEY || 'q0k6sOfYNxdt3bGvqF6W1yvANHeVtrsu9T5KW9a4';
+    if (!apiKey) {
+      return res.status(500).json({ error: 'API key not configured on server' });
+    }
+
+    // Format URL for Ola Maps Directions API.
+    // Note that the API expects origin/destination as lat,lng pairs.
+    const url = `https://api.olamaps.io/routing/v1/directions?origin=${startLat},${startLng}&destination=${endLat},${endLng}&api_key=${apiKey}`;
+
+    // Use POST method and include required headers:
+    const response = await axios.post(url, null, {
+      headers: {
+        'X-Request-Id': `req-${Date.now()}`,
+        'Origin': 'https://clicksolver.com' // Replace with your actual domain
+      },
+    });
+
+    res.status(200).json(response.data);
+  } catch (error) {
+    console.error(
+      'Error fetching route:',
+      error.response ? error.response.data : error.message
+    );
+    res.status(500).json({ error: error.toString() });
+  }
+};
+
+
+
+
 
 
 // const verifyPayment = async (req, res) => {
@@ -210,6 +281,137 @@ const createOrder = async (req, res) => {
 //   }
 // };
 
+
+
+// real
+// const verifyPayment = async (req, res) => {
+//   try {
+//     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+//     const worker_id = req.worker.id; // from authenticateWorkerToken
+//     console.log("worker_id", worker_id);
+
+//     // Generate expected signature using HMAC with SHA256
+//     const expectedSignature = crypto
+//       .createHmac('sha256', process.env.RAZORPAY_SECRET)
+//       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+//       .digest('hex');
+
+//     const paymentStatus = expectedSignature === razorpay_signature ? 'success' : 'failed';
+//     console.log("status", paymentStatus);
+//     const payment_method = req.body.method || 'unknown';
+//     const error_message = paymentStatus === 'failed' ? 'Invalid payment signature' : null;
+
+//     // Begin transaction
+//     await client.query('BEGIN');
+
+//     // 1) Update orders + Insert into payments (using chained CTEs)
+//     const cteQuery = `
+//       WITH updated_order AS (
+//         UPDATE orders
+//         SET status = $3::text,
+//             updated_at = NOW()
+//         WHERE order_id = $1::text
+//           AND worker_id = $2::int
+//         RETURNING amount
+//       ),
+//       insert_payment AS (
+//         INSERT INTO payments (
+//           worker_id,
+//           order_id,
+//           payment_id,
+//           amount_paid,
+//           status,
+//           payment_method,
+//           transaction_date,
+//           error_message
+//         )
+//         VALUES (
+//           $2::int,
+//           $1::text,
+//           $4,
+//           (SELECT amount FROM updated_order),
+//           $3::text,
+//           $5::text,
+//           NOW(),
+//           $6::text
+//         )
+//         RETURNING *
+//       )
+//       SELECT * FROM insert_payment;
+//     `;
+//     const result = await client.query(cteQuery, [
+//       razorpay_order_id,
+//       worker_id,
+//       paymentStatus,
+//       razorpay_payment_id,
+//       payment_method,
+//       error_message,
+//     ]);
+
+//     // 2) Update workerlife: compute new balance + append to balance_payment_history
+//     //    ALSO set no_due = TRUE if payment is "success"
+//     const updateCombinedQuery = `
+//       WITH order_amt AS (
+//         SELECT amount::numeric AS amt
+//         FROM orders
+//         WHERE order_id = $1::text
+//       ),
+//       current_balance AS (
+//         SELECT COALESCE(balance_amount, 0) AS curr_balance
+//         FROM workerlife
+//         WHERE worker_id = $2::int
+//       ),
+//       new_balance AS (
+//         SELECT curr_balance + order_amt.amt AS computed_balance
+//         FROM current_balance, order_amt
+//       ),
+//       update_workerlife AS (
+//         UPDATE workerlife
+//         SET balance_amount = new_balance.computed_balance,
+//             balance_payment_history = COALESCE(balance_payment_history, '[]'::jsonb) ||
+//               jsonb_build_array(
+//                 jsonb_build_object(
+//                   'order_id', $1::text,
+//                   'amount', (SELECT amt FROM order_amt),
+//                   'time', TO_CHAR(NOW(), 'YYYY-MM-DD HH24:MI:SS'),
+//                   'status', $3::text,
+//                   'paid', 'Paid to Click Solver'
+//                 )
+//               )
+//         FROM new_balance
+//         WHERE workerlife.worker_id = $2::int
+//         RETURNING workerlife.*
+//       ),
+//       update_workersverified AS (
+//         UPDATE workersverified
+//         SET no_due = CASE WHEN $3::text = 'success' THEN true ELSE no_due END
+//         WHERE worker_id = $2::int
+//         RETURNING *
+//       )
+//       SELECT * FROM update_workersverified;
+//     `;
+//     await client.query(updateCombinedQuery, [
+//       razorpay_order_id,
+//       worker_id,
+//       paymentStatus,
+//     ]);
+
+//     // Commit the transaction
+//     await client.query('COMMIT');
+
+//     res.status(200).json({
+//       success: true,
+//       message: 'Payment verified successfully!',
+//       data: result.rows,
+//     });
+//   } catch (error) {
+//     await client.query('ROLLBACK');
+//     console.error('Error in verifyPayment:', error.message);
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+
 const verifyPayment = async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
@@ -230,7 +432,7 @@ const verifyPayment = async (req, res) => {
     // Begin transaction
     await client.query('BEGIN');
 
-    // 1) Update orders + Insert into payments (using chained CTEs)
+    // 1) Update orders and insert payment (using chained CTEs)
     const cteQuery = `
       WITH updated_order AS (
         UPDATE orders
@@ -261,11 +463,11 @@ const verifyPayment = async (req, res) => {
           NOW(),
           $6::text
         )
-        RETURNING *
+        RETURNING order_id, payment_id, amount_paid, status
       )
-      SELECT * FROM insert_payment;
+      SELECT order_id, payment_id, amount_paid, status FROM insert_payment;
     `;
-    const result = await client.query(cteQuery, [
+    const paymentResult = await client.query(cteQuery, [
       razorpay_order_id,
       worker_id,
       paymentStatus,
@@ -274,8 +476,7 @@ const verifyPayment = async (req, res) => {
       error_message,
     ]);
 
-    // 2) Update workerlife: compute new balance + append to balance_payment_history
-    //    ALSO set no_due = TRUE if payment is "success"
+    // 2) Update workerlife and workersverified with minimal data returned
     const updateCombinedQuery = `
       WITH order_amt AS (
         SELECT amount::numeric AS amt
@@ -306,15 +507,13 @@ const verifyPayment = async (req, res) => {
               )
         FROM new_balance
         WHERE workerlife.worker_id = $2::int
-        RETURNING workerlife.*
       ),
       update_workersverified AS (
         UPDATE workersverified
         SET no_due = CASE WHEN $3::text = 'success' THEN true ELSE no_due END
         WHERE worker_id = $2::int
-        RETURNING *
       )
-      SELECT * FROM update_workersverified;
+      SELECT 1;
     `;
     await client.query(updateCombinedQuery, [
       razorpay_order_id,
@@ -328,7 +527,7 @@ const verifyPayment = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Payment verified successfully!',
-      data: result.rows,
+      data: paymentResult.rows,
     });
   } catch (error) {
     await client.query('ROLLBACK');
@@ -336,6 +535,7 @@ const verifyPayment = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 
 const workerTrackingCall = async (req, res) => {
@@ -836,7 +1036,7 @@ const workerLogout = async (req, res) => {
 const userLogout = async (req, res) => {
   try {
       const { fcm_token } = req.body;
-      console.log("fcm",fcm_token)
+
       if (!fcm_token) {
           return res.status(400).json({ success: false, message: 'FCM token is required' });
       }
@@ -1061,7 +1261,7 @@ const worker = () =>{
 
 const accountDelete = async (req, res) => {
   const workerId = req.user.id;
-  console.log("woek",workerId)
+  console.log("worker", workerId);
   try {
     const query = `
       WITH track_data AS (
@@ -1078,7 +1278,7 @@ const accountDelete = async (req, res) => {
         SET phone_number = NULL
         WHERE user_id = $1
           AND (SELECT track_length FROM track_data) = 0
-        RETURNING *
+        RETURNING 1
       )
       SELECT json_build_object(
         'status', CASE WHEN EXISTS(SELECT 1 FROM update_query) THEN 200 ELSE 205 END,
@@ -1097,6 +1297,7 @@ const accountDelete = async (req, res) => {
     return res.status(500).json({ message: 'Internal Server Error.' });
   }
 };
+
 
 
 
@@ -1917,7 +2118,6 @@ const getServiceTrackingWorkerItemDetails = async (req, res) => {
 const getServiceTrackingUserItemDetails = async (req, res) => {
   try {
     const { tracking_id } = req.body;
-    console.log(tracking_id)
     // console.log(tracking_id)
     const query = `
       SELECT
@@ -2070,10 +2270,55 @@ const getServiceBookingItemDetails = async (req, res) => {
   }
 };
 
-const getServiceOngoingItemDetails = async (req, res) => {
+
+const getServiceBookingUserItemDetails = async (req, res) => {
   try {
     const { tracking_id } = req.body;
     console.log(tracking_id);
+    // console.log(tracking_id)
+    const query = `
+    SELECT
+      st.service_booked,
+      st.total_cost,
+      st.discount,
+      st.time,
+      st.created_at,
+      w.name,
+      w.phone_number,
+      un.area,
+      w.profile,
+    FROM completenotifications st
+    JOIN "user" w ON st.user_id = w.user_id
+    JOIN usernotifications un ON st.user_notification_id = un.user_notification_id
+    WHERE st.notification_id = $1;
+  `;
+
+    const values = [tracking_id];
+
+    const result = await client.query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        message: "No service tracking details found for the given accepted ID",
+      });
+    }
+
+    res.status(200).json({ data: result.rows[0] });
+  } catch (error) {
+    console.error(
+      "Error fetching service tracking worker item details: ",
+      error
+    );
+    res.status(500).json({
+      message: "Failed to fetch service tracking worker item details",
+      error: error.message,
+    });
+  }
+};
+
+const getServiceOngoingItemDetails = async (req, res) => {
+  try {
+    const { tracking_id } = req.body;
     // console.log(tracking_id)
     const query = `
     SELECT
@@ -2165,24 +2410,24 @@ const serviceTrackingUpdateStatus = async (req, res) => {
   const { tracking_id, newStatus } = req.body;
 
   try {
-    // Check if required fields are provided
+    // Validate required fields.
     if (!tracking_id || !newStatus) {
       return res.status(400).json({ message: "tracking_id and newStatus are required." });
     }
 
-    // Update servicetracking and join with userfcm to get fcm_token(s)
+    // Update the servicetracking table and return only necessary columns.
     const query = `
       WITH updated AS (
         UPDATE servicetracking 
         SET service_status = $1 
         WHERE tracking_id = $2
-        RETURNING *
+        RETURNING tracking_id, service_status, user_id
       )
-      SELECT updated.*, uf.fcm_token
+      SELECT updated.tracking_id, updated.service_status, uf.fcm_token
       FROM updated
       JOIN userfcm uf ON updated.user_id = uf.user_id;
     `;
-
+    
     const values = [newStatus, tracking_id];
     const { rows } = await client.query(query, values);
 
@@ -2190,52 +2435,29 @@ const serviceTrackingUpdateStatus = async (req, res) => {
       return res.status(404).json({ message: "Service tracking not found." });
     }
 
-    // Extract FCM tokens from the returned rows
+    // Extract FCM tokens from the returned rows.
     const tokens = rows.map(row => row.fcm_token);
 
-    // Prepare the multicast message payload with data payload
+    // Prepare the multicast message payload.
     const multicastMessage = {
-      tokens: tokens,
+      tokens,
       data: {
         status: newStatus.toString(),
         message: "Service status updated."
       },
-      // android: {
-      //   priority: "high", // Ensures immediate delivery
-      //   notification: {
-      //     channelId: "silent_channel", // Use your silent notification channel
-      //     priority: "min", // Minimizes notification prominence
-      //     visibility: "secret" // Hides it from the status bar
-      //   }
-      // },
-      // apns: {
-      //   payload: {
-      //     aps: {
-      //       contentAvailable: true, // Silent notification on iOS
-      //       sound: "" // No sound
-      //     }
-      //   }
-      // }
       android: {
-        priority: "high",
-        // notification: {
-        //   channelId: "silent_channel",  // Use a channel created for silent notifications
-        //   priority: "min",              // Minimizes the notification prominence
-        //   visibility: "secret"          // Hides it from the status bar
-        // }
+        priority: "high"
       },
       apns: {
         payload: {
           aps: {
-            contentAvailable: true // Ensures the app processes the notification silently
-            // Remove the sound property to avoid errors for silent notifications.
+            contentAvailable: true
           }
         }
       }
     };
-    
 
-    // Send notifications using sendEachForMulticast
+    // Send notifications using sendEachForMulticast.
     try {
       const fcmResponse = await getMessaging().sendEachForMulticast(multicastMessage);
       fcmResponse.responses.forEach((resp, index) => {
@@ -2259,87 +2481,127 @@ const serviceTrackingUpdateStatus = async (req, res) => {
   }
 };
 
-const getWorkerDetails = async (notificationId) => {
+
+// const getWorkerDetails = async (notificationId) => {
+//   try {
+//     const query = `
+//     SELECT 
+//         accepted.service_booked, 
+//         accepted.discount,
+//         accepted.total_cost,
+//         workersverified.name, 
+//         usernotifications.area, 
+//         usernotifications.city, 
+//         usernotifications.pincode,
+//         workerskills.profile -- Assuming 'skill_name' is a column in 'workskills' for skill description
+//     FROM 
+//         accepted
+//     INNER JOIN 
+//         workersverified ON accepted.worker_id = workersverified.worker_id
+//     INNER JOIN 
+//         usernotifications ON accepted.user_notification_id = usernotifications.user_notification_id
+//     INNER JOIN 
+//         workerskills ON accepted.worker_id = workerskills.worker_id -- Join workerskills table on worker_id
+//     WHERE 
+//         accepted.notification_id = $1;
+// `;
+
+//     const result = await client.query(query, [notificationId]);
+
+//     if (result.rows.length === 0) {
+//       return {
+//         error: "No worker details found for the provided notification ID.",
+//       };
+//     }
+
+//     const {
+//       service_booked,
+//       name,
+//       area,
+//       city,
+//       pincode,
+//       profile,
+//       discount,
+//       total_cost,
+//     } = result.rows[0];
+//     // let gstAmount = 0;
+//     // let cgstAmount = 0;
+//     // let discountAmount = 0;
+
+//     // const calculatePayment = (baseAmount) => {
+//     //   const gst = (baseAmount * 5) / 100;
+//     //   const cgst = (baseAmount * 5) / 100;
+//     //   const discount = (baseAmount * 5) / 100;
+//     //   const finalAmount = baseAmount + gst + cgst - discount;
+//     //   gstAmount = gst;
+//     //   cgstAmount = cgst;
+//     //   discountAmount = discount;
+//     //   return finalAmount;
+//     // };
+
+//     // const fetchedTotalAmount = service_booked.reduce((total, service) => {
+//     //   return total + (service.cost || 0);
+//     // }, 0);
+
+//     // const fetchedFinalTotalAmount = calculatePayment(fetchedTotalAmount);
+//     return {
+//       service_booked,
+//       name,
+//       area,
+//       profile,
+//       city,
+//       pincode,
+//       discount,
+//       total_cost,
+//       // gstAmount,
+//       // cgstAmount,
+//       // discountAmount,
+//       // fetchedFinalTotalAmount,
+//     };
+//   } catch (error) {
+//     console.error("Error fetching worker details:", error);
+//     return { error: "An error occurred while fetching worker details." };
+//   }
+// };
+
+const getWorkerDetails = async (req, res) => {
+  const { notification_id } = req.body;
   try {
     const query = `
-    SELECT 
-        accepted.service_booked, 
-        accepted.discount,
-        accepted.total_cost,
-        workersverified.name, 
-        usernotifications.area, 
-        usernotifications.city, 
-        usernotifications.pincode,
-        workerskills.profile -- Assuming 'skill_name' is a column in 'workskills' for skill description
-    FROM 
-        accepted
-    INNER JOIN 
-        workersverified ON accepted.worker_id = workersverified.worker_id
-    INNER JOIN 
-        usernotifications ON accepted.user_notification_id = usernotifications.user_notification_id
-    INNER JOIN 
-        workerskills ON accepted.worker_id = workerskills.worker_id -- Join workerskills table on worker_id
-    WHERE 
-        accepted.notification_id = $1;
-`;
+      SELECT 
+          accepted.service_booked, 
+          accepted.discount,
+          accepted.total_cost,
+          workersverified.name, 
+          usernotifications.area, 
+          usernotifications.city, 
+          usernotifications.pincode,
+          workerskills.profile -- Assuming 'profile' is the correct column name in 'workerskills'
+      FROM 
+          accepted
+      INNER JOIN 
+          workersverified ON accepted.worker_id = workersverified.worker_id
+      INNER JOIN 
+          usernotifications ON accepted.user_notification_id = usernotifications.user_notification_id
+      INNER JOIN 
+          workerskills ON accepted.worker_id = workerskills.worker_id
+      WHERE 
+          accepted.notification_id = $1;
+    `;
 
-    const result = await client.query(query, [notificationId]);
+    const result = await client.query(query, [notification_id]);
 
     if (result.rows.length === 0) {
-      return {
-        error: "No worker details found for the provided notification ID.",
-      };
+      return res.json({ error: "No worker details found for the provided notification ID." });
     }
 
-    const {
-      service_booked,
-      name,
-      area,
-      city,
-      pincode,
-      profile,
-      discount,
-      total_cost,
-    } = result.rows[0];
-    // let gstAmount = 0;
-    // let cgstAmount = 0;
-    // let discountAmount = 0;
-
-    // const calculatePayment = (baseAmount) => {
-    //   const gst = (baseAmount * 5) / 100;
-    //   const cgst = (baseAmount * 5) / 100;
-    //   const discount = (baseAmount * 5) / 100;
-    //   const finalAmount = baseAmount + gst + cgst - discount;
-    //   gstAmount = gst;
-    //   cgstAmount = cgst;
-    //   discountAmount = discount;
-    //   return finalAmount;
-    // };
-
-    // const fetchedTotalAmount = service_booked.reduce((total, service) => {
-    //   return total + (service.cost || 0);
-    // }, 0);
-
-    // const fetchedFinalTotalAmount = calculatePayment(fetchedTotalAmount);
-    return {
-      service_booked,
-      name,
-      area,
-      profile,
-      city,
-      pincode,
-      discount,
-      total_cost,
-      // gstAmount,
-      // cgstAmount,
-      // discountAmount,
-      // fetchedFinalTotalAmount,
-    };
+    return res.json(result.rows[0]);
   } catch (error) {
     console.error("Error fetching worker details:", error);
-    return { error: "An error occurred while fetching worker details." };
+    return res.json({ error: "An error occurred while fetching worker details." });
   }
 };
+
 
 const userProfileDetails = async (req, res) => {
   const userId = req.user.id;
@@ -4570,7 +4832,6 @@ const workerApprove = async (req, res) => {
 
 const sendMessageWorker = async (req, res) => {
   const { request_id, senderType, message } = req.body;
-  console.log("Received request:", req.body);
 
   try {
     // Prepare the new message object as a JSON string wrapped in an array
@@ -4741,7 +5002,7 @@ const sendMessageUser = async (req, res) => {
 
 const workerGetMessage = async (req, res) => {
   const { request_id } = req.query;
-  console.log("Received query:", req.query);
+
 
   try {
     const query = `
@@ -4845,7 +5106,6 @@ const workerCashbackPayed = async (req, res) => {
 
 const getServiceByName = async (req, res) => {
   const { serviceName } = req.body; // Get the service name from the request body
-  console.log(serviceName);
   if (!serviceName) {
     return res.status(400).json({ error: "Service name is required" });
   }
@@ -5141,13 +5401,13 @@ const getServices = async () => {
 };
 
 const getIndividualServices = async (req, res) => {
-  // Extract serviceTitle from the body of the POST request
+  // Extract serviceObject from the body of the POST request
   const { serviceObject } = req.body;
 
   try {
-    // Query to select rows from "services" table where "service_title" matches the provided value
+    // Query to select specific columns from "services" table where "service_title" matches the provided value
     const result = await client.query(
-      'SELECT * FROM "services" WHERE "service_title" = $1',
+      'SELECT service_id, service_name, service_urls FROM "services" WHERE "service_title" = $1',
       [serviceObject]
     );
 
@@ -5158,6 +5418,7 @@ const getIndividualServices = async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 };
+
 
 const getUserBookings = async (req, res) => {
   const userId = req.user.id;
@@ -5349,7 +5610,6 @@ const getUserAllBookings = async (req, res) => {
 };
 
 const getUserOngoingBookings = async (req, res) => {
-  console.log("called id")
   const userId = req.user.id;
 
   try {
@@ -5398,7 +5658,7 @@ const getUserById = async (req, res) => {
   const id = req.user.id;
   try {
     const result = await client.query(
-      'SELECT * FROM "user" WHERE user_id = $1',
+      'SELECT phone_number,name FROM "user" WHERE user_id = $1',
       [id]
     );
     res.json(result.rows[0]);
@@ -5978,16 +6238,19 @@ const getWorkerTrackRoute = async (req, res) => {
   try {
     // Query to select route and parameters based on user_id
     const query = `
-        SELECT screen_name, params
-        FROM workeraction 
-        WHERE worker_id = $1
-    `;
+    SELECT wv.name, wa.screen_name, wa.params
+    FROM workeraction wa
+    JOIN workersverified wv ON wa.worker_id = wv.worker_id
+    WHERE wa.worker_id = $1
+  `;
+  
     const result = await client.query(query, [id]);
 
     if (result.rows.length > 0) {
       const route = result.rows[0].screen_name;
       const parameter = result.rows[0].params;
-      res.status(200).json({ route, parameter });
+      const name = result.rows[0].name
+      res.status(200).json({ route, parameter, name });
     } else {
       res
         .status(200)
@@ -5999,9 +6262,50 @@ const getWorkerTrackRoute = async (req, res) => {
   }
 };
 
+
+const translateText = async (req, res) => {
+  const { text, fromLang, toLang } = req.body;
+
+  console.log(req.body);
+
+  if (!text || !fromLang || !toLang) {
+    return res
+      .status(400)
+      .json({ error: 'Missing required fields: text, fromLang, toLang' });
+  }
+
+  try {
+    // Construct the API URL with query parameters
+    const url = `${endpoint}/translate?api-version=${apiVersion}&from=${fromLang}&to=${toLang}`;
+
+    // Set up headers for authentication and content type
+    const headers = {
+      'Ocp-Apim-Subscription-Key': subscriptionKey,
+      'Ocp-Apim-Subscription-Region': region,
+      'Content-Type': 'application/json',
+      'X-ClientTraceId': uuidv4().toString(),
+    };
+
+    // Request body must be an array of objects with a "Text" property
+    const body = [{ Text: text }];
+
+    // Send POST request to Azure Translator API
+    const response = await axios.post(url, body, { headers });
+
+    // Extract the translated text from response
+    const translatedText =
+      response.data[0]?.translations[0]?.text || 'Translation not available';
+
+    res.json({ translatedText });
+  } catch (error) {
+    console.error('Error in translation:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Translation failed' });
+  }
+};
+
+
 const getUserTrackRoute = async (req, res) => {
   const id = req.user.id;
-  console.log("id",id)
   try {
     // Query using a JOIN to fetch the user's name and track in one go
     const query = `
@@ -6052,9 +6356,21 @@ const loginStatus = async (req, res) => {
   }
 };
 
+// const getUserByPhoneNumber = async (phone_number) => {
+//   try {
+//     const query = 'SELECT * FROM "user" WHERE phone_number = $1';
+//     const result = await client.query(query, [phone_number]);
+
+//     return result.rows.length ? result.rows[0] : null;
+//   } catch (error) {
+//     console.error("Error fetching user by phone number:", error);
+//     throw new Error("Database query failed");
+//   }
+// };
+
 const getUserByPhoneNumber = async (phone_number) => {
   try {
-    const query = 'SELECT * FROM "user" WHERE phone_number = $1';
+    const query = 'SELECT user_id, name, phone_number FROM "user" WHERE phone_number = $1';
     const result = await client.query(query, [phone_number]);
 
     return result.rows.length ? result.rows[0] : null;
@@ -6063,6 +6379,7 @@ const getUserByPhoneNumber = async (phone_number) => {
     throw new Error("Database query failed");
   }
 };
+
 
 const getWorkerByPhoneNumber = async (phone_number) => {
   try {
@@ -6124,6 +6441,7 @@ const getWorkerByPhoneNumber = async (phone_number) => {
 // LOGIN FUNCTION
 const login = async (req, res) => {
   const { phone_number } = req.body;
+  console.log("phonenumber",phone_number)
   if (!phone_number) {
     return res.status(400).json({ message: "Phone number is required" });
   }
@@ -6131,6 +6449,7 @@ const login = async (req, res) => {
   try {
     // Find the user by phone number
     const user = await getUserByPhoneNumber(phone_number);
+    console.log("user there are not ",user)
     if (user) {
       // Generate a token for the user
       const token = generateToken(user);
@@ -6142,8 +6461,9 @@ const login = async (req, res) => {
       });
       return res.status(200).json({ token });
     } else {
+      console.log("user there are not there 205",)
       // Use status 205 (or an alternative status) to indicate that the user does not exist
-      return res.status(205).json({ message: "Invalid credentials" });
+      return res.status(205).json({ message: "User not found" });
     }
   } catch (error) {
     console.error("Error during login:", error);
@@ -6152,15 +6472,15 @@ const login = async (req, res) => {
 };
 
 
-const getAllServices = async () => {
-  try {
-    const result = await client.query("SELECT * FROM allservices");
-    return result.rows;
-  } catch (error) {
-    console.error("Error fetching all services:", error);
-    throw error;
-  }
-};
+// const getAllServices = async () => {
+//   try {
+//     const result = await client.query("SELECT * FROM allservices");
+//     return result.rows;
+//   } catch (error) {
+//     console.error("Error fetching all services:", error);
+//     throw error;
+//   }
+// };
 
 // const getServicesBySearch = async (req, res) => {
 //   const searchQuery = req.query.search ? req.query.search.toLowerCase().trim() : "";
@@ -6197,6 +6517,25 @@ const getAllServices = async () => {
 //     res.status(500).json({ error: "Internal Server Error" });
 //   }
 // };
+
+
+const getAllServices = async () => {
+  try {
+    const result = await client.query(`
+      SELECT 
+        main_service_id, 
+        service_category, 
+        service_tag, 
+        service_details,
+        service_name
+      FROM allservices
+    `);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching all services:", error);
+    throw error;
+  }
+};
 
 
 const getServicesBySearch = async (req, res) => {
@@ -6489,6 +6828,55 @@ const storeFcmToken = async (req, res) => {
   }
 };
 
+const initiateCall = async (req, res) => {
+  try {
+    const { from, to, scheduled, timezone_id, scheduled_datetime } = req.body;
+
+    console.log("Request Body:", req.body);
+
+    if (!from || !to) {
+      return res.status(400).json({ error: 'Both "from" and "to" numbers are required.' });
+    }
+
+    // Build the payload.
+    // Note: Set dial to "agent" so that the system expects the from person to dial the IVR number manually.
+    const payload = {
+      api_id: "APIMQSArLJl140228",
+      api_password: "W2tbf56h",
+      ivr_number: "1732351343", // Replace with your active IVR number.
+      dial: "agent",          // "agent" means the system will not automatically call the from number.
+      receiver_number: to,     // The number to connect when the IVR is dialed.
+      agent_number: from,      // The from person's number.
+      scheduled: scheduled || 0,
+      timezone_id: timezone_id || "",
+      scheduled_datetime: scheduled_datetime || ""
+    };
+
+    // Make the API call.
+    const apiResponse = await axios.post('https://www.bulksmsplans.com/api/ivr/makeACall', payload, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    console.log("API Response:", apiResponse.data);
+    const { code, message, data } = apiResponse.data;
+
+    if (code !== 200) {
+      return res.status(500).json({ error: message, details: data });
+    }
+
+    // Construct an instructional message.
+    const instruction = `Call initiated successfully. The IVR number ${payload.ivr_number} is now active. Please call this number from your phone to connect with ${to}.`;
+
+    return res.json({
+      message: instruction,
+      callMaskingNumber: payload.ivr_number,
+      details: data
+    });
+  } catch (err) {
+    console.error("Error in initiateCall:", err.message);
+    return res.status(500).json({ error: 'Internal server error.', details: err.message });
+  }
+};
 
 const getCurrentTimestamp = () => {
   const now = new Date();
@@ -6807,6 +7195,34 @@ const updateNavigationStatus = async (notification_id) => {
 };
 
 // Define the controller function to check cancellation status
+// const userCancellationStatus = async (req, res) => {
+//   const { notification_id } = req.query;
+
+//   if (!notification_id) {
+//     return res.status(400).json({ error: "Notification ID is required" });
+//   }
+
+//   try {
+//     // Query the notifications table for the notification_status
+//     const result = await client.query(
+//       "SELECT user_navigation_cancel_status FROM accepted WHERE notification_id = $1",
+//       [notification_id]
+//     );
+
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({ error: "Notification not found" });
+//     }
+
+//     const notificationStatus = result.rows[0].user_navigation_cancel_status;
+
+//     // Send the notification status in the response
+//     res.json({ notificationStatus });
+//   } catch (error) {
+//     console.error("Error checking cancellation status:", error);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// };
+
 const userCancellationStatus = async (req, res) => {
   const { notification_id } = req.query;
 
@@ -6815,25 +7231,25 @@ const userCancellationStatus = async (req, res) => {
   }
 
   try {
-    // Query the notifications table for the notification_status
+    // Using SELECT 1 to only check if a row exists without retrieving unnecessary data
     const result = await client.query(
-      "SELECT user_navigation_cancel_status FROM accepted WHERE notification_id = $1",
+      "SELECT 1 FROM accepted WHERE notification_id = $1",
       [notification_id]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Notification not found" });
+    if (result.rows.length > 0) {
+      // If the row is present, return HTTP 200
+      return res.status(200).json({ message: "Row found" });
+    } else {
+      // If no row is found, return HTTP 205 with a cancellation message
+      return res.status(205).json({ message: "User cancelled" });
     }
-
-    const notificationStatus = result.rows[0].user_navigation_cancel_status;
-
-    // Send the notification status in the response
-    res.json({ notificationStatus });
   } catch (error) {
     console.error("Error checking cancellation status:", error);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 // Controller function to get the cancellation status
 const workerCancellationStatus = async (req, res) => {
@@ -9846,9 +10262,346 @@ async function getWorkerLocations(workerIds) {
 // };
 
 // above is the main
-const getWorkersNearby = async (req, res) => {
+// const getWorkersNearby = async (req, res) => {
 
+//   try {
+//     const user_id = req.user.id;
+//     const {
+//       area,
+//       pincode,
+//       city,
+//       alternateName,
+//       alternatePhoneNumber,
+//       serviceBooked,
+//       discount,
+//       tipAmount,
+//       offer
+
+//     } = req.body;
+//     console.log("req.body data",req.body)
+//     // console.log(tipAmount)
+//     const created_at = getCurrentTimestamp();
+//     const serviceArray = JSON.stringify(serviceBooked);
+//     const serviceNames = serviceBooked.map((s) => s.serviceName);
+//     const totalCost =
+//       serviceBooked.reduce((acc, s) => acc + s.cost, 0) - discount + tipAmount;
+
+
+
+//     /**
+//      *  ┌───────────────────────────────────────────────────────┐
+//      *  │  1) Single Query #1: Combine user fetch + insert +    │
+//      *  │     matching subservices retrieval via CTEs           │
+//      *  └───────────────────────────────────────────────────────┘
+//      */
+//     // const query1 = `
+//     //   WITH user_loc AS (
+//     //     SELECT u.user_id, ul.longitude, ul.latitude
+//     //     FROM "user" u
+//     //     JOIN userlocation ul ON u.user_id = ul.user_id
+//     //     WHERE u.user_id = $1
+//     //   ),
+//     //   inserted_user_notifications AS (
+//     //     INSERT INTO userNotifications (
+//     //       user_id, longitude, latitude, created_at,
+//     //       area, pincode, city, alternate_name,
+//     //       alternate_phone_number, service_booked
+//     //     )
+//     //     SELECT
+//     //       user_loc.user_id,
+//     //       user_loc.longitude,
+//     //       user_loc.latitude,
+//     //       $2,  -- created_at
+//     //       $3,  -- area
+//     //       $4,  -- pincode
+//     //       $5,  -- city
+//     //       $6,  -- alternateName
+//     //       $7,  -- alternatePhoneNumber
+//     //       $8   -- serviceArray
+//     //     FROM user_loc
+//     //     RETURNING user_notification_id
+//     //   ),
+//     //   matching_workers AS (
+//     //     SELECT worker_id
+//     //     FROM workerskills
+//     //     WHERE $9::text[] <@ subservices
+//     //     GROUP BY worker_id
+//     //   )
+//     //   SELECT
+//     //     (SELECT user_notification_id FROM inserted_user_notifications) AS user_notification_id,
+//     //     array_agg(mw.worker_id) AS worker_ids,
+//     //     (SELECT latitude FROM user_loc) AS user_lat,
+//     //     (SELECT longitude FROM user_loc) AS user_lon
+//     //   FROM matching_workers mw;
+//     // `;
+
+//     const query1 = `
+//     WITH user_loc AS (
+//       SELECT u.user_id, ul.longitude, ul.latitude
+//       FROM "user" u
+//       JOIN userlocation ul ON u.user_id = ul.user_id
+//       WHERE u.user_id = $1
+//     ),
+//     inserted_user_notifications AS (
+//       INSERT INTO userNotifications (
+//         user_id, longitude, latitude, created_at,
+//         area, pincode, city, alternate_name,
+//         alternate_phone_number, service_booked
+//       )
+//       SELECT
+//         user_loc.user_id,
+//         user_loc.longitude,
+//         user_loc.latitude,
+//         $2,  -- created_at
+//         $3,  -- area
+//         $4,  -- pincode
+//         $5,  -- city
+//         $6,  -- alternateName
+//         $7,  -- alternatePhoneNumber
+//         $8   -- serviceArray
+//       FROM user_loc
+//       RETURNING user_notification_id
+//     ),
+//     matching_workers AS (
+//       SELECT ws.worker_id
+//       FROM workerskills ws
+//       JOIN workersverified wv ON ws.worker_id = wv.worker_id
+//       WHERE $9::text[] <@ ws.subservices
+//         AND wv.no_due = TRUE  -- Ensure workers have no due payments
+//       GROUP BY ws.worker_id
+//     )
+//     SELECT
+//       (SELECT user_notification_id FROM inserted_user_notifications) AS user_notification_id,
+//       array_agg(mw.worker_id) AS worker_ids,
+//       (SELECT latitude FROM user_loc) AS user_lat,
+//       (SELECT longitude FROM user_loc) AS user_lon
+//     FROM matching_workers mw;
+//   `;
+  
+
+//     const query1Params = [
+//       user_id, // $1
+//       created_at, // $2
+//       area, // $3
+//       pincode, // $4
+//       city, // $5
+//       alternateName, // $6
+//       alternatePhoneNumber, // $7
+//       serviceArray, // $8
+//       serviceNames, // $9 :: text[]
+//     ];
+
+//     const result1 = await client.query(query1, query1Params);
+//     if (result1.rows.length === 0) {
+//       return res
+//         .status(404)
+//         .json("No user found or no worker matches subservices");
+//     }
+
+//     // console.log("data",result1.rows[0])
+//     const { user_notification_id, worker_ids, user_lat, user_lon } =
+//       result1.rows[0];
+
+//     if (!user_notification_id) {
+//       return res.status(404).json("Failed to insert user notification");
+//     }
+//     if (!worker_ids || worker_ids.length === 0) {
+//       return res.status(200).json("No workers match the requested subservices");
+//     }
+
+//     /**
+//      *  ┌───────────────────────────────────────────────────────┐
+//      *  │  2) Firestore Call: Get worker locations + filter     │
+//      *  │     nearby by Haversine (2km radius)                  │
+//      *  └───────────────────────────────────────────────────────┘
+//      */
+//     const workerDb = await getAllLocations(worker_ids); // single Firestore call
+//     if (!workerDb || workerDb.length === 0) {
+//       return res
+//         .status(200)
+//         .json("No Firestore location data for these workers");
+//     }
+
+//     const MAX_DISTANCE = 2; // km
+//     const nearbyWorkers = [];
+//     for (const doc of workerDb) {
+//       const dist = haversineDistance(
+//         user_lat,
+//         user_lon,
+//         doc.location._latitude,
+//         doc.location._longitude
+//       );
+//       if (dist <= MAX_DISTANCE) {
+//         nearbyWorkers.push(doc.worker_id);
+//       }
+//     }
+
+//     if (nearbyWorkers.length === 0) {
+//       return res.status(200).json("No workers found within 2 km radius");
+//     }
+
+//     // console.log("nearbyWorkers",nearbyWorkers)
+
+//     /**
+//      *  ┌───────────────────────────────────────────────────────┐
+//      *  │  3) Single Query #2: Insert notifications for         │
+//      *  │     nearbyWorkers & Retrieve FCM tokens in one go     │
+//      *  └───────────────────────────────────────────────────────┘
+//      */
+//     const pin = generatePin();
+//     const query2 = `
+//     WITH insert_notifications AS (
+//       INSERT INTO notifications (
+//         user_notification_id, user_id, worker_id,
+//         longitude, latitude, created_at, pin, service_booked,
+//         discount,coupons_applied, total_cost, tip_amount
+//       )
+//       SELECT
+//         $1,  -- user_notification_id
+//         $2,  -- user_id
+//         w.worker_id,
+//         $3,  -- user_lon
+//         $4,  -- user_lat
+//         $5,  -- created_at
+//         $6,  -- pin
+//         $7,  -- serviceArray
+//         $9,  -- discount
+//         $12,
+//         $10,  -- total_cost
+//         $11
+//       FROM UNNEST($8::int[]) AS w(worker_id)
+//       RETURNING worker_id
+//     ),
+//     fcm_tokens AS (
+//       SELECT fcm_token
+//       FROM fcm
+//       WHERE worker_id IN (SELECT worker_id FROM insert_notifications)
+//     )
+//     SELECT array_agg(fcm_token) AS tokens FROM fcm_tokens;
+//   `;
+
+//     const query2Params = [
+//       user_notification_id, // $1
+//       user_id, // $2
+//       user_lon, // $3
+//       user_lat, // $4
+//       created_at, // $5
+//       pin, // $6
+//       serviceArray, // $7
+//       nearbyWorkers, // $8 :: int[]
+//       discount, // $9
+//       totalCost, // $10
+//       tipAmount,
+//       offer
+//     ];
+
+//     const result2 = await client.query(query2, query2Params);
+//     if(offer){
+//       const offerCodeValue = offer.offer_code;
+//       console.log("offers applied changes",offerCodeValue)
+//       const queryText = `
+//         UPDATE "user" AS u
+//         SET offers_used = (
+//           SELECT jsonb_agg(
+//             CASE
+//               WHEN elem->>'offer_code' = $1
+//                 THEN elem || '{"status":"applied"}'
+//               ELSE elem
+//             END
+//           )
+//           FROM jsonb_array_elements(u.offers_used) elem
+//         )
+//         WHERE u.user_id = $2
+//       `;
+
+//       const values = [offerCodeValue, user_id];
+
+//       await client.query(queryText, values);
+//     }
+//     const tokens = result2.rows[0].tokens || [];
+//     // console.log("tok",tokens)
+
+//     // 4) Send FCM notifications
+//     const encodedUserNotificationId = Buffer.from(
+//       user_notification_id.toString()
+//     ).toString("base64");
+
+//     if (tokens.length > 0) {
+//       const normalNotificationMessage = {
+//         tokens,
+//         notification: {
+//           title:  "🔔 ClickSolver Has a Job for You!",
+//           body: "💼 A user needs Electrician help! Accept now and support our ClickSolver family in resolving their issue. 🤝",
+//         },
+//         data: {
+//           user_notification_id: encodedUserNotificationId,
+//           service: serviceArray,
+//           location: `${area}, ${city}, ${pincode}`,
+//           click_action: "FLUTTER_NOTIFICATION_CLICK",
+//           cost: totalCost.toString(),
+//           targetUrl: `/acceptance/${encodedUserNotificationId}`,
+//           screen: "Acceptance",
+//           date: formattedDate(),
+//           time: formattedTime(),
+//           type: "normal",
+//         },
+//         android: { priority: "high" },
+//       };
+    
+//       try {
+//         // console.log("Sending FCM Notification:", JSON.stringify(normalNotificationMessage, null, 2));
+    
+//         const fcmResponse = await getMessaging().sendEachForMulticast(normalNotificationMessage);
+    
+//         // console.log("FCM Response:", JSON.stringify(fcmResponse, null, 2));
+    
+//         let successCount = 0;
+//         let failureCount = 0;
+    
+//         fcmResponse.responses.forEach((resp, idx) => {
+//           if (resp.success) {
+//             console.log(`✅ Successfully sent to token ${tokens[idx]}`);
+//             successCount++;
+//           } else {
+//             console.error(`❌ Error sending to token ${tokens[idx]}:`, resp.error);
+//             failureCount++;
+//           }
+//         });
+    
+//         // console.log(`FCM Summary: ${successCount} success, ${failureCount} failure(s).`);
+    
+//       } catch (err) {
+//         console.error("❌ Error sending FCM notifications:", err);
+//       }
+//     }
+    
+
+//     return res.status(200).json(encodedUserNotificationId);
+//   } catch (error) {
+//     console.error("Error in getWorkersNearby:", error);
+//     return res.status(500).json({ error: "Server error" });
+//   }
+// };
+
+const { getMessaging } = require("firebase-admin/messaging");
+const { client } = require("../db"); // your Postgres client
+const { getAllLocations } = require("../firebase"); // your Firestore fetch
+const { haversineDistance, getCurrentTimestamp, generatePin, formattedDate, formattedTime } = require("../utils"); 
+
+/**
+ * getWorkersNearby
+ * 1) Insert userNotifications
+ * 2) Identify workers with matching subservices + no due
+ * 3) Fetch worker locations from Firestore
+ * 4) Filter by 2km radius using Haversine
+ * 5) Insert notifications for nearby workers & retrieve FCM tokens
+ * 6) Send FCM
+ */
+const getWorkersNearby = async (req, res) => {
   try {
+    // ------------------------------------------------------------------
+    //  1) Extract request data
+    // ------------------------------------------------------------------
     const user_id = req.user.id;
     const {
       area,
@@ -9856,123 +10609,74 @@ const getWorkersNearby = async (req, res) => {
       city,
       alternateName,
       alternatePhoneNumber,
-      serviceBooked,
+      serviceBooked,   // array of { serviceName, cost }
       discount,
       tipAmount,
       offer
-
     } = req.body;
-    console.log("called",offer)
-    // console.log(tipAmount)
+
     const created_at = getCurrentTimestamp();
-    const serviceArray = JSON.stringify(serviceBooked);
+    const serviceArray = JSON.stringify(serviceBooked);   // e.g. '[{"serviceName":"...","cost": 250}, ...]'
     const serviceNames = serviceBooked.map((s) => s.serviceName);
     const totalCost =
       serviceBooked.reduce((acc, s) => acc + s.cost, 0) - discount + tipAmount;
 
-
-
-    /**
-     *  ┌───────────────────────────────────────────────────────┐
-     *  │  1) Single Query #1: Combine user fetch + insert +    │
-     *  │     matching subservices retrieval via CTEs           │
-     *  └───────────────────────────────────────────────────────┘
-     */
-    // const query1 = `
-    //   WITH user_loc AS (
-    //     SELECT u.user_id, ul.longitude, ul.latitude
-    //     FROM "user" u
-    //     JOIN userlocation ul ON u.user_id = ul.user_id
-    //     WHERE u.user_id = $1
-    //   ),
-    //   inserted_user_notifications AS (
-    //     INSERT INTO userNotifications (
-    //       user_id, longitude, latitude, created_at,
-    //       area, pincode, city, alternate_name,
-    //       alternate_phone_number, service_booked
-    //     )
-    //     SELECT
-    //       user_loc.user_id,
-    //       user_loc.longitude,
-    //       user_loc.latitude,
-    //       $2,  -- created_at
-    //       $3,  -- area
-    //       $4,  -- pincode
-    //       $5,  -- city
-    //       $6,  -- alternateName
-    //       $7,  -- alternatePhoneNumber
-    //       $8   -- serviceArray
-    //     FROM user_loc
-    //     RETURNING user_notification_id
-    //   ),
-    //   matching_workers AS (
-    //     SELECT worker_id
-    //     FROM workerskills
-    //     WHERE $9::text[] <@ subservices
-    //     GROUP BY worker_id
-    //   )
-    //   SELECT
-    //     (SELECT user_notification_id FROM inserted_user_notifications) AS user_notification_id,
-    //     array_agg(mw.worker_id) AS worker_ids,
-    //     (SELECT latitude FROM user_loc) AS user_lat,
-    //     (SELECT longitude FROM user_loc) AS user_lon
-    //   FROM matching_workers mw;
-    // `;
-
+    // ------------------------------------------------------------------
+    //  2) Postgres Query #1: Insert userNotifications, find matching workers
+    // ------------------------------------------------------------------
     const query1 = `
-    WITH user_loc AS (
-      SELECT u.user_id, ul.longitude, ul.latitude
-      FROM "user" u
-      JOIN userlocation ul ON u.user_id = ul.user_id
-      WHERE u.user_id = $1
-    ),
-    inserted_user_notifications AS (
-      INSERT INTO userNotifications (
-        user_id, longitude, latitude, created_at,
-        area, pincode, city, alternate_name,
-        alternate_phone_number, service_booked
+      WITH user_loc AS (
+        SELECT u.user_id, ul.longitude, ul.latitude
+        FROM "user" u
+        JOIN userlocation ul ON u.user_id = ul.user_id
+        WHERE u.user_id = $1
+      ),
+      inserted_user_notifications AS (
+        INSERT INTO userNotifications (
+          user_id, longitude, latitude, created_at,
+          area, pincode, city, alternate_name,
+          alternate_phone_number, service_booked
+        )
+        SELECT
+          user_loc.user_id,
+          user_loc.longitude,
+          user_loc.latitude,
+          $2,  -- created_at
+          $3,  -- area
+          $4,  -- pincode
+          $5,  -- city
+          $6,  -- alternateName
+          $7,  -- alternatePhoneNumber
+          $8   -- serviceArray
+        FROM user_loc
+        RETURNING user_notification_id
+      ),
+      matching_workers AS (
+        SELECT ws.worker_id
+        FROM workerskills ws
+        JOIN workersverified wv ON ws.worker_id = wv.worker_id
+        WHERE $9::text[] <@ ws.subservices
+          AND wv.no_due = TRUE  -- Ensure workers have no due payments
+        GROUP BY ws.worker_id
       )
       SELECT
-        user_loc.user_id,
-        user_loc.longitude,
-        user_loc.latitude,
-        $2,  -- created_at
-        $3,  -- area
-        $4,  -- pincode
-        $5,  -- city
-        $6,  -- alternateName
-        $7,  -- alternatePhoneNumber
-        $8   -- serviceArray
-      FROM user_loc
-      RETURNING user_notification_id
-    ),
-    matching_workers AS (
-      SELECT ws.worker_id
-      FROM workerskills ws
-      JOIN workersverified wv ON ws.worker_id = wv.worker_id
-      WHERE $9::text[] <@ ws.subservices
-        AND wv.no_due = TRUE  -- Ensure workers have no due payments
-      GROUP BY ws.worker_id
-    )
-    SELECT
-      (SELECT user_notification_id FROM inserted_user_notifications) AS user_notification_id,
-      array_agg(mw.worker_id) AS worker_ids,
-      (SELECT latitude FROM user_loc) AS user_lat,
-      (SELECT longitude FROM user_loc) AS user_lon
-    FROM matching_workers mw;
-  `;
-  
+        (SELECT user_notification_id FROM inserted_user_notifications) AS user_notification_id,
+        array_agg(mw.worker_id) AS worker_ids,
+        (SELECT latitude FROM user_loc) AS user_lat,
+        (SELECT longitude FROM user_loc) AS user_lon
+      FROM matching_workers mw;
+    `;
 
     const query1Params = [
-      user_id, // $1
-      created_at, // $2
-      area, // $3
-      pincode, // $4
-      city, // $5
-      alternateName, // $6
+      user_id,           // $1
+      created_at,        // $2
+      area,              // $3
+      pincode,           // $4
+      city,              // $5
+      alternateName,     // $6
       alternatePhoneNumber, // $7
-      serviceArray, // $8
-      serviceNames, // $9 :: text[]
+      serviceArray,      // $8
+      serviceNames,      // $9 :: text[]
     ];
 
     const result1 = await client.query(query1, query1Params);
@@ -9982,9 +10686,7 @@ const getWorkersNearby = async (req, res) => {
         .json("No user found or no worker matches subservices");
     }
 
-    // console.log("data",result1.rows[0])
-    const { user_notification_id, worker_ids, user_lat, user_lon } =
-      result1.rows[0];
+    const { user_notification_id, worker_ids, user_lat, user_lon } = result1.rows[0];
 
     if (!user_notification_id) {
       return res.status(404).json("Failed to insert user notification");
@@ -9993,20 +10695,15 @@ const getWorkersNearby = async (req, res) => {
       return res.status(200).json("No workers match the requested subservices");
     }
 
-    /**
-     *  ┌───────────────────────────────────────────────────────┐
-     *  │  2) Firestore Call: Get worker locations + filter     │
-     *  │     nearby by Haversine (2km radius)                  │
-     *  └───────────────────────────────────────────────────────┘
-     */
-    const workerDb = await getAllLocations(worker_ids); // single Firestore call
+    // ------------------------------------------------------------------
+    //  3) Firestore: Get worker locations once, filter by 2km radius
+    // ------------------------------------------------------------------
+    const workerDb = await getAllLocations(worker_ids); 
     if (!workerDb || workerDb.length === 0) {
-      return res
-        .status(200)
-        .json("No Firestore location data for these workers");
+      return res.status(200).json("No Firestore location data for these workers");
     }
 
-    const MAX_DISTANCE = 2; // km
+    const MAX_DISTANCE = 2; // 2km
     const nearbyWorkers = [];
     for (const doc of workerDb) {
       const dist = haversineDistance(
@@ -10024,67 +10721,67 @@ const getWorkersNearby = async (req, res) => {
       return res.status(200).json("No workers found within 2 km radius");
     }
 
-    // console.log("nearbyWorkers",nearbyWorkers)
-
-    /**
-     *  ┌───────────────────────────────────────────────────────┐
-     *  │  3) Single Query #2: Insert notifications for         │
-     *  │     nearbyWorkers & Retrieve FCM tokens in one go     │
-     *  └───────────────────────────────────────────────────────┘
-     */
-    const pin = generatePin();
+    // ------------------------------------------------------------------
+    //  4) Postgres Query #2: Insert notifications & retrieve FCM tokens
+    // ------------------------------------------------------------------
+    const pin = generatePin(); // e.g. 4-6 digit pin
     const query2 = `
-    WITH insert_notifications AS (
-      INSERT INTO notifications (
-        user_notification_id, user_id, worker_id,
-        longitude, latitude, created_at, pin, service_booked,
-        discount,coupons_applied, total_cost, tip_amount
+      WITH insert_notifications AS (
+        INSERT INTO notifications (
+          user_notification_id, user_id, worker_id,
+          longitude, latitude, created_at, pin, service_booked,
+          discount, coupons_applied, total_cost, tip_amount
+        )
+        SELECT
+          $1,  -- user_notification_id
+          $2,  -- user_id
+          w.worker_id,
+          $3,  -- user_lon
+          $4,  -- user_lat
+          $5,  -- created_at
+          $6,  -- pin
+          $7,  -- serviceArray
+          $9,  -- discount
+          $12, -- coupons_applied
+          $10, -- totalCost
+          $11  -- tipAmount
+        FROM UNNEST($8::int[]) AS w(worker_id)
+        RETURNING worker_id
+      ),
+      fcm_tokens AS (
+        SELECT fcm_token
+        FROM fcm
+        WHERE worker_id IN (SELECT worker_id FROM insert_notifications)
       )
-      SELECT
-        $1,  -- user_notification_id
-        $2,  -- user_id
-        w.worker_id,
-        $3,  -- user_lon
-        $4,  -- user_lat
-        $5,  -- created_at
-        $6,  -- pin
-        $7,  -- serviceArray
-        $9,  -- discount
-        $12,
-        $10,  -- total_cost
-        $11
-      FROM UNNEST($8::int[]) AS w(worker_id)
-      RETURNING worker_id
-    ),
-    fcm_tokens AS (
-      SELECT fcm_token
-      FROM fcm
-      WHERE worker_id IN (SELECT worker_id FROM insert_notifications)
-    )
-    SELECT array_agg(fcm_token) AS tokens FROM fcm_tokens;
-  `;
+      SELECT array_agg(fcm_token) AS tokens 
+      FROM fcm_tokens;
+    `;
 
     const query2Params = [
       user_notification_id, // $1
-      user_id, // $2
-      user_lon, // $3
-      user_lat, // $4
-      created_at, // $5
-      pin, // $6
-      serviceArray, // $7
-      nearbyWorkers, // $8 :: int[]
-      discount, // $9
-      totalCost, // $10
-      tipAmount,
-      offer
+      user_id,              // $2
+      user_lon,             // $3
+      user_lat,             // $4
+      created_at,           // $5
+      pin,                  // $6
+      serviceArray,         // $7
+      nearbyWorkers,        // $8 :: int[]
+      discount,             // $9
+      totalCost,            // $10
+      tipAmount,            // $11
+      offer                 // $12 (for coupons_applied)
     ];
 
     const result2 = await client.query(query2, query2Params);
-    if(offer){
+    const tokens = result2.rows[0].tokens || [];
+
+    // ------------------------------------------------------------------
+    //  5) If Offer Provided, Update "offers_used" with 'status: applied'
+    // ------------------------------------------------------------------
+    if (offer) {
       const offerCodeValue = offer.offer_code;
-      console.log("offers applied changes",offerCodeValue)
       const queryText = `
-        UPDATE "user" AS u
+        UPDATE "user"
         SET offers_used = (
           SELECT jsonb_agg(
             CASE
@@ -10093,19 +10790,16 @@ const getWorkersNearby = async (req, res) => {
               ELSE elem
             END
           )
-          FROM jsonb_array_elements(u.offers_used) elem
+          FROM jsonb_array_elements("user".offers_used) elem
         )
-        WHERE u.user_id = $2
+        WHERE user_id = $2
       `;
-
-      const values = [offerCodeValue, user_id];
-
-      await client.query(queryText, values);
+      await client.query(queryText, [offerCodeValue, user_id]);
     }
-    const tokens = result2.rows[0].tokens || [];
-    // console.log("tok",tokens)
 
-    // 4) Send FCM notifications
+    // ------------------------------------------------------------------
+    //  6) Send FCM notifications (if tokens exist)
+    // ------------------------------------------------------------------
     const encodedUserNotificationId = Buffer.from(
       user_notification_id.toString()
     ).toString("base64");
@@ -10115,7 +10809,7 @@ const getWorkersNearby = async (req, res) => {
         tokens,
         notification: {
           title:  "🔔 ClickSolver Has a Job for You!",
-          body: "💼 A user needs Electrician help! Accept now and support our ClickSolver family in resolving their issue. 🤝",
+          body:   "💼 A user needs help! Accept now to support your ClickSolver family. 🤝"
         },
         data: {
           user_notification_id: encodedUserNotificationId,
@@ -10131,35 +10825,30 @@ const getWorkersNearby = async (req, res) => {
         },
         android: { priority: "high" },
       };
-    
+
       try {
-        // console.log("Sending FCM Notification:", JSON.stringify(normalNotificationMessage, null, 2));
-    
         const fcmResponse = await getMessaging().sendEachForMulticast(normalNotificationMessage);
-    
-        // console.log("FCM Response:", JSON.stringify(fcmResponse, null, 2));
-    
+        
+        // Optional: track success/failure
         let successCount = 0;
         let failureCount = 0;
-    
         fcmResponse.responses.forEach((resp, idx) => {
           if (resp.success) {
-            console.log(`✅ Successfully sent to token ${tokens[idx]}`);
             successCount++;
           } else {
-            console.error(`❌ Error sending to token ${tokens[idx]}:`, resp.error);
             failureCount++;
+            console.error(`❌ Error sending to token ${tokens[idx]}:`, resp.error);
           }
         });
-    
-        // console.log(`FCM Summary: ${successCount} success, ${failureCount} failure(s).`);
-    
+        console.log(`FCM Summary: ${successCount} success, ${failureCount} failures.`);
       } catch (err) {
         console.error("❌ Error sending FCM notifications:", err);
       }
     }
-    
 
+    // ------------------------------------------------------------------
+    //  7) Return to Client
+    // ------------------------------------------------------------------
     return res.status(200).json(encodedUserNotificationId);
   } catch (error) {
     console.error("Error in getWorkersNearby:", error);
@@ -10167,377 +10856,7 @@ const getWorkersNearby = async (req, res) => {
   }
 };
 
-// const getWorkersNearby = async (req, res) => {
-//   const user_id = req.user.id;
-//   const {
-//     area,
-//     pincode,
-//     city,
-//     alternateName,
-//     alternatePhoneNumber,
-//     serviceBooked,
-//   } = req.body;
-//   const created_at = getCurrentTimestamp();
-//   const serviceArray = JSON.stringify(serviceBooked);
 
-//   try {
-//     // Start a transaction
-//     await client.query('BEGIN');
-
-//     // Get user details and insert into userNotifications and userrecentnotifications
-//     const userQuery = `
-//       WITH user_data AS (
-//         SELECT u.*, ul.longitude, ul.latitude
-//         FROM "user" u
-//         JOIN userlocation ul ON u.user_id = ul.user_id
-//         WHERE u.user_id = $1
-//       ), inserted_notification AS (
-//         INSERT INTO userNotifications (user_id, longitude, latitude, created_at, area, pincode, city, alternate_name, alternate_phone_number, service_booked)
-//         SELECT user_id, longitude, latitude, $2, $3, $4, $5, $6, $7, $8
-//         FROM user_data
-//         RETURNING user_notification_id
-//       ), upsert_recent_notification AS (
-//         INSERT INTO userrecentnotifications (user_notification_id, user_id, longitude, latitude, created_at)
-//         SELECT user_notification_id, user_id, longitude, latitude, $2
-//         FROM inserted_notification, user_data
-//         ON CONFLICT (user_id) DO UPDATE SET
-//           user_notification_id = EXCLUDED.user_notification_id,
-//           longitude = EXCLUDED.longitude,
-//           latitude = EXCLUDED.latitude,
-//           created_at = EXCLUDED.created_at
-//         RETURNING recent_notification_id
-//       )
-//       SELECT * FROM user_data, inserted_notification, upsert_recent_notification;
-//     `;
-
-//     const userResult = await client.query(userQuery, [
-//       user_id,
-//       created_at,
-//       area,
-//       pincode,
-//       city,
-//       alternateName,
-//       alternatePhoneNumber,
-//       serviceArray,
-//     ]);
-
-//     if (userResult.rows.length === 0) {
-//       await client.query('ROLLBACK');
-//       return res
-//         .status(404)
-//         .json({ error: 'User not found or location not found' });
-//     }
-
-//     const user = userResult.rows[0];
-//     const userNotificationId = user.user_notification_id;
-//     const recentNotificationId = user.recent_notification_id;
-
-//     // Extract service names and total cost
-//     const serviceNames = serviceBooked.map((service) => service.serviceName);
-//     const totalCost = serviceBooked.reduce(
-//       (accumulator, service) => accumulator + service.cost,
-//       0
-//     );
-
-//     // Get worker_ids, fcm_tokens in one query
-//     const workerServiceQuery = `
-//       SELECT ws.worker_id, fcm.fcm_token
-//       FROM workerskills ws
-//       JOIN fcm ON ws.worker_id = fcm.worker_id
-//       WHERE $1::text[] <@ ws.subservices
-//       GROUP BY ws.worker_id, fcm.fcm_token
-//     `;
-
-//     const workerServiceResult = await client.query(workerServiceQuery, [
-//       serviceNames,
-//     ]);
-
-//     const workersverified = workerServiceResult.rows;
-
-//     if (workersverified.length === 0) {
-//       await client.query('COMMIT');
-//       return res.status(200).json('No workersverified found for the requested services');
-//     }
-
-//     // Fetch worker locations from Firestore in batches
-//     const workerIds = workersverified.map((worker) => worker.worker_id);
-//     const workerLocations = await getAllLocations(workerIds);
-
-//     // Filter workersverified within 2 km radius
-//     const nearbyWorkers = [];
-//     const fcmTokens = [];
-//     workerLocations.forEach((workerLocation) => {
-//       const distance = haversineDistance(
-//         user.latitude,
-//         user.longitude,
-//         workerLocation.location._latitude,
-//         workerLocation.location._longitude
-//       );
-//       if (distance <= 2) {
-//         nearbyWorkers.push(workerLocation.worker_id);
-//         const worker = workersverified.find(
-//           (w) => w.worker_id === workerLocation.worker_id
-//         );
-//         if (worker) {
-//           fcmTokens.push(worker.fcm_token);
-//         }
-//       }
-//     });
-
-//     if (nearbyWorkers.length === 0) {
-//       await client.query('COMMIT');
-//       return res.status(200).json('No workersverified found within 2 km radius');
-//     }
-
-//     // Insert notifications for nearby workersverified
-//     const pin = generatePin();
-//     const insertNotificationsQuery = `
-//       INSERT INTO notifications (recent_notification_id, user_notification_id, user_id, worker_id, longitude, latitude, created_at, pin, service_booked)
-//       VALUES ($1, $2, $3, UNNEST($4::int[]), $5, $6, $7, $8, $9)
-//     `;
-
-//     await client.query(insertNotificationsQuery, [
-//       recentNotificationId,
-//       userNotificationId,
-//       user_id,
-//       nearbyWorkers,
-//       user.longitude,
-//       user.latitude,
-//       created_at,
-//       pin,
-//       serviceArray,
-//     ]);
-
-//     const encodedUserNotificationId = Buffer.from(
-//       userNotificationId.toString()
-//     ).toString('base64');
-
-//     // Commit the transaction
-//     await client.query('COMMIT');
-
-//     // Send notifications
-//     if (fcmTokens.length > 0) {
-//       // Prepare notification messages
-//       const notificationData = {
-//         user_notification_id: encodedUserNotificationId,
-//         service: serviceArray,
-//         location: `${area}, ${city}, ${pincode}`,
-//         coordinates: `${user.latitude},${user.longitude}`,
-//         click_action: 'FLUTTER_NOTIFICATION_CLICK',
-//         cost: totalCost.toString(),
-//         targetUrl: `/acceptance/${encodedUserNotificationId}`,
-//         screen: 'Acceptance',
-//         date: formattedDate(),
-//         time: formattedTime(),
-//       };
-
-//       const message = {
-//         tokens: fcmTokens,
-//         notification: {
-//           title: 'New Service Request',
-//           body: `${area}, ${city}, ${pincode}`,
-//         },
-//         data: notificationData,
-//         android: {
-//           priority: 'high',
-//         },
-//       };
-
-//       // Send notifications using FCM
-//       try {
-//         const response = await getMessaging().sendMulticast(message);
-//         // console.log('Notifications sent:', response.successCount);
-//       } catch (error) {
-//         console.error('Error sending notifications:', error);
-//       }
-//     } else {
-//       console.error('No FCM tokens to send the message to.');
-//     }
-
-//     return res.status(200).json(encodedUserNotificationId);
-//   } catch (error) {
-//     await client.query('ROLLBACK');
-//     console.error('Error fetching workersverified:', error);
-//     return res.status(500).json({ error: 'Server error' });
-//   }
-// };
-
-// Adjust the getAllLocations function to batch Firestore calls
-
-// const getAllLocations = async (workerIds) => {
-//   try {
-//     if (workerIds.length < 1) {
-//       return [];
-//     }
-
-//     const locationsRef = db.collection('locations');
-//     const chunks = [];
-
-//     // Firestore 'in' queries can have a maximum of 10 items
-//     const chunkSize = 10;
-//     for (let i = 0; i < workerIds.length; i += chunkSize) {
-//       chunks.push(workerIds.slice(i, i + chunkSize));
-//     }
-
-//     const promises = chunks.map((chunk) =>
-//       locationsRef.where('worker_id', 'in', chunk).get()
-//     );
-
-//     const snapshots = await Promise.all(promises);
-
-//     let locations = [];
-//     snapshots.forEach((snapshot) => {
-//       snapshot.forEach((doc) => {
-//         locations.push({ id: doc.id, ...doc.data() });
-//       });
-//     });
-
-//     return locations;
-//   } catch (error) {
-//     console.error('Error getting locations:', error);
-//     return [];
-//   }
-// };
-
-// main second
-// const getWorkersNearby = async (req, res) => {
-//   const user_id = req.user.id;
-//   const { area, pincode, city, alternateName, alternatePhoneNumber, serviceBooked } = req.body;
-//   const created_at = getCurrentTimestamp();
-
-//   try {
-//     // Get user details and location in one query using a JOIN
-//     const userQuery = `
-//       SELECT u.*, ul.longitude, ul.latitude
-//       FROM "user" u
-//       JOIN userlocation ul ON u.user_id = ul.user_id
-//       WHERE u.user_id = $1
-//     `;
-//     const userResult = await client.query(userQuery, [user_id]);
-//     if (userResult.rows.length === 0) {
-//       return res.status(404).json({ error: "User not found or location not found" });
-//     }
-//     const user = userResult.rows[0];
-
-//     // Insert user location into userNotifications table
-//     const insertUserNotificationQuery = `
-//       INSERT INTO userNotifications (user_id, longitude, latitude, created_at, area, pincode, city, alternate_name, alternate_phone_number, service)
-//       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-//       RETURNING user_notification_id
-//     `;
-//     const userNotificationResult = await client.query(insertUserNotificationQuery, [
-//       user_id, user.longitude, user.latitude, created_at, area, pincode, city, alternateName, alternatePhoneNumber, serviceBooked
-//     ]);
-//     const userNotificationId = userNotificationResult.rows[0].user_notification_id;
-
-//     // Insert into userrecentnotifications with conflict handling
-//     const insertUserRecentNotificationQuery = `
-//       INSERT INTO userrecentnotifications (user_notification_id, user_id, longitude, latitude, created_at)
-//       VALUES ($1, $2, $3, $4, $5)
-//       ON CONFLICT (user_id) DO UPDATE SET
-//         user_notification_id = EXCLUDED.user_notification_id,
-//         longitude = EXCLUDED.longitude,
-//         latitude = EXCLUDED.latitude,
-//         created_at = EXCLUDED.created_at
-//       RETURNING recent_notification_id
-//     `;
-//     const userRecentNotificationResult = await client.query(insertUserRecentNotificationQuery, [
-//       userNotificationId, user_id, user.longitude, user.latitude, created_at
-//     ]);
-//     const recentNotificationId = userRecentNotificationResult.rows[0].recent_notification_id;
-
-//     // Get worker IDs with the specified service
-//     const workerServiceQuery = `
-//       SELECT worker_id
-//       FROM workerskills
-//       WHERE $1 = ANY(subservices)
-//     `;
-//     const workerServiceResult = await client.query(workerServiceQuery, [serviceBooked]);
-//     const workerIds = workerServiceResult.rows.map(row => row.worker_id);
-
-//     if (workerIds.length === 0) {
-//       return res.status(200).json("No workersverified found offering the requested service.");
-//     }
-
-//     // Get worker details, location, and FCM tokens using a single query
-//     const workerDetailsQuery = `
-//       SELECT w.worker_id, wl.longitude, wl.latitude, fcm.fcm_token
-//       FROM workersverified w
-//       JOIN workerlocation wl ON w.worker_id = wl.worker_id
-//       LEFT JOIN fcm ON w.worker_id = fcm.worker_id
-//       WHERE w.worker_id = ANY($1::int[])
-//     `;
-//     const workerDetailsResult = await client.query(workerDetailsQuery, [workerIds]);
-
-//     // Filter workersverified within 2 km radius
-//     const nearbyWorkers = workerDetailsResult.rows.filter((workerLocation) => {
-//       const distance = haversineDistance(user.latitude, user.longitude, workerLocation.latitude, workerLocation.longitude);
-//       return distance <= 2;
-//     });
-
-//     if (nearbyWorkers.length === 0) {
-//       return res.status(200).json("No workersverified found within 2 km radius.");
-//     }
-
-//     // Insert worker details into notifications table
-//     const pin = generatePin();
-//     const insertNotificationsQuery = `
-//       INSERT INTO notifications (recent_notification_id, user_notification_id, user_id, worker_id, longitude, latitude, created_at, pin, service)
-//       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-//     `;
-//     for (const worker of nearbyWorkers) {
-//       await client.query(insertNotificationsQuery, [
-//         recentNotificationId, userNotificationId, user_id, worker.worker_id,
-//         user.longitude, user.latitude, created_at, pin, serviceBooked
-//       ]);
-//     }
-
-//     const encodedUserNotificationId = Buffer.from(userNotificationId.toString()).toString("base64");
-
-//     // Get FCM tokens and send notifications
-//     const fcmTokens = nearbyWorkers.map(worker => worker.fcm_token).filter(token => token !== null);
-//     if (fcmTokens.length > 0) {
-//       const multicastMessage = {
-//         tokens: fcmTokens,
-//         notification: {
-//           title: serviceBooked,
-//           body: `${area}, ${city}, ${pincode}`,
-//         },
-//         data: {
-//           user_notification_id: encodedUserNotificationId.toString(),
-//           click_action: "FLUTTER_NOTIFICATION_CLICK",
-//           cost: '199',
-//           targetUrl: `/acceptance/${encodedUserNotificationId}`,
-//           screen: 'Acceptance',
-//           date: formattedDate(),
-//           time: formattedTime(),
-//         },
-//       };
-
-//       try {
-//         const response = await getMessaging().sendEachForMulticast(multicastMessage);
-//         response.responses.forEach((res, index) => {
-//           if (res.success) {
-//             // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
-//           } else {
-//             console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
-//           }
-//         });
-//         // console.log('Success Count:', response.successCount);
-//         // console.log('Failure Count:', response.failureCount);
-//       } catch (error) {
-//         console.error('Error sending notifications:', error);
-//       }
-//     } else {
-//       console.error('No FCM tokens to send the message to.');
-//     }
-
-//     return res.status(200).json(encodedUserNotificationId);
-//   } catch (error) {
-//     console.error("Error fetching workersverified:", error);
-//     return res.status(500).json({ error: "Server error" });
-//   }
-// };
 
 const checkTaskStatus = async (req, res) => {
   const { notification_id } = req.body;
@@ -10753,11 +11072,137 @@ const getVerificationStatus = async (req, res) => {
 //   }
 // };
 
+
+// real
+// const workerVerifyOtp = async (req, res) => {
+//   const { notification_id, otp } = req.body;
+
+//   try {
+//     // SQL Query with proper GROUP BY and ARRAY_AGG
+//     const query = `
+//       WITH updated AS (
+//         UPDATE accepted
+//         SET 
+//           verification_status = TRUE,
+//           time = jsonb_set(
+//             COALESCE(time, '{}'::jsonb),
+//             '{arrived}',
+//             to_jsonb(to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS'))
+//           )
+//         WHERE notification_id = $1 AND pin = $2
+//         RETURNING 
+//           accepted_id, 
+//           notification_id, 
+//           user_id, 
+//           user_navigation_cancel_status, 
+//           verification_status, 
+//           service_booked, 
+//           time
+//       )
+//       SELECT 
+//         a.notification_id,
+//         ARRAY_AGG(u.fcm_token) AS fcm_tokens,
+//         a.user_id,
+//         a.user_navigation_cancel_status,
+//         a.verification_status,
+//         a.service_booked,
+//         a.time
+//       FROM updated a
+//       LEFT JOIN userfcm u ON a.user_id = u.user_id
+//       GROUP BY 
+//         a.notification_id, 
+//         a.user_id, 
+//         a.user_navigation_cancel_status, 
+//         a.verification_status, 
+//         a.service_booked, 
+//         a.time;
+//     `;
+
+//     // Execute the query with parameters
+//     const queryResult = await client.query(query, [notification_id, otp]);
+
+//     // Check if any records were returned
+//     if (queryResult.rows.length === 0) {
+//       return res
+//         .status(404)
+//         .json({ message: "OTP is incorrect or notification not found." });
+//     }
+
+//     const row = queryResult.rows[0];
+//     const fcmTokens = row.fcm_tokens
+//       ? row.fcm_tokens.filter((token) => token)
+//       : [];
+
+//     // If user has canceled navigation, return a specific message
+//     if (row.user_navigation_cancel_status === "usercanceled") {
+//       return res
+//         .status(205)
+//         .json({ message: "User cancelled the navigation." });
+//     }
+
+//     // Proceed to start the time and send notifications
+//     const timeResult = await TimeStart(notification_id);
+
+//     if (fcmTokens.length > 0) {
+//       const multicastMessage = {
+//         tokens: fcmTokens,
+//         notification: {
+//           title: "Click Solver",
+//           body: "The Commander has successfully verified the work. The time has started.",
+//         },
+//         data: {
+//           notification_id: notification_id.toString(),
+//           screen: "worktimescreen",
+//         },
+//       };
+
+//       try {
+//         const response = await getMessaging().sendEachForMulticast(
+//           multicastMessage
+//         );
+
+//         response.responses.forEach((resItem, index) => {
+//           if (!resItem.success) {
+//             console.error(
+//               `Error sending message to token ${fcmTokens[index]}:`,
+//               resItem.error
+//             );
+//           }
+//         });
+//       } catch (error) {
+//         console.error("Error sending notifications:", error);
+//       }
+//     } else {
+//       console.error("No FCM tokens to send the message to.");
+//     }
+
+//     const screen = "worktimescreen";
+//     const encodedId = Buffer.from(notification_id.toString()).toString(
+//       "base64"
+//     );
+//     await createUserBackgroundAction(
+//       row.user_id,
+//       encodedId,
+//       screen,
+//       row.service_booked
+//     );
+
+//     // Respond with success
+//     return res.status(200).json({
+//       status: "Verification successful",
+//       timeResult: timeResult,
+//     });
+//   } catch (error) {
+//     console.error("Error verifying OTP:", error);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// };
+
 const workerVerifyOtp = async (req, res) => {
   const { notification_id, otp } = req.body;
 
   try {
-    // SQL Query with proper GROUP BY and ARRAY_AGG
+    // Update the accepted table and return only the fields needed for subsequent logic.
     const query = `
       WITH updated AS (
         UPDATE accepted
@@ -10769,62 +11214,50 @@ const workerVerifyOtp = async (req, res) => {
             to_jsonb(to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS'))
           )
         WHERE notification_id = $1 AND pin = $2
-        RETURNING 
-          accepted_id, 
-          notification_id, 
-          user_id, 
-          user_navigation_cancel_status, 
-          verification_status, 
-          service_booked, 
-          time
+        RETURNING user_id, user_navigation_cancel_status, service_booked
       )
       SELECT 
-        a.notification_id,
-        ARRAY_AGG(u.fcm_token) AS fcm_tokens,
-        a.user_id,
-        a.user_navigation_cancel_status,
-        a.verification_status,
-        a.service_booked,
-        a.time
-      FROM updated a
-      LEFT JOIN userfcm u ON a.user_id = u.user_id
-      GROUP BY 
-        a.notification_id, 
-        a.user_id, 
-        a.user_navigation_cancel_status, 
-        a.verification_status, 
-        a.service_booked, 
-        a.time;
+        updated.user_navigation_cancel_status,
+        updated.user_id,
+        updated.service_booked,
+        ARRAY_AGG(u.fcm_token) AS fcm_tokens
+      FROM updated
+      LEFT JOIN userfcm u ON updated.user_id = u.user_id
+      GROUP BY updated.user_navigation_cancel_status, updated.user_id, updated.service_booked;
     `;
 
-    // Execute the query with parameters
     const queryResult = await client.query(query, [notification_id, otp]);
 
-    // Check if any records were returned
+    // If no row was updated, the OTP is incorrect or notification not found.
     if (queryResult.rows.length === 0) {
       return res
         .status(404)
         .json({ message: "OTP is incorrect or notification not found." });
     }
 
-    const row = queryResult.rows[0];
-    const fcmTokens = row.fcm_tokens
-      ? row.fcm_tokens.filter((token) => token)
-      : [];
+    const {
+      user_navigation_cancel_status,
+      user_id,
+      service_booked,
+      fcm_tokens,
+    } = queryResult.rows[0];
 
-    // If user has canceled navigation, return a specific message
-    if (row.user_navigation_cancel_status === "usercanceled") {
+    const filteredFcmTokens = fcm_tokens ? fcm_tokens.filter(token => token) : [];
+
+    // If the user cancelled navigation, return HTTP 205.
+    if (user_navigation_cancel_status === "usercanceled") {
       return res
         .status(205)
         .json({ message: "User cancelled the navigation." });
     }
 
-    // Proceed to start the time and send notifications
-    const timeResult = await TimeStart(notification_id);
+    // Start the time.
+    await TimeStart(notification_id);
 
-    if (fcmTokens.length > 0) {
+    // Send notifications if FCM tokens exist.
+    if (filteredFcmTokens.length > 0) {
       const multicastMessage = {
-        tokens: fcmTokens,
+        tokens: filteredFcmTokens,
         notification: {
           title: "Click Solver",
           body: "The Commander has successfully verified the work. The time has started.",
@@ -10836,14 +11269,11 @@ const workerVerifyOtp = async (req, res) => {
       };
 
       try {
-        const response = await getMessaging().sendEachForMulticast(
-          multicastMessage
-        );
-
+        const response = await getMessaging().sendEachForMulticast(multicastMessage);
         response.responses.forEach((resItem, index) => {
           if (!resItem.success) {
             console.error(
-              `Error sending message to token ${fcmTokens[index]}:`,
+              `Error sending message to token ${filteredFcmTokens[index]}:`,
               resItem.error
             );
           }
@@ -10856,26 +11286,17 @@ const workerVerifyOtp = async (req, res) => {
     }
 
     const screen = "worktimescreen";
-    const encodedId = Buffer.from(notification_id.toString()).toString(
-      "base64"
-    );
-    await createUserBackgroundAction(
-      row.user_id,
-      encodedId,
-      screen,
-      row.service_booked
-    );
+    const encodedId = Buffer.from(notification_id.toString()).toString("base64");
+    await createUserBackgroundAction(user_id, encodedId, screen, service_booked);
 
-    // Respond with success
-    return res.status(200).json({
-      status: "Verification successful",
-      timeResult: timeResult,
-    });
+    // If everything is successful, send only HTTP 200 to the frontend.
+    return res.status(200).json({ status: "Verification successful" });
   } catch (error) {
     console.error("Error verifying OTP:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 const getCleaningServices = async () => {
   try {
@@ -11458,6 +11879,202 @@ const getTimeDifferenceInIST = (start_time, end_time) => {
 //   }
 // };
 
+
+// real
+// const serviceCompleted = async (req, res) => {
+//   const { notification_id, encodedId } = req.body;
+
+//   // Input Validation
+//   if (!notification_id || !encodedId) {
+//     return res.status(400).json({
+//       error: "Missing required fields: notification_id and encodedId.",
+//     });
+//   }
+
+//   const encodedUserNotificationId = Buffer.from(
+//     notification_id.toString()
+//   ).toString("base64");
+
+//   try {
+//     const end_time = new Date();
+
+//     // Single query using CTEs to fetch, check, update, and return necessary data
+//     const query = `
+//       WITH fetched_data AS (
+//         SELECT 
+//           sc.notification_id,
+//           sc.start_time, 
+//           sc.end_time, 
+//           a.user_id, 
+//           a.service_booked
+//         FROM servicecall sc
+//         JOIN accepted a ON sc.notification_id = a.notification_id
+//         WHERE sc.notification_id = $1
+//         FOR UPDATE
+//       ),
+//       check_end_time AS (
+//         SELECT 
+//           fd.*, 
+//           CASE 
+//             WHEN fd.end_time IS NOT NULL THEN TRUE 
+//             ELSE FALSE 
+//           END AS is_end_time_set
+//         FROM fetched_data fd
+//       ),
+//       update_servicecall AS (
+//         UPDATE servicecall sc
+//         SET 
+//           end_time = $2,
+//           time_worked = TO_CHAR(EXTRACT(EPOCH FROM ($2 - sc.start_time)) / 3600, 'FM00') || ':' ||
+//                         TO_CHAR((EXTRACT(EPOCH FROM ($2 - sc.start_time)) / 60) % 60, 'FM00') || ':' ||
+//                         TO_CHAR(EXTRACT(EPOCH FROM ($2 - sc.start_time)) % 60, 'FM00')
+//         FROM fetched_data fd
+//         WHERE sc.notification_id = fd.notification_id AND sc.end_time IS NULL
+//         RETURNING sc.end_time, sc.time_worked
+//       ),
+//       update_accepted AS (
+//         UPDATE accepted a
+//         SET 
+//           time = jsonb_set(
+//             COALESCE(a.time, '{}'::jsonb),
+//             '{workCompleted}',
+//             to_jsonb(to_char($2, 'YYYY-MM-DD HH24:MI:SS'))
+//           )
+//         FROM fetched_data fd
+//         WHERE a.notification_id = fd.notification_id
+//         RETURNING a.time
+//       ),
+//       user_fcm AS (
+//         SELECT ARRAY_AGG(u.fcm_token) AS fcm_tokens
+//         FROM userfcm u
+//         WHERE u.user_id = (SELECT user_id FROM fetched_data)
+//       )
+//       SELECT 
+//         cd.*, 
+//         us.end_time AS updated_end_time, 
+//         us.time_worked AS updated_time_worked,
+//         ua.time AS updated_time,
+//         uf.fcm_tokens
+//       FROM check_end_time cd
+//       LEFT JOIN update_servicecall us ON TRUE
+//       LEFT JOIN update_accepted ua ON TRUE
+//       CROSS JOIN user_fcm uf;
+//     `;
+
+//     const values = [notification_id, end_time];
+
+//     const result = await client.query(query, values);
+
+//     // Check if any records were returned
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({ error: "Notification not found." });
+//     }
+
+//     const row = result.rows[0];
+//     const {
+//       start_time,
+//       end_time: existingEndTime,
+//       user_id,
+//       service_booked,
+//       is_end_time_set,
+//       updated_end_time,
+//       updated_time_worked,
+//       updated_time,
+//       fcm_tokens,
+//     } = row;
+
+//     // If end_time is already set, return a message
+//     if (is_end_time_set) {
+//       return res.status(205).json({ message: "End time already set." });
+//     }
+
+//     // Determine the time_worked value
+//     let time_worked = updated_time_worked;
+//     if (!is_end_time_set && updated_time_worked) {
+//       // If updated_time_worked is available from the UPDATE CTE
+//       time_worked = updated_time_worked;
+//     } else {
+//       // Fallback calculation in application code if needed
+//       const timeWorkedInSeconds = Math.floor((end_time - start_time) / 1000);
+//       const hours = String(Math.floor(timeWorkedInSeconds / 3600)).padStart(
+//         2,
+//         "0"
+//       );
+//       const minutes = String(
+//         Math.floor((timeWorkedInSeconds % 3600) / 60)
+//       ).padStart(2, "0");
+//       const seconds = String(timeWorkedInSeconds % 60).padStart(2, "0");
+//       time_worked = `${hours}:${minutes}:${seconds}`;
+//     }
+
+//     // Retrieve FCM tokens
+//     const fcmTokens = fcm_tokens ? fcm_tokens.filter((token) => token) : [];
+
+//     // Send notifications if FCM tokens are available
+//     if (fcmTokens.length > 0) {
+//       const multicastMessage = {
+//         tokens: fcmTokens,
+//         notification: {
+//           title: "Click Solver",
+//           body: `Commander has completed your work. Great to hear!`,
+//         },
+//         data: {
+//           notification_id: notification_id.toString(),
+//           screen: "Paymentscreen",
+//         },
+//       };
+
+//       try {
+//         const response = await getMessaging().sendEachForMulticast(
+//           multicastMessage
+//         );
+
+//         response.responses.forEach((resItem, index) => {
+//           if (resItem.success) {
+//             // Optionally log successful sends
+//             // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
+//           } else {
+//             console.error(
+//               `Error sending message to token ${fcmTokens[index]}:`,
+//               resItem.error
+//             );
+//           }
+//         });
+//       } catch (error) {
+//         console.error("Error sending notifications:", error);
+//         return res.status(500).json({ error: "Error sending notifications." });
+//       }
+//     } else {
+//       console.error("No FCM tokens to send the message to.");
+//       return res
+//         .status(200)
+//         .json({ message: "No FCM tokens to send the message to." });
+//     }
+
+//     // Create a background action for the user (Uncomment if needed)
+//     const screen = "Paymentscreen";
+//     // console.log(screen, encodedId, user_id, service_booked)
+//     await createUserBackgroundAction(
+//       user_id,
+//       encodedId,
+//       screen,
+//       service_booked
+//     );
+
+//     // Respond with success
+//     return res.status(200).json({
+//       notification_id,
+//       end_time: updated_end_time,
+//       time_worked,
+//       updated_time,
+//     });
+//   } catch (error) {
+//     console.error("Error updating end time:", error);
+//     return res.status(500).json({ error: "Internal server error." });
+//   }
+// };
+
+
 const serviceCompleted = async (req, res) => {
   const { notification_id, encodedId } = req.body;
 
@@ -11468,14 +12085,10 @@ const serviceCompleted = async (req, res) => {
     });
   }
 
-  const encodedUserNotificationId = Buffer.from(
-    notification_id.toString()
-  ).toString("base64");
-
   try {
     const end_time = new Date();
 
-    // Single query using CTEs to fetch, check, update, and return necessary data
+    // Single query using CTEs to fetch, check, update, and return only necessary data.
     const query = `
       WITH fetched_data AS (
         SELECT 
@@ -11491,12 +12104,14 @@ const serviceCompleted = async (req, res) => {
       ),
       check_end_time AS (
         SELECT 
-          fd.*, 
+          start_time,
+          user_id,
+          service_booked,
           CASE 
-            WHEN fd.end_time IS NOT NULL THEN TRUE 
+            WHEN end_time IS NOT NULL THEN TRUE 
             ELSE FALSE 
           END AS is_end_time_set
-        FROM fetched_data fd
+        FROM fetched_data
       ),
       update_servicecall AS (
         UPDATE servicecall sc
@@ -11507,7 +12122,7 @@ const serviceCompleted = async (req, res) => {
                         TO_CHAR(EXTRACT(EPOCH FROM ($2 - sc.start_time)) % 60, 'FM00')
         FROM fetched_data fd
         WHERE sc.notification_id = fd.notification_id AND sc.end_time IS NULL
-        RETURNING sc.end_time, sc.time_worked
+        RETURNING end_time AS updated_end_time, time_worked AS updated_time_worked
       ),
       update_accepted AS (
         UPDATE accepted a
@@ -11519,18 +12134,21 @@ const serviceCompleted = async (req, res) => {
           )
         FROM fetched_data fd
         WHERE a.notification_id = fd.notification_id
-        RETURNING a.time
+        RETURNING time AS updated_time
       ),
       user_fcm AS (
         SELECT ARRAY_AGG(u.fcm_token) AS fcm_tokens
         FROM userfcm u
-        WHERE u.user_id = (SELECT user_id FROM fetched_data)
+        WHERE u.user_id = (SELECT user_id FROM fetched_data LIMIT 1)
       )
       SELECT 
-        cd.*, 
-        us.end_time AS updated_end_time, 
-        us.time_worked AS updated_time_worked,
-        ua.time AS updated_time,
+        cd.start_time,
+        cd.user_id,
+        cd.service_booked,
+        cd.is_end_time_set,
+        us.updated_end_time,
+        us.updated_time_worked,
+        ua.updated_time,
         uf.fcm_tokens
       FROM check_end_time cd
       LEFT JOIN update_servicecall us ON TRUE
@@ -11542,15 +12160,13 @@ const serviceCompleted = async (req, res) => {
 
     const result = await client.query(query, values);
 
-    // Check if any records were returned
+    // Check if any records were returned.
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Notification not found." });
     }
 
-    const row = result.rows[0];
     const {
       start_time,
-      end_time: existingEndTime,
       user_id,
       service_booked,
       is_end_time_set,
@@ -11558,36 +12174,31 @@ const serviceCompleted = async (req, res) => {
       updated_time_worked,
       updated_time,
       fcm_tokens,
-    } = row;
+    } = result.rows[0];
 
-    // If end_time is already set, return a message
+    // If end_time is already set, return a 205 status.
     if (is_end_time_set) {
       return res.status(205).json({ message: "End time already set." });
     }
 
-    // Determine the time_worked value
+    // Determine the time_worked value.
     let time_worked = updated_time_worked;
     if (!is_end_time_set && updated_time_worked) {
-      // If updated_time_worked is available from the UPDATE CTE
+      // Use updated_time_worked if available.
       time_worked = updated_time_worked;
     } else {
-      // Fallback calculation in application code if needed
+      // Fallback calculation in application code.
       const timeWorkedInSeconds = Math.floor((end_time - start_time) / 1000);
-      const hours = String(Math.floor(timeWorkedInSeconds / 3600)).padStart(
-        2,
-        "0"
-      );
-      const minutes = String(
-        Math.floor((timeWorkedInSeconds % 3600) / 60)
-      ).padStart(2, "0");
+      const hours = String(Math.floor(timeWorkedInSeconds / 3600)).padStart(2, "0");
+      const minutes = String(Math.floor((timeWorkedInSeconds % 3600) / 60)).padStart(2, "0");
       const seconds = String(timeWorkedInSeconds % 60).padStart(2, "0");
       time_worked = `${hours}:${minutes}:${seconds}`;
     }
 
-    // Retrieve FCM tokens
+    // Retrieve FCM tokens.
     const fcmTokens = fcm_tokens ? fcm_tokens.filter((token) => token) : [];
 
-    // Send notifications if FCM tokens are available
+    // Send notifications if FCM tokens are available.
     if (fcmTokens.length > 0) {
       const multicastMessage = {
         tokens: fcmTokens,
@@ -11602,19 +12213,10 @@ const serviceCompleted = async (req, res) => {
       };
 
       try {
-        const response = await getMessaging().sendEachForMulticast(
-          multicastMessage
-        );
-
+        const response = await getMessaging().sendEachForMulticast(multicastMessage);
         response.responses.forEach((resItem, index) => {
-          if (resItem.success) {
-            // Optionally log successful sends
-            // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
-          } else {
-            console.error(
-              `Error sending message to token ${fcmTokens[index]}:`,
-              resItem.error
-            );
+          if (!resItem.success) {
+            console.error(`Error sending message to token ${fcmTokens[index]}:`, resItem.error);
           }
         });
       } catch (error) {
@@ -11623,22 +12225,14 @@ const serviceCompleted = async (req, res) => {
       }
     } else {
       console.error("No FCM tokens to send the message to.");
-      return res
-        .status(200)
-        .json({ message: "No FCM tokens to send the message to." });
+      return res.status(200).json({ message: "No FCM tokens to send the message to." });
     }
 
-    // Create a background action for the user (Uncomment if needed)
+    // Create a background action for the user.
     const screen = "Paymentscreen";
-    // console.log(screen, encodedId, user_id, service_booked)
-    await createUserBackgroundAction(
-      user_id,
-      encodedId,
-      screen,
-      service_booked
-    );
+    await createUserBackgroundAction(user_id, encodedId, screen, service_booked);
 
-    // Respond with success
+    // Respond with success.
     return res.status(200).json({
       notification_id,
       end_time: updated_end_time,
@@ -11651,161 +12245,6 @@ const serviceCompleted = async (req, res) => {
   }
 };
 
-// const serviceCompleted = async (req, res) => {
-//   const { notification_id, encodedId } = req.body;
-
-//   // Input Validation
-//   if (!notification_id || !encodedId) {
-//     return res.status(400).json({ error: 'Missing required fields: notification_id and encodedId.' });
-//   }
-
-//   const encodedUserNotificationId = Buffer.from(notification_id.toString()).toString("base64");
-
-//   try {
-//     const end_time = new Date();
-
-//     // Single query using CTEs to fetch, check, update, and return necessary data
-//     const query = `
-//       WITH fetched_data AS (
-//         SELECT
-//           sc.notification_id,  -- Added notification_id
-//           sc.start_time,
-//           sc.end_time,
-//           a.user_id,
-//           a.service_booked
-//         FROM servicecall sc
-//         JOIN accepted a ON sc.notification_id = a.notification_id
-//         WHERE sc.notification_id = $1
-//         FOR UPDATE
-//       ),
-//       check_end_time AS (
-//         SELECT
-//           fd.*,
-//           CASE
-//             WHEN fd.end_time IS NOT NULL THEN TRUE
-//             ELSE FALSE
-//           END AS is_end_time_set
-//         FROM fetched_data fd
-//       ),
-//       update_servicecall AS (
-//         UPDATE servicecall sc
-//         SET
-//           end_time = $2,
-//           time_worked = TO_CHAR(EXTRACT(EPOCH FROM ($2 - sc.start_time)) / 3600, 'FM00') || ':' ||
-//                         TO_CHAR((EXTRACT(EPOCH FROM ($2 - sc.start_time)) / 60) % 60, 'FM00') || ':' ||
-//                         TO_CHAR(EXTRACT(EPOCH FROM ($2 - sc.start_time)) % 60, 'FM00')
-//         FROM fetched_data fd
-//         WHERE sc.notification_id = fd.notification_id AND sc.end_time IS NULL
-//         RETURNING sc.end_time, sc.time_worked
-//       ),
-//       user_fcm AS (
-//         SELECT ARRAY_AGG(u.fcm_token) AS fcm_tokens
-//         FROM userfcm u
-//         WHERE u.user_id = (SELECT user_id FROM fetched_data)
-//       )
-//       SELECT
-//         cd.*,
-//         us.end_time AS updated_end_time,
-//         us.time_worked AS updated_time_worked,
-//         uf.fcm_tokens
-//       FROM check_end_time cd
-//       LEFT JOIN update_servicecall us ON TRUE
-//       CROSS JOIN user_fcm uf;
-//     `;
-
-//     const values = [notification_id, end_time];
-
-//     const result = await client.query(query, values);
-
-//     // Check if any records were returned
-//     if (result.rows.length === 0) {
-//       return res.status(404).json({ error: 'Notification not found.' });
-//     }
-
-//     const row = result.rows[0];
-//     const {
-//       start_time,
-//       end_time: existingEndTime,
-//       user_id,
-//       service_booked,
-//       is_end_time_set,
-//       updated_end_time,
-//       updated_time_worked,
-//       fcm_tokens
-//     } = row;
-
-//     // If end_time is already set, return a message
-//     if (is_end_time_set) {
-//       return res.status(205).json({ message: 'End time already set.' });
-//     }
-
-//     // Determine the time_worked value
-//     let time_worked = updated_time_worked;
-//     if (!is_end_time_set && updated_time_worked) {
-//       // If updated_time_worked is available from the UPDATE CTE
-//       time_worked = updated_time_worked;
-//     } else {
-//       // Fallback calculation in application code if needed
-//       const timeWorkedInSeconds = Math.floor((end_time - start_time) / 1000);
-//       const hours = String(Math.floor(timeWorkedInSeconds / 3600)).padStart(2, '0');
-//       const minutes = String(Math.floor((timeWorkedInSeconds % 3600) / 60)).padStart(2, '0');
-//       const seconds = String(timeWorkedInSeconds % 60).padStart(2, '0');
-//       time_worked = `${hours}:${minutes}:${seconds}`;
-//     }
-
-//     // Retrieve FCM tokens
-//     const fcmTokens = fcm_tokens ? fcm_tokens.filter(token => token) : [];
-
-//     // Send notifications if FCM tokens are available
-//     if (fcmTokens.length > 0) {
-//       const multicastMessage = {
-//         tokens: fcmTokens,
-//         notification: {
-//           title: "Click Solver",
-//           body: `Commander has completed your work. Great to hear!`,
-//         },
-//         data: {
-//           notification_id: notification_id.toString(),
-//           screen: 'Paymentscreen',
-//         },
-//       };
-
-//       try {
-//         const response = await getMessaging().sendEachForMulticast(multicastMessage);
-
-//         response.responses.forEach((resItem, index) => {
-//           if (resItem.success) {
-//             // console.log(`Message sent successfully to token ${fcmTokens[index]}`);
-//           } else {
-//             console.error(`Error sending message to token ${fcmTokens[index]}:`, resItem.error);
-//           }
-//         });
-
-//         // console.log('Success Count:', response.successCount);
-//         // console.log('Failure Count:', response.failureCount);
-
-//       } catch (error) {
-//         console.error('Error sending notifications:', error);
-//         return res.status(500).json({ error: 'Error sending notifications.' });
-//       }
-//     } else {
-//       console.error('No FCM tokens to send the message to.');
-//       return res.status(200).json({ message: 'No FCM tokens to send the message to.' });
-//     }
-
-//     // Create a background action for the user
-//     const screen = "Paymentscreen";
-//     // console.log(screen,encodedId,user_id,service_booked)
-//     // createUserBackgroundAction(user_id, encodedId, screen, service_booked);
-
-//     // Respond with success
-//     return res.status(200).json({ notification_id, end_time: updated_end_time, time_worked });
-
-//   } catch (error) {
-//     console.error('Error updating end time:', error);
-//     return res.status(500).json({ error: 'Internal server error.' });
-//   }
-// };
 
 const stopStopwatch = async (notification_id) => {
   if (stopwatchInterval) {
@@ -12102,8 +12541,6 @@ const getWorkerNavigationDetails = async (req, res) => {
       w.name, 
       w.phone_number,
       un.area,
-      un.city,
-      un.pincode,
       ws.profile,
       wl.average_rating, -- Fetch average rating from workerlife
       wl.service_counts  -- Fetch service counts from workerlife
@@ -12185,25 +12622,60 @@ const registrationStatus = async (req, res) => {
   }
 };
 
+// const subservices = async (req, res) => {
+//   const { selectedService } = req.body;
+//   try {
+//     const result = await client.query(
+//       `SELECT 
+          
+//             asv.service_tag,
+//             rs.service_category
+//         FROM 
+//             servicecategories sc
+//         JOIN 
+//             relatedservices rs ON sc.service_name = rs.service 
+//         JOIN 
+//             allservices asv ON asv.service_category = rs.service_category
+//         WHERE 
+//             sc.service_name = $1;
+//         `,
+//       [selectedService]
+//     );
+//     // console.log(selectedService)
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({ error: "worker not found" });
+//     } else {
+//       return res.status(200).json(result.rows);
+//     }
+//   } catch (error) {
+//     console.error("Error updating skill registration:", error);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+// };
+
 const subservices = async (req, res) => {
   const { selectedService } = req.body;
+  console.log(selectedService)
   try {
     const result = await client.query(
       `SELECT 
             asv.service_tag,
-            rs.service_category
-        FROM 
+            asv.main_service_id,
+            rs.service_category,
+            s.service_id
+        FROM  
             servicecategories sc
         JOIN 
             relatedservices rs ON sc.service_name = rs.service 
         JOIN 
             allservices asv ON asv.service_category = rs.service_category
+        JOIN
+            services s ON s.service_name = rs.service_category
         WHERE 
             sc.service_name = $1;
         `,
       [selectedService]
     );
-    // console.log(selectedService)
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "worker not found" });
     } else {
@@ -12214,6 +12686,8 @@ const subservices = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+
 
 const userUpdateLastLogin = async (req, res) => {
   const userId = req.worker.id;
@@ -12962,14 +13436,296 @@ const getPaymentDetails = async (notification_id) => {
 // };
 
 
+
+//real
+// const processPayment = async (req, res) => {
+//   const { totalAmount, paymentMethod, decodedId } = req.body;
+
+
+//   if ( !paymentMethod || !decodedId) {
+//     return res.status(402).json({
+//       error: "Missing required fields: totalAmount, paymentMethod, and decodedId.",
+//     });
+//   }
+
+//   try {
+//     const end_time = new Date();
+
+//     // if(offer){
+//     //   const offerCodeValue = offer.offer_code
+//     //   const queryText = `
+//     //     UPDATE "user" AS u
+//     //     SET offers_used = (
+//     //       SELECT jsonb_agg(
+//     //         CASE
+//     //           WHEN elem->>'offer_code' = $1
+//     //             THEN elem || '{"status":"used"}'
+//     //           ELSE elem
+//     //         END
+//     //       )
+//     //       FROM jsonb_array_elements(u.offers_used) elem
+//     //     )
+//     //     WHERE u.user_id = $2
+//     //   `;
+
+//     //   const values = [offerCodeValue, userId];
+
+//     //   await client.query(queryText, values);
+//     // }
+
+//     /**
+//      * Multi-CTE query steps:
+//      * 1) update_servicecall
+//      * 2) update_accepted
+//      * 3) upsert_workerlife
+//      * 4) insert_completenotifications
+//      * 5) mark_service_completed
+//      * 6) manage_referral_rewards
+//      * 7) update_user_referred_by
+//      * 8) delete_servicetracking
+//      * 9) get_user_fcms       <-- New CTE to fetch user’s tokens
+//      * 10) final SELECT
+//      */
+//     const combinedQuery = `
+//       WITH update_servicecall AS (
+//         UPDATE servicecall
+//         SET payment = $1,
+//             payment_type = $2,
+//             end_time = now()  -- directly setting a timestamp
+//         WHERE notification_id = $3
+//         RETURNING notification_id
+//       ),
+//       update_accepted AS (
+//         UPDATE accepted a
+//         SET
+//           time = jsonb_set(
+//             COALESCE(a.time, '{}'::jsonb),
+//             '{paymentCompleted}',
+//             to_jsonb(to_char($4::timestamp, 'YYYY-MM-DD HH24:MI:SS'))
+//           )
+//         FROM update_servicecall us
+//         WHERE a.notification_id = us.notification_id
+//         RETURNING
+//           a.accepted_id,
+//           a.notification_id,
+//           a.user_id,
+//           a.user_notification_id,
+//           a.service_booked,
+//           a.longitude,
+//           a.latitude,
+//           a.worker_id,
+//           a.time,
+//           a.discount,
+//           a.total_cost,
+//           a.tip_amount
+//       ),
+//       upsert_workerlife AS (
+//         INSERT INTO workerlife (
+//           worker_id,
+//           service_counts,
+//           money_earned,
+//           balance_amount,
+//           cashback_approved_times
+//         )
+//         SELECT
+//           ua.worker_id,
+//           1,
+//           $6,
+//           CASE WHEN $5 = 'cash' THEN -($6 * 0.12) ELSE ($6 * 0.88) END,
+//           0
+//         FROM update_accepted ua
+//         ON CONFLICT (worker_id)
+//         DO UPDATE
+//           SET service_counts = workerlife.service_counts + 1,
+//               money_earned = workerlife.money_earned + EXCLUDED.money_earned,
+//               balance_amount = CASE
+//                 WHEN $5 = 'cash'
+//                   THEN workerlife.balance_amount - ($6 * 0.12)
+//                 ELSE workerlife.balance_amount + ($6 * 0.88)
+//               END,
+//               cashback_approved_times = floor((workerlife.service_counts + 1) / 6)
+//         RETURNING worker_id, balance_amount, cashback_approved_times, service_counts
+//       ),
+//       insert_completenotifications AS (
+//         INSERT INTO completenotifications (
+//           accepted_id,
+//           notification_id,
+//           user_id,
+//           user_notification_id,
+//           service_booked,
+//           longitude,
+//           latitude,
+//           worker_id,
+//           time,
+//           discount,
+//           total_cost,
+//           tip_amount
+//         )
+//         SELECT
+//           ua.accepted_id,
+//           ua.notification_id,
+//           ua.user_id,
+//           ua.user_notification_id,
+//           ua.service_booked,
+//           ua.longitude,
+//           ua.latitude,
+//           ua.worker_id,
+//           ua.time,
+//           ua.discount,
+//           ua.total_cost,
+//           ua.tip_amount
+//         FROM update_accepted ua
+//         RETURNING *
+//       ),
+//       mark_service_completed AS (
+//         UPDATE "user"
+//         SET service_completed = TRUE
+//         WHERE user_id IN (
+//           SELECT user_id FROM update_accepted
+//         )
+//           AND service_completed = FALSE
+//         RETURNING user_id, referred_by
+//       ),
+//       manage_referral_rewards AS (
+//         INSERT INTO referral_rewards (referral_code, coupons, total_referrals)
+//         SELECT
+//           referred_by AS referral_code,
+//           1 AS coupons,
+//           1 AS total_referrals
+//         FROM mark_service_completed
+//         WHERE referred_by IS NOT NULL
+//         ON CONFLICT (referral_code)
+//         DO UPDATE
+//           SET coupons = referral_rewards.coupons + 1,
+//               total_referrals = referral_rewards.total_referrals + 1
+//         RETURNING referral_code
+//       ),
+//       update_user_referred_by AS (
+//         UPDATE "user"
+//         SET referred_by = (SELECT referred_by FROM mark_service_completed LIMIT 1)
+//         WHERE user_id = (SELECT user_id FROM mark_service_completed LIMIT 1)
+//         RETURNING user_id
+//       ),
+//       delete_servicetracking AS (
+//         DELETE FROM servicetracking
+//         WHERE notification_id = $3
+//         RETURNING *
+//       ),
+//       /* New CTE to fetch all user FCM tokens in one query */
+//       get_user_fcms AS (
+//         SELECT
+//           ua.user_id,
+//           array_agg(uf.fcm_token) AS user_fcm_tokens
+//         FROM update_accepted ua
+//         JOIN userfcm uf ON uf.user_id = ua.user_id
+//         GROUP BY ua.user_id
+//       )
+//       /* Final SELECT */
+//       SELECT
+//         ua.user_id, 
+//         ua.service_booked,
+//         ua.worker_id,
+//         (SELECT balance_amount FROM upsert_workerlife LIMIT 1) AS final_balance,
+//         gf.user_fcm_tokens
+//       FROM update_accepted ua
+//       LEFT JOIN get_user_fcms gf ON gf.user_id = ua.user_id
+//       LEFT JOIN delete_servicetracking ds ON TRUE
+//     `;
+
+//     // Values for placeholders $5, $6 in upsert_workerlife
+//     const values = [
+//       totalAmount,     // $1: Payment amount (for servicecall)
+//       paymentMethod,   // $2: Payment method (for servicecall)
+//       decodedId,       // $3: Notification ID
+//       end_time,        // $4: End time
+//       paymentMethod,   // $5: Payment method used in upsert_workerlife logic
+//       totalAmount,     // $6: Payment amount used for workerlife
+
+//     ];
+
+//     const combinedResult = await client.query(combinedQuery, values);
+
+//     if (combinedResult.rows.length === 0) {
+//       return res.status(404).json({ error: "Notification not found." });
+//     }
+
+//     // Delete from `accepted` after finalizing
+//     const deleteQuery = `
+//       DELETE FROM accepted
+//       WHERE notification_id = $1
+//       RETURNING *;
+//     `;
+//     const deleteResult = await client.query(deleteQuery, [decodedId]);
+//     console.log("Deleted rows from accepted:", deleteResult.rowCount);
+
+//     if (deleteResult.rowCount === 0) {
+//       console.warn(`No rows deleted from accepted for notification_id: ${decodedId}`);
+//     }
+
+//     // Extract needed columns from final SELECT
+//     const row = combinedResult.rows[0];
+//     const {
+//       user_id,
+//       service_booked,
+//       worker_id,
+//       final_balance,
+//       user_fcm_tokens
+//     } = row;
+//     console.log("Final row from combined query =>", row);
+
+//     // 1) Call your background actions
+//     const screen = "";
+//     const encodedNotificationId = Buffer.from(decodedId.toString()).toString("base64");
+
+//     await createUserBackgroundAction(user_id, encodedNotificationId, screen, service_booked);
+//     await updateWorkerAction(worker_id, encodedNotificationId, screen);
+
+//     // 2) Use the user_fcm_tokens (array from CTE) to send notifications
+//     if (user_fcm_tokens && user_fcm_tokens.length > 0) {
+//       const message = {
+//         tokens: user_fcm_tokens,
+//         notification: {
+//           title: "Payment Confirmation",
+//           body: `Payment of ${totalAmount} completed! Your final balance is now ${
+//             final_balance ?? "unknown"
+//           }.`,
+//         },
+//         data: {
+//           notification_id: decodedId.toString(),
+//           type: "PAYMENT_CONFIRMATION",
+//           screen: "Home",
+//         },
+//       };
+
+//       try {
+//         // If using Firebase Admin SDK's sendEachForMulticast:
+//         const response = await admin.messaging().sendEachForMulticast(message);
+//         response.responses.forEach((resp, index) => {
+//           if (!resp.success) {
+//             console.error(`Error sending to token ${user_fcm_tokens[index]}: `, resp.error);
+//           }
+//         });
+//         console.log(`Notifications sent to user_id: ${user_id}`);
+//       } catch (err) {
+//         console.error("Error sending user payment notification:", err);
+//       }
+//     } else {
+//       console.log(`No FCM tokens for user_id: ${user_id}`);
+//     }
+
+//     return res.status(200).json({ message: "Payment processed successfully" });
+//   } catch (error) {
+//     console.error("Error processing payment:", error);
+//     return res
+//       .status(500)
+//       .json({ error: "An error occurred while processing the payment" });
+//   }
+// };
+
 const processPayment = async (req, res) => {
   const { totalAmount, paymentMethod, decodedId } = req.body;
 
-  console.log("Total Amount:", totalAmount);
-  console.log("Payment Method:", paymentMethod);
-  console.log("Decoded ID:", decodedId);
-
-  if ( !paymentMethod || !decodedId) {
+  if (!paymentMethod || !decodedId) {
     return res.status(402).json({
       error: "Missing required fields: totalAmount, paymentMethod, and decodedId.",
     });
@@ -12978,73 +13734,25 @@ const processPayment = async (req, res) => {
   try {
     const end_time = new Date();
 
-    // if(offer){
-    //   const offerCodeValue = offer.offer_code
-    //   const queryText = `
-    //     UPDATE "user" AS u
-    //     SET offers_used = (
-    //       SELECT jsonb_agg(
-    //         CASE
-    //           WHEN elem->>'offer_code' = $1
-    //             THEN elem || '{"status":"used"}'
-    //           ELSE elem
-    //         END
-    //       )
-    //       FROM jsonb_array_elements(u.offers_used) elem
-    //     )
-    //     WHERE u.user_id = $2
-    //   `;
-
-    //   const values = [offerCodeValue, userId];
-
-    //   await client.query(queryText, values);
-    // }
-
-    /**
-     * Multi-CTE query steps:
-     * 1) update_servicecall
-     * 2) update_accepted
-     * 3) upsert_workerlife
-     * 4) insert_completenotifications
-     * 5) mark_service_completed
-     * 6) manage_referral_rewards
-     * 7) update_user_referred_by
-     * 8) delete_servicetracking
-     * 9) get_user_fcms       <-- New CTE to fetch user’s tokens
-     * 10) final SELECT
-     */
     const combinedQuery = `
       WITH update_servicecall AS (
         UPDATE servicecall
         SET payment = $1,
             payment_type = $2,
-            end_time = now()  -- directly setting a timestamp
+            end_time = now()
         WHERE notification_id = $3
         RETURNING notification_id
       ),
       update_accepted AS (
-        UPDATE accepted a
-        SET
-          time = jsonb_set(
-            COALESCE(a.time, '{}'::jsonb),
-            '{paymentCompleted}',
-            to_jsonb(to_char($4::timestamp, 'YYYY-MM-DD HH24:MI:SS'))
-          )
-        FROM update_servicecall us
-        WHERE a.notification_id = us.notification_id
-        RETURNING
-          a.accepted_id,
-          a.notification_id,
-          a.user_id,
-          a.user_notification_id,
-          a.service_booked,
-          a.longitude,
-          a.latitude,
-          a.worker_id,
-          a.time,
-          a.discount,
-          a.total_cost,
-          a.tip_amount
+        UPDATE accepted
+        SET time = jsonb_set(
+          COALESCE(time, '{}'::jsonb),
+          '{paymentCompleted}',
+          to_jsonb(to_char($4::timestamp, 'YYYY-MM-DD HH24:MI:SS'))
+        )
+        FROM update_servicecall
+        WHERE accepted.notification_id = update_servicecall.notification_id
+        RETURNING user_id, service_booked, worker_id
       ),
       upsert_workerlife AS (
         INSERT INTO workerlife (
@@ -13055,12 +13763,12 @@ const processPayment = async (req, res) => {
           cashback_approved_times
         )
         SELECT
-          ua.worker_id,
+          worker_id,
           1,
           $6,
           CASE WHEN $5 = 'cash' THEN -($6 * 0.12) ELSE ($6 * 0.88) END,
           0
-        FROM update_accepted ua
+        FROM update_accepted
         ON CONFLICT (worker_id)
         DO UPDATE
           SET service_counts = workerlife.service_counts + 1,
@@ -13071,83 +13779,21 @@ const processPayment = async (req, res) => {
                 ELSE workerlife.balance_amount + ($6 * 0.88)
               END,
               cashback_approved_times = floor((workerlife.service_counts + 1) / 6)
-        RETURNING worker_id, balance_amount, cashback_approved_times, service_counts
-      ),
-      insert_completenotifications AS (
-        INSERT INTO completenotifications (
-          accepted_id,
-          notification_id,
-          user_id,
-          user_notification_id,
-          service_booked,
-          longitude,
-          latitude,
-          worker_id,
-          time,
-          discount,
-          total_cost,
-          tip_amount
-        )
-        SELECT
-          ua.accepted_id,
-          ua.notification_id,
-          ua.user_id,
-          ua.user_notification_id,
-          ua.service_booked,
-          ua.longitude,
-          ua.latitude,
-          ua.worker_id,
-          ua.time,
-          ua.discount,
-          ua.total_cost,
-          ua.tip_amount
-        FROM update_accepted ua
-        RETURNING *
-      ),
-      mark_service_completed AS (
-        UPDATE "user"
-        SET service_completed = TRUE
-        WHERE user_id IN (
-          SELECT user_id FROM update_accepted
-        )
-          AND service_completed = FALSE
-        RETURNING user_id, referred_by
-      ),
-      manage_referral_rewards AS (
-        INSERT INTO referral_rewards (referral_code, coupons, total_referrals)
-        SELECT
-          referred_by AS referral_code,
-          1 AS coupons,
-          1 AS total_referrals
-        FROM mark_service_completed
-        WHERE referred_by IS NOT NULL
-        ON CONFLICT (referral_code)
-        DO UPDATE
-          SET coupons = referral_rewards.coupons + 1,
-              total_referrals = referral_rewards.total_referrals + 1
-        RETURNING referral_code
-      ),
-      update_user_referred_by AS (
-        UPDATE "user"
-        SET referred_by = (SELECT referred_by FROM mark_service_completed LIMIT 1)
-        WHERE user_id = (SELECT user_id FROM mark_service_completed LIMIT 1)
-        RETURNING user_id
+        RETURNING balance_amount
       ),
       delete_servicetracking AS (
         DELETE FROM servicetracking
         WHERE notification_id = $3
         RETURNING *
       ),
-      /* New CTE to fetch all user FCM tokens in one query */
       get_user_fcms AS (
         SELECT
-          ua.user_id,
-          array_agg(uf.fcm_token) AS user_fcm_tokens
-        FROM update_accepted ua
-        JOIN userfcm uf ON uf.user_id = ua.user_id
-        GROUP BY ua.user_id
+          user_id,
+          array_agg(fcm_token) AS user_fcm_tokens
+        FROM userfcm
+        WHERE user_id IN (SELECT user_id FROM update_accepted)
+        GROUP BY user_id
       )
-      /* Final SELECT */
       SELECT
         ua.user_id, 
         ua.service_booked,
@@ -13155,11 +13801,10 @@ const processPayment = async (req, res) => {
         (SELECT balance_amount FROM upsert_workerlife LIMIT 1) AS final_balance,
         gf.user_fcm_tokens
       FROM update_accepted ua
-      LEFT JOIN get_user_fcms gf ON gf.user_id = ua.user_id
-      LEFT JOIN delete_servicetracking ds ON TRUE
+      LEFT JOIN get_user_fcms gf ON gf.user_id = ua.user_id;
     `;
 
-    // Values for placeholders $5, $6 in upsert_workerlife
+    // Placeholder values for the combined query.
     const values = [
       totalAmount,     // $1: Payment amount (for servicecall)
       paymentMethod,   // $2: Payment method (for servicecall)
@@ -13167,7 +13812,6 @@ const processPayment = async (req, res) => {
       end_time,        // $4: End time
       paymentMethod,   // $5: Payment method used in upsert_workerlife logic
       totalAmount,     // $6: Payment amount used for workerlife
-
     ];
 
     const combinedResult = await client.query(combinedQuery, values);
@@ -13176,7 +13820,7 @@ const processPayment = async (req, res) => {
       return res.status(404).json({ error: "Notification not found." });
     }
 
-    // Delete from `accepted` after finalizing
+    // Delete from accepted after finalizing
     const deleteQuery = `
       DELETE FROM accepted
       WHERE notification_id = $1
@@ -13189,33 +13833,23 @@ const processPayment = async (req, res) => {
       console.warn(`No rows deleted from accepted for notification_id: ${decodedId}`);
     }
 
-    // Extract needed columns from final SELECT
-    const row = combinedResult.rows[0];
-    const {
-      user_id,
-      service_booked,
-      worker_id,
-      final_balance,
-      user_fcm_tokens
-    } = row;
-    console.log("Final row from combined query =>", row);
+    // Extract only the needed columns from the final SELECT
+    const { user_id, service_booked, worker_id, final_balance, user_fcm_tokens } = combinedResult.rows[0];
+    console.log("Final row from combined query =>", combinedResult.rows[0]);
 
-    // 1) Call your background actions
+    // 1) Trigger background actions
     const screen = "";
     const encodedNotificationId = Buffer.from(decodedId.toString()).toString("base64");
-
     await createUserBackgroundAction(user_id, encodedNotificationId, screen, service_booked);
     await updateWorkerAction(worker_id, encodedNotificationId, screen);
 
-    // 2) Use the user_fcm_tokens (array from CTE) to send notifications
+    // 2) Use the aggregated FCM tokens to send notifications
     if (user_fcm_tokens && user_fcm_tokens.length > 0) {
       const message = {
         tokens: user_fcm_tokens,
         notification: {
           title: "Payment Confirmation",
-          body: `Payment of ${totalAmount} completed! Your final balance is now ${
-            final_balance ?? "unknown"
-          }.`,
+          body: `Payment of ${totalAmount} completed! Your final balance is now ${final_balance ?? "unknown"}.`,
         },
         data: {
           notification_id: decodedId.toString(),
@@ -13225,7 +13859,6 @@ const processPayment = async (req, res) => {
       };
 
       try {
-        // If using Firebase Admin SDK's sendEachForMulticast:
         const response = await admin.messaging().sendEachForMulticast(message);
         response.responses.forEach((resp, index) => {
           if (!resp.success) {
@@ -13243,207 +13876,13 @@ const processPayment = async (req, res) => {
     return res.status(200).json({ message: "Payment processed successfully" });
   } catch (error) {
     console.error("Error processing payment:", error);
-    return res
-      .status(500)
-      .json({ error: "An error occurred while processing the payment" });
+    return res.status(500).json({ error: "An error occurred while processing the payment" });
   }
 };
 
 
 
 
-
-// const processPayment = async (req, res) => {
-//   const { totalAmount, paymentMethod, decodedId } = req.body;
-
-//   console.log("Total Amount:", totalAmount);
-//   console.log("Payment Method:", paymentMethod);
-//   console.log("Decoded ID:", decodedId);
-
-//   if (!totalAmount || !paymentMethod || !decodedId) {
-//     return res.status(402).json({
-//       error:
-//         "Missing required fields: totalAmount, paymentMethod, and decodedId.",
-//     });
-//   }
-
-//   try {
-//     const end_time = new Date();
-
-//     const combinedQuery = `
-// WITH update_servicecall AS (
-//   UPDATE servicecall
-//   SET
-//     payment = $1,
-//     payment_type = $2
-//   WHERE notification_id = $3
-//   RETURNING notification_id
-// ),
-// update_accepted AS (
-//   UPDATE accepted a
-//   SET
-//     time = jsonb_set(
-//       COALESCE(a.time, '{}'::jsonb),
-//       '{paymentCompleted}',
-//       to_jsonb(to_char($4::timestamp, 'YYYY-MM-DD HH24:MI:SS'))
-//     )
-//   FROM update_servicecall us
-//   WHERE a.notification_id = us.notification_id
-//   RETURNING
-//     a.accepted_id,
-//     a.notification_id,
-//     a.user_id,
-//     a.user_notification_id,
-//     a.service_booked,
-//     a.longitude,
-//     a.latitude,
-//     a.worker_id,
-//     a.time,
-//     a.discount,
-//     a.total_cost
-// ),
-// update_workerlife AS (
-//   UPDATE workerlife wl
-//   SET
-//     service_counts = wl.service_counts + 1,
-//     money_earned = wl.money_earned + $6,
-//     balance_amount = CASE
-//       WHEN $5 = 'cash' THEN wl.balance_amount - ($6 * 0.12)
-//       ELSE wl.balance_amount + ($6 * 0.88)
-//     END,
-//     cashback_approved_times = COALESCE((wl.service_counts + 1) / 6, 0)
-//   FROM update_accepted ua
-//   WHERE wl.worker_id = ua.worker_id
-//   RETURNING wl.worker_id, wl.balance_amount, wl.cashback_approved_times, wl.service_counts
-// ),
-// insert_completenotifications AS (
-//   INSERT INTO completenotifications (
-//     accepted_id,
-//     notification_id,
-//     user_id,
-//     user_notification_id,
-//     service_booked,
-//     longitude,
-//     latitude,
-//     worker_id,
-//     time,
-//     discount,
-//     total_cost
-//   )
-//   SELECT
-//     ua.accepted_id,
-//     ua.notification_id,
-//     ua.user_id,
-//     ua.user_notification_id,
-//     ua.service_booked,
-//     ua.longitude,
-//     ua.latitude,
-//     ua.worker_id,
-//     ua.time,
-//     ua.discount,
-//     ua.total_cost
-//   FROM update_accepted ua
-//   RETURNING *
-// ),
-// mark_service_completed AS (
-//   UPDATE "user"
-//   SET service_completed = TRUE
-//   WHERE user_id IN (
-//     SELECT user_id FROM update_accepted
-//   )
-//     AND service_completed = FALSE
-//   RETURNING user_id, referred_by
-// ),
-// manage_referral_rewards AS (
-//   INSERT INTO referral_rewards (referral_code, coupons, total_referrals)
-//   SELECT
-//     referred_by AS referral_code,
-//     1 AS coupons,
-//     1 AS total_referrals
-//   FROM mark_service_completed
-//   WHERE referred_by IS NOT NULL
-//   ON CONFLICT (referral_code)
-//   DO UPDATE
-//   SET
-//     coupons = referral_rewards.coupons + 1,
-//     total_referrals = referral_rewards.total_referrals + 1
-//   RETURNING referral_code
-// ),
-// update_user_referred_by AS (
-//   UPDATE "user"
-//   SET referred_by = (SELECT referred_by FROM mark_service_completed LIMIT 1)
-//   WHERE user_id = (SELECT user_id FROM mark_service_completed LIMIT 1)
-//   RETURNING user_id
-// ),
-// delete_servicetracking AS (
-//   DELETE FROM servicetracking
-//   WHERE notification_id = $3
-//   RETURNING *
-// )
-// SELECT
-//   ua.user_id,
-//   ua.service_booked,
-//   ua.worker_id,
-//   COUNT(ds.*) AS deleted_servicetracking
-// FROM update_accepted ua
-// LEFT JOIN delete_servicetracking ds ON TRUE
-// GROUP BY ua.user_id, ua.service_booked, ua.worker_id;
-//     `;
-
-//     // Updated values array to include $5 and $6 for update_workerlife
-//     const values = [
-//       totalAmount,    // $1: Payment amount for servicecall
-//       paymentMethod,  // $2: Payment method for servicecall
-//       decodedId,      // $3: Notification ID
-//       end_time,       // $4: End time for accepted time update
-//       paymentMethod,  // $5: Payment method for workerlife update ('cash' check)
-//       totalAmount,    // $6: Total amount for workerlife calculations
-//     ];
-
-//     const combinedResult = await client.query(combinedQuery, values);
-
-//     if (combinedResult.rows.length === 0) {
-//       return res.status(404).json({ error: "Notification not found." });
-//     }
-
-//     // Now delete from `accepted` separately
-//     const deleteQuery = `
-//       DELETE FROM accepted
-//       WHERE notification_id = $1
-//       RETURNING *;
-//     `;
-
-//     const deleteResult = await client.query(deleteQuery, [decodedId]);
-
-//     console.log("Deleted rows from accepted:", deleteResult.rowCount);
-
-//     if (deleteResult.rowCount === 0) {
-//       console.warn(`No rows deleted from accepted for notification_id: ${decodedId}`);
-//     }
-
-//     // Extract needed columns from final SELECT
-//     const row = combinedResult.rows[0];
-//     const { user_id, service_booked, worker_id } = row;
-
-//     // Continue with notifications, etc.
-//     const screen = "";
-//     const encodedNotificationId = Buffer.from(decodedId.toString()).toString("base64");
-//     await createUserBackgroundAction(
-//       user_id,
-//       encodedNotificationId,
-//       screen,
-//       service_booked
-//     );
-//     await updateWorkerAction(worker_id, encodedNotificationId, screen);
-
-//     return res.status(200).json({ message: "Payment processed successfully" });
-//   } catch (error) {
-//     console.error("Error processing payment:", error);
-//     return res
-//       .status(500)
-//       .json({ error: "An error occurred while processing the payment" });
-//   }
-// };
 
 
 
@@ -13891,153 +14330,35 @@ const getServiceCompletedDetails = async (req, res) => {
   const { notification_id } = req.body;
 
   try {
-    // Combine all steps into a single query with a transaction
-
-    // const query = `
-    //   WITH retrieved_data AS (
-    //       SELECT
-    //           n.accepted_id,
-    //           n.notification_id,
-    //           n.user_notification_id,
-    //           n.service_booked,
-    //           n.longitude,
-    //           n.latitude,
-    //           n.worker_id,
-    //           un.user_id,
-    //           sc.payment,
-    //           sc.payment_type,
-    //           un.city,
-    //           un.pincode,
-    //           un.area,
-    //           u.name,
-    //           n.time -- Added time column
-    //       FROM
-    //           accepted n
-    //       JOIN
-    //           servicecall sc ON n.notification_id = sc.notification_id
-    //       JOIN
-    //           usernotifications un ON n.user_notification_id = un.user_notification_id
-    //       JOIN
-    //           "user" u ON un.user_id = u.user_id
-    //       WHERE
-    //           n.notification_id = $1
-    //   ),
-    //   inserted_data AS (
-    //       INSERT INTO completenotifications (
-    //           accepted_id,
-    //           notification_id,
-    //           user_id,
-    //           user_notification_id,
-    //           service_booked,
-    //           longitude,
-    //           latitude,
-    //           worker_id,
-    //           time
-    //       )
-    //       SELECT
-    //           accepted_id,
-    //           notification_id,
-    //           user_id,
-    //           user_notification_id,
-    //           service_booked,
-    //           longitude,
-    //           latitude,
-    //           worker_id,
-    //           time
-    //       FROM retrieved_data
-    //       ON CONFLICT (accepted_id) DO NOTHING
-    //       RETURNING *
-    //   ),
-    //   deleted_accepted_data AS (
-    //       DELETE FROM accepted
-    //       WHERE notification_id = $1
-    //       RETURNING *
-    //   ),
-    //   deleted_service_tracking_data AS (
-    //       DELETE FROM servicetracking
-    //       WHERE notification_id = $1
-    //       RETURNING *
-    //   )
-    //   SELECT
-    //       r.payment,
-    //       r.payment_type,
-    //       r.service_booked,
-    //       r.longitude,
-    //       r.latitude,
-    //       r.area,
-    //       r.city,
-    //       r.pincode,
-    //       r.name
-    //   FROM retrieved_data r;
-    // `;
-
     const query = `
-      WITH data AS (
-          SELECT 
-              sc.payment, 
-              sc.payment_type, 
-              cn.service_booked, 
-              cn.longitude, 
-              cn.latitude, 
-              cn.total_cost,
-              un.area, 
-              un.city, 
-              un.pincode, 
-              u.name
-          FROM 
-              completenotifications cn
-          JOIN 
-              servicecall sc ON cn.notification_id = sc.notification_id
-          JOIN 
-              usernotifications un ON cn.user_notification_id = un.user_notification_id
-          JOIN 
-              "user" u ON un.user_id = u.user_id
-          WHERE 
-              cn.notification_id = $1
-      )
       SELECT 
-          data.payment, 
-          data.payment_type, 
-          data.service_booked, 
-          data.longitude, 
-          data.latitude, 
-          data.total_cost,
-          data.area, 
-          data.city, 
-          data.pincode, 
-          data.name
-      FROM data;
-  `;
+          sc.payment, 
+          sc.payment_type, 
+          cn.service_booked, 
+          cn.longitude, 
+          cn.latitude, 
+          un.area, 
+          u.name
+      FROM completenotifications cn
+      JOIN servicecall sc ON cn.notification_id = sc.notification_id
+      JOIN usernotifications un ON cn.user_notification_id = un.user_notification_id
+      JOIN "user" u ON un.user_id = u.user_id
+      WHERE cn.notification_id = $1;
+    `;
 
     const result = await client.query(query, [notification_id]);
 
     if (result.rows.length === 0) {
-      return res
-        .status(404)
-        .json({ error: "Notification or related data not found" });
+      return res.status(404).json({ error: "Notification or related data not found" });
     }
 
-    // console.log("getServiceCompletedDetails",result.rows[0])
-
-    // Extract the necessary details from the retrieved data
-    const {
-      payment,
-      payment_type,
-      service_booked,
-      longitude,
-      latitude,
-      area,
-      city,
-      pincode,
-      name,
-    } = result.rows[0];
+    const { payment, payment_type, service_booked, longitude, latitude, area, name } = result.rows[0];
     const jsonbServiceBooked =
       typeof service_booked === "object"
         ? JSON.stringify(service_booked)
         : service_booked;
 
-    // Return the response with the required details
-    res.json({
+    return res.json({
       message: "Service completed and data shifted successfully",
       payment,
       payment_type,
@@ -14045,15 +14366,14 @@ const getServiceCompletedDetails = async (req, res) => {
       longitude,
       latitude,
       area,
-      city,
-      pincode,
       name,
     });
   } catch (error) {
     console.error("Error checking worker details:", error);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 // const getServiceCompletedDetails = async (req, res) => {
 //   const { notification_id } = req.body;
@@ -14522,8 +14842,7 @@ const workerWorkingStatusUpdated = async (req, res) => {
   const { serviceName, statusKey, currentTime, decodedId } = req.body;
 
   try {
-    // Update the accepted table's service_status column
-    // and then join the updated row with the userfcm table to retrieve fcm_token(s).
+    // Update the accepted table's service_status column and return only necessary fields.
     const query = `
       WITH updated AS (
         UPDATE accepted
@@ -14538,9 +14857,9 @@ const workerWorkingStatusUpdated = async (req, res) => {
           FROM jsonb_array_elements(service_status) AS item
         )
         WHERE notification_id = $3
-        RETURNING *
+        RETURNING notification_id, service_status, user_id
       )
-      SELECT updated.*, uf.fcm_token
+      SELECT updated.notification_id, updated.service_status, uf.fcm_token
       FROM updated
       JOIN userfcm uf ON updated.user_id = uf.user_id;
     `;
@@ -14552,30 +14871,24 @@ const workerWorkingStatusUpdated = async (req, res) => {
       return res.status(404).json({ message: "Record not found or update failed." });
     }
 
-    // Extract all FCM tokens (if multiple rows, there may be duplicates)
+    // Extract FCM tokens from the result (if multiple rows, there might be duplicates)
     const tokens = rows.map(row => row.fcm_token);
 
     // Prepare the multicast message payload with a data payload.
     const multicastMessage = {
-      tokens: tokens,
+      tokens,
       data: {
         status: currentTime.toString(),
-        statusKey: statusKey,
+        statusKey,
         message: "Status updated"
       },
       android: {
-        priority: "high",
-        // notification: {
-        //   channelId: "silent_channel",  // Use a channel created for silent notifications
-        //   priority: "min",              // Minimizes the notification prominence
-        //   visibility: "secret"          // Hides it from the status bar
-        // }
+        priority: "high"
       },
       apns: {
         payload: {
           aps: {
-            contentAvailable: true // Ensures the app processes the notification silently
-            // Remove the sound property to avoid errors for silent notifications.
+            contentAvailable: true
           }
         }
       }
@@ -14604,6 +14917,7 @@ const workerWorkingStatusUpdated = async (req, res) => {
     return res.status(500).json({ message: "Internal server error", error });
   }
 };
+
 
 
 
@@ -15862,5 +16176,9 @@ module.exports = {
   workerProfileUpdate,
   profileChangesSubmit,
   fetchOffers,
-  offerValidation
+  offerValidation,
+  translateText,
+  getRoute,
+  initiateCall,
+  getServiceBookingUserItemDetails
 };

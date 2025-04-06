@@ -479,7 +479,6 @@ const WaitingUser = () => {
             `https://backend.clicksolver.com/api/checking/status`,
             {
               params: { user_notification_id: decodedId },
-              validateStatus: (status) => status === 200 || status === 201,
             }
           );
   
@@ -495,11 +494,11 @@ const WaitingUser = () => {
             const encodedNotificationId = Buffer.from(notification_id.toString(), 'utf-8').toString('base64');
             const cs_token = await EncryptedStorage.getItem('cs_token');
   
-            await axios.post(
-              `https://backend.clicksolver.com/api/user/action/cancel`,
-              { encodedId: encodedData, screen: 'userwaiting',offer },
-              { headers: { Authorization: `Bearer ${cs_token}` } }
-            );
+            // await axios.post(
+            //   `https://backend.clicksolver.com/api/user/action/cancel`,
+            //   { encodedId: encodedData, screen: 'userwaiting',offer },
+            //   { headers: { Authorization: `Bearer ${cs_token}` } }
+            // );
   
             await axios.post(
               `https://backend.clicksolver.com/api/user/action`,
