@@ -34,6 +34,7 @@ import { ThemeProvider, useTheme } from './context/ThemeContext';
 
 // Import all screens and components
 import UserLocation from './Components/userLocation';
+import Home from './screens/Home';
 import WaitingUser from './Components/UserWaiting';
 import Navigation from './Components/Navigation';
 import ServiceInProgress from './Components/ServiceInProgress';
@@ -120,7 +121,7 @@ function TabNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Home" component={ServiceApp} options={{ headerShown: false, tabBarLabel: t('tab_home', 'Home'), }} />
+      <Tab.Screen name="Home" component={Home} options={{ headerShown: false, tabBarLabel: t('tab_home', 'Home'), }} />
       <Tab.Screen name="Bookings" component={RecentServices} options={{ headerShown: false,  tabBarLabel: t('tab_bookings', 'Bookings'), }} />
       <Tab.Screen name="Tracking" component={ServiceTrackingListScreen} options={{ headerShown: false, tabBarLabel: t('tab_tracking', 'Tracking'), }} />
       <Tab.Screen name="Account" component={ProfileScreen} options={{ headerShown: false, tabBarLabel: t('tab_account', 'Account'), }} />

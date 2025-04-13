@@ -3734,6 +3734,38 @@ const getIndividualServices = async (req, res) => {
   }
 };
 
+const homeServices = async (req, res) => {
+  try {
+    const query = `
+      SELECT
+        service_title,
+        array_agg(service_id ORDER BY service_id)      AS service_ids,
+        array_agg(service_name ORDER BY service_id)    AS service_names,
+        array_agg(service_urls  ORDER BY service_id)    AS service_urls
+      FROM services
+      GROUP BY service_title
+      ORDER BY service_title;
+    `;
+
+    const { rows } = await client.query(query);
+
+    // Optionally, if you want each row to have a flatter shape:
+    // const services = rows.map(r => ({
+    //   title: r.service_title,
+    //   ids:   r.service_ids,
+    //   names: r.service_names,
+    //   urls:  r.service_urls,
+    // }));
+
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error("Error fetching home services:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching home services" });
+  }
+};
+
 const getUserBookings = async (req, res) => {
   const userId = req.user.id;
 
@@ -5487,6 +5519,7 @@ const acceptRequest = async (req, res) => {
       parsedServiceBooked,
       userNotificationEncodedId
     );
+    await updateWorkerAction(worker_id, encodedId, screen);
     res.status(200).json({
       message: "Status updated to accept",
       notificationId: insertedNotificationId,
@@ -5515,7 +5548,7 @@ const userNavigationCancel = async (req, res) => {
     const combinedQuery = await client.query(
       `
       WITH verification AS (
-        SELECT verification_status, worker_id
+        SELECT verification_status, worker_id, service_booked
         FROM accepted 
         WHERE notification_id = $1
       ),
@@ -5567,6 +5600,7 @@ const userNavigationCancel = async (req, res) => {
       SELECT 
         v.verification_status AS verified,
         COALESCE(i.worker_id, v.worker_id) AS worker_id, 
+        service_booked,
         f.fcm_token
       FROM verification v
       LEFT JOIN inserted i ON true
@@ -5593,7 +5627,7 @@ const userNavigationCancel = async (req, res) => {
     await client.query("COMMIT");
     console.log("Transaction committed successfully for notification_id:", notification_id);
 
-    const { verified, worker_id, fcm_token } = combinedQuery.rows[0];
+    const { verified, worker_id, service_booked } = combinedQuery.rows[0];
     console.log("Data:", combinedQuery.rows);
 
     if (verified) {
@@ -5625,7 +5659,7 @@ const userNavigationCancel = async (req, res) => {
         console.error("Error sending notifications:", error);
       }
     }
-
+    await createUserBackgroundAction(user_id, encodedId, screen, service_booked);
     if (worker_id) {
       await updateWorkerAction(worker_id, encodedId, screen);
     } else {
@@ -5700,7 +5734,8 @@ const workerNavigationCancel = async (req, res) => {
       SELECT 
         i.user_id, 
         f.fcm_token, 
-        i.service_booked
+        i.service_booked,
+        i.worker_id
       FROM inserted i
       JOIN "user" w ON w.user_id = i.user_id
       JOIN userfcm f ON f.user_id = w.user_id;
@@ -5725,7 +5760,7 @@ const workerNavigationCancel = async (req, res) => {
     await client.query("COMMIT");
     console.log("Transaction committed successfully for notification_id:", notification_id);
 
-    const { user_id, service_booked } = combinedQuery.rows[0];
+    const { user_id, service_booked, worker_id } = combinedQuery.rows[0];
     const fcmTokens = combinedQuery.rows
       .map(row => row.fcm_token)
       .filter(Boolean);
@@ -5755,6 +5790,8 @@ const workerNavigationCancel = async (req, res) => {
       "",
       service_booked
     );
+
+    await updateWorkerAction(worker_id, encodedUserNotificationId, "");
 
     return res.status(200).json({ message: "Cancellation successful" });
   } catch (error) {
@@ -5969,11 +6006,6 @@ const formattedTime = () => {
   return currentDateTime.toLocaleTimeString();
 };
 
-const { getMessaging } = require("firebase-admin/messaging");
-const { client } = require("../db"); // your Postgres client
-const { getAllLocations } = require("../firebase"); // your Firestore fetch
-const { haversineDistance, getCurrentTimestamp, generatePin, formattedDate, formattedTime } = require("../utils"); 
-
 /**
  * getWorkersNearby
  * 1) Insert userNotifications
@@ -6000,6 +6032,8 @@ const getWorkersNearby = async (req, res) => {
       tipAmount,
       offer
     } = req.body;
+
+    console.log("req.body",req.body)
 
     const created_at = getCurrentTimestamp();
     const serviceArray = JSON.stringify(serviceBooked);   // e.g. '[{"serviceName":"...","cost": 250}, ...]'
@@ -6361,12 +6395,13 @@ const workerVerifyOtp = async (req, res) => {
             to_jsonb(to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS'))
           )
         WHERE notification_id = $1 AND pin = $2
-        RETURNING user_id, user_navigation_cancel_status, service_booked
+        RETURNING user_id, user_navigation_cancel_status, service_booked,worker_id
       )
       SELECT 
         updated.user_navigation_cancel_status,
         updated.user_id,
         updated.service_booked,
+        worker_id,
         ARRAY_AGG(u.fcm_token) AS fcm_tokens
       FROM updated
       LEFT JOIN userfcm u ON updated.user_id = u.user_id
@@ -6387,6 +6422,7 @@ const workerVerifyOtp = async (req, res) => {
       user_id,
       service_booked,
       fcm_tokens,
+      worker_id
     } = queryResult.rows[0];
 
     const filteredFcmTokens = fcm_tokens ? fcm_tokens.filter(token => token) : [];
@@ -6435,6 +6471,7 @@ const workerVerifyOtp = async (req, res) => {
     const screen = "worktimescreen";
     const encodedId = Buffer.from(notification_id.toString()).toString("base64");
     await createUserBackgroundAction(user_id, encodedId, screen, service_booked);
+    await updateWorkerAction(worker_id, encodedId, screen);
 
     // If everything is successful, send only HTTP 200 to the frontend.
     return res.status(200).json({ status: "Verification successful" });
@@ -6778,7 +6815,8 @@ const serviceCompleted = async (req, res) => {
           sc.start_time, 
           sc.end_time, 
           a.user_id, 
-          a.service_booked
+          a.service_booked,
+          a.worker_id
         FROM servicecall sc
         JOIN accepted a ON sc.notification_id = a.notification_id
         WHERE sc.notification_id = $1
@@ -6856,6 +6894,7 @@ const serviceCompleted = async (req, res) => {
       updated_time_worked,
       updated_time,
       fcm_tokens,
+      worker_id
     } = result.rows[0];
 
     // If end_time is already set, return a 205 status.
@@ -6913,6 +6952,7 @@ const serviceCompleted = async (req, res) => {
     // Create a background action for the user.
     const screen = "Paymentscreen";
     await createUserBackgroundAction(user_id, encodedId, screen, service_booked);
+    await updateWorkerAction(worker_id, encodedId, screen);
 
     // Respond with success.
     return res.status(200).json({
@@ -9078,5 +9118,6 @@ module.exports = {
   translateText,
   getRoute,
   initiateCall,
-  getServiceBookingUserItemDetails
+  getServiceBookingUserItemDetails,
+  homeServices
 };

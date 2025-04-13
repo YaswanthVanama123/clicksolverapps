@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const {
+  homeServices,
   sendOtp,
   validateOtp,
   verifyOTP,
@@ -181,6 +182,8 @@ const { authAdminMiddleware } = require("./src/middlewares/authAdminMiddleware.j
 
 // Define the route for getting service details
 router.post("/single/service", getServiceByName);
+
+router.get("/home/services",homeServices)
 
 router.post("/route",getRoute)
 
