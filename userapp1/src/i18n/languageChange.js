@@ -5,7 +5,7 @@ export async function changeAppLanguage(languageCode) {
   try {
     await i18n.changeLanguage(languageCode);
     await EncryptedStorage.setItem(LANGUAGE_KEY, languageCode);
-    console.log('Language changed to:', languageCode);
+    // console.log('Language changed to:', languageCode);
   } catch (error) {
     console.error('Error changing language:', error);
   }

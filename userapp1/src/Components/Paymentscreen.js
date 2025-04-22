@@ -61,7 +61,7 @@ const Payment = ({ route }) => {
   // Fetch Payment Details from server using decodedId
   const fetchPaymentDetails = useCallback(async (decodedId) => {
     try {
-      console.log('[Payment] Fetching payment details for:', decodedId);
+      // console.log('[Payment] Fetching payment details for:', decodedId);
       const response = await axios.post(
         'https://backend.clicksolver.com/api/payment/details',
         { notification_id: decodedId }
@@ -89,7 +89,7 @@ const Payment = ({ route }) => {
       });
 
       setServiceArray(service_booked || []);
-      console.log('[Payment] Payment details updated successfully.');
+      // console.log('[Payment] Payment details updated successfully.');
     } catch (error) {
       console.error('[Payment] Error fetching payment details:', error);
     }
@@ -100,7 +100,7 @@ const Payment = ({ route }) => {
     if (encodedId) {
       try {
         const decoded = atob(encodedId);
-        console.log('[Payment] Decoded encodedId:', decoded);
+        // console.log('[Payment] Decoded encodedId:', decoded);
         setDecodedId(decoded);
         fetchPaymentDetails(decoded);
       } catch (error) {
@@ -112,17 +112,14 @@ const Payment = ({ route }) => {
   // ------------------ Notification Handling ------------------
   const handleNotificationData = (data) => {
     if (data && data.notification_id && decodedId) {
-      console.log('[Payment] Notification data received:', data);
+      // console.log('[Payment] Notification data received:', data);
       if (data.notification_id.toString() === decodedId) {
         // Re-encode id for navigation if needed
         // const encodedNotificationId = Buffer.from(
         //   data.notification_id.toString(),
         //   'utf-8'
         // ).toString('base64');
-        console.log(
-          '[Payment] Notification id matches decodedId. Navigating to Home with encoded id:',
-          
-        );
+
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
@@ -151,7 +148,7 @@ const Payment = ({ route }) => {
       .getInitialNotification()
       .then((remoteMessage) => {
         if (remoteMessage && remoteMessage.data) {
-          console.log('[Payment] Cold start notification:', remoteMessage);
+          // console.log('[Payment] Cold start notification:', remoteMessage);
           handleNotificationData(remoteMessage.data);
         }
       });
@@ -161,7 +158,7 @@ const Payment = ({ route }) => {
   useEffect(() => {
     const unsubscribeForeground = messaging().onMessage((remoteMessage) => {
       if (remoteMessage && remoteMessage.data) {
-        console.log('[Payment] Foreground notification:', remoteMessage);
+        // console.log('[Payment] Foreground notification:', remoteMessage);
         handleNotificationData(remoteMessage.data);
       }
     });
@@ -172,7 +169,7 @@ const Payment = ({ route }) => {
   useEffect(() => {
     const unsubscribeOpened = messaging().onNotificationOpenedApp((remoteMessage) => {
       if (remoteMessage && remoteMessage.data) {
-        console.log('[Payment] Notification opened from background:', remoteMessage);
+        // console.log('[Payment] Notification opened from background:', remoteMessage);
         handleNotificationData(remoteMessage.data);
       }
     });
@@ -183,9 +180,9 @@ const Payment = ({ route }) => {
   // AppState listener: Re-fetch payment details when app comes to the foreground
   useEffect(() => {
     const handleAppStateChange = (nextAppState) => {
-      console.log(`[Payment] AppState changed from ${appState} to ${nextAppState}`);
+      // console.log(`[Payment] AppState changed from ${appState} to ${nextAppState}`);
       if ((appState === 'inactive' || appState === 'background') && nextAppState === 'active') {
-        console.log('[Payment] App came to the foreground. Re-fetching payment details...');
+        // console.log('[Payment] App came to the foreground. Re-fetching payment details...');
         
         if (decodedId) {
           navigation.dispatch(
@@ -214,10 +211,10 @@ const Payment = ({ route }) => {
     };
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
-    console.log('[Payment] AppState listener added.');
+    // console.log('[Payment] AppState listener added.');
 
     return () => {
-      console.log('[Payment] Removing AppState listener.');
+      // console.log('[Payment] Removing AppState listener.');
       subscription.remove();
     };
   }, [appState, decodedId, fetchPaymentDetails]);
@@ -226,7 +223,7 @@ const Payment = ({ route }) => {
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        console.log('[Payment] Hardware back press detected, navigating to Home.');
+        // console.log('[Payment] Hardware back press detected, navigating to Home.');
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
@@ -242,17 +239,17 @@ const Payment = ({ route }) => {
 
   const toggleVocher = () => {
     setVocherModal(!vocherModal);
-    console.log('[Payment] Toggled voucher modal:', !vocherModal);
+    // console.log('[Payment] Toggled voucher modal:', !vocherModal);
   };
 
   const togglePayment = () => {
     setPaymentModal(!paymentModal);
-    console.log('[Payment] Toggled payment modal:', !paymentModal);
+    // console.log('[Payment] Toggled payment modal:', !paymentModal);
   };
 
   // Example coupon logic
   const applyCoupon = () => {
-    console.log('[Payment] Apply coupon code:', value);
+    // console.log('[Payment] Apply coupon code:', value);
     // Implement your coupon logic here
   };
 

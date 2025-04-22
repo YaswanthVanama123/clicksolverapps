@@ -59,7 +59,7 @@ const ServiceInProgressScreen = () => {
         { decodedId }
       );
       const data = response.data[0];
-      console.log("data", data); 
+      // console.log("data", data); 
       setDetails(data);
 
       // Map services with their statuses
@@ -95,9 +95,9 @@ const ServiceInProgressScreen = () => {
   // Foreground notification handler
   useEffect(() => {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
-      console.log('FCM notification received in ServiceInProgressScreen:', remoteMessage);
+      // console.log('FCM notification received in ServiceInProgressScreen:', remoteMessage);
       if (remoteMessage.data && remoteMessage.data.status) {
-        console.log('Notification has status data. Calling fetchBookings...');
+        // console.log('Notification has status data. Calling fetchBookings...');
         fetchBookings();
       }
     });
@@ -107,18 +107,18 @@ const ServiceInProgressScreen = () => {
   // Corrected background notification handler
   useEffect(() => {
     messaging().setBackgroundMessageHandler(async remoteMessage => {
-      console.log('[ServiceInProgress] Background FCM:', remoteMessage);
+      // console.log('[ServiceInProgress] Background FCM:', remoteMessage);
       // If the notification has a status flag (or any other key you check)
       if (remoteMessage.data && remoteMessage.data.status) {
-        console.log('Background notification has status data. Storing pending notification...');
+        // console.log('Background notification has status data. Storing pending notification...');
 
         // Optionally trigger a data refresh
         fetchBookings();
       }else{
         try {
-          console.log('Background notification has payment data. Storing pending notification...');
+          // console.log('Background notification has payment data. Storing pending notification...');
           await EncryptedStorage.setItem('pendingNotification', JSON.stringify(remoteMessage));
-          console.log('Pending notification stored from ServiceInProgress.');
+          // console.log('Pending notification stored from ServiceInProgress.');
         } catch (error) {
           console.error('Error storing pending notification in ServiceInProgress:', error);
         }
@@ -129,7 +129,7 @@ const ServiceInProgressScreen = () => {
   // Handle notifications opened when the app is in the background
   useEffect(() => {
     const unsubscribeOpened = messaging().onNotificationOpenedApp(async remoteMessage => {
-      console.log('[ServiceInProgress] onNotificationOpenedApp:', remoteMessage);
+      // console.log('[ServiceInProgress] onNotificationOpenedApp:', remoteMessage);
       fetchBookings();
     });
     return () => unsubscribeOpened();
@@ -139,7 +139,7 @@ const ServiceInProgressScreen = () => {
   useEffect(() => {
     const handleAppStateChange = nextAppState => {
       if (appState.match(/inactive|background/) && nextAppState === 'active') {
-        console.log('[ServiceInProgress] App has come to the foreground');
+        // console.log('[ServiceInProgress] App has come to the foreground');
         fetchBookings(); // re-fetch data
       }
       setAppState(nextAppState);

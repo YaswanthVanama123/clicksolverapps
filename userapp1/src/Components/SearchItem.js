@@ -101,13 +101,14 @@ const SearchItem = () => {
 
   const handleInputChange = async (query) => {
     setSearchQuery(query);
-
+  
     if (query.length > 0) {
       setLoading(true);
       try {
-        const response = await axios.get(
+        const response = await axios.get( 
           `https://backend.clicksolver.com/api/services?search=${query}`
         );
+        // console.log("sugges",response.data)
         setSuggestions(response.data);
       } catch (error) {
         console.error('Error fetching search suggestions:', error);
@@ -149,7 +150,7 @@ const SearchItem = () => {
 
   const handleServiceClick = useCallback(
     (item) => {
-      console.log("push",item)
+      // console.log("push",item)
       storeRecentService(item);
       navigation.push('ServiceBooking', {
         serviceName: item.service_category,

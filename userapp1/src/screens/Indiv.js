@@ -83,11 +83,12 @@ const PaintingServices = () => {
         'https://backend.clicksolver.com/api/individual/service',
         { serviceObject }
       );
+      // console.log("data",response.data)
       // const servicesWithIds = response.data.map((service) => ({
       //   ...service,
       //   id: uuid.v4(),
       // }));
-      setSubServices(response.data);
+      setSubServices(response.data); 
     } catch (error) {
       console.error('Error fetching services:', error);
     } finally {
@@ -108,7 +109,7 @@ const PaintingServices = () => {
               [
                 {
                   text: t('cancel') || 'Cancel',
-                  onPress: () => console.log('Notification permission denied'),
+                  onPress: () =>  console.log(''),
                   style: 'cancel',
                 },
                 {
@@ -137,7 +138,7 @@ const PaintingServices = () => {
 
   const proceedToBookCommander = useCallback(
     async (serviceId,id) => {
-      console.log("book",serviceId,id)
+      // console.log("book",serviceId,id)
       navigation.push('ServiceBooking', {
         serviceName: serviceId,
         id:id

@@ -92,7 +92,7 @@ const WaitingUser = () => {
 
   // Extract parameters including offer from route.params
   useEffect(() => {
-    console.log('screen params', route.params);
+    // console.log('screen params', route.params);
     const {
       area, 
       city,
@@ -146,7 +146,7 @@ const WaitingUser = () => {
       if (!jwtToken) { 
         return;
       }
-      console.log("tip", tipAmount,"offer",offer);
+      // console.log("tip", tipAmount,"offer",offer);
       // Include the offer object in the payload
       const response = await axios.post(
         `https://backend.clicksolver.com/api/workers-nearby`,
@@ -167,7 +167,7 @@ const WaitingUser = () => {
       if (response.status === 200) {
         const encode = response.data; 
         setEncodedData(encode);
-        console.log('res', response.data);
+        // console.log('res', response.data);
         if (
           encode &&
           encode !== 'No workers found within 2 km radius' &&
@@ -367,7 +367,7 @@ const WaitingUser = () => {
         .getInitialNotification()
         .then(remoteMessage => {
           if (remoteMessage && remoteMessage.data) {
-            console.log('App opened from quit state by notification:', remoteMessage);
+            // console.log('App opened from quit state by notification:', remoteMessage);
             handleNotification(remoteMessage.data);
           }
         });
@@ -377,7 +377,7 @@ const WaitingUser = () => {
     useEffect(() => {
       const unsubscribeForeground = messaging().onMessage(async remoteMessage => {
         if (remoteMessage && remoteMessage.data) {
-          console.log('Foreground notification received:', remoteMessage);
+          // console.log('Foreground notification received:', remoteMessage);
           handleNotification(remoteMessage.data);
         }
       });
@@ -388,7 +388,7 @@ const WaitingUser = () => {
     useEffect(() => {
       const unsubscribeBackground = messaging().onNotificationOpenedApp(remoteMessage => {
         if (remoteMessage && remoteMessage.data) {
-          console.log('Notification opened from background:', remoteMessage);
+          // console.log('Notification opened from background:', remoteMessage);
           handleNotification(remoteMessage.data);
         }
       });
@@ -400,20 +400,20 @@ const WaitingUser = () => {
 
     useEffect(() => {
       const handleAppStateChange = async (nextAppState) => {
-        console.log(`[WaitingUser] AppState changed to ${nextAppState}`);
+        // console.log(`[WaitingUser] AppState changed to ${nextAppState}`);
         if (nextAppState === 'active') {
-          console.log('[WaitingUser] App became active. Checking for pending notifications...');
+          // console.log('[WaitingUser] App became active. Checking for pending notifications...');
           try {
             const pending = await EncryptedStorage.getItem('pendingNotification');
             if (pending) {
               const remoteMessage = JSON.parse(pending);
-              console.log('[WaitingUser] Found pending notification:', remoteMessage);
+              // console.log('[WaitingUser] Found pending notification:', remoteMessage);
               if (remoteMessage.data) {
                 if (
                   remoteMessage.data.notification_id.toString() === decodedId &&
                   remoteMessage.data.screen === 'UserNavigation'
                 ) {
-                  console.log('[WaitingUser] Condition met. Navigating to UserNavigation with encodedId:', encodedData);
+                  // console.log('[WaitingUser] Condition met. Navigating to UserNavigation with encodedId:', encodedData);
                   navigation.dispatch(
                     CommonActions.reset({
                       index: 0,
@@ -426,13 +426,13 @@ const WaitingUser = () => {
                     })
                   );
                 } else {
-                  console.log('[WaitingUser] Pending notification does not meet condition; refreshing data...');
+                  // console.log('[WaitingUser] Pending notification does not meet condition; refreshing data...');
              
                 }
               }
               await EncryptedStorage.removeItem('pendingNotification');
             } else {
-              console.log('[WaitingUser] No pending notification found. Refreshing data...');
+              // console.log('[WaitingUser] No pending notification found. Refreshing data...');
             
             }
           } catch (error) {
@@ -442,9 +442,9 @@ const WaitingUser = () => {
       };
     
       const subscription = AppState.addEventListener('change', handleAppStateChange);
-      console.log('[WaitingUser] AppState listener added for pending notifications.');
+      // console.log('[WaitingUser] AppState listener added for pending notifications.');
       return () => {
-        console.log('[WaitingUser] Removing AppState listener for pending notifications.');
+        // console.log('[WaitingUser] Removing AppState listener for pending notifications.');
         subscription.remove();
       };
     }, [decodedId, encodedData, navigation]);
@@ -482,7 +482,7 @@ const WaitingUser = () => {
             }
           );
   
-          console.log('API Response:', response.status);
+          // console.log('API Response:', response.status);
   
           if (response.status === 201) {
             setStatus('accepted');
@@ -536,11 +536,11 @@ const WaitingUser = () => {
         decodedId &&
         decodedId !== 'No workersverified found within 2 km radius'
       ) {
-        console.log("Decoded ID when screen focused:", decodedId);
+        // console.log("Decoded ID when screen focused:", decodedId);
         checkStatus();
   
         intervalId = setInterval(() => {
-          console.log("Checking status again...");
+          // console.log("Checking status again...");
           checkStatus();
         }, 110000);
       }
@@ -548,7 +548,7 @@ const WaitingUser = () => {
       return () => {
         if (intervalId) {
           clearInterval(intervalId);
-          console.log("Interval cleared as screen lost focus.");
+          // console.log("Interval cleared as screen lost focus.");
         }
       };
     }, [decodedId, navigation, service, offer])
@@ -571,7 +571,7 @@ const WaitingUser = () => {
     const loadData = async () => {
       try {
         const storedTime = await EncryptedStorage.getItem(`estimatedTime${service}`);
-        console.log('Stored Time:', storedTime);
+        // console.log('Stored Time:', storedTime);
 
         if (!storedTime) {
           const currentTime = Date.now();

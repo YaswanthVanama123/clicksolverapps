@@ -26,12 +26,12 @@ const ChatScreen = ({ navigation, route }) => {
   // Fetch messages from the backend
   const fetchMessages = useCallback(async () => {
     try {
-      console.log(`Fetching messages for request_id: ${request_id}`);
+      // console.log(`Fetching messages for request_id: ${request_id}`);
       const response = await axios.get(
         'https://backend.clicksolver.com/api/worker/getMessages',
         { params: { request_id } }
       );
-      console.log('Fetched Messages:', response.data.messages);
+      // console.log('Fetched Messages:', response.data.messages);
       setMessages(response.data.messages);
       scrollToBottom();
     } catch (error) {
@@ -54,7 +54,7 @@ const ChatScreen = ({ navigation, route }) => {
   useEffect(() => {
     const unsubscribeForeground = messaging().onMessage(async remoteMessage => {
       if (remoteMessage.data?.request_id === String(request_id)) {
-        console.log('New message received in foreground:', remoteMessage);
+        // console.log('New message received in foreground:', remoteMessage);
         fetchMessages();
       }
     });
@@ -65,7 +65,7 @@ const ChatScreen = ({ navigation, route }) => {
   useEffect(() => {
     const handleAppStateChange = nextAppState => {
       if (nextAppState === 'active') {
-        console.log('App moved to foreground. Fetching messages...');
+        // console.log('App moved to foreground. Fetching messages...');
         fetchMessages();
       }
     };
@@ -78,7 +78,7 @@ const ChatScreen = ({ navigation, route }) => {
     // setBackgroundMessageHandler doesn't return an unsubscribe function.
     messaging().setBackgroundMessageHandler(async remoteMessage => {
       if (remoteMessage.data?.request_id === String(request_id)) {
-        console.log('New message received in background:', remoteMessage);
+        // console.log('New message received in background:', remoteMessage);
         fetchMessages();
       }
     });
@@ -87,13 +87,13 @@ const ChatScreen = ({ navigation, route }) => {
   const sendMessage = async () => {
     if (!message.trim()) return;
     try {
-      console.log('Sending message:', message);
+      // console.log('Sending message:', message);
       await axios.post('https://backend.clicksolver.com/api/send/message/worker', {
         request_id,
         senderType,
         message,
       });
-      console.log('Message sent successfully.');
+      // console.log('Message sent successfully.');
       setMessages(prevMessages => [
         ...prevMessages,
         { message, key: senderType, timestamp: Date.now() },

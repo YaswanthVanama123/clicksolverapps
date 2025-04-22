@@ -95,7 +95,7 @@ const ServiceBookingItem = () => {
           { tracking_id },
         );
         const { data } = response.data;
-        console.log("servive data", data);
+        // console.log("servive data", data);
         setStatus(data.time || {});
         setDetails(data);
         setServiceArray(data.service_booked);

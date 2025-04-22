@@ -77,7 +77,7 @@ const ReferralScreen = () => {
           setReferrals([]);
         }
       } catch (error) {
-        console.log('Error fetching referrals:', error);
+        // console.log('Error fetching referrals:', error);
       }
     };
 
@@ -100,9 +100,9 @@ const ReferralScreen = () => {
         `Join me on this amazing app! Use my referral code: ${referralCode}. Download the app now: ${referralLink}`;
       const result = await Share.share({ message });
       if (result.action === Share.sharedAction && result.activityType) {
-        console.log('Shared with activity type:', result.activityType);
+        // console.log('Shared with activity type:', result.activityType);
       } else if (result.action === Share.dismissedAction) {
-        console.log('Share dismissed');
+        // console.log('Share dismissed');
       }
     } catch (error) {
       console.error('Error sharing:', error.message);
@@ -119,7 +119,7 @@ const ReferralScreen = () => {
         if (supported) {
           Linking.openURL(whatsappUrl);
         } else {
-          console.log(t('whatsapp_not_installed') || 'WhatsApp is not installed or not supported on this device.');
+          // console.log(t('whatsapp_not_installed') || 'WhatsApp is not installed or not supported on this device.');
         }
       })
       .catch(err => console.error('Error opening WhatsApp:', err));

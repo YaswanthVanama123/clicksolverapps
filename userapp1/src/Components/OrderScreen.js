@@ -110,7 +110,7 @@ const OrderScreen = () => {
           const { offers: fetchedOffers } = response.data;
           setOffers(fetchedOffers);
         } catch (error) {
-          console.log('Error fetching offers:', error);
+          // console.log('Error fetching offers:', error);
         }
       };
       fetchOffers();

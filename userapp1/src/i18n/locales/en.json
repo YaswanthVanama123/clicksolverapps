@@ -123,6 +123,18 @@
   "pincode_required": "Pincode is required.",
   "phone_required": "Phone number is required.",
   "name_required": "Name is required.",
+  "trendingProfessionalCleaning": "Professional Cleaning",
+  "trendingElectricians": "Electricians",
+  "trendingPlumbers": "Plumbers",
+  "trendingSalon": "Salon Services",
+  "trendingCarpenters": "Carpenters",
+  "trendingWashingMachineRepair": "Washing Machine Repair",
+  "trendingRefrigeratorRepair": "Refrigerator Repair",
+  "trendingRORepair": "RO Water Purifier Repair",
+  "trendingFurnitureAssembly": "Furniture Assembly",
+  "trendingMicrowaveRepair": "Microwave Repair",
+  "noResultsFound": "No results found",
+  "noResultsDescription": "We couldn't find any services matching your search.",
 
   "geolocation_error": "Geolocation error:",
 

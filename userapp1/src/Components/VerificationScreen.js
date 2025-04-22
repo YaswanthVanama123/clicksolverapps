@@ -65,12 +65,12 @@ const VerificationScreen = () => {
         }
       );
       if (validateResponse.data.message === 'OTP Verified') {
-        console.log("OTP verified");
+        // console.log("OTP verified");
         const loginResponse = await axios.post(
           'https://backend.clicksolver.com/api/user/login',
           { phone_number: phoneNumber }
         );
-        console.log("Login response status:", loginResponse.status);
+        // console.log("Login response status:", loginResponse.status);
         if (loginResponse.status === 200) {
           const { token } = loginResponse.data;
           await EncryptedStorage.setItem('cs_token', token);

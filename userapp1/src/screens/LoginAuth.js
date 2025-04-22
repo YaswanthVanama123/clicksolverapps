@@ -11,7 +11,7 @@ function LoginAuth() {
   function onAuthStateChanged(user) {
     if (user) {
       // Handle the case where the user has successfully logged in
-      console.log('User logged in successfully:', user);
+      // console.log('User logged in successfully:', user);
     }
   }
 
@@ -26,7 +26,7 @@ function LoginAuth() {
       const confirmation = await auth().signInWithPhoneNumber(phoneNumber);
       setConfirm(confirmation);
     } catch (error) {
-      console.log('Error signing in with phone number:', error);
+      // console.log('Error signing in with phone number:', error);
     }
   }
 
@@ -35,7 +35,7 @@ function LoginAuth() {
       const otpCode = code.join(''); // Join the code array into a string
       await confirm.confirm(otpCode);
     } catch (error) {
-      console.log('Invalid code.');
+      // console.log('Invalid code.');
     }
   }
 

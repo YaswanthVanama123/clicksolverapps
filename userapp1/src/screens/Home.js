@@ -153,7 +153,7 @@ function Home({ navigation, route }) {
   const fetchTrackDetails = async () => {
     try {
       const cs_token = await EncryptedStorage.getItem('cs_token');
-      console.log('cs_token:', cs_token);
+      // console.log('cs_token:', cs_token);
       if (cs_token) {
         const response = await axios.get(
           'https://backend.clicksolver.com/api/user/track/details',
@@ -162,9 +162,9 @@ function Home({ navigation, route }) {
           }
         ); 
         const track = response?.data?.track || [];
-        console.log(track)
+        // console.log(track)
         const { user, profile } = response.data;
-        console.log("Track response:", response.data);
+        // console.log("Track response:", response.data);
         // Get the target language from your app settings (assuming i18n.language holds the code)
         const targetLang = i18n.language || 'en';
         // Translate the user's name if needed
@@ -362,7 +362,7 @@ function Home({ navigation, route }) {
           },
         },
       );
-      console.log('Feedback submitted successfully:', response.data);
+      // console.log('Feedback submitted successfully:', response.data);
     } catch (error) {
       console.error('Error submitting feedback:', error);
     } finally {

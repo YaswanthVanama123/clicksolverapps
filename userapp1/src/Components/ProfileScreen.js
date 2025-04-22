@@ -126,7 +126,7 @@ const ProfileScreen = () => {
     const options = { mediaType: 'photo', quality: 0.8 };
     launchImageLibrary(options, async (response) => {
       if (response.didCancel) {
-        console.log('User cancelled image picker');
+        // console.log('User cancelled image picker');
       } else if (response.errorMessage) {
         console.error('ImagePicker Error:', response.errorMessage);
       } else if (response.assets && response.assets.length > 0) {

@@ -14,17 +14,17 @@ import {
 const Myrefferals = () => {
   const handleShareWhatsApp = () => {
     // Logic to share via WhatsApp
-    console.log('Share via WhatsApp');
+    // console.log('Share via WhatsApp');
   };
 
   const handleCopyCode = () => {
     // Logic to copy code to clipboard
-    console.log('Code copied to clipboard');
+    // console.log('Code copied to clipboard');
   };
 
   const handleInviteFriends = () => {
     // Logic to open contacts or share link
-    console.log('Invite friends triggered');
+    // console.log('Invite friends triggered');
   };
 
   return (

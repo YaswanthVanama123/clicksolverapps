@@ -16,7 +16,7 @@ const languageDetector = {
       const storedLang = await EncryptedStorage.getItem(LANGUAGE_KEY);
       callback(storedLang || 'en');
     } catch (error) {
-      console.log('Language detection failed:', error);
+      // console.log('Language detection failed:', error);
       callback('en');
     }
   },
@@ -25,7 +25,7 @@ const languageDetector = {
     try {
       await EncryptedStorage.setItem(LANGUAGE_KEY, lng);
     } catch (error) {
-      console.log('Failed to cache language:', error);
+      // console.log('Failed to cache language:', error);
     }
   },
 };

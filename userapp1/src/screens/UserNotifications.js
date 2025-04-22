@@ -94,7 +94,7 @@ const UserNotifications = () => {
       // Reverse notifications for newest-first display.
       const reversedNotifications = filtered.reverse();
       setNotificationsArray(reversedNotifications);
-      console.log('User notifications:', reversedNotifications);
+      // console.log('User notifications:', reversedNotifications);
     } catch (error) {
       console.error('Error fetching notifications:', error);
       setNotificationsArray([]);

@@ -4466,10 +4466,10 @@ const getUserTrackRoute = async (req, res) => {
 
       if (track) {
         // If track exists, return both the track and user name
-        res.status(200).json({ track, user: name });
+        res.status(200).json({ track, user: name,profile });
       } else {
         // If no track, return only the user name
-        res.status(203).json({ user: name });
+        res.status(203).json({ user: name,profile });
       }
     } else {
       // If no user found, return a 404 error
@@ -4547,12 +4547,11 @@ const login = async (req, res) => {
 const getAllServices = async () => {
   try {
     const result = await client.query(`
-      SELECT 
+      SELECT
         main_service_id, 
         service_category, 
         service_tag, 
-        service_details,
-        service_name
+        service_details
       FROM allservices
     `);
     return result.rows;

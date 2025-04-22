@@ -41,7 +41,7 @@ const LanguageSelector = () => {
           changeAppLanguage('en');
         }
       } catch (error) {
-        console.log('Error loading language from EncryptedStorage:', error);
+        // console.log('Error loading language from EncryptedStorage:', error);
       }
     };
     loadSavedLanguage();
@@ -57,7 +57,7 @@ const LanguageSelector = () => {
   const onSaveSettings = async () => {
     try {
       await EncryptedStorage.setItem('selectedLanguage', selectedLanguage);
-      console.log('Language saved:', selectedLanguage);
+      // console.log('Language saved:', selectedLanguage);
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
@@ -65,7 +65,7 @@ const LanguageSelector = () => {
         }),
       );
     } catch (error) {
-      console.log('Error saving language to EncryptedStorage:', error);
+      // console.log('Error saving language to EncryptedStorage:', error);
     }
   };
 

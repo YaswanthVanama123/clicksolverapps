@@ -1,4 +1,4 @@
-import React, {useRef} from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
@@ -7,28 +7,31 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   ScrollView,
+  Alert,
+  Platform,
 } from 'react-native';
 import Swiper from 'react-native-swiper';
 import LinearGradient from 'react-native-linear-gradient';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import {useNavigation, CommonActions} from '@react-navigation/native';
+import {
+  useNavigation,
+  CommonActions,
+  useFocusEffect,
+} from '@react-navigation/native';
+import {
+  requestNotifications,
+  PERMISSIONS,
+  request,
+  RESULTS,
+} from 'react-native-permissions';
 
 const OnboardingScreen = () => {
   const swiperRef = useRef(null);
   const navigation = useNavigation();
-
-  // 1) Grab width & height from useWindowDimensions
-  const {width, height} = useWindowDimensions();
-
-  // 2) Dynamically generate styles based on current width & height
+  const { width, height } = useWindowDimensions();
   const styles = dynamicStyles(width, height);
 
-  /**
-   * Slides data to display.
-   * - You can replace the "image" URLs with your own local or remote images.
-   * - The background gradients can also be customized.
-   */
   const slides = [
     {
       key: '1',
@@ -40,48 +43,73 @@ const OnboardingScreen = () => {
     },
     {
       key: '2',
-      title: 'Wide Range of Expert Services',
-      text: 'From electricians to salon specialists, plumbers, and more—find the right professional for every need, all in one place.',
-      image: 'https://i.postimg.cc/fbWs9dmm/Plumbing-services-removebg-preview.png',
-      backgroundColorPrimary: '#FF4500',
-      backgroundColorSecondary: '#FFA07A',
+      title: 'Stay Updated with Notifications',
+      text: 'We need permission to send you updates on your service status.',
+      image: 'https://i.postimg.cc/zXhWxsJN/Project-186-15-generated-1.jpg',
+      backgroundColorPrimary: '#4A90E2',
+      backgroundColorSecondary: '#50A7F9',
     },
     {
       key: '3',
-      title: 'Trusted & Verified Professionals',
-      text: 'Every worker on ClickSolver is background-checked and verified to ensure high-quality service, safety, and reliability.',
-      image: 'https://i.postimg.cc/ZqcgyBhj/trusted-removebg-preview.png',
-      backgroundColorPrimary: '#FF4500',
-      backgroundColorSecondary: '#E84B00',
+      title: 'Enable Your Location',
+      text: 'Allow location access so we can book services near you.',
+      image: 'https://i.postimg.cc/8zBvSLJn/vecteezy-isometric-illustration-concept-location-finder-map-5638544-1-1.jpg',
+      backgroundColorPrimary: '#34C759',
+      backgroundColorSecondary: '#5FD78A',
     },
   ];
 
-  // Handle "Next" button press
-  const handleNextPress = async index => {
-    if (index < slides.length - 1) {
-      // Move to the next slide
-      swiperRef.current.scrollBy(1);
-    } else {
-      // Last slide -> mark onboarded and navigate
-      await finishOnboarding();
+  const handleNextPress = async (index) => {
+    // slide 2: notifications permission
+    if (index === 1) {
+      const { status } = await requestNotifications(['alert', 'sound']);
+      if (status === RESULTS.GRANTED) {
+        swiperRef.current.scrollBy(1);
+      } else {
+        Alert.alert(
+          'Permission Needed',
+          'Notification permission is required to keep you informed.'
+        );
+      }
+      return;
     }
+
+    // slide 3: location permission
+    if (index === 2) {
+      const permission =
+        Platform.OS === 'ios'
+          ? PERMISSIONS.IOS.LOCATION_WHEN_IN_USE
+          : PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION;
+      const result = await request(permission);
+      if (result === RESULTS.GRANTED) {
+        // on the last slide, finish onboarding
+        return finishOnboarding();
+      } else {
+        Alert.alert(
+          'Permission Needed',
+          'Location permission is required to book services near you.'
+        );
+      }
+      return;
+    }
+
+    // default: go to next slide
+    swiperRef.current.scrollBy(1);
   };
 
-  // Handle "Skip" button press
   const handleSkipPress = async () => {
     await finishOnboarding();
   };
 
-  // Common function to mark onboarded and navigate to main app
   const finishOnboarding = async () => {
     try {
       await EncryptedStorage.setItem('onboarded', 'true');
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
-        }),
-      );
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
+          })
+        );
     } catch (error) {
       console.error('Error setting onboarded key:', error);
     }
@@ -90,66 +118,61 @@ const OnboardingScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView>
-      <Swiper
-        ref={swiperRef}
-        loop={false}
-        dotStyle={styles.dotStyle}
-        activeDotStyle={styles.activeDotStyle}
-        // You can adjust the position of the pagination (the dots) with paginationStyle
-        paginationStyle={styles.paginationStyle}
-        showsButtons={false}
-      >
-        {slides.map((slide, index) => (
-          <View key={slide.key} style={styles.slide}>
-            {/* Top Gradient with Image */}
-            <LinearGradient
-              colors={[slide.backgroundColorPrimary, slide.backgroundColorSecondary]}
-              style={styles.innerCard}
-            >
-              <Image
-                source={{uri: slide.image}}
-                style={styles.image}
-                resizeMode="contain"
-              />
-            </LinearGradient>
-
-            {/* Text Content */}
-            <View style={styles.onboardingContent}>
-              <Text style={styles.title}>{slide.title}</Text>
-              <Text style={styles.text}>{slide.text}</Text>
-            </View>
-
-            {/* Bottom Buttons: Skip (except last slide) + Next (or Get Started) */}
-            <View style={styles.buttonContainer}>
-              {index < slides.length - 1 && (
-                <TouchableOpacity
-                  style={[styles.button, styles.skipButton]}
-                  onPress={handleSkipPress}
-                >
-                  <Text style={styles.skipButtonText}>Skip</Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                style={[styles.button, styles.nextButton]}
-                onPress={() => handleNextPress(index)}
+        <Swiper
+          ref={swiperRef}
+          loop={false}
+          dotStyle={styles.dotStyle}
+          activeDotStyle={styles.activeDotStyle}
+          paginationStyle={styles.paginationStyle}
+          showsButtons={false}
+        >
+          {slides.map((slide, index) => (
+            <View key={slide.key} style={styles.slide}>
+              <LinearGradient
+                colors={[
+                  slide.backgroundColorPrimary,
+                  slide.backgroundColorSecondary,
+                ]}
+                style={styles.innerCard}
               >
-                <Text style={styles.buttonText}>
-                  {index === slides.length - 1 ? 'Get Started' : 'Next'}
-                </Text>
-              </TouchableOpacity>
+                <Image
+                  source={{ uri: slide.image }}
+                  style={styles.image}
+                  resizeMode="contain"
+                />
+              </LinearGradient>
+
+              <View style={styles.onboardingContent}>
+                <Text style={styles.title}>{slide.title}</Text>
+                <Text style={styles.text}>{slide.text}</Text>
+              </View>
+
+              <View style={styles.buttonContainer}>
+                {index < slides.length - 1 && (
+                  <TouchableOpacity
+                    style={[styles.button, styles.skipButton]}
+                    onPress={handleSkipPress}
+                  >
+                    <Text style={styles.skipButtonText}>Skip</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={[styles.button, styles.nextButton]}
+                  onPress={() => handleNextPress(index)}
+                >
+                  <Text style={styles.buttonText}>
+                    {index === slides.length - 1 ? 'Get Started' : 'Next'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        ))}
-      </Swiper>
+          ))}
+        </Swiper>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-/**
- * Styles that adapt based on screen width/height.
- * You can customize padding, font sizes, etc. for a more polished look.
- */
 const dynamicStyles = (width, height) =>
   StyleSheet.create({
     safeArea: {
@@ -159,7 +182,6 @@ const dynamicStyles = (width, height) =>
     slide: {
       flex: 1,
     },
-    // The top gradient section with the image
     innerCard: {
       height: '40%',
       borderBottomRightRadius: 25,
@@ -171,7 +193,6 @@ const dynamicStyles = (width, height) =>
       width: '80%',
       height: '80%',
     },
-    // Middle text content
     onboardingContent: {
       flex: 1,
       justifyContent: 'center',
@@ -190,9 +211,7 @@ const dynamicStyles = (width, height) =>
       textAlign: 'center',
       color: 'rgba(0, 0, 0, 0.5)',
     },
-    // Swiper dots
     paginationStyle: {
-      // You can move the dots above the buttons by adjusting bottom or top
       bottom: 100,
     },
     dotStyle: {
@@ -209,7 +228,6 @@ const dynamicStyles = (width, height) =>
       borderRadius: 4,
       marginHorizontal: 3,
     },
-    // Bottom buttons container
     buttonContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',

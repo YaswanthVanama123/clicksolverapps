@@ -61,7 +61,7 @@ const ServiceTrackingItemScreen = () => {
           console.error('Error opening dialer:', err),
         );
       } else {
-        console.log('Failed to initiate call:', response.data);
+        // console.log('Failed to initiate call:', response.data);
       }
     } catch (error) {
       console.error(
@@ -110,7 +110,7 @@ const ServiceTrackingItemScreen = () => {
         { tracking_id },
       );
       const { data } = response.data;
-      console.log("Fetched data:", data.data);
+      // console.log("Fetched data:", data.data);
       setPin(data.tracking_pin);
       setDetails(data);
       setServiceArray(data.service_booked);
@@ -128,9 +128,9 @@ const ServiceTrackingItemScreen = () => {
   // Listen for FCM notifications and refresh data if status key exists.
   useEffect(() => {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
-      console.log('FCM notification received in ServiceTrackingItemScreen:', remoteMessage);
+      // console.log('FCM notification received in ServiceTrackingItemScreen:', remoteMessage);
       if (remoteMessage.data && remoteMessage.data.status) {
-        console.log('Notification has status key. Fetching bookings...');
+        // console.log('Notification has status key. Fetching bookings...');
         fetchBookings();
       }
     });

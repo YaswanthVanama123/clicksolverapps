@@ -126,7 +126,7 @@ const Navigation = () => {
             },
           );
           if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-            console.log('Location permission denied');
+            // console.log('Location permission denied');
           }
         } catch (err) {
           console.warn(err);
@@ -318,7 +318,7 @@ const Navigation = () => {
    */
   const fetchOlaRoute = useCallback(async (startPoint, endPoint, waypoints = []) => {
     try {
-      console.log('Ola route start/end (lng, lat) =>', startPoint, endPoint);
+      // console.log('Ola route start/end (lng, lat) =>', startPoint, endPoint);
 
       const apiKey = 'iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT';
       let url = `https://api.olamaps.io/routing/v1/directions?origin=${startPoint[1]},${startPoint[0]}&destination=${endPoint[1]},${endPoint[0]}&api_key=${apiKey}`;
@@ -341,13 +341,13 @@ const Navigation = () => {
       );
 
       if (!response.data.routes || response.data.routes.length === 0) {
-        console.log('No routes returned by Ola Maps');
+        // console.log('No routes returned by Ola Maps');
         return null;
       }
 
       const routeEncoded = response.data.routes[0].overview_polyline;
       if (!routeEncoded) {
-        console.log('No overview_polyline in Ola route');
+        // console.log('No overview_polyline in Ola route');
         return null;
       }
 
@@ -537,7 +537,7 @@ const Navigation = () => {
       .getInitialNotification()
       .then((remoteMessage) => {
         if (remoteMessage && remoteMessage.data) {
-          console.log('[Navigation] Cold start notification:', remoteMessage);
+          // console.log('[Navigation] Cold start notification:', remoteMessage);
           handleNotificationData(remoteMessage.data);
         }
       });
@@ -545,7 +545,7 @@ const Navigation = () => {
     // Foreground notifications
     const unsubscribeForeground = messaging().onMessage((remoteMessage) => {
       if (remoteMessage && remoteMessage.data) {
-        console.log('[Navigation] Foreground notification:', remoteMessage);
+        // console.log('[Navigation] Foreground notification:', remoteMessage);
         handleNotificationData(remoteMessage.data);
       }
     });
@@ -553,7 +553,7 @@ const Navigation = () => {
     // Notifications tapped from background
     const unsubscribeOpened = messaging().onNotificationOpenedApp((remoteMessage) => {
       if (remoteMessage && remoteMessage.data) {
-        console.log('[Navigation] Notification opened from background:', remoteMessage);
+        // console.log('[Navigation] Notification opened from background:', remoteMessage);
         handleNotificationData(remoteMessage.data);
       }
     });
@@ -569,12 +569,12 @@ const Navigation = () => {
     useEffect(() => {
       const subscription = AppState.addEventListener('change', async (nextAppState) => {
         if (nextAppState === 'active') {
-          console.log('[Navigation] App became active. Checking for pending notifications...');
+          // console.log('[Navigation] App became active. Checking for pending notifications...');
           try {
             const pending = await EncryptedStorage.getItem('pendingNotification');
             if (pending) {
               const remoteMessage = JSON.parse(pending);
-              console.log('[Navigation] Found pending notification:', remoteMessage);
+              // console.log('[Navigation] Found pending notification:', remoteMessage);
               if (remoteMessage.data) {
                 // Send encodedId as decodedId as requested
 
@@ -599,9 +599,9 @@ const Navigation = () => {
           }
         }
       });
-      console.log('[Navigation] Additional AppState listener added for pending notifications.');
+      // console.log('[Navigation] Additional AppState listener added for pending notifications.');
       return () => {
-        console.log('[Navigation] Removing additional AppState listener for pending notifications.');
+        // console.log('[Navigation] Removing additional AppState listener for pending notifications.');
         subscription.remove();
       };
     }, [navigation]);
@@ -670,7 +670,7 @@ const Navigation = () => {
           console.error('Error opening dialer:', err),
         );
       } else {
-        console.log('Failed to initiate call:', response.data);
+        // console.log('Failed to initiate call:', response.data);
       }
     } catch (error) {
       console.error(

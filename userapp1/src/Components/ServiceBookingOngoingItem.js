@@ -84,13 +84,13 @@ const ServiceBookingOngoingItem = () => {
     const fetchBookingDetails = async () => {
       try {
         setLoading(true);
-        console.log("track", tracking_id);
+        // console.log("track", tracking_id);
         const response = await axios.post(
           `https://backend.clicksolver.com/api/service/ongoing/booking/item/details`,
           { tracking_id },
         ); 
         const { data } = response.data; 
-        console.log("ongoingdata", data);
+        // console.log("ongoingdata", data);
         setStatus(data.time || {});
         setDetails(data);
         setServiceArray(data.service_booked);

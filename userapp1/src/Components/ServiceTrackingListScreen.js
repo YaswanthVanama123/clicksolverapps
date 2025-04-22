@@ -168,9 +168,9 @@ const ServiceTrackingListScreen = () => {
 
   useEffect(() => {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
-      console.log('FCM notification received in ServiceTrackingListScreen:', remoteMessage);
+      // console.log('FCM notification received in ServiceTrackingListScreen:', remoteMessage);
       if (remoteMessage.data && remoteMessage.data.status) {
-        console.log('Notification has status data. Refreshing bookings...');
+        // console.log('Notification has status data. Refreshing bookings...');
         fetchBookings();
       }
     });

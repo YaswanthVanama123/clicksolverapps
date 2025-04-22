@@ -54,7 +54,7 @@ const SingleService = () => {
   // Fetch details from API
   const fetchDetails = useCallback(async () => {
     try {
-      console.log('serviceName', serviceName,id);
+      // console.log('serviceName', serviceName,id);
       const response = await axios.post(
         'https://backend.clicksolver.com/api/single/service',
         { serviceName }
@@ -70,7 +70,7 @@ const SingleService = () => {
         }, {})
       );
       setLoading(false);
-      // console.log('single', relatedServices);
+      // // console.log('single', relatedServices);
     } catch (error) {
       console.error('Error fetching services:', error);
       setLoading(false);

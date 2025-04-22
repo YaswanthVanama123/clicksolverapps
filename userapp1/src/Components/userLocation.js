@@ -40,7 +40,7 @@ const UserLocation = () => {
   const route = useRoute();
   // Extract route params including serviceName, savings, tipAmount, offer, and suggestion if any
   const { serviceName, savings, tipAmount, offer, suggestion } = route.params;
-  console.log("UserLocation route params", route.params);
+  // console.log("UserLocation route params", route.params);
 
   const { isDarkMode } = useTheme();
   const styles = dynamicStyles(isDarkMode);
@@ -209,7 +209,7 @@ const UserLocation = () => {
             }
           );
           if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-            console.log(t('location_permission_denied') || 'Location permission denied');
+            // console.log(t('location_permission_denied') || 'Location permission denied');
             setLocationLoading(false);
             return;
           }
@@ -279,7 +279,7 @@ const UserLocation = () => {
         }
         let area = place.formatted_address || '';
 
-        console.log(t('extracted_location_details') || 'Extracted Location Details:', { city, area, pincode });
+        // console.log(t('extracted_location_details') || 'Extracted Location Details:', { city, area, pincode });
 
         setCity(city);
         setArea(area);
@@ -306,7 +306,7 @@ const UserLocation = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (response.status === 200) {
-        console.log(t('location_sent_successfully') || 'User location sent successfully');
+        // console.log(t('location_sent_successfully') || 'User location sent successfully');
       }
     } catch (error) {
       console.error(t('failed_to_send_location') || 'Failed to send user location:', error);
@@ -356,7 +356,7 @@ const UserLocation = () => {
       });
       if (response.status === 200) {
         const data = response.data;
-        console.log(t('user_data_fetched') || 'User data fetched:', data);
+        // console.log(t('user_data_fetched') || 'User data fetched:', data);
         setAlternatePhoneNumber(data.phone_number || '');
         setAlternateName(data.name);
       } else {
@@ -383,7 +383,7 @@ const UserLocation = () => {
         { area, city },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log(t('reminder_sent') || 'Reminder sent successfully:', response.data);
+      // console.log(t('reminder_sent') || 'Reminder sent successfully:', response.data);
     } catch (error) {
       console.error(t('failed_to_send_reminder') || 'Failed to send reminder:', error);
     } finally {

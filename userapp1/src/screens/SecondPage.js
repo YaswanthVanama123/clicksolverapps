@@ -9,8 +9,16 @@ import {
   Modal,
   TextInput,
   useWindowDimensions,
-  Button,
+  Platform,
+  
 } from 'react-native';
+import {
+  requestMultiple,
+  requestNotifications,
+  checkMultiple,
+  PERMISSIONS,
+  RESULTS,
+} from 'react-native-permissions';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Feather from 'react-native-vector-icons/Feather';
@@ -98,6 +106,34 @@ function ServiceApp({ navigation, route }) {
   );
 
 
+  const requestAllPermissions = async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const perms = [
+          PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
+          PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION,
+        ];
+        const statuses = await checkMultiple(perms);
+        const toAsk = perms.filter((p) => statuses[p] !== RESULTS.GRANTED);
+        if (toAsk.length) await requestMultiple(toAsk);
+        if (Platform.Version >= 33) {
+          await requestNotifications(['alert', 'sound', 'badge']);
+        }
+      } else if (Platform.OS === 'ios') {
+        const perms = [
+          PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
+          PERMISSIONS.IOS.NOTIFICATIONS,
+        ];
+        const statuses = await checkMultiple(perms);
+        const toAsk = perms.filter((p) => statuses[p] !== RESULTS.GRANTED);
+        if (toAsk.length) await requestMultiple(toAsk);
+      }
+    } catch (err) {
+      // console.log('Permission request error', err);
+    }
+  };
+
+
     // NEW: Function to translate user name if target language is not English
     const translateUserName = async (userName, targetLang) => {
       if (targetLang.toLowerCase() === 'en') {
@@ -139,12 +175,14 @@ function ServiceApp({ navigation, route }) {
 
   useEffect(() => {
     fetchServices();
+    requestAllPermissions();
     setGreetingBasedOnTime();
   }, []);
 
   useFocusEffect(
     useCallback(() => {
       fetchTrackDetails();
+       
     }, [])
   );
 
@@ -153,16 +191,16 @@ function ServiceApp({ navigation, route }) {
   const fetchTrackDetails = async () => {
     try {
       const cs_token = await EncryptedStorage.getItem('cs_token');
-      console.log('cs_token:', cs_token);
+      // console.log('cs_token:', cs_token);
       if (cs_token) {
         const response = await axios.get(
-          'https://backend.clicksolver.com/api/user/track/details',
+          'http://192.168.55.104:5000/api/user/track/details',
           {
             headers: { Authorization: `Bearer ${cs_token}` }, 
           }
         ); 
         const track = response?.data?.track || [];
-        console.log(track)
+        // console.log(track)
         const { user, profile } = response.data;
         console.log("Track response:", response.data);
         // Get the target language from your app settings (assuming i18n.language holds the code)
@@ -188,6 +226,7 @@ function ServiceApp({ navigation, route }) {
       const response = await axios.get(
         'https://backend.clicksolver.com/api/servicecategories'
       );
+      // console.log("date",response.data)
       // log('Services fetched successfully');
       // const servicesWithIds = response.data.map(service => ({
       //   ...service,
@@ -306,7 +345,7 @@ function ServiceApp({ navigation, route }) {
           },
         },
       );
-      console.log('Feedback submitted successfully:', response.data);
+      // console.log('Feedback submitted successfully:', response.data);
     } catch (error) {
       console.error('Error submitting feedback:', error);
     } finally {
@@ -339,7 +378,7 @@ function ServiceApp({ navigation, route }) {
             }>
               {profile ? 
                 <View>
-                  <Image source={{ uri: profile }} style={styles.image} />
+                  <Image source={{ uri: profile }} style={styles.userInitialCircle} />
                 </View>
               :
                 <View style={styles.userInitialCircle}>
