@@ -87,73 +87,25 @@
 //   console.log(`Server is running on port ${port}`);
 // });
 
-// const express = require("express");
-// const path = require("path");
-// const cors = require("cors");
-// const fs = require("fs");
-// const https = require("https");
-// const http = require("http");
-// const router = require("./router");
-// const cookieParser = require("cookie-parser");
-// const bodyParser = require("body-parser");
-
-// const app = express();
-
-// // Ports for HTTP and HTTPS
-// const httpsPort = 443; // HTTPS Port
-// const httpPort = 80; // HTTP Port (for redirection)
-
-// // Enable CORS for all routes
-// app.use(cors());
-
-// // Middleware setup
-// app.use(express.json());
-// app.use(cookieParser());
-// app.use(bodyParser.json());
-
-// // Example route
-// app.get("/api/test", (req, res) => {
-//   res.json({ message: "Hello from the secure backend!" });
-// });
-
-// // Use the router for API routes
-// app.use("/api", router);
-
-// // Load SSL certificate and key
-// const httpsOptions = {
-//   key: fs.readFileSync(path.join(__dirname, "certs/private.key")), // Your private key
-//   cert: fs.readFileSync(path.join(__dirname, "certs/certificate.crt")), // Your SSL certificate
-//   ca: fs.readFileSync(path.join(__dirname, "certs/ca_bundle.crt")), // Optional, CA bundle
-// };
-
-// // HTTPS Server
-// https.createServer(httpsOptions, app).listen(httpsPort, () => {
-//   console.log(`Secure server is running on port ${httpsPort}`);
-// });
-
-// // HTTP to HTTPS Redirect Server
-// http
-//   .createServer((req, res) => {
-//     res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
-//     res.end();
-//   })
-//   .listen(httpPort, () => {
-//     console.log(`HTTP redirect server is running on port ${httpPort}`);
-//   });
-
 const express = require("express");
+const path = require("path");
 const cors = require("cors");
+const fs = require("fs");
+const https = require("https");
+const http = require("http");
 const router = require("./router");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 
 const app = express();
-const port = 5000; // Use port 5000 for the backend server
+
+// Ports for HTTP and HTTPS
+const httpsPort = 443; // HTTPS Port
+const httpPort = 80; // HTTP Port (for redirection)
 
 // Enable CORS for all routes
 app.use(cors());
-app.use(cors({ origin: '*' }));
- 
+
 // Middleware setup
 app.use(express.json());
 app.use(cookieParser());
@@ -161,18 +113,66 @@ app.use(bodyParser.json());
 
 // Example route
 app.get("/api/test", (req, res) => {
-  res.json({ message: "Hello from the backend!" });
+  res.json({ message: "Hello from the secure backend!" });
 });
 
 // Use the router for API routes
 app.use("/api", router);
 
-// Start the server
-// app.listen(port, () => {
-//   console.log(`Server is running on port ${port}`);
+// Load SSL certificate and key
+const httpsOptions = {
+  key: fs.readFileSync(path.join(__dirname, "certs/private.key")), // Your private key
+  cert: fs.readFileSync(path.join(__dirname, "certs/certificate.crt")), // Your SSL certificate
+  ca: fs.readFileSync(path.join(__dirname, "certs/ca_bundle.crt")), // Optional, CA bundle
+};
+
+// HTTPS Server
+https.createServer(httpsOptions, app).listen(httpsPort, () => {
+  console.log(`Secure server is running on port ${httpsPort}`);
+});
+
+// HTTP to HTTPS Redirect Server
+http
+  .createServer((req, res) => {
+    res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
+    res.end();
+  })
+  .listen(httpPort, () => {
+    console.log(`HTTP redirect server is running on port ${httpPort}`);
+  });
+
+// const express = require("express");
+// const cors = require("cors");
+// const router = require("./router");
+// const cookieParser = require("cookie-parser");
+// const bodyParser = require("body-parser");
+
+// const app = express();
+// const port = 5000; // Use port 5000 for the backend server
+
+// // Enable CORS for all routes
+// app.use(cors());
+// app.use(cors({ origin: '*' }));
+ 
+// // Middleware setup
+// app.use(express.json());
+// app.use(cookieParser());
+// app.use(bodyParser.json());
+
+// // Example route
+// app.get("/api/test", (req, res) => {
+//   res.json({ message: "Hello from the backend!" });
 // });
 
-app.listen(5000, '0.0.0.0', () => {
-  console.log('Server running on port 5000');
-});
+// // Use the router for API routes
+// app.use("/api", router);
+
+// // Start the server
+// // app.listen(port, () => {
+// //   console.log(`Server is running on port ${port}`);
+// // });
+
+// app.listen(5000, '0.0.0.0', () => {
+//   console.log('Server running on port 5000');
+// });
 

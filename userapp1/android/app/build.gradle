@@ -27,8 +27,8 @@ android {
         applicationId "com.userapp1"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 201
-        versionName "2.0.1"
+        versionCode 205
+        versionName "2.0.5"
         manifestPlaceholders = [
         CodePushDeploymentKey: "9osws50ZWw1_SwJJi-EynN9Xpz0mJlO43mKHPQ" // Replace with your Production key
     ]

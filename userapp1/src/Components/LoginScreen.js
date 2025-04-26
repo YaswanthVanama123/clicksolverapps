@@ -49,13 +49,18 @@ const LoginScreen = () => {
         { mobileNumber: phoneNumber }
       );
       if (response.status === 200) {
-        const { verificationId } = response.data;
+        const { verificationId } = response.data; 
         // Build params to send to VerificationScreen
-        let params = { phoneNumber, verificationId };
-        if (serviceName && id) {
-          params = { ...params, serviceName, id };
+        const params = serviceName && id
+          ? { phoneNumber, verificationId, serviceName, id }
+          : { phoneNumber, verificationId };
+  
+        // Use replace if we came in with an id, otherwise push
+        if (id) {
+          navigation.replace('VerificationScreen', params);
+        } else {
+          navigation.push('VerificationScreen', params);
         }
-        navigation.navigate('VerificationScreen', params);
       } else {
         console.error('Error sending OTP:', response.data);
       }
@@ -66,6 +71,7 @@ const LoginScreen = () => {
       setLoading(false);
     }
   }, [phoneNumber, navigation, serviceName, id]);
+  
 
   // Handle hardware back press (Android)
   const handleBackPress = useCallback(() => {

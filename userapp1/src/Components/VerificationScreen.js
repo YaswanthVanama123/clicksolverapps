@@ -76,16 +76,15 @@ const VerificationScreen = () => {
           await EncryptedStorage.setItem('cs_token', token);
           // If optional serviceName and id are provided, navigate to SingleService; otherwise, to Home
           if (serviceName && id) {
-
-
-                      navigation.dispatch(
-                        CommonActions.reset({
-                          index: 0,
-                          routes: [
-                            {name: 'ServiceBooking', params: {serviceName,id}},
-                          ],
-                        }),
-                      );
+            navigation.replace('ServiceBooking', { serviceName, id });
+                      // navigation.dispatch(
+                      //   CommonActions.reset({
+                      //     index: 0,
+                      //     routes: [
+                      //       {name: 'ServiceBooking', params: {serviceName,id}},
+                      //     ],
+                      //   }),
+                      // );
           } else {
             navigation.dispatch(
               CommonActions.reset({

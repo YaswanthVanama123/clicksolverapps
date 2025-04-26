@@ -194,7 +194,7 @@ function ServiceApp({ navigation, route }) {
       // console.log('cs_token:', cs_token);
       if (cs_token) {
         const response = await axios.get(
-          'http://192.168.55.104:5000/api/user/track/details',
+          'https://backend.clicksolver.com/api/user/track/details',
           {
             headers: { Authorization: `Bearer ${cs_token}` }, 
           }
@@ -719,17 +719,29 @@ const dynamicStyles = (width, height, isDarkMode) => {
       fontFamily: 'RobotoSlab-Bold',
       color: isDarkMode ? '#fff' : '#333',
     },
+    // bookButton: {
+    //   flexDirection: 'row',
+    //   alignItems: 'center',
+    //   justifyContent: 'center',
+    //   backgroundColor: '#FF4500',
+    //   borderRadius: 15,
+    //   marginTop: 10,
+    //   width: isTablet ? 130 : 110,
+    //   height: isTablet ? 36 : 31,
+    //   opacity: 0.88,
+    // },
     bookButton: {
       flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#FF4500',
-      borderRadius: 15,
+      paddingVertical: isTablet ? 10 : 8,
+      paddingHorizontal: isTablet ? 20 : 16,
       marginTop: 10,
-      width: isTablet ? 130 : 110,
-      height: isTablet ? 36 : 31,
+      borderRadius: 15,
+      backgroundColor: '#FF4500',
+      alignSelf: 'flex-start',    // so it wraps its content
       opacity: 0.88,
     },
+    
+    
     bookButtonText: {
       color: '#ffffff',
       fontFamily: 'RobotoSlab-SemiBold',

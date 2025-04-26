@@ -315,7 +315,9 @@ const SingleService = () => {
           </TouchableOpacity>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{t('booked_services') || 'Booked Services'}</Text>
-            <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+            <ScrollView
+            style={{ flex: 1, width: '100%' }}
+            contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}>
               <View style={styles.itemContainers}>
                 {bookedServices.map((srv, idx) => (
                   

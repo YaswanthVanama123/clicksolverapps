@@ -434,6 +434,7 @@ function App() {
           <Stack.Screen name="userwaiting" component={WaitingUser} />
           <Stack.Screen name="UserNavigation" component={Navigation} />
           <Stack.Screen name="ServiceInProgress" component={ServiceInProgress} />
+          <Stack.Screen name="worktimescreen" component={ServiceInProgress} />
           <Stack.Screen name="Paymentscreen" component={Payment} />
           <Stack.Screen name="ServiceBooking" component={SingleService} />
           <Stack.Screen name="RecentServices" component={RecentServices} />

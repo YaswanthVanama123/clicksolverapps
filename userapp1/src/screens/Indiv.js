@@ -374,11 +374,12 @@ const dynamicStyles = (width, height, isDarkMode) => {
       paddingHorizontal: isTablet ? 20 : 15,
       borderRadius: 15,
       marginTop: 10,
-      width: isTablet ? 130 : 110,
-      height: isTablet ? 38 : 32,
+      // ← no width or height!
+      alignSelf: 'flex-start',
       opacity: 0.88,
       elevation: 5,
     },
+    
     bookNowText: {
       color: '#FFF',
       fontWeight: 'bold',
