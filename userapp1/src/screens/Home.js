@@ -186,7 +186,7 @@ function Home({ navigation, route }) {
       setLoading(true);
       // log('Attempting to fetch services from API');
       const response = await axios.get(
-        'http://192.168.55.104:5000/api/home/services'
+        'https://backend.clicksolver.com/api/home/services'
       );
       setServices(response.data);
     } catch (error) {

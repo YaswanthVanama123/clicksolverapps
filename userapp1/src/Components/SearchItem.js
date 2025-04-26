@@ -152,14 +152,16 @@ const SearchItem = () => {
     (item) => {
       // console.log("push",item)
       storeRecentService(item);
+      console.log("item",item)
       navigation.push('ServiceBooking', {
         serviceName: item.service_category,
-        id:item.main_service_id  // here changed 
+        id:item.main_service_id , // here changed ,
+        service_tag:item.service_tag
       });
     },
     [navigation, storeRecentService]
   );
-
+ 
   const renderSuggestionItem = (item, index) => (
     <TouchableOpacity
       key={index}

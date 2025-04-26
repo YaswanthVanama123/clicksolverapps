@@ -40,6 +40,10 @@ const AboutCS = () => {
           {t('about_description_3') ||
             'Thank you for choosing Clicksolver as your trusted partner in navigating the digital world. We are committed to continuous improvement and excellence, ensuring that your journey with us is as smooth and rewarding as possible.'}
         </Text>
+        {/* New founder and year info */}
+        <Text style={styles.description}>
+          {t('about_founded') || 'Founded in 2025 by Yaswanth Vanama.'}
+        </Text>
       </View>
 
       {/* Logo at the bottom center */}

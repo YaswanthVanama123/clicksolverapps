@@ -7562,6 +7562,35 @@ const serviceCompleted = async (req, res) => {
   }
 };
 
+const getSpecialOffers = async (req, res) => {
+  try {
+    const result = await client.query(`
+      SELECT
+        discount_percentage::INT   AS discount_percentage,
+        title,
+        summary,
+        image,
+        backgroundColor,
+        description
+      FROM public.offers
+      WHERE summary IS NOT NULL
+        AND is_active = true
+      ORDER BY discount_percentage DESC
+    `);
+
+    return res.status(200).json({
+      offers: result.rows
+    });
+  }
+  catch (error) {
+    console.error('Error fetching special offers:', error);
+    return res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+};
+
+
 
 const stopStopwatch = async (notification_id) => {
   if (stopwatchInterval) {
@@ -9897,5 +9926,6 @@ module.exports = {
   getRoute,
   initiateCall,
   getServiceBookingUserItemDetails,
-  homeServices
+  homeServices,
+  getSpecialOffers
 };

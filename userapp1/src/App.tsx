@@ -291,12 +291,13 @@ function App() {
       list.push(notification);
       await EncryptedStorage.setItem('notifications', JSON.stringify(list));
     } catch (err) {
-      // console.log('storeNotificationLocally error', err);
+      console.log('storeNotificationLocally error', err);
     }
   };
 
   const flushPendingNotification = useCallback(async () => {
     const pending = await EncryptedStorage.getItem('pendingNotification');
+    console.log("Pending notifications")
     if (pending) {
       await handleNotificationNavigation(JSON.parse(pending));
       await EncryptedStorage.removeItem('pendingNotification');
@@ -310,7 +311,7 @@ function App() {
     (async () => {
       const onboarded = await EncryptedStorage.getItem('onboarded');
       setInitialRoute(onboarded ? 'Tabs' : 'OnboardingScreen');
-    })();
+    })(); 
   }, []);
 
   /* -----------------------------------------------
@@ -341,6 +342,7 @@ function App() {
     });
 
     const unsubscribeMessage = messaging().onMessage(async (msg) => {
+      console.log("Fcm message arrived",msg)
       await handleNotificationNavigation(msg);
       storeNotificationLocally({
         title: msg.notification?.title ?? '',
@@ -357,6 +359,7 @@ function App() {
     });
 
     messaging().setBackgroundMessageHandler(async (msg) => {
+      console.log("Background notification catch",msg)
       await EncryptedStorage.setItem('pendingNotification', JSON.stringify(msg));
       storeNotificationLocally({
         title: msg.notification?.title ?? '',

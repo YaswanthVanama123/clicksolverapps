@@ -10,6 +10,7 @@ import {
   TextInput,
   useWindowDimensions,
   Platform,
+  ActivityIndicator,
   
 } from 'react-native';
 import {
@@ -50,6 +51,8 @@ function ServiceApp({ navigation, route }) {
   const [profile, setProfile] = useState("");
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [specialOffer, setSpecialOffer] = useState([]);
+  const [offersLoading, setOffersLoading] = useState(false);  
   const [greeting, setGreeting] = useState('');
   const [greetingIcon, setGreetingIcon] = useState(null);
   const [messageBoxDisplay, setMessageBoxDisplay] = useState(false);
@@ -62,7 +65,7 @@ function ServiceApp({ navigation, route }) {
 
   const scrollViewRef = useRef(null);
 
-  // Sample special offers (with translations)
+
   const specialOffers = useMemo(
     () => [
       {
@@ -162,16 +165,41 @@ function ServiceApp({ navigation, route }) {
 
   useEffect(() => {
     const { encodedId } = route.params || {};
+    console.log("encodedId",encodedId)
     if (encodedId) {
-      try {
-        const decoded = atob(encodedId);
+      try {  
+        const decoded = atob(encodedId); 
+        console.log("decodedId",decoded)
         setDecodedId(decoded);
         setModalVisible(true);
+
       } catch (error) {
         console.error('Failed to decode encodedId:', error);
       }
     }
   }, [route.params]);
+
+  useEffect(() => {
+    const fetchSpecialOffers = async () => {
+      setOffersLoading(true);
+      try {
+        const response = await axios.get(
+          'https://backend.clicksolver.com/api/special/offers'
+        );
+        // assume the API returns an array of objects with keys:
+        // { id, title, subtitle, description, imageBACKENDAP, backgroundColor, color }
+        console.log("offers",response.data)
+        setSpecialOffer(response.data.offers);
+      } catch (err) {
+        console.error('Error fetching special offers:', err); 
+      } finally {
+        setOffersLoading(false); 
+      }
+    };
+  
+    fetchSpecialOffers();
+  }, []);
+  
 
   useEffect(() => {
     fetchServices();
@@ -274,25 +302,54 @@ function ServiceApp({ navigation, route }) {
 
   // Render special offers
   const renderSpecialOffers = () => {
-    return specialOffers.map(offer => (
+    return specialOffer.map(offer => (
       <View
         key={offer.id}
-        style={[styles.offerCard, { backgroundColor: offer.backgroundColor }]}>
+        style={[styles.offerCard, { backgroundColor: offer.backgroundcolor }]}>
         <View style={styles.offerDetails}>
           <Text style={[styles.offerTitle, { color: '#ff4500' }]}>
-            {offer.title}
+            {offer.discount_percentage}%
           </Text>
           <Text style={[styles.offerSubtitle, { color: isDarkMode ? '#4a4a4a' : '#4a4a4a' }]}>
-            {offer.subtitle}
+            {offer.summary}
           </Text>
           <Text style={[styles.offerDescription, { color: isDarkMode ? '#4a4a4a' : '#4a4a4a' }]}>
             {offer.description}
           </Text>
         </View>
-        <Image source={{ uri: offer.imageBACKENDAP }} style={styles.offerImg} />
+        <Image source={{ uri: offer.image }} style={styles.offerImg} />
       </View>
     ));
   };
+
+  // const renderSpecialOffers = () => {
+  //   if (offersLoading) {
+  //     return (
+  //       <View style={{ padding: 20, alignItems: 'center' }}>
+  //         <ActivityIndicator size="small" color="#FF4500" />
+  //       </View>
+  //     );
+  //   }
+  //   return specialOffers.map(offer => (
+  //     <View
+  //       key={offer.id}
+  //       style={[styles.offerCard, { backgroundColor: offer.backgroundColor }]}>
+  //       <View style={styles.offerDetails}>
+  //         <Text style={[styles.offerTitle, { color: offer.color }]}>
+  //           {offer.title}
+  //         </Text>
+  //         <Text style={styles.offerSubtitle}>
+  //           {offer.subtitle}
+  //         </Text>
+  //         <Text style={styles.offerDescription}>
+  //           {offer.description}
+  //         </Text>
+  //       </View>
+  //       <Image source={{ uri: offer.imageBACKENDAP }} style={styles.offerImg} />
+  //     </View>
+  //   ));
+  // };
+  
 
   // Render service cards from backend data
   const renderServices = () => {
@@ -331,13 +388,13 @@ function ServiceApp({ navigation, route }) {
 
   // Submit user feedback
   const submitFeedback = async () => {
-    try {
+    try { 
       const response = await axios.post(
         'https://backend.clicksolver.com/api/user/feedback',
         {
           rating,
           comment,
-          notification_id: decodedId,
+          notification_id: decodedId, 
         },
         {
           headers: {

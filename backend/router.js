@@ -170,7 +170,8 @@ const {
   translateText,
   getRoute,
   initiateCall,
-  getServiceBookingUserItemDetails
+  getServiceBookingUserItemDetails,
+  getSpecialOffers
 } = require("./controller.js");
 
 const router = express.Router();
@@ -901,6 +902,8 @@ router.post("/worker/confirm/completed", serviceCompleted);
 router.post("/reject/request", authenticateWorkerToken, rejectRequest);
 
 router.get("/checking/status", checkStatus);
+
+router.get("/special/offers",getSpecialOffers)
 
 router.post("/task/confirm/status", checkTaskStatus);
 

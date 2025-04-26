@@ -34,7 +34,7 @@ import { useTranslation } from 'react-i18next';
 const SingleService = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { serviceName,id } = route.params;
+  const { serviceName, id, service_tag } = route.params || {};
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { isDarkMode } = useTheme();
@@ -148,12 +148,31 @@ const SingleService = () => {
   }, [quantities, services, serviceName]);
 
   // Quantity actions
+  // const handleQuantityChange = (id, delta) => {
+  //   setQuantities((prev) => ({
+  //     ...prev,
+  //     [id]: Math.max(0, (prev[id] || 0) + delta),
+  //   }));
+  // };
+
   const handleQuantityChange = (id, delta) => {
-    setQuantities((prev) => ({
-      ...prev,
-      [id]: Math.max(0, (prev[id] || 0) + delta),
-    }));
+    setQuantities(prev => {
+      const currentQty = prev[id] || 0;
+      const service = services.find(s => s.main_service_id === id);
+      const isInspection = service.service_tag.includes('Inspection');
+  
+      // if Inspection, never go above 1
+      if (isInspection && delta > 0 && currentQty >= 1) {
+        return prev;
+      }
+  
+      // calculate new quantity (>= 0)
+      const newQty = Math.max(0, currentQty + delta);
+      return { ...prev, [id]: newQty };
+    });
   };
+  
+  
 
   // Booking flow
   const handleBookNow = () => {
@@ -231,7 +250,11 @@ const SingleService = () => {
         {/* Service Title & Info */}
         <View style={styles.serviceHeader}>
           <View style={styles.serviceDetails}>
-            <Text style={styles.serviceTitle}> { t(`IndivService_${id}`) || serviceName }</Text>
+            <Text style={styles.serviceTitle}>
+              {service_tag
+                ? t(`singleService_${id}`) || serviceName
+                : t(`IndivService_${id}`)  || serviceName}
+            </Text>
             <View style={styles.priceContainer}>
               <Text style={styles.Sparetext}>
                 {t('spare_text') || 'Spare parts, if required, will incur additional charges'}

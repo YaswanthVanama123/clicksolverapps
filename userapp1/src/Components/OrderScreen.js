@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef  } from 'react';
 import {
   View,
   Text,
@@ -48,7 +48,7 @@ const OrderScreen = () => {
   const [selectedTip, setSelectedTip] = useState(0);
   const [errorModalVisible, setErrorModalVisible] = useState(false);
   const [errorModalContent, setErrorModalContent] = useState({ title: '', message: '' });
-
+  const didMountRef = useRef(false);
   // Show error modal with title + message
   const showErrorModal = (title, message) => {
     setErrorModalContent({ title, message });
@@ -74,6 +74,17 @@ const OrderScreen = () => {
     }
   }, [serviceName]);
 
+    // NEW: only run goBack on *subsequent* updates
+    useEffect(() => {
+      if (didMountRef.current) {
+        if (services.length === 0) {
+          navigation.goBack();
+        }
+      } else {
+        didMountRef.current = true;
+      }
+    }, [services, navigation]);
+
   /**
    * 2) Recalculate totals when services or offers change
    */
@@ -91,6 +102,8 @@ const OrderScreen = () => {
       setSavings(0);
     }
   }, [services]);
+
+  
 
   /**
    * 3) Fetch offers from backend on screen focus
@@ -129,16 +142,26 @@ const OrderScreen = () => {
     });
   };
 
-  const decrementQuantity = (index) => {
-    setServices((prev) => {
-      const updated = [...prev];
-      if (updated[index].quantity > 1) {
-        updated[index].quantity -= 1;
-        updated[index].totalCost = updated[index].baseCost * updated[index].quantity;
-      }
-      return updated;
-    });
-  };
+// 4) Adjust quantity logic
+const decrementQuantity = (index) => {
+  setServices(prev => {
+    const updated = [...prev];
+    // drop quantity down to zero...
+    updated[index].quantity = Math.max(
+      0,
+      updated[index].quantity - 1
+    );
+    updated[index].totalCost =
+      updated[index].baseCost * updated[index].quantity;
+
+    // ...then remove any zero-qty items
+    if (updated[index].quantity === 0) {
+      updated.splice(index, 1);
+    }
+
+    return updated;
+  });
+};
 
   /**
    * 5) Validate & Apply Offer

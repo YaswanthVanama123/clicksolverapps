@@ -309,7 +309,7 @@ const ProfileScreen = () => {
           {/* Menu Items */}
           <ProfileMenuItem styles={styles} text={t('my_services')} onPress={() => navigation.push('RecentServices')} />
           <HelpMenuItem styles={styles} text={t('help_and_support')} onPress={() => navigation.push('Help')} />
-          <DeleteAccountMenuItem styles={styles} text={t('account_delete')} onPress={() => navigation.push('DeleteAccount', { details: account })} />
+          {/* <DeleteAccountMenuItem styles={styles} text={t('account_delete')} onPress={() => navigation.push('DeleteAccount', { details: account })} /> */}
           <EditProfileMenuItem styles={styles} text={t('edit_profile')} onPress={() => navigation.push('EditProfile', { details: account })} />
           <ReferEarnMenuItem styles={styles} text={t('refer_and_earn')} onPress={() => navigation.push('ReferralScreen')} />
           <LanguageChangeMenuItem styles={styles} text={t('change_language')} onPress={() => navigation.push('LanguageSelector')} />

@@ -42,7 +42,7 @@ const ServiceItemCard = ({ item, styles, tab }) => {
   const serviceName =
     item.service_booked && item.service_booked.length > 0
       ? item.service_booked[0]?.serviceName
-      : t('unknown_service') || 'Unknown Service';
+      : t('unknown_service') || 'Unknown Service'; 
 
   const imageUrl =
     item.service_booked && item.service_booked.length > 0
@@ -261,13 +261,14 @@ const ServiceTrackingListScreen = () => {
         ]}
       >
         <Text style={styles.statusText}>
-          {item.service_status === 'Work Completed'
+          {/* {item.service_status === 'Work Completed'
             ? t('work_completed') || 'Completed'
             : item.service_status === 'Work started'
             ? t('in_progress') || 'In Progress'
             : item.service_status === 'Collected Item'
             ? t('collected_item') || 'Item Collected'
-            : t('on_the_way') || 'On the Way'}
+            : t('on_the_way') || 'On the Way'} */}
+            View
         </Text>
       </View>
     </TouchableOpacity>
@@ -371,11 +372,11 @@ const dynamicStyles = (width, height, isDarkMode) => {
       justifyContent: 'space-between',
       paddingHorizontal: isTablet ? 24 : 16,
       paddingVertical: isTablet ? 20 : 16,
-      elevation: 2,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
+      // elevation: 2,
+      // shadowColor: '#000',
+      // shadowOffset: { width: 0, height: 2 },
+      // shadowOpacity: 0.2,
+      // shadowRadius: 4,
       backgroundColor: isDarkMode ? '#333' : '#ffffff',
       zIndex: 1,
     },
@@ -392,11 +393,11 @@ const dynamicStyles = (width, height, isDarkMode) => {
       backgroundColor: isDarkMode ? '#333' : '#ffffff',
       borderRadius: 8,
       padding: isTablet ? 12 : 10,
-      elevation: 5,
+      elevation: 1,
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 1,
       zIndex: 10,
     },
     dropdownTitle: {

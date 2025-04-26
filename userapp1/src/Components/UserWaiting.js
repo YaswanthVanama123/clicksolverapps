@@ -159,10 +159,12 @@ const WaitingUser = () => {
           serviceBooked,
           discount,
           tipAmount,
-          offer, // Pass the offer object if available
+          offer, // Pass the offer object if available 
         },
         {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
+
+      console.log(response.status,response.data)
 
       if (response.status === 200) {
         const encode = response.data; 
