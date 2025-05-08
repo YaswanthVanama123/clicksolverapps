@@ -56,7 +56,7 @@ const VerificationScreen = () => {
     try {
       const validateResponse = await axios.get(
         'https://backend.clicksolver.com/api/validate',
-        {
+        { 
           params: {
             mobileNumber: phoneNumber,
             verificationId,

@@ -78,12 +78,12 @@ const AccountDelete = () => {
   // Logout: clear tokens and navigate to Login
   const handleLogout = async () => {
     try {
-      const fcm_token = await EncryptedStorage.getItem('fcm_token');
-      if (fcm_token) {
-        await axios.post('https://backend.clicksolver.com/api/userLogout', { fcm_token });
+      const user_fcm_token = await EncryptedStorage.getItem('user_fcm_token');
+      if (user_fcm_token) {
+        await axios.post('https://backend.clicksolver.com/api/userLogout', { user_fcm_token });
       }
       await EncryptedStorage.removeItem('cs_token');
-      await EncryptedStorage.removeItem('fcm_token');
+      await EncryptedStorage.removeItem('user_fcm_token');
       await EncryptedStorage.removeItem('notifications');
       await EncryptedStorage.removeItem('messageBox');
 

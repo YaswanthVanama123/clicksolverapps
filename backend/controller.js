@@ -753,9 +753,9 @@ const WorkerSendOtp = (req, res) => {
 
   const options = {
     method: "POST",
-    url: `https://cpaas.messagecentral.com/verification/v3/send?countryCode=91&customerId=${process.env.CUSTOMER_ID}&flowType=SMS&mobileNumber=${mobileNumber}`,
+    url: `https://cpaas.messagecentral.com/verification/v3/send?countryCode=91&customerId=${process.env.WORKER_CUSTOMER_ID}&flowType=SMS&mobileNumber=${mobileNumber}`,
     headers: {
-      authToken: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUIzNzUzRUNBNDNCRDQzNSIsImlhdCI6MTcyNjI1OTQwNiwiZXhwIjoxODgzOTM5NDA2fQ.Gme6ijpbtUge-n9NpEgJR7lIsNQTqH4kDWkoe9Wp6Nnd6AE0jaAKCuuGuYtkilkBrcC1wCj8GrlMNQodR-Gelg",
+      authToken: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLTI0OEY5ODhBOUQ5QzQzOCIsImlhdCI6MTc0NTY4Mjk3NywiZXhwIjoxOTAzMzYyOTc3fQ.9-y_44egQuG0MuLs08d7gLWKxkSGW8ldsceKotcrTzP8Dl2XqrSXZGpVtkPJQAL-LJ-HCTPnab1FVHn-A_IJRA",
     },
   };
 
@@ -783,6 +783,8 @@ const WorkerSendOtp = (req, res) => {
     }
   });
 };
+
+
 
 // WorkerValidateOtp function – Validates the OTP provided by the worker
 const WorkerValidateOtp = (req, res) => {
@@ -4384,7 +4386,7 @@ const getWorkerTrackRoute = async (req, res) => {
   try {
     // Query to select route and parameters based on user_id
     const query = `
-    SELECT wv.name, wa.screen_name, wa.params
+    SELECT wv.name, wv.no_due, wa.screen_name, wa.params
     FROM workeraction wa
     JOIN workersverified wv ON wa.worker_id = wv.worker_id
     WHERE wa.worker_id = $1
@@ -4395,8 +4397,9 @@ const getWorkerTrackRoute = async (req, res) => {
     if (result.rows.length > 0) {
       const route = result.rows[0].screen_name;
       const parameter = result.rows[0].params;
-      const name = result.rows[0].name
-      res.status(200).json({ route, parameter, name });
+      const name = result.rows[0].name;
+      const no_due = result.rows[0].no_due
+      res.status(200).json({ route, parameter, name, no_due });
     } else {
       res
         .status(200)
@@ -6990,6 +6993,83 @@ const sendOtp = (req, res) => {
   });
 };
 
+const partnerSendOtp = (req, res) => {
+  const { mobileNumber } = req.body;
+  if (!mobileNumber) {
+    return res.status(400).json({ message: "Mobile number is required" });
+  }
+
+  const options = {
+    method: "POST",
+    url: `https://cpaas.messagecentral.com/verification/v3/send?countryCode=91&customerId=${process.env.WORKER_CUSTOMER_ID}&flowType=SMS&mobileNumber=${mobileNumber}`,
+    headers: {
+      authToken: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLTI0OEY5ODhBOUQ5QzQzOCIsImlhdCI6MTc0NTY4Mjk3NywiZXhwIjoxOTAzMzYyOTc3fQ.9-y_44egQuG0MuLs08d7gLWKxkSGW8ldsceKotcrTzP8Dl2XqrSXZGpVtkPJQAL-LJ-HCTPnab1FVHn-A_IJRA",
+    },
+  };
+
+  request(options, (error, response, body) => {
+    if (error) {
+      console.error("Error sending OTP:", error);
+      return res.status(500).json({ message: "Error sending OTP", error });
+    }
+    try {
+      const data = JSON.parse(body);
+      if (data && data.data && data.data.verificationId) {
+        return res.status(200).json({
+          message: "OTP sent successfully",
+          verificationId: data.data.verificationId,
+        });
+      } else {
+        return res.status(500).json({
+          message: "Failed to retrieve verificationId",
+          error: data,
+        });
+      }
+    } catch (parseError) {
+      console.error("Error parsing OTP response:", parseError);
+      return res.status(500).json({ message: "Failed to parse response", error: parseError });
+    }
+  });
+};
+
+const partnerValidateOtp = (req, res) => {
+  // Expecting mobileNumber, verificationId, and otpCode as query parameters
+  const { mobileNumber, verificationId, otpCode } = req.query;
+  if (!mobileNumber || !verificationId || !otpCode) {
+    return res.status(400).json({ message: "Missing required parameters" });
+  }
+
+  const options = {
+    method: "GET",
+    url: `https://cpaas.messagecentral.com/verification/v3/validateOtp?countryCode=91&mobileNumber=${mobileNumber}&verificationId=${verificationId}&customerId=${process.env.WORKER_CUSTOMER_ID}&code=${otpCode}`,
+    headers: {
+      authToken: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLTI0OEY5ODhBOUQ5QzQzOCIsImlhdCI6MTc0NTY4Mjk3NywiZXhwIjoxOTAzMzYyOTc3fQ.9-y_44egQuG0MuLs08d7gLWKxkSGW8ldsceKotcrTzP8Dl2XqrSXZGpVtkPJQAL-LJ-HCTPnab1FVHn-A_IJRA",
+    },
+  };
+
+  request(options, (error, response, body) => {
+    if (error) {
+      console.error("Error validating OTP:", error);
+      return res.status(500).json({ message: "Error validating OTP", error });
+    }
+    try {
+      const data = JSON.parse(body);
+      if (
+        data &&
+        data.data &&
+        data.data.verificationStatus === "VERIFICATION_COMPLETED"
+      ) {
+        return res.status(200).json({ message: "OTP Verified" });
+      } else {
+        return res.status(200).json({ message: "Invalid OTP" });
+      }
+    } catch (parseError) {
+      console.error("Error parsing OTP validation response:", parseError);
+      return res.status(500).json({ message: "Failed to parse response", error: parseError });
+    }
+  });
+};
+
 // VALIDATE OTP FUNCTION
 const validateOtp = (req, res) => {
   // Expecting mobileNumber, verificationId, and otpCode as query parameters
@@ -7590,6 +7670,12 @@ const getSpecialOffers = async (req, res) => {
   }
 };
 
+
+
+
+
+
+   
 
 
 const stopStopwatch = async (notification_id) => {
@@ -8263,25 +8349,39 @@ const getPaymentDetails = async (notification_id) => {
 //   try {
 //     const end_time = new Date();
 
+//     // 1) Update servicecall, update accepted, upsert workerlife, insert into completenotifications, fetch FCM
 //     const combinedQuery = `
 //       WITH update_servicecall AS (
 //         UPDATE servicecall
 //         SET payment = $1,
 //             payment_type = $2,
-//             end_time = now()
+//             end_time = NOW()
 //         WHERE notification_id = $3
 //         RETURNING notification_id
 //       ),
 //       update_accepted AS (
-//         UPDATE accepted
-//         SET time = jsonb_set(
-//           COALESCE(time, '{}'::jsonb),
-//           '{paymentCompleted}',
-//           to_jsonb(to_char($4::timestamp, 'YYYY-MM-DD HH24:MI:SS'))
-//         )
-//         FROM update_servicecall
-//         WHERE accepted.notification_id = update_servicecall.notification_id
-//         RETURNING user_id, service_booked, worker_id
+//         UPDATE accepted a
+//         SET
+//           time = jsonb_set(
+//             COALESCE(a.time, '{}'::jsonb),
+//             '{paymentCompleted}',
+//             to_jsonb(to_char($4::timestamp, 'YYYY-MM-DD HH24:MI:SS'))
+//           )
+//         FROM update_servicecall us
+//         WHERE a.notification_id = us.notification_id
+//         RETURNING
+//           a.user_id,
+//           a.service_booked,
+//           a.worker_id,
+//           a.accepted_id,
+//           a.notification_id,
+//           a.user_notification_id,
+//           a.longitude,
+//           a.latitude,
+//           a.time,
+//           a.discount,
+//           a.total_cost,
+//           a.tip_amount
 //       ),
 //       upsert_workerlife AS (
 //         INSERT INTO workerlife (
@@ -8292,120 +8392,127 @@ const getPaymentDetails = async (notification_id) => {
 //           cashback_approved_times
 //         )
 //         SELECT
-//           worker_id,
+//           ua.worker_id,
 //           1,
 //           $6,
 //           CASE WHEN $5 = 'cash' THEN -($6 * 0.12) ELSE ($6 * 0.88) END,
 //           0
-//         FROM update_accepted
-//         ON CONFLICT (worker_id)
-//         DO UPDATE
-//           SET service_counts = workerlife.service_counts + 1,
-//               money_earned = workerlife.money_earned + EXCLUDED.money_earned,
-//               balance_amount = CASE
-//                 WHEN $5 = 'cash'
-//                   THEN workerlife.balance_amount - ($6 * 0.12)
-//                 ELSE workerlife.balance_amount + ($6 * 0.88)
-//               END,
-//               cashback_approved_times = floor((workerlife.service_counts + 1) / 6)
+//         FROM update_accepted ua
+//         ON CONFLICT (worker_id) DO UPDATE
+//           SET
+//             service_counts         = workerlife.service_counts + 1,
+//             money_earned           = workerlife.money_earned + EXCLUDED.money_earned,
+//             balance_amount         = CASE
+//                                        WHEN $5 = 'cash'
+//                                          THEN workerlife.balance_amount - ($6 * 0.12)
+//                                        ELSE workerlife.balance_amount + ($6 * 0.88)
+//                                      END,
+//             cashback_approved_times = FLOOR((workerlife.service_counts + 1) / 6)
 //         RETURNING balance_amount
 //       ),
-//       delete_servicetracking AS (
-//         DELETE FROM servicetracking
-//         WHERE notification_id = $3
-//         RETURNING *
+//       insert_completenotifications AS (
+//         INSERT INTO completenotifications (
+//           accepted_id,
+//           notification_id,
+//           user_id,
+//           user_notification_id,
+//           service_booked,
+//           longitude,
+//           latitude,
+//           worker_id,
+//           time,
+//           discount,
+//           total_cost,
+//           tip_amount
+//         )
+//         SELECT
+//           ua.accepted_id,
+//           ua.notification_id,
+//           ua.user_id,
+//           ua.user_notification_id,
+//           ua.service_booked,
+//           ua.longitude,
+//           ua.latitude,
+//           ua.worker_id,
+//           ua.time,
+//           ua.discount,
+//           ua.total_cost,
+//           ua.tip_amount
+//         FROM update_accepted ua
+//         RETURNING notification_id
 //       ),
 //       get_user_fcms AS (
 //         SELECT
-//           user_id,
-//           array_agg(fcm_token) AS user_fcm_tokens
-//         FROM userfcm
-//         WHERE user_id IN (SELECT user_id FROM update_accepted)
-//         GROUP BY user_id
+//           ua.user_id,
+//           COALESCE(array_agg(uf.fcm_token), '{}') AS user_fcm_tokens
+//         FROM update_accepted ua
+//         LEFT JOIN userfcm uf ON uf.user_id = ua.user_id
+//         GROUP BY ua.user_id
 //       )
 //       SELECT
-//         ua.user_id, 
+//         ua.user_id,
 //         ua.service_booked,
 //         ua.worker_id,
-//         (SELECT balance_amount FROM upsert_workerlife LIMIT 1) AS final_balance,
+//         uw.balance_amount AS final_balance,
 //         gf.user_fcm_tokens
 //       FROM update_accepted ua
+//       JOIN upsert_workerlife uw ON TRUE
 //       LEFT JOIN get_user_fcms gf ON gf.user_id = ua.user_id;
 //     `;
 
-//     // Placeholder values for the combined query.
 //     const values = [
-//       totalAmount,     // $1: Payment amount (for servicecall)
-//       paymentMethod,   // $2: Payment method (for servicecall)
-//       decodedId,       // $3: Notification ID
-//       end_time,        // $4: End time
-//       paymentMethod,   // $5: Payment method used in upsert_workerlife logic
-//       totalAmount,     // $6: Payment amount used for workerlife
+//       totalAmount,   // $1
+//       paymentMethod, // $2
+//       decodedId,     // $3
+//       end_time,      // $4
+//       paymentMethod, // $5 for workerlife logic
+//       totalAmount,   // $6 for workerlife logic
 //     ];
 
 //     const combinedResult = await client.query(combinedQuery, values);
-
 //     if (combinedResult.rows.length === 0) {
 //       return res.status(404).json({ error: "Notification not found." });
 //     }
 
-//     // Delete from accepted after finalizing
-//     const deleteQuery = `
-//       DELETE FROM accepted
-//       WHERE notification_id = $1
-//       RETURNING *;
-//     `;
-//     const deleteResult = await client.query(deleteQuery, [decodedId]);
-//     console.log("Deleted rows from accepted:", deleteResult.rowCount);
+//     // 2) Delete the original accepted row
+//     await client.query(
+//       `DELETE FROM accepted WHERE notification_id = $1;`,
+//       [decodedId]
+//     );
 
-//     if (deleteResult.rowCount === 0) {
-//       console.warn(`No rows deleted from accepted for notification_id: ${decodedId}`);
-//     }
+//     const {
+//       user_id,
+//       service_booked,
+//       worker_id,
+//       final_balance,
+//       user_fcm_tokens,
+//     } = combinedResult.rows[0];
 
-//     // Extract only the needed columns from the final SELECT
-//     const { user_id, service_booked, worker_id, final_balance, user_fcm_tokens } = combinedResult.rows[0];
-//     console.log("Final row from combined query =>", combinedResult.rows[0]);
-
-//     // 1) Trigger background actions
-//     const screen = "";
+//     // 3) Background actions
 //     const encodedNotificationId = Buffer.from(decodedId.toString()).toString("base64");
-//     await createUserBackgroundAction(user_id, encodedNotificationId, screen, service_booked);
-//     await updateWorkerAction(worker_id, encodedNotificationId, screen);
+//     await createUserBackgroundAction(user_id, encodedNotificationId, "", service_booked);
+//     await updateWorkerAction(worker_id, encodedNotificationId, "");
 
-//     // 2) Use the aggregated FCM tokens to send notifications
-//     if (user_fcm_tokens && user_fcm_tokens.length > 0) {
-//       const message = {
+//     // 4) Notify user
+//     if (user_fcm_tokens.length) {
+//       await admin.messaging().sendEachForMulticast({
 //         tokens: user_fcm_tokens,
 //         notification: {
 //           title: "Payment Confirmation",
-//           body: `Payment of ${totalAmount} completed! Your final balance is now ${final_balance ?? "unknown"}.`,
+//           body: `Payment of ${totalAmount} completed! New balance is ${final_balance}.`,
 //         },
 //         data: {
 //           notification_id: decodedId.toString(),
 //           type: "PAYMENT_CONFIRMATION",
 //           screen: "Home",
 //         },
-//       };
-
-//       try {
-//         const response = await admin.messaging().sendEachForMulticast(message);
-//         response.responses.forEach((resp, index) => {
-//           if (!resp.success) {
-//             console.error(`Error sending to token ${user_fcm_tokens[index]}: `, resp.error);
-//           }
-//         });
-//         console.log(`Notifications sent to user_id: ${user_id}`);
-//       } catch (err) {
-//         console.error("Error sending user payment notification:", err);
-//       }
-//     } else {
-//       console.log(`No FCM tokens for user_id: ${user_id}`);
+//       });
 //     }
 
 //     return res.status(200).json({ message: "Payment processed successfully" });
 //   } catch (error) {
 //     console.error("Error processing payment:", error);
-//     return res.status(500).json({ error: "An error occurred while processing the payment" });
+//     return res.status(500).json({ error: "Error while processing payment." });
 //   }
 // };
 
@@ -8421,7 +8528,6 @@ const processPayment = async (req, res) => {
   try {
     const end_time = new Date();
 
-    // 1) Update servicecall, update accepted, upsert workerlife, insert into completenotifications, fetch FCM
     const combinedQuery = `
       WITH update_servicecall AS (
         UPDATE servicecall
@@ -8467,7 +8573,8 @@ const processPayment = async (req, res) => {
           ua.worker_id,
           1,
           $6,
-          CASE WHEN $5 = 'cash' THEN -($6 * 0.12) ELSE ($6 * 0.88) END,
+          -- For the first 15 services, start balance at 0
+          0,
           0
         FROM update_accepted ua
         ON CONFLICT (worker_id) DO UPDATE
@@ -8475,11 +8582,22 @@ const processPayment = async (req, res) => {
             service_counts         = workerlife.service_counts + 1,
             money_earned           = workerlife.money_earned + EXCLUDED.money_earned,
             balance_amount         = CASE
+                                       -- If new total count ≤ 15, leave balance unchanged
+                                       WHEN (workerlife.service_counts + 1) <= 15
+                                         THEN workerlife.balance_amount
+                                       -- After 15 services, apply commission/share logic
                                        WHEN $5 = 'cash'
                                          THEN workerlife.balance_amount - ($6 * 0.12)
-                                       ELSE workerlife.balance_amount + ($6 * 0.88)
+                                       ELSE
+                                         workerlife.balance_amount + ($6 * 0.88)
                                      END,
-            cashback_approved_times = FLOOR((workerlife.service_counts + 1) / 6)
+            cashback_approved_times = CASE
+                                       -- Award cashback only once when crossing from 5 → 6 services
+                                       WHEN workerlife.service_counts < 6
+                                            AND (workerlife.service_counts + 1) = 6
+                                         THEN 1
+                                       ELSE workerlife.cashback_approved_times
+                                     END
         RETURNING balance_amount
       ),
       insert_completenotifications AS (
@@ -8533,12 +8651,12 @@ const processPayment = async (req, res) => {
     `;
 
     const values = [
-      totalAmount,   // $1
-      paymentMethod, // $2
-      decodedId,     // $3
-      end_time,      // $4
-      paymentMethod, // $5 for workerlife logic
-      totalAmount,   // $6 for workerlife logic
+      totalAmount,   // $1: payment
+      paymentMethod, // $2: payment_type
+      decodedId,     // $3: notification_id
+      end_time,      // $4: timestamp
+      paymentMethod, // $5: for workerlife logic (cash vs non-cash)
+      totalAmount,   // $6: money earned
     ];
 
     const combinedResult = await client.query(combinedQuery, values);
@@ -8546,7 +8664,7 @@ const processPayment = async (req, res) => {
       return res.status(404).json({ error: "Notification not found." });
     }
 
-    // 2) Delete the original accepted row
+    // Remove the processed accepted row
     await client.query(
       `DELETE FROM accepted WHERE notification_id = $1;`,
       [decodedId]
@@ -8560,12 +8678,12 @@ const processPayment = async (req, res) => {
       user_fcm_tokens,
     } = combinedResult.rows[0];
 
-    // 3) Background actions
+    // Background actions
     const encodedNotificationId = Buffer.from(decodedId.toString()).toString("base64");
     await createUserBackgroundAction(user_id, encodedNotificationId, "", service_booked);
     await updateWorkerAction(worker_id, encodedNotificationId, "");
 
-    // 4) Notify user
+    // Send FCM to the user
     if (user_fcm_tokens.length) {
       await admin.messaging().sendEachForMulticast({
         tokens: user_fcm_tokens,
@@ -8587,8 +8705,6 @@ const processPayment = async (req, res) => {
     return res.status(500).json({ error: "Error while processing payment." });
   }
 };
-
-
 
 const submitFeedback = async (req, res) => {
   try {
@@ -8807,136 +8923,242 @@ function convertToDateString(isoDate) {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
 }
 
+// const getWorkerEarnings = async (req, res) => {
+//   const { date, startDate, endDate } = req.body;
+//   const workerId = req.worker.id;
+
+//   let selectStartDate;
+//   let selectEndDate;
+
+//   if (startDate && endDate) {
+//     selectStartDate = convertToDateString(startDate);
+//     selectEndDate = convertToDateString(endDate);
+
+//     if (!selectStartDate || !selectEndDate) {
+//       return res
+//         .status(400)
+//         .json({ error: "Invalid startDate or endDate format" });
+//     }
+//     if (new Date(selectStartDate) > new Date(selectEndDate)) {
+//       return res
+//         .status(400)
+//         .json({ error: "startDate cannot be after endDate" });
+//     }
+//   } else if (date) {
+//     selectStartDate = convertToDateString(date);
+//     selectEndDate = selectStartDate;
+
+//     if (!selectStartDate) {
+//       return res.status(400).json({ error: "Invalid date format" });
+//     }
+//   } else {
+//     return res.status(400).json({ error: "No date provided" });
+//   }
+
+//   try {
+//     const query = `
+//         SELECT
+//           SUM(payment) AS total_payment,
+//           SUM(CASE WHEN payment_type = 'cash' THEN payment ELSE 0 END) AS cash_payment,
+//           COUNT(*) AS payment_count,
+//           (SELECT SUM(payment)
+//             FROM servicecall
+//             WHERE worker_id = $1
+//               AND payment IS NOT NULL
+//           ) AS life_earnings,
+//           (SELECT average_rating
+//             FROM workerlife
+//             WHERE worker_id = $1
+//           ) AS avg_rating,
+//           (SELECT COUNT(*)
+//             FROM completenotifications
+//             WHERE worker_id = $1
+//               AND complete_status = 'workercanceled'
+//               AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
+//           ) AS rejected_count,
+//           (SELECT COUNT(*)
+//             FROM notifications
+//             WHERE worker_id = $1
+//               AND status = 'pending'
+//               AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
+//           ) AS pending_count,
+//           (EXTRACT(EPOCH FROM SUM(
+//               CASE
+//                   WHEN time_worked ~ '^\d{2}:\d{2}:\d{2}$'
+//                       AND CAST(split_part(time_worked, ':', 2) AS INTEGER) < 60
+//                       AND CAST(split_part(time_worked, ':', 3) AS INTEGER) < 60
+//                   THEN CAST(time_worked AS INTERVAL)
+//                   ELSE INTERVAL '0'
+//               END
+//           )) / 3600) AS total_time_worked_hours,
+//           (SELECT service_counts FROM workerlife WHERE worker_id = $1) AS service_counts,
+//           (SELECT cashback_approved_times FROM workerlife WHERE worker_id = $1) AS cashback_approved_times,
+//           (SELECT cashback_gain FROM workerlife WHERE worker_id = $1) AS cashback_gain
+//         FROM servicecall s
+//         WHERE worker_id = $1
+//           AND payment IS NOT NULL
+//           AND DATE(end_time) BETWEEN DATE($2) AND DATE($3);
+//         `;
+
+//     const result = await client.query(query, [
+//       workerId,
+//       selectStartDate,
+//       selectEndDate,
+//     ]);
+
+//     console.log(result.rows[0])
+
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({ error: "No earnings data found" });
+//     }
+
+//     const {
+//       total_payment,
+//       cash_payment,
+//       payment_count,
+//       life_earnings,
+//       avg_rating,
+//       rejected_count,
+//       pending_count,
+//       total_time_worked_hours,
+//       service_counts,
+//       cashback_approved_times,
+//       cashback_gain,
+//     } = result.rows[0];
+
+//     console.log("rej",rejected_count)
+ 
+//     res.json({
+//       total_payment: Number(total_payment) || 0,
+//       cash_payment: Number(cash_payment) || 0,
+//       payment_count: Number(payment_count) || 0,
+//       life_earnings: Number(life_earnings) || 0,
+//       avg_rating: Number(avg_rating) || 0,
+//       rejected_count: Number(rejected_count) || 0,
+//       pending_count: Number(pending_count) || 0,
+//       total_time_worked_hours: Number(total_time_worked_hours) || 0,
+//       service_counts: Number(service_counts) || 0,
+//       cashback_approved_times: Number(cashback_approved_times) || 0,
+//       cashback_gain: Number(cashback_gain) || 0,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching worker earnings:", error);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// };
+
 const getWorkerEarnings = async (req, res) => {
   const { date, startDate, endDate } = req.body;
   const workerId = req.worker.id;
 
-  let selectStartDate;
-  let selectEndDate;
+  let selectStartDate, selectEndDate;
 
+  // 1) Parse incoming dates
   if (startDate && endDate) {
     selectStartDate = convertToDateString(startDate);
-    selectEndDate = convertToDateString(endDate);
+    selectEndDate   = convertToDateString(endDate);
 
     if (!selectStartDate || !selectEndDate) {
-      return res
-        .status(400)
-        .json({ error: "Invalid startDate or endDate format" });
+      console.log("❌ Invalid start/end format:", startDate, endDate);
+      return res.status(400).json({ error: "Invalid startDate or endDate format" });
     }
     if (new Date(selectStartDate) > new Date(selectEndDate)) {
-      return res
-        .status(400)
-        .json({ error: "startDate cannot be after endDate" });
+      console.log("❌ startDate > endDate:", selectStartDate, selectEndDate);
+      return res.status(400).json({ error: "startDate cannot be after endDate" });
     }
   } else if (date) {
     selectStartDate = convertToDateString(date);
-    selectEndDate = selectStartDate;
-
+    selectEndDate   = selectStartDate;
     if (!selectStartDate) {
+      console.log("❌ Invalid single date:", date);
       return res.status(400).json({ error: "Invalid date format" });
     }
   } else {
+    console.log("❌ No date provided in request");
     return res.status(400).json({ error: "No date provided" });
   }
 
+  // 2) Trim to YYYY-MM-DD only
+  const start = selectStartDate.slice(0, 10);
+  const end   = selectEndDate.slice(0, 10);
+
+  console.log("🕵️ getWorkerEarnings params:", { workerId, start, end });
+
   try {
-    // const query = `
-    //   SELECT
-    //     SUM(payment) AS total_payment,
-    //     SUM(CASE WHEN payment_type = 'cash' THEN payment ELSE 0 END) AS cash_payment,
-    //     COUNT(*) AS payment_count,
-    //     (SELECT SUM(payment)
-    //       FROM servicecall
-    //       WHERE worker_id = $1
-    //         AND payment IS NOT NULL
-    //     ) AS life_earnings,
-    //     (SELECT AVG(rating)
-    //       FROM feedback
-    //       WHERE worker_id = $1
-    //     ) AS avg_rating,
-    //     (SELECT COUNT(*)
-    //       FROM notifications
-    //       WHERE worker_id = $1
-    //         AND status = 'reject'
-    //         AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
-    //     ) AS rejected_count,
-    //     (SELECT COUNT(*)
-    //       FROM notifications
-    //       WHERE worker_id = $1
-    //         AND status = 'pending'
-    //         AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
-    //     ) AS pending_count,
-    //     (EXTRACT(EPOCH FROM SUM(
-    //         CASE
-    //             WHEN time_worked ~ '^\d{2}:\d{2}:\d{2}$'
-    //                  AND CAST(split_part(time_worked, ':', 2) AS INTEGER) < 60
-    //                  AND CAST(split_part(time_worked, ':', 3) AS INTEGER) < 60
-    //             THEN CAST(time_worked AS INTERVAL)
-    //             ELSE INTERVAL '0'
-    //         END
-    //     )) / 3600) AS total_time_worked_hours,
-    //     (SELECT service_counts FROM workerlife WHERE worker_id = $1) AS service_counts,
-    //     (SELECT cashback_approved_times FROM workerlife WHERE worker_id = $1) AS cashback_approved_times,
-    //     (SELECT cashback_gain FROM workerlife WHERE worker_id = $1) AS cashback_gain
-    //   FROM servicecall s
-    //   WHERE worker_id = $1
-    //     AND payment IS NOT NULL
-    //     AND DATE(end_time) BETWEEN DATE($2) AND DATE($3);
-    // `;
-
     const query = `
+      SELECT
+        COALESCE(sc.total_payment,0)           AS total_payment,
+        COALESCE(sc.cash_payment,0)            AS cash_payment,
+        COALESCE(sc.payment_count,0)           AS payment_count,
+        COALESCE(sc.total_time_worked_hours,0) AS total_time_worked_hours,
+        sc.life_earnings,
+
+        wl.average_rating                     AS avg_rating,
+
+        COALESCE(cn.rejected_count,0)         AS rejected_count,
+        COALESCE(pn.pending_count,0)          AS pending_count,
+
+        wl.service_counts,
+        wl.cashback_approved_times,
+        wl.cashback_gain
+
+      FROM workerlife wl
+
+      LEFT JOIN LATERAL (
         SELECT
-          SUM(payment) AS total_payment,
-          SUM(CASE WHEN payment_type = 'cash' THEN payment ELSE 0 END) AS cash_payment,
-          COUNT(*) AS payment_count,
-          (SELECT SUM(payment)
-            FROM servicecall
-            WHERE worker_id = $1
+          SUM(s.payment)                                     AS total_payment,
+          SUM(CASE WHEN s.payment_type='cash' THEN s.payment ELSE 0 END)
+                                                             AS cash_payment,
+          COUNT(*)                                           AS payment_count,
+          (EXTRACT(
+             EPOCH FROM SUM(
+               CASE
+                 WHEN s.time_worked ~ '^\\d{2}:\\d{2}:\\d{2}$'
+                   AND split_part(s.time_worked, ':', 2)::int < 60
+                   AND split_part(s.time_worked, ':', 3)::int < 60
+                 THEN s.time_worked::interval
+                 ELSE INTERVAL '0'
+               END
+             )
+           ) / 3600)                                          AS total_time_worked_hours,
+          (SELECT COALESCE(SUM(payment),0)
+             FROM servicecall
+            WHERE worker_id = wl.worker_id
               AND payment IS NOT NULL
-          ) AS life_earnings,
-          (SELECT average_rating
-            FROM workerlife
-            WHERE worker_id = $1
-          ) AS avg_rating,
-          (SELECT COUNT(*)
-            FROM notifications
-            WHERE worker_id = $1
-              AND status = 'reject'
-              AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
-          ) AS rejected_count,
-          (SELECT COUNT(*)
-            FROM notifications
-            WHERE worker_id = $1
-              AND status = 'pending'
-              AND DATE(created_at) BETWEEN DATE($2) AND DATE($3)
-          ) AS pending_count,
-          (EXTRACT(EPOCH FROM SUM(
-              CASE
-                  WHEN time_worked ~ '^\d{2}:\d{2}:\d{2}$'
-                      AND CAST(split_part(time_worked, ':', 2) AS INTEGER) < 60
-                      AND CAST(split_part(time_worked, ':', 3) AS INTEGER) < 60
-                  THEN CAST(time_worked AS INTERVAL)
-                  ELSE INTERVAL '0'
-              END
-          )) / 3600) AS total_time_worked_hours,
-          (SELECT service_counts FROM workerlife WHERE worker_id = $1) AS service_counts,
-          (SELECT cashback_approved_times FROM workerlife WHERE worker_id = $1) AS cashback_approved_times,
-          (SELECT cashback_gain FROM workerlife WHERE worker_id = $1) AS cashback_gain
+          )                                                   AS life_earnings
         FROM servicecall s
-        WHERE worker_id = $1
-          AND payment IS NOT NULL
-          AND DATE(end_time) BETWEEN DATE($2) AND DATE($3);
-        `;
+        WHERE s.worker_id = wl.worker_id
+          AND s.payment    IS NOT NULL
+          AND DATE(s.end_time) BETWEEN DATE($2) AND DATE($3)
+      ) sc ON TRUE
 
-    const result = await client.query(query, [
-      workerId,
-      selectStartDate,
-      selectEndDate,
-    ]);
+      LEFT JOIN LATERAL (
+        SELECT COUNT(*) AS rejected_count
+        FROM completenotifications cn
+        WHERE cn.worker_id       = wl.worker_id
+          AND cn.complete_status = 'workercanceled'
+          AND DATE(cn.created_at) BETWEEN DATE($2) AND DATE($3)
+      ) cn ON TRUE
 
-    console.log(result.rows[0])
+      LEFT JOIN LATERAL (
+        SELECT COUNT(*) AS pending_count
+        FROM notifications n
+        WHERE n.worker_id = wl.worker_id
+          AND n.status    = 'pending'
+          AND DATE(n.created_at) BETWEEN DATE($2) AND DATE($3)
+      ) pn ON TRUE
 
-    if (result.rows.length === 0) {
+      WHERE wl.worker_id = $1;
+    `;
+
+    const values = [workerId, start, end];
+    console.log("🛠️ Executing SQL with values:", values);
+
+    const { rows } = await client.query(query, values);
+    console.log("🏷️  SQL returned rows:", rows);
+
+    if (rows.length === 0) {
+      console.log("⚠️ No rows for workerlife—no earnings data");
       return res.status(404).json({ error: "No earnings data found" });
     }
 
@@ -8952,26 +9174,46 @@ const getWorkerEarnings = async (req, res) => {
       service_counts,
       cashback_approved_times,
       cashback_gain,
-    } = result.rows[0];
+    } = rows[0];
 
-    res.json({
-      total_payment: Number(total_payment) || 0,
-      cash_payment: Number(cash_payment) || 0,
-      payment_count: Number(payment_count) || 0,
-      life_earnings: Number(life_earnings) || 0,
-      avg_rating: Number(avg_rating) || 0,
-      rejected_count: Number(rejected_count) || 0,
-      pending_count: Number(pending_count) || 0,
+    console.log("📊 Computed metrics:", {
+      total_payment,
+      cash_payment,
+      payment_count,
+      life_earnings,
+      avg_rating,
+      rejected_count,
+      pending_count,
+      total_time_worked_hours,
+      service_counts,
+      cashback_approved_times,
+      cashback_gain,
+    });
+
+    return res.json({
+      total_payment: Number(total_payment)                 || 0,
+      cash_payment: Number(cash_payment)                   || 0,
+      payment_count: Number(payment_count)                 || 0,
+      life_earnings: Number(life_earnings)                 || 0,
+      avg_rating: Number(avg_rating)                       || 0,
+      rejected_count: Number(rejected_count)               || 0,
+      pending_count: Number(pending_count)                 || 0,
       total_time_worked_hours: Number(total_time_worked_hours) || 0,
-      service_counts: Number(service_counts) || 0,
+      service_counts: Number(service_counts)               || 0,
       cashback_approved_times: Number(cashback_approved_times) || 0,
-      cashback_gain: Number(cashback_gain) || 0,
+      cashback_gain: Number(cashback_gain)                 || 0,
     });
   } catch (error) {
-    console.error("Error fetching worker earnings:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("🔥 Error fetching worker earnings:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+
+
+
+
+
 
 const userWorkerInProgressDetails = async (req, res) => {
   const { decodedId } = req.body;
@@ -9897,6 +10139,7 @@ module.exports = {
   adminLogin,
   WorkerValidateOtp,
   WorkerSendOtp,
+  partnerValidateOtp,
   createOrder,
   verifyPayment,
   createFundAccount,
@@ -9927,5 +10170,6 @@ module.exports = {
   initiateCall,
   getServiceBookingUserItemDetails,
   homeServices,
-  getSpecialOffers
+  getSpecialOffers,
+  partnerSendOtp
 };

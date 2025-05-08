@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Click Solver</string>
     <string name="default_notification_channel_id">default_channel</string>
-    <string name="CodePushDeploymentKey">9osws50ZWw1_SwJJi-EynN9Xpz0mJlO43mKHPQ</string>
+    <string name="CodePushDeploymentKey">1b231e43-2817-11f0-ba9f-1a459c0f37ba</string>
+    <string name="CodePushServerUrl">http://206.189.137.144:3000</string>
 </resources>

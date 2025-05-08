@@ -23,6 +23,7 @@
     "@react-navigation/native": "^6.1.18",
     "@react-navigation/native-stack": "^6.11.0",
     "@rnmapbox/maps": "^10.1.28",
+    "@shm-open/code-push-cli": "github:shm-open/code-push-cli",
     "axios": "^1.7.3",
     "base-64": "^1.0.0",
     "i18next": "^24.2.3",

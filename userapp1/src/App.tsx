@@ -77,9 +77,15 @@ import ChatScreen from './Components/ChatScreen';
 import LanguageSelector from './Components/LanguageSelector';
 
 // --------------------------------------------------------------------------
+// const codePushOptions = {
+//   checkFrequency: CodePush.CheckFrequency.ON_APP_START,
+//   deploymentKey: '9osws50ZWw1_SwJJi-EynN9Xpz0mJlO43mKHPQ',
+// };
+
 const codePushOptions = {
   checkFrequency: CodePush.CheckFrequency.ON_APP_START,
-  deploymentKey: '9osws50ZWw1_SwJJi-EynN9Xpz0mJlO43mKHPQ',
+  deploymentKey: '1b231e43-2817-11f0-ba9f-1a459c0f37ba', // Worker app production key
+  serverUrl: 'http://206.189.137.144:3000',
 };
 
 const Stack = createNativeStackNavigator();
@@ -266,7 +272,8 @@ function App() {
   const syncFcmToken = async () => {
     try {
       const token = await messaging().getToken();
-      const stored = await EncryptedStorage.getItem('fcm_token');
+      console.log("fc token",token)
+      const stored = await EncryptedStorage.getItem('user_fcm_token');
       const auth = await EncryptedStorage.getItem('cs_token');
       if (!stored && auth) {
         await axios.post(
@@ -274,7 +281,7 @@ function App() {
           { fcmToken: token },
           { headers: { Authorization: `Bearer ${auth}` } }
         );
-        await EncryptedStorage.setItem('fcm_token', token);
+        await EncryptedStorage.setItem('user_fcm_token', token);
       }
     } catch (err) {
       // console.log('syncFcmToken error', err);

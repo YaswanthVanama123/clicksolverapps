@@ -141,6 +141,7 @@ const {
   workerTokenVerification,
   adminLogin,
   WorkerValidateOtp,
+  partnerValidateOtp,
   WorkerSendOtp,
   createOrder,
   verifyPayment,
@@ -171,7 +172,8 @@ const {
   getRoute,
   initiateCall,
   getServiceBookingUserItemDetails,
-  getSpecialOffers
+  getSpecialOffers,
+  partnerSendOtp
 } = require("./controller.js");
 
 const router = express.Router();
@@ -670,12 +672,19 @@ router.post(
 // POST request to send OTP
 router.post("/otp/send", sendOtp);
 
+router.post("/partner/otp/send", partnerSendOtp);
+
+
+router.post("/partner/sendOtp", partnerSendOtp);
+
 router.post("/worker/sendOtp",WorkerSendOtp)
 
 router.get("/worker/validateOtp",WorkerValidateOtp)
 
 // GET request to validate OTP
 router.get("/validate", validateOtp);
+
+router.get("/partner/validateOtp", partnerValidateOtp);
 
 // Route to verify OTP
 router.post("/otp-verify", verifyOTP);

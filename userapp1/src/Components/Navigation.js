@@ -1087,13 +1087,21 @@ const Navigation = () => {
 
           <View style={styles.confirmationModalContainer}>
             <Text style={styles.confirmationTitle}>
-              {t('confirmation_title') ||
-                'Are you sure you want to cancel this Service?'}
+              {t('confirmation_title') || 'Are you sure you want to cancel this Service?'}
             </Text>
             <Text style={styles.confirmationSubtitle}>
-              {t('confirmation_subtitle') ||
-                'Please avoid canceling – we’re working to connect you with the best expert to solve your problem.'}
+              {t('confirmation_subtitle') || 'Please avoid canceling – we’re working to connect you with the best expert to solve your problem.'}
             </Text>
+
+            {/* New Classic Warning Box */}
+            <View style={styles.classicWarningBox}>
+              <Text style={styles.classicWarningTitle}>
+                ⚠️ {t('important_note', 'Important Note')}
+              </Text>
+              <Text style={styles.classicWarningText}>
+                {t('cancellation_warning') || 'If you cancel this service, ClickSolver is not responsible.'}
+              </Text>
+            </View>
 
             <TouchableOpacity
               style={styles.confirmButton}
@@ -1104,6 +1112,7 @@ const Navigation = () => {
               </Text>
             </TouchableOpacity>
           </View>
+
         </View>
       </Modal>
       </View>
@@ -1454,6 +1463,27 @@ const dynamicStyles = (width, height, isDarkMode) => {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Medium',
     },
+    classicWarningBox: {
+      backgroundColor: isDarkMode ? '#2c2c2c' : '#fff8e1',  // Light yellow in light mode, dark in dark mode
+      borderColor: isDarkMode ? '#ffa726' : '#ff9800',
+      borderWidth: 1,
+      borderRadius: 10,
+      padding: 12,
+      marginTop: 20,
+      marginBottom: 20,
+    },
+    classicWarningTitle: {
+      fontSize: 15,
+      fontWeight: 'bold',
+      color: isDarkMode ? '#ffa726' : '#e65100',
+      marginBottom: 8,
+    },
+    classicWarningText: {
+      fontSize: 13,
+      color: isDarkMode ? '#ddd' : '#4e342e',
+      textAlign: 'center',
+    },
+    
   });
 };
 
