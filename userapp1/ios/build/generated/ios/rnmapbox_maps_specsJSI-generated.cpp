@@ -188,6 +188,71 @@ NativeRNMBXImageModuleCxxSpecJSI::NativeRNMBXImageModuleCxxSpecJSI(std::shared_p
   : TurboModule("RNMBXImageModule", jsInvoker) {
   methodMap_["refresh"] = MethodMetadata {1, __hostFunction_NativeRNMBXImageModuleCxxSpecJSI_refresh};
 }
+static jsi::Value __hostFunction_NativeRNMBXLocationModuleCxxSpecJSI_start(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
+  static_cast<NativeRNMBXLocationModuleCxxSpecJSI *>(&turboModule)->start(
+    rt,
+    args[0].asNumber()
+  );
+  return jsi::Value::undefined();
+}
+static jsi::Value __hostFunction_NativeRNMBXLocationModuleCxxSpecJSI_stop(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
+  static_cast<NativeRNMBXLocationModuleCxxSpecJSI *>(&turboModule)->stop(
+    rt
+  );
+  return jsi::Value::undefined();
+}
+static jsi::Value __hostFunction_NativeRNMBXLocationModuleCxxSpecJSI_setRequestsAlwaysUse(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
+  static_cast<NativeRNMBXLocationModuleCxxSpecJSI *>(&turboModule)->setRequestsAlwaysUse(
+    rt,
+    args[0].asBool()
+  );
+  return jsi::Value::undefined();
+}
+static jsi::Value __hostFunction_NativeRNMBXLocationModuleCxxSpecJSI_setMinDisplacement(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
+  static_cast<NativeRNMBXLocationModuleCxxSpecJSI *>(&turboModule)->setMinDisplacement(
+    rt,
+    args[0].asNumber()
+  );
+  return jsi::Value::undefined();
+}
+static jsi::Value __hostFunction_NativeRNMBXLocationModuleCxxSpecJSI_getLastKnownLocation(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
+  return static_cast<NativeRNMBXLocationModuleCxxSpecJSI *>(&turboModule)->getLastKnownLocation(
+    rt
+  );
+}
+static jsi::Value __hostFunction_NativeRNMBXLocationModuleCxxSpecJSI_simulateHeading(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
+  static_cast<NativeRNMBXLocationModuleCxxSpecJSI *>(&turboModule)->simulateHeading(
+    rt,
+    args[0].asNumber(),
+    args[1].asNumber()
+  );
+  return jsi::Value::undefined();
+}
+static jsi::Value __hostFunction_NativeRNMBXLocationModuleCxxSpecJSI_setLocationEventThrottle(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
+  static_cast<NativeRNMBXLocationModuleCxxSpecJSI *>(&turboModule)->setLocationEventThrottle(
+    rt,
+    args[0].asNumber()
+  );
+  return jsi::Value::undefined();
+}
+static jsi::Value __hostFunction_NativeRNMBXLocationModuleCxxSpecJSI_onLocationUpdate(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
+  static_cast<NativeRNMBXLocationModuleCxxSpecJSI *>(&turboModule)->onLocationUpdate(
+    rt
+  );
+  return jsi::Value::undefined();
+}
+
+NativeRNMBXLocationModuleCxxSpecJSI::NativeRNMBXLocationModuleCxxSpecJSI(std::shared_ptr<CallInvoker> jsInvoker)
+  : TurboModule("RNMBXLocationModule", jsInvoker) {
+  methodMap_["start"] = MethodMetadata {1, __hostFunction_NativeRNMBXLocationModuleCxxSpecJSI_start};
+  methodMap_["stop"] = MethodMetadata {0, __hostFunction_NativeRNMBXLocationModuleCxxSpecJSI_stop};
+  methodMap_["setRequestsAlwaysUse"] = MethodMetadata {1, __hostFunction_NativeRNMBXLocationModuleCxxSpecJSI_setRequestsAlwaysUse};
+  methodMap_["setMinDisplacement"] = MethodMetadata {1, __hostFunction_NativeRNMBXLocationModuleCxxSpecJSI_setMinDisplacement};
+  methodMap_["getLastKnownLocation"] = MethodMetadata {0, __hostFunction_NativeRNMBXLocationModuleCxxSpecJSI_getLastKnownLocation};
+  methodMap_["simulateHeading"] = MethodMetadata {2, __hostFunction_NativeRNMBXLocationModuleCxxSpecJSI_simulateHeading};
+  methodMap_["setLocationEventThrottle"] = MethodMetadata {1, __hostFunction_NativeRNMBXLocationModuleCxxSpecJSI_setLocationEventThrottle};
+  methodMap_["onLocationUpdate"] = MethodMetadata {0, __hostFunction_NativeRNMBXLocationModuleCxxSpecJSI_onLocationUpdate};
+}
 static jsi::Value __hostFunction_NativeRNMBXMovePointShapeAnimatorModuleCxxSpecJSI_create(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
   return static_cast<NativeRNMBXMovePointShapeAnimatorModuleCxxSpecJSI *>(&turboModule)->create(
     rt,

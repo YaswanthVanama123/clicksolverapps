@@ -9,6 +9,7 @@
  */
 #pragma once
 
+#include <folly/dynamic.h>
 #include <react/renderer/components/view/ViewProps.h>
 #include <react/renderer/core/PropsParserContext.h>
 #include <react/renderer/core/propsConversions.h>
@@ -220,8 +221,8 @@ class RNCAndroidDropdownPickerProps final : public ViewProps {
 };
 
 struct RNCPickerItemsStruct {
-  std::string label{};
-  std::string value{};
+  folly::dynamic label{};
+  folly::dynamic value{};
   SharedColor textColor{};
   std::string testID{};
 };
@@ -262,8 +263,8 @@ static inline void fromRawValue(const PropsParserContext& context, const RawValu
 
 
 struct RNCPickerFakePropStruct {
-  std::string label{};
-  std::string value{};
+  folly::dynamic label{};
+  folly::dynamic value{};
   SharedColor textColor{};
   std::string testID{};
 };

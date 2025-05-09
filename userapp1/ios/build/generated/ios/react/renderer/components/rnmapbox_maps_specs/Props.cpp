@@ -232,7 +232,8 @@ RNMBXMapViewProps::RNMBXMapViewProps(
     attributionViewMargins(convertRawProp(context, rawProps, "attributionViewMargins", sourceProps.attributionViewMargins, {})),
     attributionViewPosition(convertRawProp(context, rawProps, "attributionViewPosition", sourceProps.attributionViewPosition, {})),
     compassImage(convertRawProp(context, rawProps, "compassImage", sourceProps.compassImage, {})),
-    mapViewImpl(convertRawProp(context, rawProps, "mapViewImpl", sourceProps.mapViewImpl, {}))
+    mapViewImpl(convertRawProp(context, rawProps, "mapViewImpl", sourceProps.mapViewImpl, {})),
+    preferredFramesPerSecond(convertRawProp(context, rawProps, "preferredFramesPerSecond", sourceProps.preferredFramesPerSecond, {}))
       {}
 RNMBXMarkerViewContentProps::RNMBXMarkerViewContentProps(
     const PropsParserContext &context,
@@ -346,7 +347,8 @@ RNMBXRasterSourceProps::RNMBXRasterSourceProps(
     maxZoomLevel(convertRawProp(context, rawProps, "maxZoomLevel", sourceProps.maxZoomLevel, {})),
     tileSize(convertRawProp(context, rawProps, "tileSize", sourceProps.tileSize, {})),
     tms(convertRawProp(context, rawProps, "tms", sourceProps.tms, {})),
-    attribution(convertRawProp(context, rawProps, "attribution", sourceProps.attribution, {}))
+    attribution(convertRawProp(context, rawProps, "attribution", sourceProps.attribution, {})),
+    sourceBounds(convertRawProp(context, rawProps, "sourceBounds", sourceProps.sourceBounds, {}))
       {}
 RNMBXShapeSourceProps::RNMBXShapeSourceProps(
     const PropsParserContext &context,

@@ -1,11 +1,15 @@
+// react-native.config.js
 module.exports = {
-  dependencies: {
-    'react-native': {
-      platforms: {
-        ios: null, // Ensure iOS linking is disabled
-        android: {}, // Include Android
-      },
+  // 1️⃣ Skip codegen / TS parsing for @rnmapbox/maps
+  codegenConfig: {
+    '@rnmapbox/maps': {
+      type: 'binary',
     },
   },
-  assets: ['./src/assets/fonts'], // Adjust this path to point to your fonts
+  // 2️⃣ Stop automatic iOS pod injection (we’re doing it by hand in Podfile)
+  dependencies: {
+    '@rnmapbox/maps': {
+      platforms: { ios: null },
+    },
+  },
 };

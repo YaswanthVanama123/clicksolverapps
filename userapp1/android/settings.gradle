@@ -1,9 +1,20 @@
 rootProject.name = 'userapp1'
-apply from: file("../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesSettingsGradle(settings)
+
+// React Native CLI modules
+apply from: file("../node_modules/@react-native-community/cli-platform-android/native_modules.gradle")
+applyNativeModulesSettingsGradle(settings)
+
+// Include your app
 include ':app'
-includeBuild('../node_modules/@react-native/gradle-plugin')
-include ':app', ':react-native-code-push'
+
+// CodePush
+include ':react-native-code-push'
 project(':react-native-code-push').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-code-push/android/app')
 
-// include ':react-native-splash-screen'   
+// Mapbox
+include ':@rnmapbox_maps'
+project(':@rnmapbox_maps').projectDir = new File(rootProject.projectDir, '../node_modules/@rnmapbox/maps/android')
+
+// If you ever want to re-enable any other manual packages, uncomment:
+// include ':react-native-splash-screen'
 // project(':react-native-splash-screen').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-splash-screen/android')

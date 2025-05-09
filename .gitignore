@@ -1,21 +1,21 @@
-# Ignore common directories and files
-node_modules/
-.expo/
-.DS_Store
-.env
-*.log
-*.lock
+# # Ignore common directories and files
+# node_modules/
+# .expo/
+# .DS_Store
+# .env
+# *.log
+# *.lock
 
-# Ignore Android and iOS build directories
-android/app/build/
-ios/Pods/
-**/android/app/build/
-*.apk
-*.aab
+# # Ignore Android and iOS build directories
+# android/app/build/
+# ios/Pods/
+# **/android/app/build/
+# *.apk
+# *.aab
 
-# Ignore Firebase and other sensitive files
-backend/firebaseAdmin.json
+# # Ignore Firebase and other sensitive files
+# backend/firebaseAdmin.json
 
-# Ignore Gradle execution history files
-partnermobileapp/android/.gradle/8.6/executionHistory/executionHistory.bin
-userapp1/android/.gradle/8.6/executionHistory/executionHistory.bin
+# # Ignore Gradle execution history files
+# partnermobileapp/android/.gradle/8.6/executionHistory/executionHistory.bin
+# userapp1/android/.gradle/8.6/executionHistory/executionHistory.bin

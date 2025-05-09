@@ -10,7 +10,7 @@
 #pragma once
 
 #include <react/renderer/components/view/ViewEventEmitter.h>
-
+#include <folly/dynamic.h>
 
 namespace facebook::react {
 class RNCAndroidDialogPickerEventEmitter : public ViewEventEmitter {
@@ -60,7 +60,7 @@ class RNCPickerEventEmitter : public ViewEventEmitter {
   using ViewEventEmitter::ViewEventEmitter;
 
   struct OnChange {
-      std::string newValue;
+      folly::dynamic newValue;
     int newIndex;
     };
   void onChange(OnChange value) const;

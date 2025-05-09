@@ -1,7 +1,7 @@
 {
   "name": "rnmapbox-maps",
   "summary": "React Native Component for Mapbox",
-  "version": "10.1.28",
+  "version": "10.1.38",
   "authors": {
     "Miklós Fazekas": "mfazekas@szemafor.com (https://github.com/mfazekas/)"
   },
@@ -16,7 +16,7 @@
   "header_dir": "rnmapbox_maps",
   "dependencies": {
     "MapboxMaps": [
-      "~> 10.18.2"
+      "~> 10.19.0"
     ],
     "Turf": [],
     "React-Core": [],

@@ -46,6 +46,11 @@
             android:name="com.google.firebase.auth.APP_ID"
             android:value="1:544120482529:android:3f28186b98c2ef4de325a0" />
 
+            <meta-data
+                android:name="com.mapbox.token"
+                android:value="sk.your_secret_token" />
+
+
         <!-- Ola Maps API Key -->
         <meta-data
             android:name="com.ola.mapsdk.API_KEY"

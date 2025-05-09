@@ -37,7 +37,6 @@
       "9.1.0"
     ],
     "glog": [],
-    "React-jsinspector": [],
-    "hermes-engine": []
+    "React-jsinspector": []
   }
 }

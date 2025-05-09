@@ -1,12 +1,19 @@
+// android/build.gradle
+
 buildscript {
     ext {
-        buildToolsVersion = "34.0.0"
-        minSdkVersion = 23
-        compileSdkVersion = 34
-        targetSdkVersion = 34
-        ndkVersion = "27.0.12077973"
-        kotlinVersion = "1.9.22"
-        RNMapboxMapsImpl = "mapbox"
+        buildToolsVersion       = "34.0.0"
+        minSdkVersion           = 23
+        compileSdkVersion       = 34
+        targetSdkVersion        = 34
+        ndkVersion              = "27.0.12077973"
+        kotlinVersion           = "1.9.22"
+        RNMapboxMapsImpl        = "mapbox"
+
+        // Mapbox download token: you can override this in gradle.properties
+        MAPBOX_DOWNLOADS_TOKEN  = project.hasProperty("MAPBOX_DOWNLOADS_TOKEN")
+                                  ? project.MAPBOX_DOWNLOADS_TOKEN
+                                  : "sk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY2x6Y2N5ODF5MDloYzJpczh5aHN5NjV1ZiJ9.Y-QWaZyYCZKup-gUZTj61g"
     }
     repositories {
         google()
@@ -16,8 +23,8 @@ buildscript {
         classpath("com.android.tools.build:gradle:8.0.2")
         classpath("com.facebook.react:react-native-gradle-plugin")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
-        classpath 'com.google.gms:google-services:4.4.2'
-        classpath 'com.google.firebase:firebase-crashlytics-gradle:2.9.9'
+        classpath("com.google.gms:google-services:4.4.2")
+        classpath("com.google.firebase:firebase-crashlytics-gradle:2.9.9")
     }
 }
 
@@ -25,20 +32,22 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+
+        // Mapbox Downloads Maven repository
         maven {
-            url 'https://api.mapbox.com/downloads/v2/releases/maven'
+            url "https://api.mapbox.com/downloads/v2/releases/maven"
             authentication {
                 basic(BasicAuthentication)
             }
             credentials {
-                // Do not change the username below.
-                // This should always be `mapbox` (not your username).
-                username = 'mapbox'
-                // Use the secret token you stored in gradle.properties as the password
-                password = 'sk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY2x6Y2N5ODF5MDloYzJpczh5aHN5NjV1ZiJ9.Y-QWaZyYCZKup-gUZTj61g'
+                // Must remain 'mapbox'
+                username = "mapbox"
+                // Uses the token defined above (or in gradle.properties)
+                password = MAPBOX_DOWNLOADS_TOKEN
             }
         }
     }
 }
 
+// This plugin wires up React Native for the root project
 apply plugin: "com.facebook.react.rootproject"

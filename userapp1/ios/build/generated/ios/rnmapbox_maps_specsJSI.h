@@ -334,6 +334,115 @@ private:
 };
 
 
+  class JSI_EXPORT NativeRNMBXLocationModuleCxxSpecJSI : public TurboModule {
+protected:
+  NativeRNMBXLocationModuleCxxSpecJSI(std::shared_ptr<CallInvoker> jsInvoker);
+
+public:
+  virtual void start(jsi::Runtime &rt, double minDisplacement) = 0;
+  virtual void stop(jsi::Runtime &rt) = 0;
+  virtual void setRequestsAlwaysUse(jsi::Runtime &rt, bool requestsAlwaysUse) = 0;
+  virtual void setMinDisplacement(jsi::Runtime &rt, double minDisplacement) = 0;
+  virtual jsi::Value getLastKnownLocation(jsi::Runtime &rt) = 0;
+  virtual void simulateHeading(jsi::Runtime &rt, double changesPerSecond, double increment) = 0;
+  virtual void setLocationEventThrottle(jsi::Runtime &rt, double throttle) = 0;
+  virtual void onLocationUpdate(jsi::Runtime &rt) = 0;
+
+};
+
+template <typename T>
+class JSI_EXPORT NativeRNMBXLocationModuleCxxSpec : public TurboModule {
+public:
+  jsi::Value get(jsi::Runtime &rt, const jsi::PropNameID &propName) override {
+    return delegate_.get(rt, propName);
+  }
+
+  static constexpr std::string_view kModuleName = "RNMBXLocationModule";
+
+protected:
+  NativeRNMBXLocationModuleCxxSpec(std::shared_ptr<CallInvoker> jsInvoker)
+    : TurboModule(std::string{NativeRNMBXLocationModuleCxxSpec::kModuleName}, jsInvoker),
+      delegate_(reinterpret_cast<T*>(this), jsInvoker) {}
+
+private:
+  class Delegate : public NativeRNMBXLocationModuleCxxSpecJSI {
+  public:
+    Delegate(T *instance, std::shared_ptr<CallInvoker> jsInvoker) :
+      NativeRNMBXLocationModuleCxxSpecJSI(std::move(jsInvoker)), instance_(instance) {}
+
+    void start(jsi::Runtime &rt, double minDisplacement) override {
+      static_assert(
+          bridging::getParameterCount(&T::start) == 2,
+          "Expected start(...) to have 2 parameters");
+
+      return bridging::callFromJs<void>(
+          rt, &T::start, jsInvoker_, instance_, std::move(minDisplacement));
+    }
+    void stop(jsi::Runtime &rt) override {
+      static_assert(
+          bridging::getParameterCount(&T::stop) == 1,
+          "Expected stop(...) to have 1 parameters");
+
+      return bridging::callFromJs<void>(
+          rt, &T::stop, jsInvoker_, instance_);
+    }
+    void setRequestsAlwaysUse(jsi::Runtime &rt, bool requestsAlwaysUse) override {
+      static_assert(
+          bridging::getParameterCount(&T::setRequestsAlwaysUse) == 2,
+          "Expected setRequestsAlwaysUse(...) to have 2 parameters");
+
+      return bridging::callFromJs<void>(
+          rt, &T::setRequestsAlwaysUse, jsInvoker_, instance_, std::move(requestsAlwaysUse));
+    }
+    void setMinDisplacement(jsi::Runtime &rt, double minDisplacement) override {
+      static_assert(
+          bridging::getParameterCount(&T::setMinDisplacement) == 2,
+          "Expected setMinDisplacement(...) to have 2 parameters");
+
+      return bridging::callFromJs<void>(
+          rt, &T::setMinDisplacement, jsInvoker_, instance_, std::move(minDisplacement));
+    }
+    jsi::Value getLastKnownLocation(jsi::Runtime &rt) override {
+      static_assert(
+          bridging::getParameterCount(&T::getLastKnownLocation) == 1,
+          "Expected getLastKnownLocation(...) to have 1 parameters");
+
+      return bridging::callFromJs<jsi::Value>(
+          rt, &T::getLastKnownLocation, jsInvoker_, instance_);
+    }
+    void simulateHeading(jsi::Runtime &rt, double changesPerSecond, double increment) override {
+      static_assert(
+          bridging::getParameterCount(&T::simulateHeading) == 3,
+          "Expected simulateHeading(...) to have 3 parameters");
+
+      return bridging::callFromJs<void>(
+          rt, &T::simulateHeading, jsInvoker_, instance_, std::move(changesPerSecond), std::move(increment));
+    }
+    void setLocationEventThrottle(jsi::Runtime &rt, double throttle) override {
+      static_assert(
+          bridging::getParameterCount(&T::setLocationEventThrottle) == 2,
+          "Expected setLocationEventThrottle(...) to have 2 parameters");
+
+      return bridging::callFromJs<void>(
+          rt, &T::setLocationEventThrottle, jsInvoker_, instance_, std::move(throttle));
+    }
+    void onLocationUpdate(jsi::Runtime &rt) override {
+      static_assert(
+          bridging::getParameterCount(&T::onLocationUpdate) == 1,
+          "Expected onLocationUpdate(...) to have 1 parameters");
+
+      return bridging::callFromJs<void>(
+          rt, &T::onLocationUpdate, jsInvoker_, instance_);
+    }
+
+  private:
+    T *instance_;
+  };
+
+  Delegate delegate_;
+};
+
+
   class JSI_EXPORT NativeRNMBXMovePointShapeAnimatorModuleCxxSpecJSI : public TurboModule {
 protected:
   NativeRNMBXMovePointShapeAnimatorModuleCxxSpecJSI(std::shared_ptr<CallInvoker> jsInvoker);

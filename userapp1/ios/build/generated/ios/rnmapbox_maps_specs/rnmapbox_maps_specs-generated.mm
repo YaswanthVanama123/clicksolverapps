@@ -177,6 +177,69 @@ namespace facebook::react {
 
 namespace facebook::react {
   
+    static facebook::jsi::Value __hostFunction_NativeRNMBXLocationModuleSpecJSI_start(facebook::jsi::Runtime& rt, TurboModule &turboModule, const facebook::jsi::Value* args, size_t count) {
+      return static_cast<ObjCTurboModule&>(turboModule).invokeObjCMethod(rt, VoidKind, "start", @selector(start:), args, count);
+    }
+
+    static facebook::jsi::Value __hostFunction_NativeRNMBXLocationModuleSpecJSI_stop(facebook::jsi::Runtime& rt, TurboModule &turboModule, const facebook::jsi::Value* args, size_t count) {
+      return static_cast<ObjCTurboModule&>(turboModule).invokeObjCMethod(rt, VoidKind, "stop", @selector(stop), args, count);
+    }
+
+    static facebook::jsi::Value __hostFunction_NativeRNMBXLocationModuleSpecJSI_setRequestsAlwaysUse(facebook::jsi::Runtime& rt, TurboModule &turboModule, const facebook::jsi::Value* args, size_t count) {
+      return static_cast<ObjCTurboModule&>(turboModule).invokeObjCMethod(rt, VoidKind, "setRequestsAlwaysUse", @selector(setRequestsAlwaysUse:), args, count);
+    }
+
+    static facebook::jsi::Value __hostFunction_NativeRNMBXLocationModuleSpecJSI_setMinDisplacement(facebook::jsi::Runtime& rt, TurboModule &turboModule, const facebook::jsi::Value* args, size_t count) {
+      return static_cast<ObjCTurboModule&>(turboModule).invokeObjCMethod(rt, VoidKind, "setMinDisplacement", @selector(setMinDisplacement:), args, count);
+    }
+
+    static facebook::jsi::Value __hostFunction_NativeRNMBXLocationModuleSpecJSI_getLastKnownLocation(facebook::jsi::Runtime& rt, TurboModule &turboModule, const facebook::jsi::Value* args, size_t count) {
+      return static_cast<ObjCTurboModule&>(turboModule).invokeObjCMethod(rt, PromiseKind, "getLastKnownLocation", @selector(getLastKnownLocation:reject:), args, count);
+    }
+
+    static facebook::jsi::Value __hostFunction_NativeRNMBXLocationModuleSpecJSI_simulateHeading(facebook::jsi::Runtime& rt, TurboModule &turboModule, const facebook::jsi::Value* args, size_t count) {
+      return static_cast<ObjCTurboModule&>(turboModule).invokeObjCMethod(rt, VoidKind, "simulateHeading", @selector(simulateHeading:increment:), args, count);
+    }
+
+    static facebook::jsi::Value __hostFunction_NativeRNMBXLocationModuleSpecJSI_setLocationEventThrottle(facebook::jsi::Runtime& rt, TurboModule &turboModule, const facebook::jsi::Value* args, size_t count) {
+      return static_cast<ObjCTurboModule&>(turboModule).invokeObjCMethod(rt, VoidKind, "setLocationEventThrottle", @selector(setLocationEventThrottle:), args, count);
+    }
+
+    static facebook::jsi::Value __hostFunction_NativeRNMBXLocationModuleSpecJSI_onLocationUpdate(facebook::jsi::Runtime& rt, TurboModule &turboModule, const facebook::jsi::Value* args, size_t count) {
+      return static_cast<ObjCTurboModule&>(turboModule).invokeObjCMethod(rt, VoidKind, "onLocationUpdate", @selector(onLocationUpdate), args, count);
+    }
+
+  NativeRNMBXLocationModuleSpecJSI::NativeRNMBXLocationModuleSpecJSI(const ObjCTurboModule::InitParams &params)
+    : ObjCTurboModule(params) {
+      
+        methodMap_["start"] = MethodMetadata {1, __hostFunction_NativeRNMBXLocationModuleSpecJSI_start};
+        
+        
+        methodMap_["stop"] = MethodMetadata {0, __hostFunction_NativeRNMBXLocationModuleSpecJSI_stop};
+        
+        
+        methodMap_["setRequestsAlwaysUse"] = MethodMetadata {1, __hostFunction_NativeRNMBXLocationModuleSpecJSI_setRequestsAlwaysUse};
+        
+        
+        methodMap_["setMinDisplacement"] = MethodMetadata {1, __hostFunction_NativeRNMBXLocationModuleSpecJSI_setMinDisplacement};
+        
+        
+        methodMap_["getLastKnownLocation"] = MethodMetadata {0, __hostFunction_NativeRNMBXLocationModuleSpecJSI_getLastKnownLocation};
+        
+        
+        methodMap_["simulateHeading"] = MethodMetadata {2, __hostFunction_NativeRNMBXLocationModuleSpecJSI_simulateHeading};
+        
+        
+        methodMap_["setLocationEventThrottle"] = MethodMetadata {1, __hostFunction_NativeRNMBXLocationModuleSpecJSI_setLocationEventThrottle};
+        
+        
+        methodMap_["onLocationUpdate"] = MethodMetadata {0, __hostFunction_NativeRNMBXLocationModuleSpecJSI_onLocationUpdate};
+        
+  }
+} // namespace facebook::react
+
+namespace facebook::react {
+  
     static facebook::jsi::Value __hostFunction_NativeRNMBXMovePointShapeAnimatorModuleSpecJSI_create(facebook::jsi::Runtime& rt, TurboModule &turboModule, const facebook::jsi::Value* args, size_t count) {
       return static_cast<ObjCTurboModule&>(turboModule).invokeObjCMethod(rt, PromiseKind, "create", @selector(create:coordinate:resolve:reject:), args, count);
     }

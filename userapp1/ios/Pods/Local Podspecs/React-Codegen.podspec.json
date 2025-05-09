@@ -37,7 +37,7 @@
     "React-debug": [],
     "React-utils": [],
     "React-featureflags": [],
-    "hermes-engine": []
+    "React-jsc": []
   },
   "script_phases": {
     "name": "Generate Specs",

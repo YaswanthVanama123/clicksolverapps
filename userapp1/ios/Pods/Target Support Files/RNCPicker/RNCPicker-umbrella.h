@@ -12,6 +12,7 @@
 
 #import "RNCPicker.h"
 #import "RNCPickerComponentView.h"
+#import "RNCPickerFabricConversions.h"
 #import "RNCPickerLabel.h"
 #import "RNCPickerManager.h"
 

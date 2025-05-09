@@ -132,7 +132,7 @@ function ServiceApp({ navigation, route }) {
         if (toAsk.length) await requestMultiple(toAsk);
       }
     } catch (err) {
-      // console.log('Permission request error', err);
+      // // console.log('Permission request error', err);
     }
   };
 
@@ -165,11 +165,11 @@ function ServiceApp({ navigation, route }) {
 
   useEffect(() => {
     const { encodedId } = route.params || {};
-    console.log("encodedId",encodedId)
+    // console.log("encodedId",encodedId)
     if (encodedId) {
       try {  
         const decoded = atob(encodedId); 
-        console.log("decodedId",decoded)
+        // console.log("decodedId",decoded)
         setDecodedId(decoded);
         setModalVisible(true);
 
@@ -188,7 +188,7 @@ function ServiceApp({ navigation, route }) {
         );
         // assume the API returns an array of objects with keys:
         // { id, title, subtitle, description, imageBACKENDAP, backgroundColor, color }
-        console.log("offers",response.data)
+        // console.log("offers",response.data)
         setSpecialOffer(response.data.offers);
       } catch (err) {
         console.error('Error fetching special offers:', err); 
@@ -219,7 +219,7 @@ function ServiceApp({ navigation, route }) {
   const fetchTrackDetails = async () => {
     try {
       const cs_token = await EncryptedStorage.getItem('cs_token');
-      // console.log('cs_token:', cs_token);
+      // // console.log('cs_token:', cs_token);
       if (cs_token) {
         const response = await axios.get(
           'https://backend.clicksolver.com/api/user/track/details',
@@ -228,9 +228,9 @@ function ServiceApp({ navigation, route }) {
           }
         ); 
         const track = response?.data?.track || [];
-        // console.log(track)
+        // // console.log(track)
         const { user, profile } = response.data;
-        console.log("Track response:", response.data);
+        // console.log("Track response:", response.data);
         // Get the target language from your app settings (assuming i18n.language holds the code)
         const targetLang = i18n.language || 'en';
         // Translate the user's name if needed
@@ -254,7 +254,7 @@ function ServiceApp({ navigation, route }) {
       const response = await axios.get(
         'https://backend.clicksolver.com/api/servicecategories'
       );
-      // console.log("date",response.data)
+      // // console.log("date",response.data)
       // log('Services fetched successfully');
       // const servicesWithIds = response.data.map(service => ({
       //   ...service,
@@ -402,7 +402,7 @@ function ServiceApp({ navigation, route }) {
           },
         },
       );
-      // console.log('Feedback submitted successfully:', response.data);
+      // // console.log('Feedback submitted successfully:', response.data);
     } catch (error) {
       console.error('Error submitting feedback:', error);
     } finally {

@@ -52,7 +52,7 @@
     "React-rendererdebug": [],
     "React-runtimescheduler": [],
     "React-jsinspector": [],
-    "hermes-engine": []
+    "React-jsc": []
   },
   "testspecs": [
     {

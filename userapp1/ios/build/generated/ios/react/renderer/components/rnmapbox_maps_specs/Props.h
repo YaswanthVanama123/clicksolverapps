@@ -276,6 +276,7 @@ class RNMBXMapViewProps final : public ViewProps {
   folly::dynamic attributionViewPosition{};
   folly::dynamic compassImage{};
   folly::dynamic mapViewImpl{};
+  folly::dynamic preferredFramesPerSecond{};
 };
 
 class RNMBXMarkerViewContentProps final : public ViewProps {
@@ -417,6 +418,7 @@ class RNMBXRasterSourceProps final : public ViewProps {
   folly::dynamic tileSize{};
   folly::dynamic tms{};
   folly::dynamic attribution{};
+  folly::dynamic sourceBounds{};
 };
 
 class RNMBXShapeSourceProps final : public ViewProps {

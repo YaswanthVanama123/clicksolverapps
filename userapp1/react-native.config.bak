@@ -1,0 +1,12 @@
+module.exports = {
+  dependencies: {
+    '@rnmapbox/maps': {
+      platforms: {
+        ios: {
+          codegenConfig: null, // ✅ disables Mapbox codegen
+        },
+      },
+    },
+  },
+  assets: ['./src/assets/fonts'], // ✅ keep your fonts config
+};

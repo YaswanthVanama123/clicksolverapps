@@ -1,62 +1,62 @@
-# Define podspec sources
-source 'https://cdn.cocoapods.org/'
-source 'https://github.com/CocoaPods/Specs.git'
-
 platform :ios, '16.0'
+use_frameworks! :linkage => :static
+use_modular_headers!
 
 require_relative '../node_modules/react-native/scripts/react_native_pods'
 require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
-
-# ✅ Corrected react-native-permissions setup
 require_relative '../node_modules/react-native-permissions/scripts/setup'
 
 prepare_react_native_project!
 
-use_frameworks! :linkage => :static
 $RNFirebaseAsStaticFramework = true
 
 target 'userapp1' do
   config = use_native_modules!
 
   use_react_native!(
-    :path => config[:reactNativePath],
-    :app_path => "#{Pod::Config.instance.installation_root}/.."
+    :path             => config[:reactNativePath],
+    :app_path         => "#{Pod::Config.instance.installation_root}/..",
+    :hermes_enabled   => false,
+    :fabric_enabled   => false,
+    :new_arch_enabled => false
   )
 
-  # ✅ Setup permissions for react-native-permissions
-  setup_permissions([
-    'LocationWhenInUse',    # Foreground location access
-    'LocationAlways',       # Background location access
-    'Notifications',        # Push notifications
-    'Contacts',             # Access to user contacts
-    'PhotoLibrary',         # Access to photo library (for image picker)
-    'Camera'               # Access to camera (for capturing images)
+  # ✅ fixed pod name matching podspec
+  pod 'rnmapbox-maps', :podspec => '../node_modules/@rnmapbox/maps/rnmapbox-maps.podspec'
+
+  setup_permissions(%w[
+    LocationWhenInUse
+    LocationAlways
+    Notifications
+    Contacts
+    PhotoLibrary
+    Camera
   ])
 
-  # ✅ Add dependency for react-native-image-picker
   pod 'react-native-image-picker', :path => '../node_modules/react-native-image-picker'
+  pod 'RNCPushNotificationIOS',   :path => '../node_modules/@react-native-community/push-notification-ios'
 
-  # If you have a test target:
   target 'userapp1Tests' do
     inherit! :complete
   end
 
-  # Push Notifications Dependency
-  pod 'RNCPushNotificationIOS', :path => '../node_modules/@react-native-community/push-notification-ios'
-
   post_install do |installer|
-    react_native_post_install(
-      installer,
-      config[:reactNativePath],
-      :mac_catalyst_enabled => false,
-      :ccache_enabled => false
-    )
-    installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
+    react_native_post_install(installer, config[:reactNativePath])
 
-        if target.name == 'Flipper'
-          config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+    installer.pods_project.targets.each do |tgt|
+      tgt.remove_from_project if tgt.name == 'RNMapboxMapsSpecs'
+      tgt.build_configurations.each do |cfg|
+        cfg.build_settings['IPHONEOS_DEPLOYMENT_TARGET']   = '16.0'
+        cfg.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
+        cfg.build_settings['CLANG_CXX_LIBRARY_STANDARD'] = 'libc++'
+
+        traits = File.join(__dir__, 'char_traits_uc.h')
+        flags  = cfg.build_settings['OTHER_CPLUSPLUSFLAGS'] || '$(inherited)'
+        flags += %Q( -include "#{traits}") + ' -D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW'
+        cfg.build_settings['OTHER_CPLUSPLUSFLAGS'] = flags
+
+        if tgt.name == 'Flipper'
+          cfg.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
         end
       end
     end

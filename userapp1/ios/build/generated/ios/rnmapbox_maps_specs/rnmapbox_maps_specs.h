@@ -167,6 +167,30 @@ namespace facebook::react {
   };
 } // namespace facebook::react
 
+@protocol NativeRNMBXLocationModuleSpec <RCTBridgeModule, RCTTurboModule>
+
+- (void)start:(double)minDisplacement;
+- (void)stop;
+- (void)setRequestsAlwaysUse:(BOOL)requestsAlwaysUse;
+- (void)setMinDisplacement:(double)minDisplacement;
+- (void)getLastKnownLocation:(RCTPromiseResolveBlock)resolve
+                      reject:(RCTPromiseRejectBlock)reject;
+- (void)simulateHeading:(double)changesPerSecond
+              increment:(double)increment;
+- (void)setLocationEventThrottle:(double)throttle;
+- (void)onLocationUpdate;
+
+@end
+namespace facebook::react {
+  /**
+   * ObjC++ class for module 'NativeRNMBXLocationModule'
+   */
+  class JSI_EXPORT NativeRNMBXLocationModuleSpecJSI : public ObjCTurboModule {
+  public:
+    NativeRNMBXLocationModuleSpecJSI(const ObjCTurboModule::InitParams &params);
+  };
+} // namespace facebook::react
+
 @protocol NativeRNMBXMovePointShapeAnimatorModuleSpec <RCTBridgeModule, RCTTurboModule>
 
 - (void)create:(NSInteger)tag
@@ -282,6 +306,7 @@ namespace facebook::react {
     NativeRNMBXViewportModuleSpecJSI(const ObjCTurboModule::InitParams &params);
   };
 } // namespace facebook::react
+
 
 
 

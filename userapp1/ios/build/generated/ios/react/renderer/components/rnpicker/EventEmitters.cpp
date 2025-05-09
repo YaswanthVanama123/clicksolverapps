@@ -9,7 +9,7 @@
  */
 
 #include <react/renderer/components/rnpicker/EventEmitters.h>
-
+#include <jsi/JSIDynamic.h>
 
 namespace facebook::react {
 
@@ -70,7 +70,7 @@ void RNCAndroidDropdownPickerEventEmitter::onBlur(OnBlur $event) const {
 void RNCPickerEventEmitter::onChange(OnChange $event) const {
   dispatchEvent("change", [$event=std::move($event)](jsi::Runtime &runtime) {
     auto $payload = jsi::Object(runtime);
-    $payload.setProperty(runtime, "newValue", $event.newValue);
+    $payload.setProperty(runtime, "newValue", jsi::valueFromDynamic(runtime, $event.newValue));
 $payload.setProperty(runtime, "newIndex", $event.newIndex);
     return $payload;
   });

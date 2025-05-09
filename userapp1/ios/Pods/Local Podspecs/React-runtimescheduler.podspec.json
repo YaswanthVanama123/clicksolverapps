@@ -35,6 +35,6 @@
     ],
     "React-jsi": [],
     "React-debug": [],
-    "hermes-engine": []
+    "React-jsc": []
   }
 }
