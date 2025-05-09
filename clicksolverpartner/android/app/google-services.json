@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "544120482529",
+    "project_id": "your-guider-fbcb0",
+    "storage_bucket": "your-guider-fbcb0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544120482529:android:33eadb55beab4a35e325a0",
+        "android_client_info": {
+          "package_name": "com.clicksolverpartner"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCj2OPYha-EAoe8JYb_GSYTZSKey0iDcpM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544120482529:android:3eead74154dad23ae325a0",
+        "android_client_info": {
+          "package_name": "com.userapp1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCj2OPYha-EAoe8JYb_GSYTZSKey0iDcpM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
