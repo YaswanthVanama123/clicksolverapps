@@ -1,0 +1,6 @@
+framework module Pods_ClickSolverPartner {
+  umbrella header "Pods-ClickSolverPartner-umbrella.h"
+
+  export *
+  module * { export * }
+}
