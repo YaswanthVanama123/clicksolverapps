@@ -434,7 +434,6 @@ function App() {
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="VerificationScreen" component={VerificationScreen} />
           <Stack.Screen name="SignUpScreen" component={SignUpScreen} />
-          <Stack.Screen name='AccountDelete' component={AccountDelete} />
           {/* main flow */}
           <Stack.Screen name="UserLocation" component={UserLocation} />
           <Stack.Screen name="OrderScreen" component={OrderScreen} />
