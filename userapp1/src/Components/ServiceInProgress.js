@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   BackHandler,
   Modal,
   useWindowDimensions,
-  AppState 
+  AppState,
 } from 'react-native';
 import i18n from 'i18next';
 
@@ -18,35 +18,42 @@ import messaging from '@react-native-firebase/messaging';
 import LottieView from 'lottie-react-native';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { useNavigation, useRoute, CommonActions, useFocusEffect } from '@react-navigation/native';
+import {encode, decode} from 'base-64';
+import {
+  useNavigation,
+  useRoute,
+  CommonActions,
+  useFocusEffect,
+} from '@react-navigation/native';
 import axios from 'axios';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 // Import theme hook
-import { useTheme } from '../context/ThemeContext';
+import {useTheme} from '../context/ThemeContext';
 
 import '../i18n/i18n';
 // Import useTranslation hook
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
 const ServiceInProgressScreen = () => {
-  const { width } = useWindowDimensions();
-  const { isDarkMode } = useTheme();
+  const {width} = useWindowDimensions();
+  const {isDarkMode} = useTheme();
   const styles = dynamicStyles(width, isDarkMode);
   const [appState, setAppState] = useState(AppState.currentState);
   const [details, setDetails] = useState({});
   const [services, setServices] = useState([]);
   const [decodedId, setDecodedId] = useState(null);
-  const [confirmationModalVisible, setConfirmationModalVisible] = useState(false);
-  const { t } = useTranslation();
+  const [confirmationModalVisible, setConfirmationModalVisible] =
+    useState(false);
+  const {t} = useTranslation();
   const route = useRoute();
-  const { encodedId } = route.params;
+  const {encodedId} = route.params;
   const navigation = useNavigation();
 
   // Decode encodedId
   useEffect(() => {
     if (encodedId) {
-      setDecodedId(atob(encodedId));
+      setDecodedId(decode(encodedId));
     }
   }, [encodedId]);
 
@@ -56,16 +63,16 @@ const ServiceInProgressScreen = () => {
     try {
       const response = await axios.post(
         'https://backend.clicksolver.com/api/user/work/progress/details',
-        { decodedId }
+        {decodedId},
       );
       const data = response.data[0];
-      // console.log("data", data); 
+      // console.log("data", data);
       setDetails(data);
 
       // Map services with their statuses
-      const mappedServices = data.service_booked.map((serviceBookedItem) => {
+      const mappedServices = data.service_booked.map(serviceBookedItem => {
         const statusItem = data.service_status.find(
-          (s) => s.serviceName === serviceBookedItem.serviceName
+          s => s.serviceName === serviceBookedItem.serviceName,
         );
         return {
           id: serviceBookedItem.main_service_id,
@@ -114,13 +121,19 @@ const ServiceInProgressScreen = () => {
 
         // Optionally trigger a data refresh
         fetchBookings();
-      }else{
+      } else {
         try {
           // console.log('Background notification has payment data. Storing pending notification...');
-          await EncryptedStorage.setItem('pendingNotification', JSON.stringify(remoteMessage));
+          await EncryptedStorage.setItem(
+            'pendingNotification',
+            JSON.stringify(remoteMessage),
+          );
           // console.log('Pending notification stored from ServiceInProgress.');
         } catch (error) {
-          console.error('Error storing pending notification in ServiceInProgress:', error);
+          console.error(
+            'Error storing pending notification in ServiceInProgress:',
+            error,
+          );
         }
       }
     });
@@ -128,10 +141,12 @@ const ServiceInProgressScreen = () => {
 
   // Handle notifications opened when the app is in the background
   useEffect(() => {
-    const unsubscribeOpened = messaging().onNotificationOpenedApp(async remoteMessage => {
-      // console.log('[ServiceInProgress] onNotificationOpenedApp:', remoteMessage);
-      fetchBookings();
-    });
+    const unsubscribeOpened = messaging().onNotificationOpenedApp(
+      async remoteMessage => {
+        // console.log('[ServiceInProgress] onNotificationOpenedApp:', remoteMessage);
+        fetchBookings();
+      },
+    );
     return () => unsubscribeOpened();
   }, [fetchBookings]);
 
@@ -145,22 +160,25 @@ const ServiceInProgressScreen = () => {
       setAppState(nextAppState);
     };
 
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    const subscription = AppState.addEventListener(
+      'change',
+      handleAppStateChange,
+    );
     return () => {
       subscription.remove();
     };
   }, [appState, fetchBookings]);
 
   // Generate timeline data for each service
-  const generateTimelineData = (status) => {
+  const generateTimelineData = status => {
     const statusKeys = ['accept', 'arrived', 'workCompleted'];
     const statusDisplayNames = {
       accept: t('in_progress') || 'In Progress',
       arrived: t('work_started') || 'Work Started',
       workCompleted: t('work_completed') || 'Work Completed',
     };
-    
-    return statusKeys.map((statusKey) => ({
+
+    return statusKeys.map(statusKey => ({
       key: statusKey,
       title: statusDisplayNames[statusKey],
       time: status[statusKey] || null,
@@ -178,7 +196,7 @@ const ServiceInProgressScreen = () => {
     try {
       const response = await axios.post(
         'https://backend.clicksolver.com/api/work/time/completed/request',
-        { notification_id: decodedId }
+        {notification_id: decodedId},
       );
       if (response.status === 200) {
         setConfirmationModalVisible(false);
@@ -195,14 +213,15 @@ const ServiceInProgressScreen = () => {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
         );
         return true;
       };
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-    }, [navigation])
+      return () =>
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [navigation]),
   );
 
   // Format date strings
@@ -220,11 +239,11 @@ const ServiceInProgressScreen = () => {
   //   return date.toLocaleString('en-US', options);
   // };
 
-  const formatDate = (dateString) => {
+  const formatDate = dateString => {
     if (!dateString) return t('pending') || 'Pending';
-  
+
     const date = new Date(dateString);
-  
+
     return new Intl.DateTimeFormat(i18n.language, {
       year: 'numeric',
       month: 'long', // will translate e.g. "March" => "मार्च" in Hindi
@@ -234,7 +253,6 @@ const ServiceInProgressScreen = () => {
       hour12: true,
     }).format(date);
   };
-  
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -250,8 +268,8 @@ const ServiceInProgressScreen = () => {
               navigation.dispatch(
                 CommonActions.reset({
                   index: 0,
-                  routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-                })
+                  routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+                }),
               );
             }}
           />
@@ -259,7 +277,7 @@ const ServiceInProgressScreen = () => {
             {t('service_in_progress') || 'Service In Progress'}
           </Text>
         </View>
-  
+
         {/* Content */}
         <ScrollView style={styles.scrollContainer}>
           {/* Profile / Technician Info */}
@@ -287,15 +305,17 @@ const ServiceInProgressScreen = () => {
             </Text>
             <Text style={styles.statusText}>
               {t('status') || 'Status:'}{' '}
-              {(services.length > 0
-                  ? services.map((service) => t(`singleService_${service.id}`) || service.name).join(', ')
-                  : t('pending') || 'Pending'
-                )}{' '}
-
-              
-            </Text> 
+              {services.length > 0
+                ? services
+                    .map(
+                      service =>
+                        t(`singleService_${service.id}`) || service.name,
+                    )
+                    .join(', ')
+                : t('pending') || 'Pending'}{' '}
+            </Text>
           </View>
-  
+
           {/* Loading Animation */}
           <View style={styles.lottieContainer}>
             <LottieView
@@ -305,14 +325,14 @@ const ServiceInProgressScreen = () => {
               style={styles.loadingAnimation}
             />
           </View>
-  
+
           {/* Complete Button */}
           <TouchableOpacity style={styles.button} onPress={handleCompleteClick}>
             <Text style={styles.buttonText}>
               {t('service_completed') || 'Service Completed'}
             </Text>
           </TouchableOpacity>
-  
+
           {/* Service Details */}
           <View style={styles.serviceDetailsContainer}>
             <View style={styles.serviceDetailsHeaderContainer}>
@@ -323,7 +343,7 @@ const ServiceInProgressScreen = () => {
                 <Icon name="keyboard-arrow-right" size={24} color="#ff4500" />
               </TouchableOpacity>
             </View>
-  
+
             {/* Additional Info */}
             <View style={styles.iconDetailsContainer}>
               <View style={styles.detailsRow}>
@@ -343,7 +363,7 @@ const ServiceInProgressScreen = () => {
                 </Text>
               </View>
             </View>
-  
+
             {/* Services & Timelines */}
             <View>
               {services.map((service, index) => {
@@ -352,23 +372,23 @@ const ServiceInProgressScreen = () => {
                   <View style={styles.ServiceCardsContainer} key={index}>
                     <View style={styles.technicianContainer}>
                       <Image
-                        source={{ uri: service.image }}
+                        source={{uri: service.image}}
                         style={styles.technicianImage}
                       />
                       <View style={styles.technicianDetails}>
                         <Text style={styles.technicianName}>
-                          { t(`singleService_${service.id}`) || service.name }
+                          {t(`singleService_${service.id}`) || service.name}
                         </Text>
                         <Text style={styles.technicianTitle}>
                           {t('quantity') || 'Quantity'}: {service.quantity}
                         </Text>
                       </View>
                     </View>
-  
+
                     <Text style={styles.statusText}>
                       {t('service_status') || 'Service Status:'}{' '}
                       <Text style={styles.highlight}>
-                        {timelineData.find((item) => item.time)?.title ||
+                        {timelineData.find(item => item.time)?.title ||
                           t('pending') ||
                           'Pending'}
                       </Text>
@@ -377,7 +397,7 @@ const ServiceInProgressScreen = () => {
                       {t('estimated_completion') || 'Estimated Completion:'}{' '}
                       {/* <Text style={styles.highlight}>2 hours</Text> */}
                     </Text>
-  
+
                     {/* Timeline */}
                     <View style={styles.sectionContainer}>
                       <View style={styles.serviceTimeLineContainer}>
@@ -386,7 +406,7 @@ const ServiceInProgressScreen = () => {
                         </Text>
                       </View>
                       <View style={styles.innerContainerLine}>
-                        {timelineData.map((item) => (
+                        {timelineData.map(item => (
                           <View key={item.key} style={styles.timelineItem}>
                             <View style={styles.iconAndLineContainer}>
                               <MaterialCommunityIcons
@@ -398,7 +418,7 @@ const ServiceInProgressScreen = () => {
                                 <View
                                   style={[
                                     styles.lineSegment,
-                                    { backgroundColor: item.lineColor },
+                                    {backgroundColor: item.lineColor},
                                   ]}
                                 />
                               )}
@@ -409,7 +429,9 @@ const ServiceInProgressScreen = () => {
                                   {item.title}
                                 </Text>
                                 <Text style={styles.timelineTime}>
-                                  {item.time ? formatDate(item.time) : t('pending') || 'Pending'}
+                                  {item.time
+                                    ? formatDate(item.time)
+                                    : t('pending') || 'Pending'}
                                 </Text>
                               </View>
                             </View>
@@ -423,14 +445,13 @@ const ServiceInProgressScreen = () => {
             </View>
           </View>
         </ScrollView>
-  
+
         {/* Confirmation Modal */}
         <Modal
           animationType="slide"
           transparent
           visible={confirmationModalVisible}
-          onRequestClose={() => setConfirmationModalVisible(false)}
-        >
+          onRequestClose={() => setConfirmationModalVisible(false)}>
           <View style={styles.modalOverlay}>
             <View style={styles.confirmationModalContainer}>
               <Text style={styles.confirmationTitle}>
@@ -444,16 +465,14 @@ const ServiceInProgressScreen = () => {
               <View style={styles.modalButtonsContainer}>
                 <TouchableOpacity
                   style={styles.modalButtonCancel}
-                  onPress={() => setConfirmationModalVisible(false)}
-                >
+                  onPress={() => setConfirmationModalVisible(false)}>
                   <Text style={styles.modalButtonTextCancel}>
                     {t('cancel') || 'Cancel'}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.modalButtonConfirm}
-                  onPress={handleConfirmComplete}
-                >
+                  onPress={handleConfirmComplete}>
                   <Text style={styles.modalButtonTextConfirm}>
                     {t('confirm') || 'Confirm'}
                   </Text>
@@ -465,7 +484,6 @@ const ServiceInProgressScreen = () => {
       </View>
     </SafeAreaView>
   );
-  
 };
 
 // Dynamic styles with dark theme support

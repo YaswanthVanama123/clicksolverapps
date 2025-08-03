@@ -508,7 +508,7 @@ function ServiceApp({navigation, route}) {
 
         <ScrollView
           contentContainerStyle={styles.scrollViewContent}
-          style={{flex: 1}}
+          style={{}}
           showsVerticalScrollIndicator={false}>
           {/* Special Offers */}
           <View style={styles.section}>
@@ -554,7 +554,7 @@ function ServiceApp({navigation, route}) {
                   },
                 ]}
                 onPress={() =>
-                  navigation.replace(item.screen, {
+                  navigation.push(item.screen, {
                     encodedId: item.encodedId,
                     area: item.area,
                     city: item.city,

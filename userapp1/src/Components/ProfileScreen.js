@@ -312,7 +312,7 @@ const ProfileScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.container}>
         {/* Profile Header */}
         <View style={styles.detailsContainer}>

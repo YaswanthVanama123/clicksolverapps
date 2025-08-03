@@ -38,23 +38,29 @@ static void InitializeFlipper(UIApplication *application) {
   }
   [FIRMessaging messaging].delegate = self;
 
-  // —— Request iOS Push Permissions ——
-  // UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
-  // center.delegate = self;
-  // UNAuthorizationOptions authOptions =
-  //   UNAuthorizationOptionAlert |
-  //   UNAuthorizationOptionSound |
-  //   UNAuthorizationOptionBadge;
-  // [center requestAuthorizationWithOptions:authOptions
-  //                       completionHandler:^(BOOL granted, NSError * _Nullable error) {
-  //   if (granted) {
-  //     dispatch_async(dispatch_get_main_queue(), ^{
-  //       [application registerForRemoteNotifications];
-  //     });
-  //   } else {
-  //     NSLog(@"Push authorization denied: %@", error);
-  //   }
-  // }];
+  // —— Hook UNUserNotificationCenter delegate & register for APNs ——
+  UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
+  center.delegate = self;
+  [application registerForRemoteNotifications];
+
+  // —— Request iOS Push Permissions ——  
+  // (Moved to your custom UI—commented out here)
+  /*
+  UNAuthorizationOptions authOptions =
+    UNAuthorizationOptionAlert |
+    UNAuthorizationOptionSound |
+    UNAuthorizationOptionBadge;
+  [center requestAuthorizationWithOptions:authOptions
+                        completionHandler:^(BOOL granted, NSError * _Nullable error) {
+    if (granted) {
+      dispatch_async(dispatch_get_main_queue(), ^{
+        [application registerForRemoteNotifications];
+      });
+    } else {
+      NSLog(@"Push authorization denied: %@", error);
+    }
+  }];
+  */
 
   // —— React Native Bridge & Root View ——
   RCTBridge *bridge = [[RCTBridge alloc] initWithBundleURL:[self sourceURLForBridge:nil]
@@ -82,51 +88,47 @@ static void InitializeFlipper(UIApplication *application) {
 #endif
 }
 
-#pragma mark – APNs <→> FCM
+#pragma mark – APNs ↔ FCM
 
-// Called when APNs has assigned the device a token
 - (void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
   NSLog(@"APNs device token retrieved: %@", deviceToken);
-  // Pass it to Firebase
   [FIRMessaging messaging].APNSToken = deviceToken;
 }
 
-// Called when APNs registration failed
 - (void)application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error {
   NSLog(@"Failed to register for remote notifications: %@", error);
 }
 
 #pragma mark – UNUserNotificationCenterDelegate
 
-// Receive displayed notifications for iOS 10 devices (foreground)
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center
        willPresentNotification:(UNNotification *)notification
-         withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler {
+         withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler
+{
   NSDictionary *userInfo = notification.request.content.userInfo;
-  NSLog(@"Will present notification: %@", userInfo);
-  // Show alert, sound, badge even when in foreground:
-  completionHandler(UNNotificationPresentationOptionAlert |
-                    UNNotificationPresentationOptionSound |
-                    UNNotificationPresentationOptionBadge);
+  NSLog(@"Will present notification in foreground: %@", userInfo);
+  completionHandler(
+    UNNotificationPresentationOptionAlert   |
+    UNNotificationPresentationOptionSound   |
+    UNNotificationPresentationOptionBadge
+  );
 }
 
-// Handle user tapping on notification
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center
 didReceiveNotificationResponse:(UNNotificationResponse *)response
-         withCompletionHandler:(void (^)(void))completionHandler {
+         withCompletionHandler:(void (^)(void))completionHandler
+{
   NSDictionary *userInfo = response.notification.request.content.userInfo;
-  NSLog(@"Did receive notification response: %@", userInfo);
-  // Forward to RN PushNotificationIOS if you use it
+  NSLog(@"Notification response received: %@", userInfo);
   [RNCPushNotificationIOS didReceiveNotificationResponse:response];
   completionHandler();
 }
 
 #pragma mark – FIRMessagingDelegate
 
-// FCM direct data messages in foreground
 - (void)messaging:(FIRMessaging *)messaging didReceiveRegistrationToken:(NSString *)fcmToken {
   NSLog(@"FCM registration token: %@", fcmToken);
-  // TODO: send token to your app server if needed
+  // TODO: send this token to your server if needed
 }
 
 @end

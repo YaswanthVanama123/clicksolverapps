@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,8 @@ import {
   AppState,
 } from 'react-native';
 import '../i18n/i18n';
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
+import {encode, decode} from 'base-64';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   useNavigation,
@@ -26,18 +27,18 @@ import axios from 'axios';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import Entypo from 'react-native-vector-icons/Entypo';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 // Import the theme hook
-import { useTheme } from '../context/ThemeContext';
+import {useTheme} from '../context/ThemeContext';
 import messaging from '@react-native-firebase/messaging';
 
-const Payment = ({ route }) => {
-  const { width } = useWindowDimensions();
-  const { isDarkMode } = useTheme();
+const Payment = ({route}) => {
+  const {width} = useWindowDimensions();
+  const {isDarkMode} = useTheme();
   const styles = dynamicStyles(width, isDarkMode);
 
   const [paymentMethod, setPaymentMethod] = useState('');
-    const { t } = useTranslation();
+  const {t} = useTranslation();
   const [couponCode, setCouponCode] = useState('');
   const [totalAmount, setTotalAmount] = useState(0);
   const [gstAmount, setGstAmount] = useState(0);
@@ -56,15 +57,15 @@ const Payment = ({ route }) => {
   const [appState, setAppState] = useState(AppState.currentState);
 
   const navigation = useNavigation();
-  const { encodedId } = route.params || {};
+  const {encodedId} = route.params || {};
 
   // Fetch Payment Details from server using decodedId
-  const fetchPaymentDetails = useCallback(async (decodedId) => {
+  const fetchPaymentDetails = useCallback(async decodedId => {
     try {
       // console.log('[Payment] Fetching payment details for:', decodedId);
       const response = await axios.post(
         'https://backend.clicksolver.com/api/payment/details',
-        { notification_id: decodedId }
+        {notification_id: decodedId},
       );
       const {
         service_booked,
@@ -99,7 +100,7 @@ const Payment = ({ route }) => {
   useEffect(() => {
     if (encodedId) {
       try {
-        const decoded = atob(encodedId);
+        const decoded = decode(encodedId);
         // console.log('[Payment] Decoded encodedId:', decoded);
         setDecodedId(decoded);
         fetchPaymentDetails(decoded);
@@ -110,7 +111,7 @@ const Payment = ({ route }) => {
   }, [encodedId, fetchPaymentDetails]);
 
   // ------------------ Notification Handling ------------------
-  const handleNotificationData = (data) => {
+  const handleNotificationData = data => {
     if (data && data.notification_id && decodedId) {
       // console.log('[Payment] Notification data received:', data);
       if (data.notification_id.toString() === decodedId) {
@@ -124,20 +125,20 @@ const Payment = ({ route }) => {
           CommonActions.reset({
             index: 0,
             routes: [
-              { 
-                name: 'Tabs', 
-                state: { 
+              {
+                name: 'Tabs',
+                state: {
                   routes: [
-                    { 
+                    {
                       name: 'Home',
-                      params: { decodedId: encodedId }
-                    }
-                  ]
-                }
-              } 
+                      params: {decodedId: encodedId},
+                    },
+                  ],
+                },
+              },
             ],
-          })
-        );        
+          }),
+        );
       }
     }
   };
@@ -146,7 +147,7 @@ const Payment = ({ route }) => {
   useEffect(() => {
     messaging()
       .getInitialNotification()
-      .then((remoteMessage) => {
+      .then(remoteMessage => {
         if (remoteMessage && remoteMessage.data) {
           // console.log('[Payment] Cold start notification:', remoteMessage);
           handleNotificationData(remoteMessage.data);
@@ -156,7 +157,7 @@ const Payment = ({ route }) => {
 
   // Listen for foreground notifications
   useEffect(() => {
-    const unsubscribeForeground = messaging().onMessage((remoteMessage) => {
+    const unsubscribeForeground = messaging().onMessage(remoteMessage => {
       if (remoteMessage && remoteMessage.data) {
         // console.log('[Payment] Foreground notification:', remoteMessage);
         handleNotificationData(remoteMessage.data);
@@ -167,50 +168,58 @@ const Payment = ({ route }) => {
 
   // Listen for notifications when the app is in background and tapped
   useEffect(() => {
-    const unsubscribeOpened = messaging().onNotificationOpenedApp((remoteMessage) => {
-      if (remoteMessage && remoteMessage.data) {
-        // console.log('[Payment] Notification opened from background:', remoteMessage);
-        handleNotificationData(remoteMessage.data);
-      }
-    });
+    const unsubscribeOpened = messaging().onNotificationOpenedApp(
+      remoteMessage => {
+        if (remoteMessage && remoteMessage.data) {
+          // console.log('[Payment] Notification opened from background:', remoteMessage);
+          handleNotificationData(remoteMessage.data);
+        }
+      },
+    );
     return () => unsubscribeOpened();
   }, [decodedId, navigation]);
   // ------------------ End Notification Handling ------------------
 
   // AppState listener: Re-fetch payment details when app comes to the foreground
   useEffect(() => {
-    const handleAppStateChange = (nextAppState) => {
+    const handleAppStateChange = nextAppState => {
       // console.log(`[Payment] AppState changed from ${appState} to ${nextAppState}`);
-      if ((appState === 'inactive' || appState === 'background') && nextAppState === 'active') {
+      if (
+        (appState === 'inactive' || appState === 'background') &&
+        nextAppState === 'active'
+      ) {
         // console.log('[Payment] App came to the foreground. Re-fetching payment details...');
-        
+
         if (decodedId) {
           navigation.dispatch(
             CommonActions.reset({
               index: 0,
               routes: [
-                { 
-                  name: 'Tabs', 
-                  state: { 
+                {
+                  name: 'Tabs',
+                  state: {
                     routes: [
-                      { 
+                      {
                         name: 'Home',
-                        params: { encodedId: decodedId }
-                      }
-                    ]
-                  }
-                } 
+                        params: {encodedId: decodedId},
+                      },
+                    ],
+                  },
+                },
               ],
-            })
-          ); 
-          
+            }),
+          );
+
           // fetchPaymentDetails(decodedId);
         }
       }
       setAppState(nextAppState);
     };
 
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    const subscription = AppState.addEventListener(
+      'change',
+      handleAppStateChange,
+    );
     // console.log('[Payment] AppState listener added.');
 
     return () => {
@@ -227,14 +236,17 @@ const Payment = ({ route }) => {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
         );
         return true;
       };
-      const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        onBackPress,
+      );
       return () => backHandler.remove();
-    }, [navigation])
+    }, [navigation]),
   );
 
   const toggleVocher = () => {
@@ -257,8 +269,8 @@ const Payment = ({ route }) => {
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-      })
+        routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+      }),
     );
     return true;
   };
@@ -266,7 +278,9 @@ const Payment = ({ route }) => {
   const openPhonePeScanner = () => {
     const url = 'phonepe://scan';
     Linking.openURL(url).catch(() => {
-      Linking.openURL('https://play.google.com/store/apps/details?id=com.phonepe.app');
+      Linking.openURL(
+        'https://play.google.com/store/apps/details?id=com.phonepe.app',
+      );
     });
   };
 
@@ -279,15 +293,19 @@ const Payment = ({ route }) => {
             <TouchableOpacity style={styles.leftIcon} onPress={onBackPress}>
               <FontAwesome6 name="arrow-left-long" size={20} color="#9e9e9e" />
             </TouchableOpacity>
-            <Text style={styles.screenName}>{t('payment_screen') || 'Payment Screen'}</Text>
+            <Text style={styles.screenName}>
+              {t('payment_screen') || 'Payment Screen'}
+            </Text>
           </View>
 
           {/* Service Summary Section */}
           <View style={styles.serviceSummary}>
-            <Text style={styles.summaryTitle}>{t('service_summary') || 'Service Summary'}</Text>
+            <Text style={styles.summaryTitle}>
+              {t('service_summary') || 'Service Summary'}
+            </Text>
             <View style={styles.profileContainer}>
               <Image
-                source={{ uri: paymentDetails.profile }}
+                source={{uri: paymentDetails.profile}}
                 style={styles.profileImage}
               />
               <View>
@@ -297,25 +315,32 @@ const Payment = ({ route }) => {
             <View style={styles.detailsBox}>
               <View style={styles.rowContainer}>
                 <View>
-                  <Text style={styles.detailsTitle}>{t('commander_name') || 'Commander Name'}</Text>
-                  <Text style={styles.commanderName}>{paymentDetails.name}</Text>
+                  <Text style={styles.detailsTitle}>
+                    {t('commander_name') || 'Commander Name'}
+                  </Text>
+                  <Text style={styles.commanderName}>
+                    {paymentDetails.name}
+                  </Text>
                 </View>
                 <View>
-                  <Text style={styles.detailsTitle}>{t('services') || 'Services'}</Text>
+                  <Text style={styles.detailsTitle}>
+                    {t('services') || 'Services'}
+                  </Text>
                   {serviceArray.map((service, index) => (
                     <Text
                       key={index}
                       style={styles.serviceName}
                       numberOfLines={2}
-                      ellipsizeMode="tail"
-                    >
-                      { t(`singleService_${service.main_service_id}`) || service.serviceName }
-               
+                      ellipsizeMode="tail">
+                      {t(`singleService_${service.main_service_id}`) ||
+                        service.serviceName}
                     </Text>
                   ))}
                 </View>
               </View>
-              <Text style={styles.detailsTitle}>{t('location') || 'Location'}</Text>
+              <Text style={styles.detailsTitle}>
+                {t('location') || 'Location'}
+              </Text>
               <Text style={styles.locationText}>{paymentDetails.area}</Text>
             </View>
           </View>
@@ -323,7 +348,9 @@ const Payment = ({ route }) => {
           {/* Payment Summary Section */}
           <View style={styles.paymentSummary}>
             <View style={styles.paymentSummaryContainer}>
-              <Text style={styles.summaryTitle}>{t('payment_summary') || 'Payment Summary'}</Text>
+              <Text style={styles.summaryTitle}>
+                {t('payment_summary') || 'Payment Summary'}
+              </Text>
               <TouchableOpacity onPress={togglePayment}>
                 <Entypo name="chevron-small-right" size={20} color="#d5d5d5" />
               </TouchableOpacity>
@@ -334,7 +361,10 @@ const Payment = ({ route }) => {
                 <View style={styles.breakdownColumnContainer}>
                   {serviceArray.map((service, index) => (
                     <View key={index} style={styles.breakdownContainer}>
-                      <Text style={styles.breakdownItem}>{ t(`singleService_${service.main_service_id}`) || service.serviceName }</Text>
+                      <Text style={styles.breakdownItem}>
+                        {t(`singleService_${service.main_service_id}`) ||
+                          service.serviceName}
+                      </Text>
                       <Text style={styles.breakdownPrice}>
                         ₹ {service.cost?.toFixed(2) || '0.00'}
                       </Text>
@@ -342,22 +372,26 @@ const Payment = ({ route }) => {
                   ))}
                 </View>
                 <View style={styles.breakdownContainer}>
-                <Text style={styles.breakdownItem}>{t('gst')}</Text>
+                  <Text style={styles.breakdownItem}>{t('gst')}</Text>
                   <Text style={styles.breakdownPrice}>₹ 0.00</Text>
                 </View>
                 <View style={styles.breakdownContainer}>
-                <Text style={styles.breakdownItem}>{t('cgst')}</Text>
+                  <Text style={styles.breakdownItem}>{t('cgst')}</Text>
                   <Text style={styles.breakdownPrice}>₹ 0.00</Text>
                 </View>
                 {discount > 0 && (
                   <View style={styles.breakdownContainer}>
-                    <Text style={styles.breakdownItem}>{t('cashback') || 'Cashback'}</Text>
+                    <Text style={styles.breakdownItem}>
+                      {t('cashback') || 'Cashback'}
+                    </Text>
                     <Text style={styles.breakdownPrice}>- ₹ {discount}</Text>
                   </View>
                 )}
                 <View style={styles.separatorLine} />
                 <View style={styles.grandTotalContainer}>
-                  <Text style={styles.paidViaText}>{t('paid_via_scan') || 'Paid Via Scan'}</Text>
+                  <Text style={styles.paidViaText}>
+                    {t('paid_via_scan') || 'Paid Via Scan'}
+                  </Text>
                   <Text style={styles.grandTotalText}>
                     {t('grand_total') || 'Grand Total'} ₹ {totalCost}
                   </Text>
@@ -367,11 +401,16 @@ const Payment = ({ route }) => {
               <View style={styles.paymentSummaryContainer}>
                 <View style={styles.HideContainer}>
                   <View style={styles.iconContainer}>
-                    <FontAwesome6 name="indian-rupee-sign" size={15} color="#FFFFFF" />
+                    <FontAwesome6
+                      name="indian-rupee-sign"
+                      size={15}
+                      color="#FFFFFF"
+                    />
                   </View>
                   <View>
                     <Text style={styles.payText}>
-                      {t('to_pay') || 'To Pay'} ₹ <Text style={styles.payTextTotal}>{totalCost}</Text>
+                      {t('to_pay') || 'To Pay'} ₹{' '}
+                      <Text style={styles.payTextTotal}>{totalCost}</Text>
                     </Text>
                   </View>
                 </View>
@@ -384,7 +423,9 @@ const Payment = ({ route }) => {
             <View style={styles.backIconContainer}>
               <View style={styles.voucherIconContainer}>
                 <Icon name="ticket-outline" size={24} color="#6E6E6E" />
-                <Text style={styles.voucherText}>{t('add_coupon') || 'Add Coupon to get cashback'}</Text>
+                <Text style={styles.voucherText}>
+                  {t('add_coupon') || 'Add Coupon to get cashback'}
+                </Text>
               </View>
               <TouchableOpacity onPress={toggleVocher}>
                 <Entypo name="chevron-small-right" size={20} color="#d5d5d5" />
@@ -399,7 +440,7 @@ const Payment = ({ route }) => {
                       isFocused ? styles.inputFocused : styles.inputUnfocused,
                     ]}
                     value={value}
-                    onChangeText={(text) => setValue(text)}
+                    onChangeText={text => setValue(text)}
                     placeholder={t('enter_voucher') || 'Enter voucher code'}
                     placeholderTextColor="#A0A0A0"
                     onFocus={() => setIsFocused(true)}
@@ -408,17 +449,19 @@ const Payment = ({ route }) => {
                   <TouchableOpacity
                     style={[
                       styles.applyButton,
-                      value ? styles.applyButtonActive : styles.applyButtonInactive,
+                      value
+                        ? styles.applyButtonActive
+                        : styles.applyButtonInactive,
                     ]}
                     disabled={!value}
-                    onPress={applyCoupon}
-                  >
+                    onPress={applyCoupon}>
                     <Text
                       style={[
                         styles.applyButtonText,
-                        value ? styles.applyButtonTextActive : styles.applyButtonTextInactive,
-                      ]}
-                    >
+                        value
+                          ? styles.applyButtonTextActive
+                          : styles.applyButtonTextInactive,
+                      ]}>
                       {t('apply') || 'Apply'}
                     </Text>
                   </TouchableOpacity>
@@ -428,9 +471,14 @@ const Payment = ({ route }) => {
           </View>
 
           <View style={styles.noticeTextContainer}>
-            <Icon name="alert-circle-outline" size={16} color={isDarkMode ? '#fff' : "#212121"} />
+            <Icon
+              name="alert-circle-outline"
+              size={16}
+              color={isDarkMode ? '#fff' : '#212121'}
+            />
             <Text style={styles.noticeText}>
-              {t('spare_parts_excluded') || 'Spare parts are not included in this payment'}
+              {t('spare_parts_excluded') ||
+                'Spare parts are not included in this payment'}
             </Text>
           </View>
         </ScrollView>
@@ -438,11 +486,17 @@ const Payment = ({ route }) => {
         {/* Bottom Bar for Payment */}
         <View style={styles.buttonAmmountContainer}>
           <View>
-            <Text style={styles.serviceCostText}>{t('service_cost') || 'Service cost'}</Text>
+            <Text style={styles.serviceCostText}>
+              {t('service_cost') || 'Service cost'}
+            </Text>
             <Text style={styles.cost}>₹ {totalCost}</Text>
           </View>
-          <TouchableOpacity style={styles.payButton} onPress={openPhonePeScanner}>
-            <Text style={styles.payButtonText}>{t('pay_now') || 'Pay Now'}</Text>
+          <TouchableOpacity
+            style={styles.payButton}
+            onPress={openPhonePeScanner}>
+            <Text style={styles.payButtonText}>
+              {t('pay_now') || 'Pay Now'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>

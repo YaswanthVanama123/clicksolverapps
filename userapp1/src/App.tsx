@@ -333,8 +333,20 @@ function App() {
    * -------------------------------------------- */
   useEffect(() => {
     // requestAllPermissions();
-    // syncFcmToken();
+    syncFcmToken();
 
+    // @ts-ignore
+    // messaging().setForegroundNotificationPresentationOptions({
+    //   alert: true,
+    //   badge: true,
+    //   sound: true,
+    // });
+
+  // messaging().setForegroundNotificationPresentationOptions({
+  //   alert: true,
+  //   badge: true,
+  //   sound: true,
+  // });
     PushNotification.createChannel({ channelId: 'default', channelName: 'Default' }, () => {});
     PushNotification.createChannel({ channelId: 'silent', channelName: 'Silent', importance: 1, vibrate: false }, () => {});
 
@@ -361,8 +373,15 @@ function App() {
         channelId: 'default',
         title: msg.notification?.title ?? '',
         message: msg.notification?.body ?? '',
-        data: msg.data,
+        playSound: true,
+        soundName: 'default',
+        importance: 'high',
+        priority: 'high', // Add this
+        userInfo: msg.data,
+        id: msg.messageId || Math.floor(Math.random() * 100000), // Required on some devices
       });
+
+ 
     });
 
     messaging().setBackgroundMessageHandler(async (msg) => {

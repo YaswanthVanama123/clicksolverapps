@@ -18,6 +18,7 @@ import {
   AppState,
 } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
+import {decode} from 'base-64';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
 import {
@@ -137,10 +138,12 @@ const Navigation = () => {
   // Decode Base64 ID from route params
   useEffect(() => {
     const {encodedId} = route.params;
+    console.log('parms i am getting', encodedId);
     setEncodedData(encodedId);
     if (encodedId) {
       try {
-        setDecodedId(atob(encodedId));
+        const decodedId = decode(encodedId);
+        setDecodedId(decodedId);
       } catch (error) {
         console.error('Error decoding Base64:', error);
       }
@@ -669,6 +672,10 @@ const Navigation = () => {
     setModalVisible(true);
   };
 
+  const handleHome = useCallback(() => {
+    navigation.goBack();
+  }, [navigation]);
+
   const phoneCall = async () => {
     try {
       const response = await axios.post(
@@ -820,6 +827,15 @@ const Navigation = () => {
               </Text>
             </View>
           )}
+
+          <TouchableOpacity style={styles.leftIcon} onPress={handleHome}>
+            <AntDesign
+              name="arrowleft"
+              size={20}
+              color={isDarkMode ? '#fff' : '#000'}
+              style={styles.icon}
+            />
+          </TouchableOpacity>
 
           {/* Absolute Refresh Button on the Map */}
           <TouchableOpacity
@@ -1134,7 +1150,7 @@ const Navigation = () => {
 
 const dynamicStyles = (width, height, isDarkMode) => {
   const isTablet = width >= 600;
-  const bottomCardHeight = isTablet ? 380 : 330;
+  const bottomCardHeight = isTablet ? 380 : 350;
 
   return StyleSheet.create({
     safeArea: {
@@ -1160,6 +1176,16 @@ const dynamicStyles = (width, height, isDarkMode) => {
       position: 'absolute',
       top: isTablet ? 40 : 30,
       right: isTablet ? 30 : 20,
+      backgroundColor: isDarkMode ? '#333' : '#ffffff',
+      borderRadius: 25,
+      padding: isTablet ? 10 : 7,
+      zIndex: 999,
+      elevation: 3,
+    },
+    leftIcon: {
+      position: 'absolute',
+      top: isTablet ? 40 : 30,
+      left: isTablet ? 30 : 20,
       backgroundColor: isDarkMode ? '#333' : '#ffffff',
       borderRadius: 25,
       padding: isTablet ? 10 : 7,
