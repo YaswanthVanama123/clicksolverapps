@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Alert,
   useWindowDimensions,
+  SafeAreaView,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { CommonActions, useNavigation } from '@react-navigation/native';
@@ -89,6 +90,7 @@ const HelpScreen = () => {
   };
 
   return (
+    <SafeAreaView style={styles.safeArea}>
     <View style={styles.container}>
       {/* Custom Header */}
       <View style={styles.header}>
@@ -150,6 +152,7 @@ const HelpScreen = () => {
         )}
       </TouchableOpacity>
     </View>
+    </SafeAreaView>
   );
 };
 
@@ -160,6 +163,10 @@ function dynamicStyles(width, isDarkMode) {
   const isTablet = width >= 600;
 
   return StyleSheet.create({
+        safeArea: {
+      flex: 1,
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
+    },
     container: {
       flex: 1,
       backgroundColor: isDarkMode ? '#121212' : '#f5f5f5',

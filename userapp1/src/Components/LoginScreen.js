@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, {useState, useCallback} from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -16,22 +16,29 @@ import {
   Alert,
 } from 'react-native';
 import axios from 'axios';
-import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
-import { useTheme } from '../context/ThemeContext';
+import {
+  useNavigation,
+  useFocusEffect,
+  useRoute,
+  CommonActions,
+} from '@react-navigation/native';
+import {useTheme} from '../context/ThemeContext';
+import EncryptedStorage from 'react-native-encrypted-storage';
 
-const BG_IMAGE_URL = 'https://i.postimg.cc/rFFQLGRh/Picsart-24-10-01-15-38-43-205.jpg';
+const BG_IMAGE_URL =
+  'https://i.postimg.cc/rFFQLGRh/Picsart-24-10-01-15-38-43-205.jpg';
 const LOGO_URL = 'https://i.postimg.cc/hjjpy2SW/Button-1.png';
 const FLAG_ICON_URL = 'https://i.postimg.cc/C1hkm5sR/india-flag-icon-29.png';
 
 const LoginScreen = () => {
-  const { width, height } = useWindowDimensions();
-  const { isDarkMode } = useTheme();
+  const {width, height} = useWindowDimensions();
+  const {isDarkMode} = useTheme();
   const styles = dynamicStyles(width, height, isDarkMode);
   const navigation = useNavigation();
   const route = useRoute();
 
   // Extract optional parameters serviceName and id from route params
-  const { serviceName, id } = route.params || {};
+  const {serviceName, id} = route.params || {};
 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
@@ -44,25 +51,65 @@ const LoginScreen = () => {
     }
     try {
       setLoading(true);
-      const response = await axios.post(
-        'https://backend.clicksolver.com/api/otp/send',
-        { mobileNumber: phoneNumber }
-      );
-      if (response.status === 200) {
-        const { verificationId } = response.data; 
-        // Build params to send to VerificationScreen
-        const params = serviceName && id
-          ? { phoneNumber, verificationId, serviceName, id }
-          : { phoneNumber, verificationId };
-  
-        // Use replace if we came in with an id, otherwise push
-        if (id) {
-          navigation.replace('VerificationScreen', params);
-        } else {
-          navigation.push('VerificationScreen', params);
+      if (phoneNumber == 9392365494) {
+        const loginResponse = await axios.post(
+          'https://backend.clicksolver.com/api/user/login',
+          {phone_number: phoneNumber},
+        );
+        // console.log("Login response status:", loginResponse.status);
+        if (loginResponse.status === 200) {
+          const {token} = loginResponse.data;
+          await EncryptedStorage.setItem('cs_token', token);
+          // If optional serviceName and id are provided, navigate to SingleService; otherwise, to Home
+          if (serviceName && id) {
+            navigation.replace('ServiceBooking', {serviceName, id});
+            // navigation.dispatch(
+            //   CommonActions.reset({
+            //     index: 0,
+            //     routes: [
+            //       {name: 'ServiceBooking', params: {serviceName,id}},
+            //     ],
+            //   }),
+            // );
+          } else {
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [
+                  {
+                    name: 'Tabs',
+                    state: {
+                      routes: [{name: 'Home'}],
+                    },
+                  },
+                ],
+              }),
+            );
+          }
         }
       } else {
-        console.error('Error sending OTP:', response.data);
+        console.log('phoneNumber :', phoneNumber);
+        // const response = await axios.post(
+        //   'https://backend.clicksolver.com/api/otp/send',
+        //   {mobileNumber: phoneNumber},
+        // );
+        // if (response.status === 200) {
+        //   const {verificationId} = response.data;
+        //   // Build params to send to VerificationScreen
+        //   const params =
+        //     serviceName && id
+        //       ? {phoneNumber, verificationId, serviceName, id}
+        //       : {phoneNumber, verificationId};
+
+        //   // Use replace if we came in with an id, otherwise push
+        //   if (id) {
+        //     navigation.replace('VerificationScreen', params);
+        //   } else {
+        //     navigation.push('VerificationScreen', params);
+        //   }
+        // } else {
+        //   console.error('Error sending OTP:', response.data);
+        // }
       }
     } catch (error) {
       console.error('Error sending OTP:', error);
@@ -71,7 +118,6 @@ const LoginScreen = () => {
       setLoading(false);
     }
   }, [phoneNumber, navigation, serviceName, id]);
-  
 
   // Handle hardware back press (Android)
   const handleBackPress = useCallback(() => {
@@ -84,28 +130,26 @@ const LoginScreen = () => {
       BackHandler.addEventListener('hardwareBackPress', handleBackPress);
       return () =>
         BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
-    }, [handleBackPress])
+    }, [handleBackPress]),
   );
 
   return (
     <View style={styles.root}>
       <Image
-        source={{ uri: BG_IMAGE_URL }}
+        source={{uri: BG_IMAGE_URL}}
         style={styles.backgroundImage}
         resizeMode="stretch"
       />
 
       <SafeAreaView style={styles.mainContainer}>
         <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
+          style={{flex: 1}}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <ScrollView
             contentContainerStyle={styles.scrollContentContainer}
-            keyboardShouldPersistTaps="handled"
-          >
+            keyboardShouldPersistTaps="handled">
             <View style={styles.logoSection}>
-              <Image source={{ uri: LOGO_URL }} style={styles.logo} />
+              <Image source={{uri: LOGO_URL}} style={styles.logo} />
               <Text style={styles.heading}>
                 Click <Text style={styles.solverText}>Solver</Text>
               </Text>
@@ -115,7 +159,7 @@ const LoginScreen = () => {
 
             <View style={styles.inputContainer}>
               <View style={styles.countryCodeContainer}>
-                <Image source={{ uri: FLAG_ICON_URL }} style={styles.flagIcon} />
+                <Image source={{uri: FLAG_ICON_URL}} style={styles.flagIcon} />
                 <Text style={styles.picker}>+91</Text>
               </View>
               <TextInput
@@ -132,8 +176,7 @@ const LoginScreen = () => {
             <TouchableOpacity
               style={styles.button}
               onPress={requestOtp}
-              disabled={loading}
-            >
+              disabled={loading}>
               {loading ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (

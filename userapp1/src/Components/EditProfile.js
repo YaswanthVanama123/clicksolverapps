@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -12,37 +12,38 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
-import { useRoute, useNavigation, CommonActions } from '@react-navigation/native';
+import {useRoute, useNavigation, CommonActions} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { useTheme } from '../context/ThemeContext';
+import {useTheme} from '../context/ThemeContext';
 // Import translation hook
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
 const EditProfile = () => {
-  const { width, height } = useWindowDimensions();
-  const { isDarkMode } = useTheme();
+  const {width, height} = useWindowDimensions();
+  const isTablet = width >= 600;
+  const {isDarkMode} = useTheme();
   const styles = dynamicStyles(width, height, isDarkMode);
-  
+
   const navigation = useNavigation();
-  const { t } = useTranslation();
-  
+  const {t} = useTranslation();
+
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [updateLoading, setUpdateLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  
+
   const route = useRoute();
-  
+
   const fetchProfileDetails = async () => {
-    const { details } = route.params;
+    const {details} = route.params;
     setEmail(details.email);
     setPhone(details.phoneNumber);
     setFullName(details.name);
   };
-  
+
   // Function to update the profile
   const updateProfile = async () => {
     try {
@@ -54,17 +55,17 @@ const EditProfile = () => {
       }
       const response = await axios.post(
         `https://backend.clicksolver.com/api/user/details/update`,
-        { name: fullName, email, phone },
+        {name: fullName, email, phone},
         {
-          headers: { Authorization: `Bearer ${jwtToken}` },
-        }
+          headers: {Authorization: `Bearer ${jwtToken}`},
+        },
       );
       if (response.status === 200) {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Account' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Account'}]}}],
+          }),
         );
       } else {
         console.error('Failed to update profile. Status: ', response.status);
@@ -75,42 +76,58 @@ const EditProfile = () => {
       setUpdateLoading(false);
     }
   };
-  
+
   // Open the confirmation modal when Update Profile is pressed
   const openConfirmationModal = () => {
     setModalVisible(true);
   };
-  
+
   // Close modal and proceed with update
   const handleUpdate = () => {
     setModalVisible(false);
     updateProfile();
   };
-  
+
   useEffect(() => {
     fetchProfileDetails();
   }, []);
-  
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <View style={styles.header}>
+      {/* <View style={styles.header}>
+        <Icon
+          name="arrow-back"
+          size={24}
+          color={isDarkMode ? '#fff' : '#000'}
+          onPress={() => navigation.goBack()}
+        />
+        <Text style={styles.headerText}>
+          {t('edit_profile') || 'Edit Profile'}
+        </Text>
+      </View> */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{
+            position: 'absolute',
+            left: isTablet ? 20 : 16,
+            zIndex: 2,
+          }}>
           <Icon
             name="arrow-back"
-            size={24}
-            color={isDarkMode ? '#fff' : '#000'}
-            onPress={() => navigation.goBack()}
+            size={20}
+            color={isDarkMode ? '#fff' : '#212121'}
           />
-          <Text style={styles.headerText}>
-            {t('edit_profile') || 'Edit Profile'}
-          </Text>
-        </View>
-  
+        </TouchableOpacity>
+
+        <Text style={styles.headerText}>
+          {t('edit_profile') || 'Edit Profile'}
+        </Text>
+      </View>
+      <ScrollView>
         <View style={styles.form}>
           <View>
-            <Text style={styles.label}>
-              {t('full_name') || 'Full Name'}
-            </Text>
+            <Text style={styles.label}>{t('full_name') || 'Full Name'}</Text>
             <TextInput
               style={styles.input}
               value={fullName}
@@ -118,7 +135,7 @@ const EditProfile = () => {
               testID="fullName-input"
             />
           </View>
-  
+
           <View>
             <Text style={styles.label}>
               {t('email_address') || 'Email Address'}
@@ -133,7 +150,7 @@ const EditProfile = () => {
               />
             </View>
           </View>
-  
+
           <View>
             <Text style={styles.label}>
               {t('phone_number') || 'Phone Number'}
@@ -158,51 +175,47 @@ const EditProfile = () => {
           </View>
         </View>
       </ScrollView>
-        <View style={styles.bottomButtonContainer}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={openConfirmationModal}
-            disabled={updateLoading}
-          >
-            {updateLoading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>
-                {t('update_profile') || 'Update Profile'}
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
+      <View style={styles.bottomButtonContainer}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={openConfirmationModal}
+          disabled={updateLoading}>
+          {updateLoading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>
+              {t('update_profile') || 'Update Profile'}
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
 
-  
       {/* Modal for confirmation */}
       <Modal
         animationType="slide"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
+        onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
               {t('confirm_update') || 'Confirm Update'}
             </Text>
             <Text style={styles.modalMessage}>
-              {t('confirm_update_message') || 'Are you sure you want to update your profile?'}
+              {t('confirm_update_message') ||
+                'Are you sure you want to update your profile?'}
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: '#ccc' }]}
-                onPress={() => setModalVisible(false)}
-              >
+                style={[styles.modalButton, {backgroundColor: '#ccc'}]}
+                onPress={() => setModalVisible(false)}>
                 <Text style={styles.modalButtonText}>
                   {t('cancel') || 'Cancel'}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: '#FF4500' }]}
-                onPress={handleUpdate}
-              >
+                style={[styles.modalButton, {backgroundColor: '#FF4500'}]}
+                onPress={handleUpdate}>
                 <Text style={styles.modalButtonText}>
                   {t('update') || 'Update'}
                 </Text>
@@ -214,7 +227,7 @@ const EditProfile = () => {
     </SafeAreaView>
   );
 };
-  
+
 const dynamicStyles = (width, height, isDarkMode) => {
   const isTablet = width >= 600;
   return StyleSheet.create({
@@ -223,10 +236,24 @@ const dynamicStyles = (width, height, isDarkMode) => {
       backgroundColor: isDarkMode ? '#121212' : '#fff',
       paddingHorizontal: isTablet ? 30 : 20,
     },
+    // header: {
+    //   flexDirection: 'row',
+    //   alignItems: 'center',
+    //   marginVertical: isTablet ? 20 : 15,
+    // },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginVertical: isTablet ? 20 : 15,
+      justifyContent: 'center', // Center everything
+      padding: isTablet ? 20 : 16,
+      paddingBottom: isTablet ? 16 : 12,
+      elevation: 2,
+      // shadowColor: isDarkMode ? '#000' : '#1D2951',
+      // shadowOffset: {width: 0, height: 2},
+      // shadowOpacity: 0.2,
+      // shadowRadius: 4,
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
+      position: 'relative',
     },
     headerText: {
       fontSize: isTablet ? 24 : 20,
@@ -239,6 +266,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
       marginTop: isTablet ? 20 : 10,
       flexDirection: 'column',
       gap: isTablet ? 15 : 10,
+      paddingHorizontal: 15,
     },
     label: {
       fontSize: isTablet ? 16 : 14,
@@ -269,6 +297,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
     },
     inputText: {
       flex: 1,
+      height: isTablet ? 55 : 50,
       marginLeft: isTablet ? 15 : 10,
       color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
@@ -281,6 +310,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
       borderColor: isDarkMode ? '#444' : '#ddd',
       borderRadius: 8,
       paddingHorizontal: 10,
+      height: isTablet ? 55 : 50,
       backgroundColor: isDarkMode ? '#1e1e1e' : '#f9f9f9',
     },
     flagIcon: {

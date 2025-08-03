@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {
   View,
   Text,
@@ -24,34 +24,34 @@ import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import LottieView from 'lottie-react-native';
 import PushNotification from 'react-native-push-notification';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../context/ThemeContext';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {useTheme} from '../context/ThemeContext';
 
 // 1. Import i18n to initialize translations
 import '../i18n/i18n';
 // 2. Import language change helper
-import { changeAppLanguage } from '../i18n/languageChange';
+import {changeAppLanguage} from '../i18n/languageChange';
 // 3. Import useTranslation hook
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
 const PaintingServices = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { width, height } = useWindowDimensions();
-  const { isDarkMode } = useTheme();
-  const { t } = useTranslation();
+  const {width, height} = useWindowDimensions();
+  const {isDarkMode} = useTheme();
+  const {t} = useTranslation();
   const styles = dynamicStyles(width, height, isDarkMode);
 
   const [subservice, setSubServices] = useState([]);
   const [name, setName] = useState('');
-  const [sid,setId] = useState(null)
+  const [sid, setId] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // When the component mounts, extract serviceObject from route params and fetch backend data.
   useEffect(() => {
     if (route.params) {
       setName(route.params.serviceObject);
-      setId(route.params.id)
+      setId(route.params.id);
       fetchServices(route.params.serviceObject);
     }
   }, [route.params]);
@@ -63,8 +63,8 @@ const PaintingServices = () => {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
         );
         return true;
       };
@@ -72,23 +72,23 @@ const PaintingServices = () => {
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () =>
         BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-    }, [navigation])
+    }, [navigation]),
   );
 
   // Fetch subservices from the backend
-  const fetchServices = useCallback(async (serviceObject) => {
+  const fetchServices = useCallback(async serviceObject => {
     setLoading(true);
     try {
       const response = await axios.post(
         'https://backend.clicksolver.com/api/individual/service',
-        { serviceObject }
+        {serviceObject},
       );
       // console.log("data",response.data)
       // const servicesWithIds = response.data.map((service) => ({
       //   ...service,
       //   id: uuid.v4(),
       // }));
-      setSubServices(response.data); 
+      setSubServices(response.data);
     } catch (error) {
       console.error('Error fetching services:', error);
     } finally {
@@ -97,62 +97,63 @@ const PaintingServices = () => {
   }, []);
 
   const handleBookCommander = useCallback(
-    async (serviceId,id) => {
+    async (serviceId, id) => {
       try {
         // Check if notifications are enabled
-        PushNotification.checkPermissions((permissions) => {
+        PushNotification.checkPermissions(permissions => {
           if (!permissions.alert) {
-            Alert.alert(
-              t('notifications_required') || 'Notifications Required',
-              t('enable_notifications') ||
-                'You need to enable notifications to proceed. Go to app settings to enable them.',
-              [
-                {
-                  text: t('cancel') || 'Cancel',
-                  onPress: () =>  console.log(''),
-                  style: 'cancel',
-                },
-                {
-                  text: t('open_settings') || 'Open Settings',
-                  onPress: () => {
-                    if (Platform.OS === 'ios') {
-                      Linking.openURL('app-settings:');
-                    } else {
-                      Linking.openSettings();
-                    }
-                  },
-                },
-              ],
-              { cancelable: false }
-            );
+            // Alert.alert(
+            //   t('notifications_required') || 'Notifications Required',
+            //   t('enable_notifications') ||
+            //     'You need to enable notifications to proceed. Go to app settings to enable them.',
+            //   [
+            //     {
+            //       text: t('cancel') || 'Cancel',
+            //       onPress: () =>  console.log(''),
+            //       style: 'cancel',
+            //     },
+            //     {
+            //       text: t('open_settings') || 'Open Settings',
+            //       onPress: () => {
+            //         if (Platform.OS === 'ios') {
+            //           Linking.openURL('app-settings:');
+            //         } else {
+            //           Linking.openSettings();
+            //         }
+            //       },
+            //     },
+            //   ],
+            //   { cancelable: false }
+            // );
+            proceedToBookCommander(serviceId, id);
           } else {
-            proceedToBookCommander(serviceId,id);
+            proceedToBookCommander(serviceId, id);
           }
         });
       } catch (error) {
         console.error('Error checking notification permissions:', error);
       }
     },
-    [t]
+    [t],
   );
 
   const proceedToBookCommander = useCallback(
-    async (serviceId,id) => {
+    async (serviceId, id) => {
       // console.log("book",serviceId,id)
       navigation.push('ServiceBooking', {
         serviceName: serviceId,
-        id:id
+        id: id,
       });
     },
-    [navigation]
+    [navigation],
   );
 
   const handleBack = useCallback(() => {
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-      })
+        routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+      }),
     );
   }, [navigation]);
 
@@ -167,11 +168,19 @@ const PaintingServices = () => {
         {/* Header with back arrow, title, search, and language selector */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.iconContainer}>
-            <Icon name="arrow-back" size={24} color={isDarkMode ? '#fff' : '#000'} />
+            <Icon
+              name="arrow-back"
+              size={24}
+              color={isDarkMode ? '#fff' : '#000'}
+            />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}> { t(`service_${sid}`) || name }</Text>
+          <Text style={styles.headerTitle}> {t(`service_${sid}`) || name}</Text>
           <TouchableOpacity onPress={handleSearch} style={styles.iconContainer}>
-            <Icon name="search" size={24} color={isDarkMode ? '#fff' : '#000'} />
+            <Icon
+              name="search"
+              size={24}
+              color={isDarkMode ? '#fff' : '#000'}
+            />
           </TouchableOpacity>
         </View>
 
@@ -187,8 +196,12 @@ const PaintingServices = () => {
         <View style={styles.banner}>
           <View style={styles.bannerText}>
             <View style={styles.bannerDetails}>
-            <Text style={styles.bannerPrice}>{t('just_49') || 'Just 49/-'}</Text>
-              <Text style={styles.bannerDescription}>{ t(`service_${sid}`) || name }</Text>
+              <Text style={styles.bannerPrice}>
+                {t('just_49') || 'Just 49/-'}
+              </Text>
+              <Text style={styles.bannerDescription}>
+                {t(`service_${sid}`) || name}
+              </Text>
               <Text style={styles.bannerInfo}>
                 {t('just_pay') || 'Just pay to book a Commander Inspection!'}
               </Text>
@@ -214,7 +227,7 @@ const PaintingServices = () => {
 
         {/* Services List */}
         <ScrollView style={styles.services}>
-          {subservice.map((service) => (
+          {subservice.map(service => (
             <ServiceItem
               key={service.service_id}
               title={service.service_name}
@@ -222,7 +235,7 @@ const PaintingServices = () => {
               handleBookCommander={handleBookCommander}
               serviceId={service.service_name}
               isDarkMode={isDarkMode}
-              t={t}  // Pass translation function to the item
+              t={t} // Pass translation function to the item
               id={service.service_id}
             />
           ))}
@@ -233,25 +246,26 @@ const PaintingServices = () => {
 };
 
 const ServiceItem = React.memo(
-  ({ title, imageUrl, handleBookCommander, serviceId, isDarkMode, t,id }) => {
-    const { width } = useWindowDimensions();
+  ({title, imageUrl, handleBookCommander, serviceId, isDarkMode, t, id}) => {
+    const {width} = useWindowDimensions();
     const itemStyles = dynamicStyles(width, undefined, isDarkMode);
 
     return (
       <View style={itemStyles.serviceItem}>
         <View style={itemStyles.serviceImageContainer}>
           <Image
-            source={{ uri: imageUrl }}
+            source={{uri: imageUrl}}
             style={itemStyles.serviceImage}
             resizeMode="stretch"
           />
         </View>
         <View style={itemStyles.serviceInfo}>
-          <Text style={itemStyles.serviceTitle}>{ t(`IndivService_${id}`) || title }</Text>
+          <Text style={itemStyles.serviceTitle}>
+            {t(`IndivService_${id}`) || title}
+          </Text>
           <TouchableOpacity
             style={itemStyles.bookNow}
-            onPress={() => handleBookCommander(serviceId,id)}
-          >
+            onPress={() => handleBookCommander(serviceId, id)}>
             <Text style={itemStyles.bookNowText}>
               {t('book_now') || 'Book Now ➔'}
             </Text>
@@ -259,7 +273,7 @@ const ServiceItem = React.memo(
         </View>
       </View>
     );
-  }
+  },
 );
 
 const dynamicStyles = (width, height, isDarkMode) => {
@@ -379,7 +393,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
       opacity: 0.88,
       elevation: 5,
     },
-    
+
     bookNowText: {
       color: '#FFF',
       fontWeight: 'bold',

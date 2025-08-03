@@ -20,6 +20,8 @@
     "source_files": "macos/**/*.{h,m,mm}"
   },
   "dependencies": {
-    "React-Core": []
+    "React-Core": [
+
+    ]
   }
 }

@@ -40317,7 +40317,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = BVLinearGradient;
@@ -40365,7 +40365,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = BVLinearGradient;
@@ -40417,7 +40417,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = Base64;
@@ -40465,7 +40465,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = Base64;
@@ -40518,7 +40518,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = CodePush;
@@ -40567,7 +40567,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = CodePush;
@@ -40619,7 +40619,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = DoubleConversion;
@@ -40667,7 +40667,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = DoubleConversion;
@@ -40706,7 +40706,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -40733,7 +40733,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -40764,7 +40764,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -40791,7 +40791,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -40836,7 +40836,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseAppCheckInterop;
@@ -40885,7 +40885,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseAppCheckInterop;
@@ -40937,7 +40937,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseAuth;
@@ -40985,7 +40985,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseAuth;
@@ -41015,7 +41015,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = FirebaseAuth_Privacy;
@@ -41040,7 +41040,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = FirebaseAuth_Privacy;
@@ -41088,7 +41088,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseAuthInterop;
@@ -41137,7 +41137,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseAuthInterop;
@@ -41189,7 +41189,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseCore;
@@ -41237,7 +41237,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseCore;
@@ -41267,7 +41267,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = FirebaseCore_Privacy;
@@ -41292,7 +41292,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = FirebaseCore_Privacy;
@@ -41340,7 +41340,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseCoreExtension;
@@ -41389,7 +41389,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseCoreExtension;
@@ -41419,7 +41419,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = FirebaseCoreExtension_Privacy;
@@ -41444,7 +41444,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = FirebaseCoreExtension_Privacy;
@@ -41492,7 +41492,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseCoreInternal;
@@ -41541,7 +41541,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseCoreInternal;
@@ -41571,7 +41571,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = FirebaseCoreInternal_Privacy;
@@ -41596,7 +41596,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = FirebaseCoreInternal_Privacy;
@@ -41643,7 +41643,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseCrashlytics;
@@ -41691,7 +41691,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseCrashlytics;
@@ -41721,7 +41721,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = FirebaseCrashlytics_Privacy;
@@ -41746,7 +41746,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = FirebaseCrashlytics_Privacy;
@@ -41793,7 +41793,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseInstallations;
@@ -41841,7 +41841,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseInstallations;
@@ -41871,7 +41871,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = FirebaseInstallations_Privacy;
@@ -41896,7 +41896,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = FirebaseInstallations_Privacy;
@@ -41943,7 +41943,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseMessaging;
@@ -41991,7 +41991,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseMessaging;
@@ -42021,7 +42021,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = FirebaseMessaging_Privacy;
@@ -42046,7 +42046,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = FirebaseMessaging_Privacy;
@@ -42093,7 +42093,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseRemoteConfigInterop;
@@ -42141,7 +42141,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseRemoteConfigInterop;
@@ -42193,7 +42193,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseSessions;
@@ -42241,7 +42241,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FirebaseSessions;
@@ -42292,7 +42292,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = GTMSessionFetcher;
@@ -42339,7 +42339,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = GTMSessionFetcher;
@@ -42369,7 +42369,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = GTMSessionFetcher_Core_Privacy;
@@ -42394,7 +42394,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = GTMSessionFetcher_Core_Privacy;
@@ -42441,7 +42441,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = GoogleDataTransport;
@@ -42489,7 +42489,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = GoogleDataTransport;
@@ -42519,7 +42519,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = GoogleDataTransport_Privacy;
@@ -42544,7 +42544,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = GoogleDataTransport_Privacy;
@@ -42591,7 +42591,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = GoogleUtilities;
@@ -42639,7 +42639,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = GoogleUtilities;
@@ -42669,7 +42669,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = GoogleUtilities_Privacy;
@@ -42694,7 +42694,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = GoogleUtilities_Privacy;
@@ -42741,7 +42741,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = JWT;
@@ -42789,7 +42789,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = JWT;
@@ -42828,7 +42828,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -42855,7 +42855,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -42886,7 +42886,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -42913,7 +42913,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -42958,7 +42958,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = MapboxMaps;
@@ -43007,7 +43007,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = MapboxMaps;
@@ -43036,7 +43036,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = MapboxMapsResources;
@@ -43060,7 +43060,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = MapboxMapsResources;
@@ -43093,7 +43093,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -43119,7 +43119,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -43161,7 +43161,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FBLPromises;
@@ -43207,7 +43207,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = FBLPromises;
@@ -43237,7 +43237,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = FBLPromises_Privacy;
@@ -43262,7 +43262,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = FBLPromises_Privacy;
@@ -43309,7 +43309,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = Promises;
@@ -43357,7 +43357,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = Promises;
@@ -43387,7 +43387,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = Promises_Privacy;
@@ -43412,7 +43412,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = Promises_Privacy;
@@ -43459,7 +43459,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = folly;
@@ -43507,7 +43507,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = folly;
@@ -43558,7 +43558,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTDeprecation;
@@ -43605,7 +43605,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTDeprecation;
@@ -43644,7 +43644,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -43671,7 +43671,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -43716,7 +43716,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTTypeSafety;
@@ -43765,7 +43765,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTTypeSafety;
@@ -43817,7 +43817,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNCClipboard;
@@ -43865,7 +43865,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNCClipboard;
@@ -43917,7 +43917,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNCPicker;
@@ -43965,7 +43965,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNCPicker;
@@ -44018,7 +44018,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNCPushNotificationIOS;
@@ -44067,7 +44067,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNCPushNotificationIOS;
@@ -44120,7 +44120,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNFBApp;
@@ -44169,7 +44169,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNFBApp;
@@ -44222,7 +44222,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNFBAuth;
@@ -44271,7 +44271,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNFBAuth;
@@ -44324,7 +44324,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNFBCrashlytics;
@@ -44373,7 +44373,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNFBCrashlytics;
@@ -44426,7 +44426,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNFBMessaging;
@@ -44475,7 +44475,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNFBMessaging;
@@ -44528,7 +44528,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNPermissions;
@@ -44577,7 +44577,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNPermissions;
@@ -44607,7 +44607,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = RNPermissionsPrivacyInfo;
@@ -44632,7 +44632,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = RNPermissionsPrivacyInfo;
@@ -44697,7 +44697,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNScreens;
@@ -44763,7 +44763,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNScreens;
@@ -44833,7 +44833,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNVectorIcons;
@@ -44899,7 +44899,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RNVectorIcons;
@@ -44938,7 +44938,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -44965,7 +44965,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -45010,7 +45010,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_Codegen;
@@ -45059,7 +45059,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_Codegen;
@@ -45118,7 +45118,7 @@
 					"-Wno-comma",
 					"-Wno-shorten-64-to-32",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React;
@@ -45173,7 +45173,7 @@
 					"-Wno-comma",
 					"-Wno-shorten-64-to-32",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React;
@@ -45203,7 +45203,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = RCTI18nStrings;
@@ -45228,7 +45228,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = RCTI18nStrings;
@@ -45283,7 +45283,7 @@
 					"-Wno-comma",
 					"-Wno-shorten-64-to-32",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = CoreModules;
@@ -45339,7 +45339,7 @@
 					"-Wno-comma",
 					"-Wno-shorten-64-to-32",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = CoreModules;
@@ -45391,7 +45391,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_Fabric;
@@ -45439,7 +45439,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_Fabric;
@@ -45492,7 +45492,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_FabricImage;
@@ -45541,7 +45541,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_FabricImage;
@@ -45593,7 +45593,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_ImageManager;
@@ -45641,7 +45641,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_ImageManager;
@@ -45694,7 +45694,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_Mapbuffer;
@@ -45743,7 +45743,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_Mapbuffer;
@@ -45801,7 +45801,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_NativeModulesApple;
@@ -45855,7 +45855,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_NativeModulesApple;
@@ -45894,7 +45894,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -45921,7 +45921,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -45966,7 +45966,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTAnimation;
@@ -46015,7 +46015,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTAnimation;
@@ -46067,7 +46067,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_RCTAppDelegate;
@@ -46115,7 +46115,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_RCTAppDelegate;
@@ -46168,7 +46168,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTBlob;
@@ -46217,7 +46217,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTBlob;
@@ -46270,7 +46270,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTFabric;
@@ -46319,7 +46319,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTFabric;
@@ -46372,7 +46372,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTImage;
@@ -46421,7 +46421,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTImage;
@@ -46474,7 +46474,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTLinking;
@@ -46523,7 +46523,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTLinking;
@@ -46576,7 +46576,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTNetwork;
@@ -46625,7 +46625,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTNetwork;
@@ -46678,7 +46678,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTSettings;
@@ -46727,7 +46727,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTSettings;
@@ -46780,7 +46780,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTText;
@@ -46829,7 +46829,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTText;
@@ -46882,7 +46882,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTVibration;
@@ -46931,7 +46931,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RCTVibration;
@@ -46997,7 +46997,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_RuntimeApple;
@@ -47059,7 +47059,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_RuntimeApple;
@@ -47119,7 +47119,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_RuntimeCore;
@@ -47175,7 +47175,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_RuntimeCore;
@@ -47214,7 +47214,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -47241,7 +47241,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -47286,7 +47286,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = cxxreact;
@@ -47335,7 +47335,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = cxxreact;
@@ -47387,7 +47387,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_debug;
@@ -47435,7 +47435,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_debug;
@@ -47487,7 +47487,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_featureflags;
@@ -47535,7 +47535,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_featureflags;
@@ -47587,7 +47587,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_graphics;
@@ -47635,7 +47635,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_graphics;
@@ -47688,7 +47688,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_jsc;
@@ -47737,7 +47737,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_jsc;
@@ -47797,7 +47797,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_jserrorhandler;
@@ -47853,7 +47853,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_jserrorhandler;
@@ -47905,7 +47905,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = jsi;
@@ -47953,7 +47953,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = jsi;
@@ -48006,7 +48006,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = jsireact;
@@ -48055,7 +48055,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = jsireact;
@@ -48107,7 +48107,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = jsinspector_modern;
@@ -48155,7 +48155,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = jsinspector_modern;
@@ -48194,7 +48194,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -48221,7 +48221,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -48266,7 +48266,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = logger;
@@ -48315,7 +48315,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = logger;
@@ -48368,7 +48368,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_nativeconfig;
@@ -48417,7 +48417,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_nativeconfig;
@@ -48470,7 +48470,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = reactperflogger;
@@ -48519,7 +48519,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = reactperflogger;
@@ -48578,7 +48578,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_rendererdebug;
@@ -48633,7 +48633,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_rendererdebug;
@@ -48672,7 +48672,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -48699,7 +48699,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -48730,7 +48730,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -48757,7 +48757,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -48809,7 +48809,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_runtimescheduler;
@@ -48865,7 +48865,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_runtimescheduler;
@@ -48924,7 +48924,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_utils;
@@ -48979,7 +48979,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = React_utils;
@@ -49031,7 +49031,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = ReactCommon;
@@ -49079,7 +49079,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = ReactCommon;
@@ -49132,7 +49132,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RecaptchaInterop;
@@ -49181,7 +49181,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = RecaptchaInterop;
@@ -49233,7 +49233,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = SSZipArchive;
@@ -49281,7 +49281,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = SSZipArchive;
@@ -49311,7 +49311,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = SSZipArchive;
@@ -49336,7 +49336,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = SSZipArchive;
@@ -49384,7 +49384,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = SocketRocket;
@@ -49433,7 +49433,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = SocketRocket;
@@ -49486,7 +49486,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = Turf;
@@ -49535,7 +49535,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = Turf;
@@ -49587,7 +49587,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = yoga;
@@ -49635,7 +49635,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = yoga;
@@ -49674,7 +49674,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -49701,7 +49701,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -49746,7 +49746,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = fmt;
@@ -49795,7 +49795,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = fmt;
@@ -49847,7 +49847,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = glog;
@@ -49895,7 +49895,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = glog;
@@ -49948,7 +49948,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = Lottie;
@@ -49997,7 +49997,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = Lottie;
@@ -50027,7 +50027,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = LottiePrivacyInfo;
@@ -50052,7 +50052,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = LottiePrivacyInfo;
@@ -50117,7 +50117,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = lottie_react_native;
@@ -50183,7 +50183,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = lottie_react_native;
@@ -50213,7 +50213,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = Lottie_React_Native_Privacy;
@@ -50238,7 +50238,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = Lottie_React_Native_Privacy;
@@ -50286,7 +50286,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = nanopb;
@@ -50335,7 +50335,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = nanopb;
@@ -50365,7 +50365,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = nanopb_Privacy;
@@ -50390,7 +50390,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = nanopb_Privacy;
@@ -50424,7 +50424,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -50451,7 +50451,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				SDKROOT = iphoneos;
@@ -50495,7 +50495,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = react_native_config;
@@ -50543,7 +50543,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = react_native_config;
@@ -50596,7 +50596,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = react_native_contacts;
@@ -50645,7 +50645,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = react_native_contacts;
@@ -50698,7 +50698,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = react_native_encrypted_storage;
@@ -50747,7 +50747,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = react_native_encrypted_storage;
@@ -50799,7 +50799,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = react_native_geolocation_service;
@@ -50847,7 +50847,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = react_native_geolocation_service;
@@ -50916,7 +50916,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = react_native_image_picker;
@@ -50981,7 +50981,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = react_native_image_picker;
@@ -51011,7 +51011,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = RNImagePickerPrivacyInfo;
@@ -51036,7 +51036,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_NAME = RNImagePickerPrivacyInfo;
@@ -51084,7 +51084,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = react_native_razorpay;
@@ -51133,7 +51133,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = react_native_razorpay;
@@ -51186,7 +51186,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = react_native_safe_area_context;
@@ -51235,7 +51235,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = react_native_safe_area_context;
@@ -51287,7 +51287,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = react_native_splash_screen;
@@ -51335,7 +51335,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = react_native_splash_screen;
@@ -51388,7 +51388,7 @@
 					"$(inherited)",
 					"-DNDEBUG",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = rnmapbox_maps;
@@ -51437,7 +51437,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				PRODUCT_MODULE_NAME = rnmapbox_maps;
@@ -51484,7 +51484,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				OTHER_LDFLAGS = "";
@@ -51532,7 +51532,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				OTHER_LDFLAGS = "";
@@ -51579,7 +51579,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				OTHER_LDFLAGS = "";
@@ -51627,7 +51627,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-include",
-					"\"/Users/seshukapuganti/Desktop/clicksolver/clicksolver-code/userapp1/ios/char_traits_uc.h\"",
+					"\"/Users/yaswanth/Desktop/clicksolver/clicksolverapps/userapp1/ios/char_traits_uc.h\"",
 					"-D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW",
 				);
 				OTHER_LDFLAGS = "";

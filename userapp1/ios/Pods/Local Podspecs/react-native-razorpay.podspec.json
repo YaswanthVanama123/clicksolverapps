@@ -14,7 +14,11 @@
   },
   "source_files": "ios/**/*.{h,m}",
   "dependencies": {
-    "React": [],
-    "razorpay-pod": []
+    "React": [
+
+    ],
+    "razorpay-pod": [
+
+    ]
   }
 }

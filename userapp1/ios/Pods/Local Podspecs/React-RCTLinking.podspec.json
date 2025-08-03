@@ -36,8 +36,14 @@
     "React-jsi": [
       "0.74.3"
     ],
-    "React-Codegen": [],
-    "ReactCommon": [],
-    "React-NativeModulesApple": []
+    "React-Codegen": [
+
+    ],
+    "ReactCommon": [
+
+    ],
+    "React-NativeModulesApple": [
+
+    ]
   }
 }

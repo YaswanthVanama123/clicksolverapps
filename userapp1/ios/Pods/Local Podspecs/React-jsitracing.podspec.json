@@ -23,6 +23,8 @@
   "header_mappings_dir": "./",
   "module_name": "React_jsitracing",
   "dependencies": {
-    "React-jsi": []
+    "React-jsi": [
+
+    ]
   }
 }

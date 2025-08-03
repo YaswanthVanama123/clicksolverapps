@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -9,12 +9,12 @@ import {
   ScrollView,
   Modal,
 } from 'react-native';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import Entypo from 'react-native-vector-icons/Entypo'
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import Entypo from 'react-native-vector-icons/Entypo';
 import axios from 'axios';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import LottieView from 'lottie-react-native';
-import { launchImageLibrary } from 'react-native-image-picker';
+import {launchImageLibrary} from 'react-native-image-picker';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -22,15 +22,15 @@ import EvilIcons from 'react-native-vector-icons/EvilIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 // Global theme hook
-import { useTheme } from '../context/ThemeContext';
+import {useTheme} from '../context/ThemeContext';
 
 // Import i18n initialization (ensure this file initializes i18next)
 import '../i18n/i18n';
 // Import the translation hook
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
 // Helper function to upload an image
-const uploadImage = async (uri) => {
+const uploadImage = async uri => {
   const apiKey = '287b4ba48139a6a59e75b5a8266bbea2';
   const apiUrl = 'https://api.imgbb.com/1/upload';
 
@@ -70,11 +70,11 @@ const ProfileScreen = () => {
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
   // Global theme values
-  const { isDarkMode, toggleTheme } = useTheme();
+  const {isDarkMode, toggleTheme} = useTheme();
   const styles = dynamicStyles(isDarkMode);
 
   // Get translation function
-  const { t } = useTranslation();
+  const {t} = useTranslation();
 
   // Fetch profile details from backend
   const fetchProfileDetails = async () => {
@@ -91,9 +91,9 @@ const ProfileScreen = () => {
       const response = await axios.post(
         'https://backend.clicksolver.com/api/user/profile',
         {},
-        { headers: { Authorization: `Bearer ${jwtToken}` } }
+        {headers: {Authorization: `Bearer ${jwtToken}`}},
       );
-      const { name, email, phone_number, profile } = response.data;
+      const {name, email, phone_number, profile} = response.data;
       setImage(profile);
       setAccount({
         name,
@@ -118,13 +118,13 @@ const ProfileScreen = () => {
   useFocusEffect(
     useCallback(() => {
       fetchProfileDetails();
-    }, [])
+    }, []),
   );
 
   // Handle image editing (uploading a new profile image)
   const handleEditImage = async () => {
-    const options = { mediaType: 'photo', quality: 0.8 };
-    launchImageLibrary(options, async (response) => {
+    const options = {mediaType: 'photo', quality: 0.8};
+    launchImageLibrary(options, async response => {
       if (response.didCancel) {
         // console.log('User cancelled image picker');
       } else if (response.errorMessage) {
@@ -138,10 +138,10 @@ const ProfileScreen = () => {
           if (jwtToken) {
             await axios.post(
               'https://backend.clicksolver.com/api/user/updateProfileImage',
-              { profileImage: uploadedUrl },
-              { headers: { Authorization: `Bearer ${jwtToken}` } }
+              {profileImage: uploadedUrl},
+              {headers: {Authorization: `Bearer ${jwtToken}`}},
             );
-            setAccount((prev) => ({ ...prev, profileImage: uploadedUrl }));
+            setAccount(prev => ({...prev, profileImage: uploadedUrl}));
           }
         } catch (error) {
           console.error('Error uploading image:', error);
@@ -151,21 +151,73 @@ const ProfileScreen = () => {
   };
 
   // Handle logout
+  // const handleLogout = async () => {
+  //   try {
+  //     const user_fcm_token = await EncryptedStorage.getItem('user_fcm_token');
+  //     if (user_fcm_token) {
+  //       // await axios.post('https://backend.clicksolver.com/api/userLogout', {
+  //       //   user_fcm_token,
+  //       // });
+  //     }
+  //     console.log('user logged out');
+  //     await EncryptedStorage.removeItem('cs_token');
+  //     await EncryptedStorage.removeItem('user_fcm_token');
+  //     await EncryptedStorage.removeItem('notifications');
+  //     await EncryptedStorage.removeItem('messageBox');
+  //     setIsLoggedIn(false);
+  //     setLogoutModalVisible(false);
+  //     navigation.navigate('Login');
+  //   } catch (err) {
+  //     console.error('Error logging out:', err);
+  //   }
+  // };
+
   const handleLogout = async () => {
     try {
-      const user_fcm_token = await EncryptedStorage.getItem('user_fcm_token');
-      if (user_fcm_token) {
-        await axios.post('https://backend.clicksolver.com/api/userLogout', { user_fcm_token });
+      // 1. Read the FCM token, if any
+      const userFcmToken = await EncryptedStorage.getItem('user_fcm_token');
+
+      if (userFcmToken) {
+        // 2. Attempt backend logout, but don’t let failures block the rest
+        try {
+          const response = await axios.post(
+            'https://backend.clicksolver.com/api/userLogout',
+            {user_fcm_token: userFcmToken},
+          );
+          // you can inspect response.status here if you like:
+          if (response.status !== 200) {
+            console.warn('Logout API returned status', response.status);
+          }
+        } catch (apiErr) {
+          console.error('Logout API error:', apiErr.response?.status ?? apiErr);
+          // *don’t* return––we still want to clear storage & navigate
+        }
       }
-      await EncryptedStorage.removeItem('cs_token');
-      await EncryptedStorage.removeItem('user_fcm_token');
-      await EncryptedStorage.removeItem('notifications');
-      await EncryptedStorage.removeItem('messageBox');
+
+      // 3. Define all keys you want to clear
+      const keysToClear = [
+        'cs_token',
+        'user_fcm_token',
+        'notifications',
+        'messageBox',
+      ];
+
+      // 4. Only remove keys that actually exist
+      for (const key of keysToClear) {
+        const value = await EncryptedStorage.getItem(key);
+        if (value != null) {
+          await EncryptedStorage.removeItem(key);
+          console.log(`Removed ${key} from storage`);
+        }
+      }
+
+      // 5. Update your UI state & navigate
       setIsLoggedIn(false);
       setLogoutModalVisible(false);
       navigation.navigate('Login');
     } catch (err) {
-      console.error('Error logging out:', err);
+      // This only catches storage/navigation errors
+      console.error('Error in logout flow:', err);
     }
   };
 
@@ -176,7 +228,9 @@ const ProfileScreen = () => {
     return (
       <View style={styles.loginContainer}>
         <Text style={styles.profileTitle}>{t('profile')}</Text>
-        <TouchableOpacity style={styles.loginButton} onPress={() => navigation.push('Login')}>
+        <TouchableOpacity
+          style={styles.loginButton}
+          onPress={() => navigation.push('Login')}>
           <Text style={styles.loginButtonText}>{t('login_or_signup')}</Text>
         </TouchableOpacity>
         <View style={styles.optionsContainer}>
@@ -186,27 +240,42 @@ const ProfileScreen = () => {
               size={22}
               color={styles.toggleIconColor}
             />
-            <Text style={[styles.menuText, { marginLeft: 12 }]}>
+            <Text style={[styles.menuText, {marginLeft: 12}]}>
               {isDarkMode ? t('dark_theme') : t('light_theme')}
             </Text>
             <TouchableOpacity
               style={[
                 styles.toggleTrack,
-                isDarkMode ? styles.toggleTrackEnabled : styles.toggleTrackDisabled,
+                isDarkMode
+                  ? styles.toggleTrackEnabled
+                  : styles.toggleTrackDisabled,
               ]}
-              onPress={toggleTheme}
-            >
+              onPress={toggleTheme}>
               <View
                 style={[
                   styles.toggleThumb,
-                  isDarkMode ? styles.toggleThumbEnabled : styles.toggleThumbDisabled,
+                  isDarkMode
+                    ? styles.toggleThumbEnabled
+                    : styles.toggleThumbDisabled,
                 ]}
               />
             </TouchableOpacity>
           </View>
-          <HelpMenuItem styles={styles} text={t('help_and_support')} onPress={() => navigation.push('Help')} />
-          <AboutCSMenuItem styles={styles} text={t('about_cs')} onPress={() => navigation.push('AboutCS')} />
-          <LanguageChangeMenuItem styles={styles} text={t('change_language')} onPress={() => navigation.push('LanguageSelector')} />
+          <HelpMenuItem
+            styles={styles}
+            text={t('help_and_support')}
+            onPress={() => navigation.push('Help')}
+          />
+          <AboutCSMenuItem
+            styles={styles}
+            text={t('about_cs')}
+            onPress={() => navigation.push('AboutCS')}
+          />
+          <LanguageChangeMenuItem
+            styles={styles}
+            text={t('change_language')}
+            onPress={() => navigation.push('LanguageSelector')}
+          />
         </View>
       </View>
     );
@@ -232,7 +301,9 @@ const ProfileScreen = () => {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{t('something_went_wrong')}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchProfileDetails}>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={fetchProfileDetails}>
             <Text style={styles.retryButtonText}>{t('retry')}</Text>
           </TouchableOpacity>
         </View>
@@ -248,13 +319,15 @@ const ProfileScreen = () => {
           <View style={styles.profileContainer}>
             <View style={styles.profileImageContainer}>
               {image ? (
-                <Image source={{ uri: image }} style={styles.profileImage} />
+                <Image source={{uri: image}} style={styles.profileImage} />
               ) : (
                 <View style={[styles.profileImage, styles.profilePlaceholder]}>
                   <MaterialIcons name="person" size={40} color="#FFFFFF" />
                 </View>
               )}
-              <TouchableOpacity style={styles.editIconContainer} onPress={handleEditImage}>
+              <TouchableOpacity
+                style={styles.editIconContainer}
+                onPress={handleEditImage}>
                 <MaterialIcons name="edit" size={18} color="#FFF" />
               </TouchableOpacity>
             </View>
@@ -263,17 +336,32 @@ const ProfileScreen = () => {
 
           {/* Email Field */}
           <View style={styles.inputContainer}>
-            <MaterialIcons name="email" size={24} color={isDarkMode ? '#fff' : '#4a4a4a'} />
-            <TextInput value={account.email} editable={false} style={styles.input} />
+            <MaterialIcons
+              name="email"
+              size={24}
+              color={isDarkMode ? '#fff' : '#4a4a4a'}
+            />
+            <TextInput
+              value={account.email}
+              editable={false}
+              style={styles.input}
+            />
           </View>
 
           {/* Phone Field */}
           <View style={styles.phoneContainer}>
             <View style={styles.flagAndCode}>
-              <Image source={{ uri: 'https://flagcdn.com/w40/in.png' }} style={styles.flagIcon} />
+              <Image
+                source={{uri: 'https://flagcdn.com/w40/in.png'}}
+                style={styles.flagIcon}
+              />
               <Text style={styles.countryCode}>+91</Text>
             </View>
-            <TextInput value={account.phoneNumber} editable={false} style={styles.phoneInput} />
+            <TextInput
+              value={account.phoneNumber}
+              editable={false}
+              style={styles.phoneInput}
+            />
           </View>
         </View>
 
@@ -287,53 +375,100 @@ const ProfileScreen = () => {
               size={22}
               color={styles.toggleIconColor}
             />
-            <Text style={[styles.menuText, { marginLeft: 12 }]}>
+            <Text style={[styles.menuText, {marginLeft: 12}]}>
               {isDarkMode ? t('dark_theme') : t('light_theme')}
             </Text>
             <TouchableOpacity
               style={[
                 styles.toggleTrack,
-                isDarkMode ? styles.toggleTrackEnabled : styles.toggleTrackDisabled,
+                isDarkMode
+                  ? styles.toggleTrackEnabled
+                  : styles.toggleTrackDisabled,
               ]}
-              onPress={toggleTheme}
-            >
+              onPress={toggleTheme}>
               <View
                 style={[
                   styles.toggleThumb,
-                  isDarkMode ? styles.toggleThumbEnabled : styles.toggleThumbDisabled,
+                  isDarkMode
+                    ? styles.toggleThumbEnabled
+                    : styles.toggleThumbDisabled,
                 ]}
               />
             </TouchableOpacity>
           </View>
 
           {/* Menu Items */}
-          <ProfileMenuItem styles={styles} text={t('my_services')} onPress={() => navigation.push('RecentServices')} />
-          <HelpMenuItem styles={styles} text={t('help_and_support')} onPress={() => navigation.push('Help')} />
-          {/* <DeleteAccountMenuItem styles={styles} text={t('account_delete')} onPress={() => navigation.push('DeleteAccount', { details: account })} /> */}
-          <EditProfileMenuItem styles={styles} text={t('edit_profile')} onPress={() => navigation.push('EditProfile', { details: account })} />
-          <ReferEarnMenuItem styles={styles} text={t('refer_and_earn')} onPress={() => navigation.push('ReferralScreen')} />
-          <LanguageChangeMenuItem styles={styles} text={t('change_language')} onPress={() => navigation.push('LanguageSelector')} />
-          <AboutCSMenuItem styles={styles} text={t('about_cs')} onPress={() => navigation.push('AboutCS')} />
-          <LogoutMenuItem styles={styles} text={t('logout')} onPress={confirmLogout} />
+          <ProfileMenuItem
+            styles={styles}
+            text={t('my_services')}
+            onPress={() => navigation.push('RecentServices')}
+          />
+          <HelpMenuItem
+            styles={styles}
+            text={t('help_and_support')}
+            onPress={() => navigation.push('Help')}
+          />
+          <DeleteAccountMenuItem
+            styles={styles}
+            text={t('account_delete')}
+            onPress={() => navigation.push('DeleteAccount', {details: account})}
+          />
+          <EditProfileMenuItem
+            styles={styles}
+            text={t('edit_profile')}
+            onPress={() => navigation.push('EditProfile', {details: account})}
+          />
+          <ReferEarnMenuItem
+            styles={styles}
+            text={t('refer_and_earn')}
+            onPress={() => navigation.push('ReferralScreen')}
+          />
+          <LanguageChangeMenuItem
+            styles={styles}
+            text={t('change_language')}
+            onPress={() => navigation.push('LanguageSelector')}
+          />
+          <AboutCSMenuItem
+            styles={styles}
+            text={t('about_cs')}
+            onPress={() => navigation.push('AboutCS')}
+          />
+          <LogoutMenuItem
+            styles={styles}
+            text={t('logout')}
+            onPress={confirmLogout}
+          />
         </View>
       </ScrollView>
 
-      {/* Logout Confirmation Modal */} 
+      {/* Logout Confirmation Modal */}
       <Modal
         visible={logoutModalVisible}
         animationType="slide"
         transparent
-        onRequestClose={closeModal}
-      >
-        <TouchableOpacity style={styles.bottomSheetOverlay} activeOpacity={1} onPress={closeModal}>
+        onRequestClose={closeModal}>
+        <TouchableOpacity
+          style={styles.bottomSheetOverlay}
+          activeOpacity={1}
+          onPress={closeModal}>
           <View style={styles.bottomSheetContainer}>
             <View style={styles.bottomSheetCard}>
-              <Text style={styles.bottomSheetTitle}>{t('logout_confirmation')}</Text>
-              <Text style={styles.bottomSheetMessage}>{t('logout_confirmation_message')}</Text>
-              <TouchableOpacity style={styles.logoutConfirmButton} onPress={handleLogout}>
-                <Text style={styles.logoutConfirmButtonText}>{t('yes_logout')}</Text>
+              <Text style={styles.bottomSheetTitle}>
+                {t('logout_confirmation')}
+              </Text>
+              <Text style={styles.bottomSheetMessage}>
+                {t('logout_confirmation_message')}
+              </Text>
+              <TouchableOpacity
+                style={styles.logoutConfirmButton}
+                onPress={handleLogout}>
+                <Text style={styles.logoutConfirmButtonText}>
+                  {t('yes_logout')}
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.logoutCancelButton} onPress={closeModal}>
+              <TouchableOpacity
+                style={styles.logoutCancelButton}
+                onPress={closeModal}>
                 <Text style={styles.logoutCancelButtonText}>{t('cancel')}</Text>
               </TouchableOpacity>
             </View>
@@ -345,64 +480,72 @@ const ProfileScreen = () => {
 };
 
 // Menu Item Components
-const ProfileMenuItem = ({ text, onPress, styles }) => (
+const ProfileMenuItem = ({text, onPress, styles}) => (
   <TouchableOpacity style={styles.menuItem} onPress={onPress}>
     <Ionicons name="bookmarks-outline" size={22} color={styles.iconColor} />
     <Text style={styles.menuText}>{text}</Text>
   </TouchableOpacity>
 );
 
-const HelpMenuItem = ({ text, onPress, styles }) => (
+const HelpMenuItem = ({text, onPress, styles}) => (
   <TouchableOpacity style={styles.menuItem} onPress={onPress}>
     <Ionicons name="help-circle-outline" size={22} color={styles.iconColor} />
     <Text style={styles.menuText}>{text}</Text>
   </TouchableOpacity>
 );
 
-const DeleteAccountMenuItem = ({ text, onPress, styles }) => (
+const DeleteAccountMenuItem = ({text, onPress, styles}) => (
   <TouchableOpacity style={styles.menuItem} onPress={onPress}>
-    <MaterialCommunityIcons name="delete-outline" size={22} color={styles.iconColor} />
+    <MaterialCommunityIcons
+      name="delete-outline"
+      size={22}
+      color={styles.iconColor}
+    />
     <Text style={styles.menuText}>{text}</Text>
   </TouchableOpacity>
 );
 
-const EditProfileMenuItem = ({ text, onPress, styles }) => (
+const EditProfileMenuItem = ({text, onPress, styles}) => (
   <TouchableOpacity style={styles.menuItem} onPress={onPress}>
-    <MaterialCommunityIcons name="account-outline" size={22} color={styles.iconColor} />
+    <MaterialCommunityIcons
+      name="account-outline"
+      size={22}
+      color={styles.iconColor}
+    />
     <Text style={styles.menuText}>{text}</Text>
   </TouchableOpacity>
 );
 
-const ReferEarnMenuItem = ({ text, onPress, styles }) => (
+const ReferEarnMenuItem = ({text, onPress, styles}) => (
   <TouchableOpacity style={styles.menuItem} onPress={onPress}>
     <EvilIcons name="share-apple" size={22} color={styles.iconColor} />
     <Text style={styles.menuText}>{text}</Text>
   </TouchableOpacity>
 );
 
-const AboutCSMenuItem = ({ text, onPress, styles }) => (
+const AboutCSMenuItem = ({text, onPress, styles}) => (
   <TouchableOpacity style={styles.menuItem} onPress={onPress}>
     <AntDesign name="info" size={22} color={styles.iconColor} />
     <Text style={styles.menuText}>{text}</Text>
   </TouchableOpacity>
 );
 
-const LogoutMenuItem = ({ text, onPress, styles }) => (
+const LogoutMenuItem = ({text, onPress, styles}) => (
   <TouchableOpacity style={styles.menuItem} onPress={onPress}>
     <MaterialIcons name="logout" size={22} color="#FF0000" />
     <Text style={styles.menuLogoutText}>{text}</Text>
   </TouchableOpacity>
 );
 
-const LanguageChangeMenuItem = ({ text, onPress, styles }) => (
+const LanguageChangeMenuItem = ({text, onPress, styles}) => (
   <TouchableOpacity style={styles.menuItem} onPress={onPress}>
     <Entypo name="language" size={22} color={styles.iconColor} />
-    
+
     <Text style={styles.menuText}>{text}</Text>
   </TouchableOpacity>
 );
 
-const dynamicStyles = (isDarkMode) => {
+const dynamicStyles = isDarkMode => {
   const backgroundColor = isDarkMode ? '#121212' : '#fff';
   const textColor = isDarkMode ? '#fff' : '#333';
   const inputBackground = isDarkMode ? '#333' : '#F7F7F7';
@@ -448,7 +591,7 @@ const dynamicStyles = (isDarkMode) => {
       justifyContent: 'center',
       alignItems: 'center',
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 3 },
+      shadowOffset: {width: 0, height: 3},
       shadowOpacity: 0.3,
       shadowRadius: 4,
       elevation: 4,
@@ -616,7 +759,7 @@ const dynamicStyles = (isDarkMode) => {
       borderRadius: 13,
       backgroundColor: '#fff',
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
+      shadowOffset: {width: 0, height: 2},
       shadowOpacity: 0.2,
       shadowRadius: 2,
       elevation: 3,

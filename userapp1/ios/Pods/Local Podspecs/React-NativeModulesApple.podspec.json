@@ -24,15 +24,35 @@
   "header_mappings_dir": "./",
   "source_files": "ReactCommon/**/*.{mm,cpp,h}",
   "dependencies": {
-    "glog": [],
-    "ReactCommon/turbomodule/core": [],
-    "ReactCommon/turbomodule/bridging": [],
-    "React-callinvoker": [],
-    "React-Core": [],
-    "React-cxxreact": [],
-    "React-jsi": [],
-    "React-runtimeexecutor": [],
-    "React-jsinspector": [],
-    "React-jsc": []
+    "glog": [
+
+    ],
+    "ReactCommon/turbomodule/core": [
+
+    ],
+    "ReactCommon/turbomodule/bridging": [
+
+    ],
+    "React-callinvoker": [
+
+    ],
+    "React-Core": [
+
+    ],
+    "React-cxxreact": [
+
+    ],
+    "React-jsi": [
+
+    ],
+    "React-runtimeexecutor": [
+
+    ],
+    "React-jsinspector": [
+
+    ],
+    "React-jsc": [
+
+    ]
   }
 }

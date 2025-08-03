@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {
   View,
   Text,
@@ -23,22 +23,22 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import Icon from 'react-native-vector-icons/Ionicons';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import LottieView from 'lottie-react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../context/ThemeContext';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useTheme} from '../context/ThemeContext';
 
 // 1. Import i18n initialization (loads your JSON translations)
 import '../i18n/i18n';
 // 2. Import useTranslation hook
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
 const SingleService = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { serviceName, id, service_tag } = route.params || {};
-  const { width } = useWindowDimensions();
+  const {serviceName, id, service_tag} = route.params || {};
+  const {width} = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const { isDarkMode } = useTheme();
-  const { t } = useTranslation(); // get the translation function
+  const {isDarkMode} = useTheme();
+  const {t} = useTranslation(); // get the translation function
   const styles = dynamicStyles(width, isDarkMode);
 
   // State variables
@@ -57,17 +57,17 @@ const SingleService = () => {
       // console.log('serviceName', serviceName,id);
       const response = await axios.post(
         'https://backend.clicksolver.com/api/single/service',
-        { serviceName }
+        {serviceName},
       );
-      const { relatedServices } = response.data;
+      const {relatedServices} = response.data;
       setServices(relatedServices);
- 
+
       // Initialize quantity to 0 for each service
       setQuantities(
         relatedServices.reduce((acc, item) => {
           acc[item.main_service_id] = 0;
           return acc;
-        }, {})
+        }, {}),
       );
       setLoading(false);
       // // console.log('single', relatedServices);
@@ -105,13 +105,13 @@ const SingleService = () => {
   useFocusEffect(
     useCallback(() => {
       fetchDetails().then(fetchStoredCart);
-    }, [fetchDetails, fetchStoredCart])
+    }, [fetchDetails, fetchStoredCart]),
   );
 
   // Recompute totals & store cart whenever quantities or services change
   useEffect(() => {
     let total = 0;
-    services.forEach((service) => {
+    services.forEach(service => {
       const qty = quantities[service.main_service_id] || 0;
       const cost = parseFloat(service.cost) || 0;
       total += cost * qty;
@@ -119,7 +119,7 @@ const SingleService = () => {
     setTotalAmount(total);
 
     const newBooked = services
-      .map((srv) => {
+      .map(srv => {
         const qty = quantities[srv.main_service_id];
         if (qty > 0) {
           return {
@@ -139,7 +139,10 @@ const SingleService = () => {
     if (newBooked.length > 0) {
       (async () => {
         try {
-          await EncryptedStorage.setItem(serviceName, JSON.stringify(newBooked));
+          await EncryptedStorage.setItem(
+            serviceName,
+            JSON.stringify(newBooked),
+          );
         } catch (err) {
           console.error('Error storing cart:', err);
         }
@@ -160,19 +163,17 @@ const SingleService = () => {
       const currentQty = prev[id] || 0;
       const service = services.find(s => s.main_service_id === id);
       const isInspection = service.service_tag.includes('Inspection');
-  
+
       // if Inspection, never go above 1
       if (isInspection && delta > 0 && currentQty >= 1) {
         return prev;
       }
-  
+
       // calculate new quantity (>= 0)
       const newQty = Math.max(0, currentQty + delta);
-      return { ...prev, [id]: newQty };
+      return {...prev, [id]: newQty};
     });
   };
-  
-  
 
   // Booking flow
   const handleBookNow = () => {
@@ -186,7 +187,7 @@ const SingleService = () => {
       if (cs_token) {
         setModalVisible(false);
         setBookingLoading(false);
-        navigation.push('OrderScreen', { serviceName: bookedServices });
+        navigation.push('OrderScreen', {serviceName: bookedServices});
       } else {
         setModalVisible(false);
         setBookingLoading(false);
@@ -211,16 +212,28 @@ const SingleService = () => {
   // Render
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView contentContainerStyle={{paddingBottom: 100}}>
         {/* Carousel Container */}
         <View style={styles.carouselContainer}>
           {/* Carousel Icons */}
           <View style={styles.carouselIconsContainer}>
-            <TouchableOpacity style={styles.iconButton} onPress={handleBackPress}>
-              <Icon name="arrow-back" size={24} color={isDarkMode ? '#fff' : '#000'} />
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={handleBackPress}>
+              <Icon
+                name="arrow-back"
+                size={24}
+                color={isDarkMode ? '#fff' : '#000'}
+              />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton} onPress={() => navigation.push('SearchItem')}>
-              <Icon name="search" size={24} color={isDarkMode ? '#fff' : '#000'} />
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => navigation.push('SearchItem')}>
+              <Icon
+                name="search"
+                size={24}
+                color={isDarkMode ? '#fff' : '#000'}
+              />
             </TouchableOpacity>
           </View>
           {loading ? (
@@ -233,11 +246,15 @@ const SingleService = () => {
               />
             </View>
           ) : (
-            <Swiper style={styles.wrapper} autoplay autoplayTimeout={3} showsPagination={false}>
-              {services.map((srv) => (
+            <Swiper
+              style={styles.wrapper}
+              autoplay
+              autoplayTimeout={3}
+              showsPagination={false}>
+              {services.map(srv => (
                 <View key={srv.main_service_id}>
                   <Image
-                    source={{ uri: srv.service_urls[0] }}
+                    source={{uri: srv.service_urls[0]}}
                     style={styles.carouselImage}
                     resizeMode="cover"
                   />
@@ -253,11 +270,12 @@ const SingleService = () => {
             <Text style={styles.serviceTitle}>
               {service_tag
                 ? t(`singleService_${id}`) || serviceName
-                : t(`IndivService_${id}`)  || serviceName}
+                : t(`IndivService_${id}`) || serviceName}
             </Text>
             <View style={styles.priceContainer}>
               <Text style={styles.Sparetext}>
-                {t('spare_text') || 'Spare parts, if required, will incur additional charges'}
+                {t('spare_text') ||
+                  'Spare parts, if required, will incur additional charges'}
               </Text>
             </View>
           </View>
@@ -277,33 +295,55 @@ const SingleService = () => {
               />
             </View>
           ) : (
-            services.map((srv) => (
-              <TouchableOpacity key={srv.main_service_id} style={styles.recomendedCard}>
+            services.map(srv => (
+              <TouchableOpacity
+                key={srv.main_service_id}
+                style={styles.recomendedCard}>
                 <View style={styles.recomendedCardDetails}>
                   <Text style={styles.recomendedCardDetailsHead}>
-                     { t(`singleService_${srv.main_service_id}`) || srv.service_tag }
+                    {t(`singleService_${srv.main_service_id}`) ||
+                      srv.service_tag}
                   </Text>
-                  <Text style={styles.recomendedCardDetailsDescription} numberOfLines={2}>
-                     { t(`descriptionSingleService_${srv.main_service_id}`) || srv.service_details.about }
+                  <Text
+                    style={styles.recomendedCardDetailsDescription}
+                    numberOfLines={2}>
+                    {t(`descriptionSingleService_${srv.main_service_id}`) ||
+                      srv.service_details.about}
                   </Text>
                   <Text style={styles.recomendedCardDetailsRating}>
                     ₹{srv.cost}
                   </Text>
                   <View style={styles.addButton}>
-                    <TouchableOpacity onPress={() => handleQuantityChange(srv.main_service_id, -1)}>
-                      <Entypo name="minus" size={20} color={isDarkMode ? '#ddd' : '#4a4a4a'} />
+                    <TouchableOpacity
+                      onPress={() =>
+                        handleQuantityChange(srv.main_service_id, -1)
+                      }>
+                      <Entypo
+                        name="minus"
+                        size={20}
+                        color={isDarkMode ? '#ddd' : '#4a4a4a'}
+                      />
                     </TouchableOpacity>
                     <Text style={styles.addButtonText}>
-                      {quantities[srv.main_service_id] > 0 ? quantities[srv.main_service_id] : t('add') || 'Add'}
+                      {quantities[srv.main_service_id] > 0
+                        ? quantities[srv.main_service_id]
+                        : t('add') || 'Add'}
                     </Text>
-                    <TouchableOpacity onPress={() => handleQuantityChange(srv.main_service_id, 1)}>
-                      <Entypo name="plus" size={20} color={isDarkMode ? '#ddd' : '#4a4a4a'} />
+                    <TouchableOpacity
+                      onPress={() =>
+                        handleQuantityChange(srv.main_service_id, 1)
+                      }>
+                      <Entypo
+                        name="plus"
+                        size={20}
+                        color={isDarkMode ? '#ddd' : '#4a4a4a'}
+                      />
                     </TouchableOpacity>
                   </View>
                 </View>
                 {srv.service_details.urls && (
                   <Image
-                    source={{ uri: srv.service_details.urls }}
+                    source={{uri: srv.service_details.urls}}
                     style={styles.recomendedImage}
                     resizeMode="stretch"
                   />
@@ -317,9 +357,15 @@ const SingleService = () => {
       {/* Bottom Cart Bar */}
       {totalAmount > 0 && (
         <View style={styles.cartContainer}>
-          <Text style={styles.amount}>{t('total_amount') || 'Total:'} ₹{totalAmount}</Text>
-          <TouchableOpacity onPress={handleBookNow} style={styles.buttonContainer}>
-            <Text style={styles.buttonText}>{t('view_cart') || 'View Cart'}</Text>
+          <Text style={styles.amount}>
+            {t('total_amount') || 'Total:'} ₹{totalAmount}
+          </Text>
+          <TouchableOpacity
+            onPress={handleBookNow}
+            style={styles.buttonContainer}>
+            <Text style={styles.buttonText}>
+              {t('view_cart') || 'View Cart'}
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -331,52 +377,76 @@ const SingleService = () => {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalContainer}>
-          <TouchableOpacity style={styles.crossIconContainer} onPress={() => setModalVisible(false)}>
+          <TouchableOpacity
+            style={styles.crossIconContainer}
+            onPress={() => setModalVisible(false)}>
             <View style={styles.crossIcon}>
-              <Entypo name="cross" size={20} color={isDarkMode ? '#fff' : '#4a4a4a'} />
+              <Entypo
+                name="cross"
+                size={20}
+                color={isDarkMode ? '#fff' : '#4a4a4a'}
+              />
             </View>
           </TouchableOpacity>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{t('booked_services') || 'Booked Services'}</Text>
+            <Text style={styles.modalTitle}>
+              {t('booked_services') || 'Booked Services'}
+            </Text>
             <ScrollView
-            style={{ flex: 1, width: '100%' }}
-            contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}>
+              style={{flex: 1, width: '100%'}}
+              contentContainerStyle={{flexGrow: 1, paddingBottom: 20}}>
               <View style={styles.itemContainers}>
                 {bookedServices.map((srv, idx) => (
-                  
                   <View key={idx} style={styles.itemContainer}>
-                   
                     {srv.url ? (
                       <Image
-                        source={{ uri: srv.url }}
+                        source={{uri: srv.url}}
                         style={styles.recomendedModalImage}
                         resizeMode="stretch"
                       />
                     ) : (
                       <Image
-                        source={{ uri: 'https://postimage.png' }}
+                        source={{uri: 'https://postimage.png'}}
                         style={styles.recomendedModalImage}
                         resizeMode="stretch"
                       />
                     )}
                     <View style={styles.descriptionContainer}>
-                      <Text style={styles.recomendedCardDetailsHead} numberOfLines={3}>
-                      { t(`singleService_${srv.main_service_id}`) || srv.serviceName }
-                        
+                      <Text
+                        style={styles.recomendedCardDetailsHead}
+                        numberOfLines={3}>
+                        {t(`singleService_${srv.main_service_id}`) ||
+                          srv.serviceName}
                       </Text>
-                      <Text style={styles.recomendedCardDetailsDescription} numberOfLines={2}>
-                      { t(`descriptionSingleService_${srv.main_service_id}`) || srv.description }
-                 
+                      <Text
+                        style={styles.recomendedCardDetailsDescription}
+                        numberOfLines={2}>
+                        {t(`descriptionSingleService_${srv.main_service_id}`) ||
+                          srv.description}
                       </Text>
                       <View style={styles.addButton}>
-                        <TouchableOpacity onPress={() => handleQuantityChange(srv.main_service_id, -1)}>
-                          <Entypo name="minus" size={20} color={isDarkMode ? '#ddd' : '#4a4a4a'} />
+                        <TouchableOpacity
+                          onPress={() =>
+                            handleQuantityChange(srv.main_service_id, -1)
+                          }>
+                          <Entypo
+                            name="minus"
+                            size={20}
+                            color={isDarkMode ? '#ddd' : '#4a4a4a'}
+                          />
                         </TouchableOpacity>
                         <Text style={styles.addButtonText}>
                           {quantities[srv.main_service_id]}
                         </Text>
-                        <TouchableOpacity onPress={() => handleQuantityChange(srv.main_service_id, 1)}>
-                          <Entypo name="plus" size={20} color={isDarkMode ? '#ddd' : '#4a4a4a'} />
+                        <TouchableOpacity
+                          onPress={() =>
+                            handleQuantityChange(srv.main_service_id, 1)
+                          }>
+                          <Entypo
+                            name="plus"
+                            size={20}
+                            color={isDarkMode ? '#ddd' : '#4a4a4a'}
+                          />
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -384,12 +454,20 @@ const SingleService = () => {
                 ))}
               </View>
             </ScrollView>
-            <Text style={styles.modalTotal}>{t('total_amount') || 'Total Amount:'} ₹{totalAmount}</Text>
+            <Text style={styles.modalTotal}>
+              {t('total_amount') || 'Total Amount:'} ₹{totalAmount}
+            </Text>
             {bookingLoading ? (
-              <ActivityIndicator size="large" color="#FF5720" style={{ marginVertical: 20 }} />
+              <ActivityIndicator
+                size="large"
+                color="#FF5720"
+                style={{marginVertical: 20}}
+              />
             ) : (
               <TouchableOpacity style={styles.bookButton} onPress={bookService}>
-                <Text style={styles.modalButtonText}>{t('view_cart') || 'View Cart'}</Text>
+                <Text style={styles.modalButtonText}>
+                  {t('view_cart') || 'View Cart'}
+                </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -404,7 +482,9 @@ const SingleService = () => {
         onRequestClose={() => setLoginModalVisible(false)}>
         <View style={styles.loginModalOverlay}>
           <View style={styles.loginModalContent}>
-            <Text style={styles.loginModalTitle}>{t('login_required') || 'Login Required'}</Text>
+            <Text style={styles.loginModalTitle}>
+              {t('login_required') || 'Login Required'}
+            </Text>
             <Text style={styles.loginModalMessage}>
               {t('login_required_message') ||
                 'You need to log in to book services. Would you like to log in now?'}
@@ -413,15 +493,19 @@ const SingleService = () => {
               <TouchableOpacity
                 style={styles.loginCancelButton}
                 onPress={() => setLoginModalVisible(false)}>
-                <Text style={styles.loginCancelText}>{t('cancel') || 'Cancel'}</Text>
+                <Text style={styles.loginCancelText}>
+                  {t('cancel') || 'Cancel'}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.loginProceedButton}
                 onPress={() => {
                   setLoginModalVisible(false);
-                  navigation.push('Login', { serviceName, id });
+                  navigation.push('Login', {serviceName, id});
                 }}>
-                <Text style={styles.loginProceedText}>{t('login') || 'Login'}</Text>
+                <Text style={styles.loginProceedText}>
+                  {t('login') || 'Login'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -515,6 +599,7 @@ const dynamicStyles = (width, isDarkMode) => {
     },
     recomendedContainer: {
       padding: isTablet ? 25 : 20,
+      paddingBottom: 0,
       backgroundColor: isDarkMode ? '#121212' : '#ffffff',
     },
     recommendedLoaderContainer: {
@@ -591,7 +676,7 @@ const dynamicStyles = (width, isDarkMode) => {
       paddingHorizontal: isTablet ? 30 : 25,
       alignItems: 'center',
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: -2 },
+      shadowOffset: {width: 0, height: -2},
       shadowOpacity: 0.1,
       shadowRadius: 5,
       elevation: 10,

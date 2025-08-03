@@ -18,9 +18,15 @@
     "MapboxMaps": [
       "~> 10.19.0"
     ],
-    "Turf": [],
-    "React-Core": [],
-    "React": []
+    "Turf": [
+
+    ],
+    "React-Core": [
+
+    ],
+    "React": [
+
+    ]
   },
   "swift_versions": "5.0",
   "default_subspecs": [

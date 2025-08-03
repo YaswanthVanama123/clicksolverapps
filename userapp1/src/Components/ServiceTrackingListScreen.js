@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -12,27 +12,27 @@ import {
   FlatList,
 } from 'react-native';
 import '../i18n/i18n';
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LottieView from 'lottie-react-native';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
-import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
+import {useNavigation, useRoute, CommonActions} from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { SafeAreaView } from 'react-native-safe-area-context'; 
+import {SafeAreaView} from 'react-native-safe-area-context';
 import messaging from '@react-native-firebase/messaging';
-import { useTheme } from '../context/ThemeContext';
+import {useTheme} from '../context/ThemeContext';
 import i18n from '../i18n/i18n';
 
-const ServiceItemCard = ({ item, styles, tab }) => {
+const ServiceItemCard = ({item, styles, tab}) => {
   const navigation = useNavigation();
-  const { t } = useTranslation();
+  const {t} = useTranslation();
 
   const isCancelled =
-    item.complete_status === "cancel" ||
-    item.complete_status === "usercanceled" ||
-    item.complete_status === "workercanceled";
+    item.complete_status === 'cancel' ||
+    item.complete_status === 'usercanceled' ||
+    item.complete_status === 'workercanceled';
 
   const buttonLabel = isCancelled
     ? t('cancelled') || 'Cancelled'
@@ -42,7 +42,7 @@ const ServiceItemCard = ({ item, styles, tab }) => {
   const serviceName =
     item.service_booked && item.service_booked.length > 0
       ? item.service_booked[0]?.serviceName
-      : t('unknown_service') || 'Unknown Service'; 
+      : t('unknown_service') || 'Unknown Service';
 
   const imageUrl =
     item.service_booked && item.service_booked.length > 0
@@ -53,7 +53,7 @@ const ServiceItemCard = ({ item, styles, tab }) => {
     <View style={styles.cardContainer}>
       <Image
         style={styles.cardImage}
-        source={imageUrl ? { uri: imageUrl } : null}
+        source={imageUrl ? {uri: imageUrl} : null}
       />
       <View style={styles.cardInfo}>
         <Text style={styles.cardTitle} numberOfLines={1}>
@@ -77,9 +77,12 @@ const ServiceItemCard = ({ item, styles, tab }) => {
             }
           }
         }}
-        disabled={disabled}
-      >
-        <Text style={[styles.cardButtonText, disabled && styles.cardButtonTextDisabled]}>
+        disabled={disabled}>
+        <Text
+          style={[
+            styles.cardButtonText,
+            disabled && styles.cardButtonTextDisabled,
+          ]}>
           {buttonLabel}
         </Text>
       </TouchableOpacity>
@@ -87,8 +90,8 @@ const ServiceItemCard = ({ item, styles, tab }) => {
   );
 };
 
-const ErrorRetryView = ({ onRetry, styles }) => {
-  const { t } = useTranslation();
+const ErrorRetryView = ({onRetry, styles}) => {
+  const {t} = useTranslation();
   return (
     <View style={styles.errorContainer}>
       <Icon name="error-outline" size={48} color="#FF0000" />
@@ -103,9 +106,9 @@ const ErrorRetryView = ({ onRetry, styles }) => {
 };
 
 const ServiceTrackingListScreen = () => {
-  const { width, height } = useWindowDimensions();
-  const { isDarkMode } = useTheme();
-  const { t } = useTranslation();
+  const {width, height} = useWindowDimensions();
+  const {isDarkMode} = useTheme();
+  const {t} = useTranslation();
   const styles = dynamicStyles(width, height, isDarkMode);
   const navigation = useNavigation();
 
@@ -146,11 +149,11 @@ const ServiceTrackingListScreen = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       // Sort data in descending order using the created_at date
       const sortedData = [...response.data].sort(
-        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        (a, b) => new Date(b.created_at) - new Date(a.created_at),
       );
       setServiceData(sortedData);
       setFilteredData(sortedData); // Initially display all data
@@ -177,7 +180,7 @@ const ServiceTrackingListScreen = () => {
     return () => unsubscribe();
   }, []);
 
-  const formatDate = (dateString) => {
+  const formatDate = dateString => {
     if (!dateString) return t('pending') || 'Pending';
     const date = new Date(dateString);
     return new Intl.DateTimeFormat(i18n.language, {
@@ -190,25 +193,27 @@ const ServiceTrackingListScreen = () => {
     }).format(date);
   };
 
-  const handleCardPress = (trackingId) => {
-    navigation.push('ServiceTrackingItem', { tracking_id: trackingId });
+  const handleCardPress = trackingId => {
+    navigation.push('ServiceTrackingItem', {tracking_id: trackingId});
   };
 
-  const toggleFilter = (statusKey) => {
+  const toggleFilter = statusKey => {
     const updatedFilters = selectedFilters.includes(statusKey)
-      ? selectedFilters.filter((s) => s !== statusKey)
+      ? selectedFilters.filter(s => s !== statusKey)
       : [...selectedFilters, statusKey];
 
     setSelectedFilters(updatedFilters);
 
     const filtered =
       updatedFilters.length > 0
-        ? serviceData.filter((item) => updatedFilters.includes(item.service_status))
+        ? serviceData.filter(item =>
+            updatedFilters.includes(item.service_status),
+          )
         : serviceData;
 
     // Maintain descending order after filtering
     const sortedFiltered = [...filtered].sort(
-      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      (a, b) => new Date(b.created_at) - new Date(a.created_at),
     );
     setFilteredData(sortedFiltered);
   };
@@ -219,11 +224,10 @@ const ServiceTrackingListScreen = () => {
     }
   };
 
-  const renderItem = ({ item }) => (
+  const renderItem = ({item}) => (
     <TouchableOpacity
       style={styles.itemContainer}
-      onPress={() => handleCardPress(item.tracking_id)}
-    >
+      onPress={() => handleCardPress(item.tracking_id)}>
       <View style={styles.serviceIconContainer}>
         <MaterialCommunityIcons
           name={
@@ -258,8 +262,7 @@ const ServiceTrackingListScreen = () => {
             : item.service_status === 'Work started'
             ? styles.inProgress
             : styles.onTheWay,
-        ]}
-      >
+        ]}>
         <Text style={styles.statusText}>
           {/* {item.service_status === 'Work Completed'
             ? t('work_completed') || 'Completed'
@@ -268,24 +271,33 @@ const ServiceTrackingListScreen = () => {
             : item.service_status === 'Collected Item'
             ? t('collected_item') || 'Item Collected'
             : t('on_the_way') || 'On the Way'} */}
-            View
+          View
         </Text>
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <TouchableWithoutFeedback onPress={handleOutsidePress}>
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.headerContainer}>
-            <Icon name="arrow-back" size={24} color={isDarkMode ? '#fff' : '#000'} />
+            <Icon
+              name="arrow-back"
+              size={24}
+              color={isDarkMode ? '#fff' : '#000'}
+            />
             <Text style={styles.headerTitle}>
               {t('service_tracking') || 'Service Tracking'}
             </Text>
-            <TouchableOpacity onPress={() => setIsFilterVisible(!isFilterVisible)}>
-              <Icon name="filter-list" size={24} color={isDarkMode ? '#fff' : '#000'} />
+            <TouchableOpacity
+              onPress={() => setIsFilterVisible(!isFilterVisible)}>
+              <Icon
+                name="filter-list"
+                size={24}
+                color={isDarkMode ? '#fff' : '#000'}
+              />
             </TouchableOpacity>
           </View>
 
@@ -299,8 +311,7 @@ const ServiceTrackingListScreen = () => {
                 <TouchableOpacity
                   key={index}
                   style={styles.dropdownOption}
-                  onPress={() => toggleFilter(option)}
-                >
+                  onPress={() => toggleFilter(option)}>
                   <Icon
                     name={
                       selectedFilters.includes(option)
@@ -308,7 +319,7 @@ const ServiceTrackingListScreen = () => {
                         : 'check-box-outline-blank'
                     }
                     size={20}
-                    color= {isDarkMode ? '#fff' : '#4a4a4a'}
+                    color={isDarkMode ? '#fff' : '#4a4a4a'}
                   />
                   <Text style={styles.dropdownText}>
                     {statusTranslationMapping[option]}
@@ -344,7 +355,9 @@ const ServiceTrackingListScreen = () => {
               <FlatList
                 data={filteredData}
                 renderItem={renderItem}
-                keyExtractor={(item, index) => `${item.notification_id}_${index}`}
+                keyExtractor={(item, index) =>
+                  `${item.notification_id}_${index}`
+                }
                 contentContainerStyle={styles.listContainer}
               />
             )}
@@ -377,7 +390,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
       // shadowOffset: { width: 0, height: 2 },
       // shadowOpacity: 0.2,
       // shadowRadius: 4,
-      backgroundColor: isDarkMode ? '#333' : '#ffffff',
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
       zIndex: 1,
     },
     headerTitle: {
@@ -395,7 +408,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
       padding: isTablet ? 12 : 10,
       elevation: 1,
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
+      shadowOffset: {width: 0, height: 1},
       shadowOpacity: 0.1,
       shadowRadius: 1,
       zIndex: 10,
@@ -423,7 +436,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
     },
     loadingContainer: {
       flex: 1,
-      justifyContent: 'center', 
+      justifyContent: 'center',
       alignItems: 'center',
     },
     loadingAnimation: {
@@ -466,10 +479,10 @@ const dynamicStyles = (width, height, isDarkMode) => {
       borderRadius: 10,
       padding: isTablet ? 20 : 16,
       marginBottom: isTablet ? 20 : 16,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
+      // shadowColor: '#000',
+      // shadowOffset: {width: 0, height: 2},
+      // shadowOpacity: 0.2,
+      // shadowRadius: 4,
     },
     serviceIconContainer: {
       width: isTablet ? 50 : 40,

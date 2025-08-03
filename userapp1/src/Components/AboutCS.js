@@ -1,61 +1,83 @@
 import React from 'react';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import {
+  ScrollView,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useNavigation } from '@react-navigation/native';
-import { useTheme } from '../context/ThemeContext';
+import {useNavigation} from '@react-navigation/native';
+import {useTheme} from '../context/ThemeContext';
 // Import the translation hook
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 const LOGO_URL = 'https://i.postimg.cc/hjjpy2SW/Button-1.png';
 
 const AboutCS = () => {
   const navigation = useNavigation();
-  const { isDarkMode } = useTheme();
-  const { t } = useTranslation();
+  const {isDarkMode} = useTheme();
+  const {t} = useTranslation();
   const styles = dynamicStyles(isDarkMode);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {/* Header with back arrow */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon name="arrow-back" size={24} color={isDarkMode ? '#fff' : "#333"} />
-        </TouchableOpacity>
-        <Text style={styles.headerText}>
-          {t('about_us') || 'About Us'}
-        </Text>
-      </View>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <ScrollView contentContainerStyle={styles.container}>
+        {/* Header with back arrow */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}>
+            <Icon
+              name="arrow-back"
+              size={24}
+              color={isDarkMode ? '#fff' : '#333'}
+            />
+          </TouchableOpacity>
+          <Text style={styles.headerText}>{t('about_us') || 'About Us'}</Text>
+        </View>
 
-      {/* Content */}
-      <View style={styles.content}>
-        <Text style={styles.description}>
-          {t('about_description_1') ||
-            'Welcome to Clicksolver! We are dedicated to delivering innovative solutions that streamline your digital experience. Our platform is designed to empower you to solve complex challenges with simple clicks, enhancing productivity and driving success.'}
-        </Text>
-        <Text style={styles.description}>
-          {t('about_description_2') ||
-            'At Clicksolver, our mission is to simplify tasks and transform the way you work. With a focus on intuitive design and cutting-edge technology, we strive to provide tools that are both powerful and user-friendly.'}
-        </Text>
-        <Text style={styles.description}>
-          {t('about_description_3') ||
-            'Thank you for choosing Clicksolver as your trusted partner in navigating the digital world. We are committed to continuous improvement and excellence, ensuring that your journey with us is as smooth and rewarding as possible.'}
-        </Text>
-        {/* New founder and year info */}
-        <Text style={styles.description}>
-          {t('about_founded') || 'Founded in 2025 by Yaswanth Vanama.'}
-        </Text>
-      </View>
+        {/* Content */}
+        <View style={styles.content}>
+          <Text style={styles.description}>
+            {t('about_description_1') ||
+              'Welcome to Clicksolver! We are dedicated to delivering innovative solutions that streamline your digital experience. Our platform is designed to empower you to solve complex challenges with simple clicks, enhancing productivity and driving success.'}
+          </Text>
+          <Text style={styles.description}>
+            {t('about_description_2') ||
+              'At Clicksolver, our mission is to simplify tasks and transform the way you work. With a focus on intuitive design and cutting-edge technology, we strive to provide tools that are both powerful and user-friendly.'}
+          </Text>
+          <Text style={styles.description}>
+            {t('about_description_3') ||
+              'Thank you for choosing Clicksolver as your trusted partner in navigating the digital world. We are committed to continuous improvement and excellence, ensuring that your journey with us is as smooth and rewarding as possible.'}
+          </Text>
+          {/* New founder and year info */}
+          <Text style={styles.description}>
+            {t('about_founded') || 'Founded in 2025 by Yaswanth Vanama.'}
+          </Text>
+        </View>
 
-      {/* Logo at the bottom center */}
-      <View style={styles.logoContainer}>
-        <Image source={{ uri: LOGO_URL }} style={styles.logo} resizeMode="contain" />
-      </View>
-    </ScrollView>
+        {/* Logo at the bottom center */}
+        <View style={styles.logoContainer}>
+          <Image
+            source={{uri: LOGO_URL}}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
-const dynamicStyles = (isDarkMode) =>
+const dynamicStyles = isDarkMode =>
   StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
+    },
     container: {
       flexGrow: 1,
       padding: 20,

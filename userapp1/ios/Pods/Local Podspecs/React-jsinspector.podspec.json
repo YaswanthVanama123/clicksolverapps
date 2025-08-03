@@ -23,15 +23,23 @@
   },
   "module_name": "jsinspector_modern",
   "dependencies": {
-    "glog": [],
+    "glog": [
+
+    ],
     "RCT-Folly": [
       "2024.01.01.00"
     ],
-    "React-featureflags": [],
-    "DoubleConversion": [],
+    "React-featureflags": [
+
+    ],
+    "DoubleConversion": [
+
+    ],
     "React-runtimeexecutor": [
       "0.74.3"
     ],
-    "React-jsi": []
+    "React-jsi": [
+
+    ]
   }
 }

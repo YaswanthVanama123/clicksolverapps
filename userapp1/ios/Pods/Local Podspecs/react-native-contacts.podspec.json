@@ -21,6 +21,8 @@
     "Photos"
   ],
   "dependencies": {
-    "React-Core": []
+    "React-Core": [
+
+    ]
   }
 }

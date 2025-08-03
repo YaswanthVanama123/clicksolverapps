@@ -18,12 +18,18 @@
   },
   "source_files": "ios/**/*.{h,m}",
   "dependencies": {
-    "React-Core": [],
-    "RNFBApp": [],
+    "React-Core": [
+
+    ],
+    "RNFBApp": [
+
+    ],
     "Firebase/Crashlytics": [
       "11.11.0"
     ],
-    "FirebaseCoreExtension": []
+    "FirebaseCoreExtension": [
+
+    ]
   },
   "static_framework": true
 }

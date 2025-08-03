@@ -4,6 +4,7 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  SafeAreaView,
 } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -76,9 +77,22 @@ const LanguageSelector = () => {
   };
 
   return (
+    <SafeAreaView style={styles.safeArea}>
+            <View style={styles.header}>
+              <TouchableOpacity onPress={() => navigation.goBack()}>
+                <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#fff' : '#212121'} paddingLeft={20}/>
+              </TouchableOpacity>
+              {/* <Text style={styles.headerText}>Languages</Text> */}
+              {/* <Text style={styles.headerTitle}>
+                {t('help_support') || 'Help & Support'}
+              </Text> 
+              <TouchableOpacity onPress={handleEmailPress}>
+                <Ionicons name="mail-outline" size={24} color="#ff4500" />
+              </TouchableOpacity> */}
+            </View>
     <View style={styles.container}>
       {/* Header */}
-      <Text style={styles.headerText}>Languages</Text>
+
 
       {/* Currently selected language */}
       <Text style={styles.sectionTitle}>Selected Language</Text>
@@ -110,11 +124,25 @@ const LanguageSelector = () => {
         <Text style={styles.saveButtonText}>Save Settings</Text>
       </TouchableOpacity>
     </View>
+    </SafeAreaView>
   );
 };
 
 const dynamicStyles = (isDarkMode) =>
   StyleSheet.create({
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      // paddingHorizontal: isTablet ? 24 : 20,
+      // paddingVertical: isTablet ? 14 : 10,
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
+      elevation: 1,
+    },
+    safeArea: {
+      flex: 1,
+      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
+    },
     container: {
       flex: 1,
       backgroundColor: isDarkMode ? '#121212' : '#F5F6FA',

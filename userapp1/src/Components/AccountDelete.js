@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -12,21 +12,21 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
-import { useRoute, useNavigation, CommonActions } from '@react-navigation/native';
+import {useRoute, useNavigation, CommonActions} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { useTheme } from '../context/ThemeContext';
+import {useTheme} from '../context/ThemeContext';
 // Import the translation hook from react-i18next
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
 const AccountDelete = () => {
-  const { width, height } = useWindowDimensions();
-  const { isDarkMode } = useTheme();
+  const {width, height} = useWindowDimensions();
+  const {isDarkMode} = useTheme();
   const styles = dynamicStyles(width, height, isDarkMode);
 
   const navigation = useNavigation();
-  const { t } = useTranslation();
+  const {t} = useTranslation();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -37,7 +37,7 @@ const AccountDelete = () => {
   const route = useRoute();
 
   const fetchProfileDetails = async () => {
-    const { details } = route.params;
+    const {details} = route.params;
     setEmail(details.email);
     setPhone(details.phoneNumber);
     setFullName(details.name);
@@ -56,10 +56,10 @@ const AccountDelete = () => {
 
       const response = await axios.post(
         `https://backend.clicksolver.com/api/user/details/delete`,
-        { name: fullName, email, phone },
+        {name: fullName, email, phone},
         {
-          headers: { Authorization: `Bearer ${jwtToken}` },
-        }
+          headers: {Authorization: `Bearer ${jwtToken}`},
+        },
       );
 
       if (response.status === 200) {
@@ -80,7 +80,9 @@ const AccountDelete = () => {
     try {
       const user_fcm_token = await EncryptedStorage.getItem('user_fcm_token');
       if (user_fcm_token) {
-        await axios.post('https://backend.clicksolver.com/api/userLogout', { user_fcm_token });
+        await axios.post('https://backend.clicksolver.com/api/userLogout', {
+          user_fcm_token,
+        });
       }
       await EncryptedStorage.removeItem('cs_token');
       await EncryptedStorage.removeItem('user_fcm_token');
@@ -89,7 +91,7 @@ const AccountDelete = () => {
 
       navigation.reset({
         index: 0,
-        routes: [{ name: 'Login' }],
+        routes: [{name: 'Login'}],
       });
     } catch (error) {
       console.error('Error logging out:', error);
@@ -128,9 +130,7 @@ const AccountDelete = () => {
 
         <View style={styles.form}>
           <View>
-            <Text style={styles.label}>
-              {t('full_name') || 'Full Name'}
-            </Text>
+            <Text style={styles.label}>{t('full_name') || 'Full Name'}</Text>
             <TextInput
               style={styles.input}
               value={fullName}
@@ -182,8 +182,7 @@ const AccountDelete = () => {
           <TouchableOpacity
             style={styles.button}
             onPress={openConfirmationModal}
-            disabled={updateLoading}
-          >
+            disabled={updateLoading}>
             {updateLoading ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
@@ -200,8 +199,7 @@ const AccountDelete = () => {
         animationType="slide"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
+        onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
@@ -213,17 +211,15 @@ const AccountDelete = () => {
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: '#ccc' }]}
-                onPress={() => setModalVisible(false)}
-              >
+                style={[styles.modalButton, {backgroundColor: '#ccc'}]}
+                onPress={() => setModalVisible(false)}>
                 <Text style={styles.modalButtonText}>
                   {t('cancel') || 'Cancel'}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: '#FF4500' }]}
-                onPress={handleUpdate}
-              >
+                style={[styles.modalButton, {backgroundColor: '#FF4500'}]}
+                onPress={handleUpdate}>
                 <Text style={styles.modalButtonText}>
                   {t('delete') || 'Delete'}
                 </Text>
@@ -259,6 +255,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
     },
     form: {
       marginTop: isTablet ? 20 : 10,
+      paddingHorizontal: 10,
       flexDirection: 'column',
       gap: isTablet ? 15 : 10,
     },
@@ -291,6 +288,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
     },
     inputText: {
       flex: 1,
+      height: isTablet ? 55 : 50,
       marginLeft: isTablet ? 15 : 10,
       color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
@@ -318,6 +316,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
     },
     phoneInput: {
       flex: 1,
+      height: isTablet ? 55 : 50,
       color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 18 : 16,

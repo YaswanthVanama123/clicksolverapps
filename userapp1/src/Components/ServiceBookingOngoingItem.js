@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, {useEffect, useState, useMemo, useCallback} from 'react';
 import {
   View,
   Text,
@@ -12,24 +12,24 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome6';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useNavigation, CommonActions, useRoute } from '@react-navigation/native';
+import {useNavigation, CommonActions, useRoute} from '@react-navigation/native';
 import axios from 'axios';
 import Entypo from 'react-native-vector-icons/Entypo';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../context/ThemeContext';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {useTheme} from '../context/ThemeContext';
 // Import translation hook
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
 const ServiceBookingOngoingItem = () => {
-  const { width, height } = useWindowDimensions();
-  const { isDarkMode } = useTheme();
+  const {width, height} = useWindowDimensions();
+  const {isDarkMode} = useTheme();
   const styles = dynamicStyles(width, height, isDarkMode);
-  const { t } = useTranslation();
+  const {t} = useTranslation();
 
   const [details, setDetails] = useState({});
   const [serviceArray, setServiceArray] = useState([]);
-  const { tracking_id } = useRoute().params;
+  const {tracking_id} = useRoute().params;
 
   const [paymentExpanded, setPaymentExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -65,7 +65,9 @@ const ServiceBookingOngoingItem = () => {
 
   const getTimelineData = useMemo(() => {
     const statusKeys = Object.keys(status);
-    const currentStatusIndex = statusKeys.findIndex((key) => status[key] === null);
+    const currentStatusIndex = statusKeys.findIndex(
+      key => status[key] === null,
+    );
     return statusKeys.map((statusKey, index) => ({
       title: statusDisplayNames[statusKey],
       time: status[statusKey] || t('pending') || 'Pending',
@@ -87,14 +89,14 @@ const ServiceBookingOngoingItem = () => {
         // console.log("track", tracking_id);
         const response = await axios.post(
           `https://backend.clicksolver.com/api/service/ongoing/booking/item/details`,
-          { tracking_id },
-        ); 
-        const { data } = response.data; 
+          {tracking_id},
+        );
+        const {data} = response.data;
         // console.log("ongoingdata", data);
         setStatus(data.time || {});
         setDetails(data);
         setServiceArray(data.service_booked);
-      } catch (error) { 
+      } catch (error) {
         console.error('Error fetching bookings data:', error);
       } finally {
         setLoading(false);
@@ -127,8 +129,8 @@ const ServiceBookingOngoingItem = () => {
               navigation.dispatch(
                 CommonActions.reset({
                   index: 0,
-                  routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-                })
+                  routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+                }),
               );
             }}
           />
@@ -163,8 +165,8 @@ const ServiceBookingOngoingItem = () => {
             <View style={styles.innerContainer}>
               {serviceArray.map((service, index) => (
                 <Text key={index} style={styles.serviceDetail}>
-                  { t(`singleService_${service.main_service_id}`) || service.serviceName }
-             
+                  {t(`singleService_${service.main_service_id}`) ||
+                    service.serviceName}
                 </Text>
               ))}
             </View>
@@ -182,7 +184,7 @@ const ServiceBookingOngoingItem = () => {
             <View style={styles.innerContainerLine}>
               {getTimelineData.map((item, index) => (
                 <View key={index} style={styles.timelineItem}>
-                  <View style={{ alignItems: 'center' }}>
+                  <View style={{alignItems: 'center'}}>
                     <MaterialCommunityIcons
                       name="circle"
                       size={14}
@@ -193,16 +195,17 @@ const ServiceBookingOngoingItem = () => {
                       <View
                         style={[
                           styles.lineSegment,
-                          { backgroundColor: getTimelineData[index + 1].iconColor },
+                          {
+                            backgroundColor:
+                              getTimelineData[index + 1].iconColor,
+                          },
                         ]}
                       />
                     )}
                   </View>
                   <View style={styles.timelineTextContainer}>
                     <Text style={styles.timelineText}>{item.title}</Text>
-                    <Text style={styles.timelineTime}>
-                      {item.time}
-                    </Text>
+                    <Text style={styles.timelineTime}>{item.time}</Text>
                   </View>
                 </View>
               ))}
@@ -213,9 +216,7 @@ const ServiceBookingOngoingItem = () => {
 
           {/* Address */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>
-              {t('address') || 'Address'}
-            </Text>
+            <Text style={styles.sectionTitle}>{t('address') || 'Address'}</Text>
             <View style={styles.addressContainer}>
               <Image
                 source={{
@@ -235,12 +236,13 @@ const ServiceBookingOngoingItem = () => {
               style={styles.paymentSummaryContainer}
               onPress={togglePaymentDetails}
               accessibilityRole="button"
-              accessibilityLabel={t('toggle_payment_details') || 'Toggle Payment Details'}
-            >
+              accessibilityLabel={
+                t('toggle_payment_details') || 'Toggle Payment Details'
+              }>
               <Text style={styles.sectionPaymentTitle}>
                 {t('payment_details') || 'Payment Details'}
               </Text>
-              <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
+              <Animated.View style={{transform: [{rotate: rotateInterpolate}]}}>
                 <Entypo name="chevron-small-right" size={20} color="#ff4500" />
               </Animated.View>
             </TouchableOpacity>
@@ -253,8 +255,8 @@ const ServiceBookingOngoingItem = () => {
                   {serviceArray.map((service, index) => (
                     <View key={index} style={styles.paymentRow}>
                       <Text style={styles.paymentLabelHead}>
-                      { t(`singleService_${service.main_service_id}`) || service.serviceName }
-                  
+                        {t(`singleService_${service.main_service_id}`) ||
+                          service.serviceName}
                       </Text>
                       <Text style={styles.paymentValue}>
                         ₹{service.cost.toFixed(2)}
@@ -266,14 +268,18 @@ const ServiceBookingOngoingItem = () => {
                       <Text style={styles.paymentLabel}>
                         {t('cashback') || 'Cashback (5%)'}
                       </Text>
-                      <Text style={styles.paymentValue}>₹{details.discount}</Text>
+                      <Text style={styles.paymentValue}>
+                        ₹{details.discount}
+                      </Text>
                     </View>
                   )}
                   <View style={styles.paymentRow}>
                     <Text style={styles.paymentLabel}>
                       {t('grand_total') || 'Grand Total'}
                     </Text>
-                    <Text style={styles.paymentValue}>₹{details.total_cost}</Text>
+                    <Text style={styles.paymentValue}>
+                      ₹{details.total_cost}
+                    </Text>
                   </View>
                 </View>
               </>
@@ -282,9 +288,7 @@ const ServiceBookingOngoingItem = () => {
 
           {/* Pay Button */}
           <TouchableOpacity style={styles.payButton}>
-            <Text style={styles.payButtonText}>
-              {t('pay') || 'PAY'}
-            </Text>
+            <Text style={styles.payButtonText}>{t('pay') || 'PAY'}</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -309,11 +313,11 @@ const dynamicStyles = (width, height, isDarkMode) => {
       alignItems: 'center',
       padding: isTablet ? 20 : 16,
       paddingBottom: isTablet ? 16 : 12,
-      elevation: 2,
-      shadowColor: '#1D2951',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
+      elevation: Platform.OS === 'ios' ? 0 : 2,
+      // shadowColor: '#1D2951',
+      // shadowOffset: {width: 0, height: 2},
+      // shadowOpacity: 0.2,
+      // shadowRadius: 4,
       backgroundColor: isDarkMode ? '#333' : '#ffffff',
     },
     backIcon: {
@@ -408,7 +412,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
       alignItems: 'flex-start',
     },
     timelineIcon: {
-      marginBottom: 5,
+      // marginBottom: 5,
     },
     timelineTextContainer: {
       flex: 1,

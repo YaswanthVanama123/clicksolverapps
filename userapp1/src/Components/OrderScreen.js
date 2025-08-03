@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef  } from 'react';
+import React, {useEffect, useState, useCallback, useRef} from 'react';
 import {
   View,
   Text,
@@ -10,29 +10,33 @@ import {
   Image,
   useWindowDimensions,
 } from 'react-native';
-import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/FontAwesome6';
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import Entypo from 'react-native-vector-icons/Entypo';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
-import { useTheme } from '../context/ThemeContext';
+import {useTheme} from '../context/ThemeContext';
 
 // 1) Import i18n so translations are loaded
 import '../i18n/i18n';
 // 2) Import the useTranslation hook
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
 const OrderScreen = () => {
-  const { width } = useWindowDimensions();
-  const { isDarkMode } = useTheme();
+  const {width} = useWindowDimensions();
+  const {isDarkMode} = useTheme();
   const navigation = useNavigation();
   const route = useRoute();
   // 3) Destructure serviceName from route params
-  const { serviceName } = route.params || [];
+  const {serviceName} = route.params || [];
 
   // 4) Use the useTranslation hook
-  const { t } = useTranslation();
+  const {t} = useTranslation();
 
   // 5) Dynamic styles based on theme + device width
   const styles = dynamicStyles(width, isDarkMode);
@@ -47,11 +51,14 @@ const OrderScreen = () => {
   const [savings, setSavings] = useState(0);
   const [selectedTip, setSelectedTip] = useState(0);
   const [errorModalVisible, setErrorModalVisible] = useState(false);
-  const [errorModalContent, setErrorModalContent] = useState({ title: '', message: '' });
+  const [errorModalContent, setErrorModalContent] = useState({
+    title: '',
+    message: '',
+  });
   const didMountRef = useRef(false);
   // Show error modal with title + message
   const showErrorModal = (title, message) => {
-    setErrorModalContent({ title, message });
+    setErrorModalContent({title, message});
     setErrorModalVisible(true);
   };
 
@@ -60,8 +67,9 @@ const OrderScreen = () => {
    */
   useEffect(() => {
     if (serviceName && Array.isArray(serviceName)) {
-      const updatedServices = serviceName.map((service) => {
-        const baseCost = service.quantity > 0 ? service.cost / service.quantity : service.cost;
+      const updatedServices = serviceName.map(service => {
+        const baseCost =
+          service.quantity > 0 ? service.cost / service.quantity : service.cost;
         const totalCost = baseCost * service.quantity;
         return {
           ...service,
@@ -74,23 +82,23 @@ const OrderScreen = () => {
     }
   }, [serviceName]);
 
-    // NEW: only run goBack on *subsequent* updates
-    useEffect(() => {
-      if (didMountRef.current) {
-        if (services.length === 0) {
-          navigation.goBack();
-        }
-      } else {
-        didMountRef.current = true;
+  // NEW: only run goBack on *subsequent* updates
+  useEffect(() => {
+    if (didMountRef.current) {
+      if (services.length === 0) {
+        navigation.goBack();
       }
-    }, [services, navigation]);
+    } else {
+      didMountRef.current = true;
+    }
+  }, [services, navigation]);
 
   /**
    * 2) Recalculate totals when services or offers change
    */
   useEffect(() => {
     let tempTotal = 0;
-    services.forEach((s) => {
+    services.forEach(s => {
       tempTotal += s.totalCost;
     });
     setTotalPrice(tempTotal);
@@ -102,8 +110,6 @@ const OrderScreen = () => {
       setSavings(0);
     }
   }, [services]);
-
-  
 
   /**
    * 3) Fetch offers from backend on screen focus
@@ -118,50 +124,48 @@ const OrderScreen = () => {
           // Example endpoint to fetch offers
           const response = await axios.get(
             'https://backend.clicksolver.com/api/user/offers',
-            { headers: { Authorization: `Bearer ${token}` } }
+            {headers: {Authorization: `Bearer ${token}`}},
           );
-          const { offers: fetchedOffers } = response.data;
+          const {offers: fetchedOffers} = response.data;
           setOffers(fetchedOffers);
         } catch (error) {
           // console.log('Error fetching offers:', error);
         }
       };
       fetchOffers();
-    }, [])
+    }, []),
   );
 
   /**
    * 4) Adjust quantity logic
    */
-  const incrementQuantity = (index) => {
-    setServices((prev) => {
+  const incrementQuantity = index => {
+    setServices(prev => {
       const updated = [...prev];
       updated[index].quantity += 1;
-      updated[index].totalCost = updated[index].baseCost * updated[index].quantity;
+      updated[index].totalCost =
+        updated[index].baseCost * updated[index].quantity;
       return updated;
     });
   };
 
-// 4) Adjust quantity logic
-const decrementQuantity = (index) => {
-  setServices(prev => {
-    const updated = [...prev];
-    // drop quantity down to zero...
-    updated[index].quantity = Math.max(
-      0,
-      updated[index].quantity - 1
-    );
-    updated[index].totalCost =
-      updated[index].baseCost * updated[index].quantity;
+  // 4) Adjust quantity logic
+  const decrementQuantity = index => {
+    setServices(prev => {
+      const updated = [...prev];
+      // drop quantity down to zero...
+      updated[index].quantity = Math.max(0, updated[index].quantity - 1);
+      updated[index].totalCost =
+        updated[index].baseCost * updated[index].quantity;
 
-    // ...then remove any zero-qty items
-    if (updated[index].quantity === 0) {
-      updated.splice(index, 1);
-    }
+      // ...then remove any zero-qty items
+      if (updated[index].quantity === 0) {
+        updated.splice(index, 1);
+      }
 
-    return updated;
-  });
-};
+      return updated;
+    });
+  };
 
   /**
    * 5) Validate & Apply Offer
@@ -172,7 +176,7 @@ const decrementQuantity = (index) => {
       if (!token) {
         showErrorModal(
           t('authentication_error') || 'Authentication Error',
-          t('user_not_logged_in') || 'User not logged in.'
+          t('user_not_logged_in') || 'User not logged in.',
         );
         return;
       }
@@ -180,15 +184,15 @@ const decrementQuantity = (index) => {
       // Example endpoint to validate the offer
       const response = await axios.post(
         'https://backend.clicksolver.com/api/user/validate-offer',
-        { offer_code: offerCode, totalAmount: currentTotal },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {offer_code: offerCode, totalAmount: currentTotal},
+        {headers: {Authorization: `Bearer ${token}`}},
       );
-      const { valid, discountAmount, newTotal, error } = response.data;
+      const {valid, discountAmount, newTotal, error} = response.data;
 
       if (!valid) {
         showErrorModal(
           t('offer_not_valid') || 'Offer Not Valid',
-          error || t('offer_not_applicable') || 'This offer is not applicable.'
+          error || t('offer_not_applicable') || 'This offer is not applicable.',
         );
         setAppliedOffer(null);
         setDiscountedPrice(currentTotal);
@@ -203,7 +207,7 @@ const decrementQuantity = (index) => {
       console.error('Error validating offer:', error);
       showErrorModal(
         t('error') || 'Error',
-        t('offer_validation_error') || 'Unable to validate offer at this time.'
+        t('offer_validation_error') || 'Unable to validate offer at this time.',
       );
     }
   };
@@ -211,7 +215,7 @@ const decrementQuantity = (index) => {
   /**
    * 6) Handle Offer Button Click
    */
-  const handleApplyOffer = async (offerCode) => {
+  const handleApplyOffer = async offerCode => {
     // If the same offer is tapped, unapply it
     if (appliedOffer === offerCode) {
       setAppliedOffer(null);
@@ -264,7 +268,11 @@ const decrementQuantity = (index) => {
       {/* Header */}
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={handleBackPress} style={styles.backArrow}>
-          <Icon name="arrow-left-long" size={24} color={isDarkMode ? '#fff' : '#333'} />
+          <Icon
+            name="arrow-back"
+            size={24}
+            color={isDarkMode ? '#fff' : '#333'}
+          />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('my_cart') || 'My Cart'}</Text>
       </View>
@@ -275,27 +283,29 @@ const decrementQuantity = (index) => {
           <View key={service.main_service_id || index}>
             <View style={styles.itemRow}>
               <Image
-                source={{ uri: service.imageUrl }}
+                source={{uri: service.imageUrl}}
                 style={styles.itemImage}
                 resizeMode="cover"
               />
               <View style={styles.itemInfoContainer}>
-                <Text style={styles.itemName}> { t(`singleService_${service.main_service_id}`) || service.serviceName }</Text>
+                <Text style={styles.itemName}>
+                  {' '}
+                  {t(`singleService_${service.main_service_id}`) ||
+                    service.serviceName}
+                </Text>
                 <Text style={styles.itemPrice}>₹{service.totalCost}</Text>
               </View>
               <View style={styles.quantityPriceContainer}>
                 <View style={styles.quantityControls}>
                   <TouchableOpacity
                     onPress={() => decrementQuantity(index)}
-                    style={styles.quantityBtn}
-                  >
+                    style={styles.quantityBtn}>
                     <Text style={styles.quantityBtnText}>-</Text>
                   </TouchableOpacity>
                   <Text style={styles.quantityValue}>{service.quantity}</Text>
                   <TouchableOpacity
                     onPress={() => incrementQuantity(index)}
-                    style={styles.quantityBtn}
-                  >
+                    style={styles.quantityBtn}>
                     <Text style={styles.quantityBtnText}>+</Text>
                   </TouchableOpacity>
                 </View>
@@ -318,8 +328,7 @@ const decrementQuantity = (index) => {
         {/* Coupon/Offer Section */}
         <TouchableOpacity
           style={styles.applyCouponHeader}
-          onPress={() => setShowCoupons(!showCoupons)}
-        >
+          onPress={() => setShowCoupons(!showCoupons)}>
           <View style={styles.couponLeft}>
             <MaterialIcons
               name="local-offer"
@@ -341,18 +350,19 @@ const decrementQuantity = (index) => {
         {showCoupons && (
           <View style={styles.couponListContainer}>
             {offers.length > 0 ? (
-              offers.map((offer) => (
+              offers.map(offer => (
                 <View key={offer.offer_code} style={styles.couponRow}>
                   {/* Coupon Text Container */}
                   <View style={styles.couponTextContainer}>
                     <Text style={styles.couponLabel}>{offer.title}</Text>
-                    <Text style={styles.couponDescription}>{offer.description}</Text>
+                    <Text style={styles.couponDescription}>
+                      {offer.description}
+                    </Text>
                   </View>
                   {appliedOffer === offer.offer_code ? (
                     <TouchableOpacity
                       style={styles.appliedContainer}
-                      onPress={() => handleApplyOffer(offer.offer_code)}
-                    >
+                      onPress={() => handleApplyOffer(offer.offer_code)}>
                       <Entypo name="check" size={16} color="#ff4500" />
                       <Text style={styles.appliedText}>
                         {t('applied') || 'Applied'}
@@ -361,8 +371,7 @@ const decrementQuantity = (index) => {
                   ) : (
                     <TouchableOpacity
                       style={styles.applyBtn}
-                      onPress={() => handleApplyOffer(offer.offer_code)}
-                    >
+                      onPress={() => handleApplyOffer(offer.offer_code)}>
                       <Text style={styles.applyBtnText}>
                         {t('apply') || 'Apply'}
                       </Text>
@@ -386,7 +395,7 @@ const decrementQuantity = (index) => {
             {t('add_tip') || 'Add a tip to thank the professional'}
           </Text>
           <View style={styles.tipOptions}>
-            {[50, 75, 100, 150, 200].map((amount) => (
+            {[50, 75, 100, 150, 200].map(amount => (
               <TouchableOpacity
                 key={amount}
                 style={[
@@ -399,14 +408,12 @@ const decrementQuantity = (index) => {
                   } else {
                     setSelectedTip(amount);
                   }
-                }}
-              >
+                }}>
                 <Text
                   style={[
                     styles.tipOptionText,
                     selectedTip === amount && styles.tipOptionTextSelected,
-                  ]}
-                >
+                  ]}>
                   ₹{amount}
                 </Text>
               </TouchableOpacity>
@@ -481,7 +488,8 @@ const decrementQuantity = (index) => {
         {/* Address Section */}
         <View style={styles.addressSection}>
           <Text style={styles.addressQuestion}>
-            {t('address_question') || 'Where would you like us to send your skilled worker?'}
+            {t('address_question') ||
+              'Where would you like us to send your skilled worker?'}
           </Text>
         </View>
       </ScrollView>
@@ -501,16 +509,14 @@ const decrementQuantity = (index) => {
         animationType="fade"
         transparent
         visible={errorModalVisible}
-        onRequestClose={() => setErrorModalVisible(false)}
-      >
+        onRequestClose={() => setErrorModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{errorModalContent.title}</Text>
             <Text style={styles.modalMessage}>{errorModalContent.message}</Text>
             <TouchableOpacity
               style={styles.modalButton}
-              onPress={() => setErrorModalVisible(false)}
-            >
+              onPress={() => setErrorModalVisible(false)}>
               <Text style={styles.modalButtonText}>{t('ok') || 'OK'}</Text>
             </TouchableOpacity>
           </View>

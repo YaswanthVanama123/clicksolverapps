@@ -24,28 +24,66 @@
     "lottie-ios": [
       "4.4.1"
     ],
-    "React-Core": [],
+    "React-Core": [
+
+    ],
     "RCT-Folly": [
       "2024.01.01.00"
     ],
-    "glog": [],
-    "React-RCTFabric": [],
-    "React-Codegen": [],
-    "RCTRequired": [],
-    "RCTTypeSafety": [],
-    "ReactCommon/turbomodule/bridging": [],
-    "ReactCommon/turbomodule/core": [],
-    "React-NativeModulesApple": [],
-    "Yoga": [],
-    "React-Fabric": [],
-    "React-graphics": [],
-    "React-utils": [],
-    "React-featureflags": [],
-    "React-debug": [],
-    "React-ImageManager": [],
-    "React-rendererdebug": [],
-    "DoubleConversion": [],
-    "React-jsi": []
+    "glog": [
+
+    ],
+    "React-RCTFabric": [
+
+    ],
+    "React-Codegen": [
+
+    ],
+    "RCTRequired": [
+
+    ],
+    "RCTTypeSafety": [
+
+    ],
+    "ReactCommon/turbomodule/bridging": [
+
+    ],
+    "ReactCommon/turbomodule/core": [
+
+    ],
+    "React-NativeModulesApple": [
+
+    ],
+    "Yoga": [
+
+    ],
+    "React-Fabric": [
+
+    ],
+    "React-graphics": [
+
+    ],
+    "React-utils": [
+
+    ],
+    "React-featureflags": [
+
+    ],
+    "React-debug": [
+
+    ],
+    "React-ImageManager": [
+
+    ],
+    "React-rendererdebug": [
+
+    ],
+    "DoubleConversion": [
+
+    ],
+    "React-jsi": [
+
+    ]
   },
   "swift_versions": "5.7",
   "compiler_flags": "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 -DFOLLY_HAVE_CLOCK_GETTIME=1 -Wno-comma -Wno-shorten-64-to-32",

@@ -13,4 +13,4 @@ module.exports = {
     },
   },
 };
-NativeRNMBXLocationModule.ts
+// NativeRNMBXLocationModule.ts

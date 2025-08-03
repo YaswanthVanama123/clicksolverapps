@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, {useEffect, useState, useMemo, useCallback} from 'react';
 import {
   View,
   Text,
@@ -12,29 +12,29 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome6';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useNavigation, CommonActions, useRoute } from '@react-navigation/native';
+import {useNavigation, CommonActions, useRoute} from '@react-navigation/native';
 import axios from 'axios';
 import Entypo from 'react-native-vector-icons/Entypo';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../context/ThemeContext';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {useTheme} from '../context/ThemeContext';
 
 // Import the useTranslation hook from react-i18next
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
 const ServiceBookingItem = () => {
   // Get screen dimensions
-  const { width, height } = useWindowDimensions();
+  const {width, height} = useWindowDimensions();
   // Get dark mode flag from context and pass it to dynamicStyles
-  const { isDarkMode } = useTheme();
+  const {isDarkMode} = useTheme();
   const styles = dynamicStyles(width, height, isDarkMode);
 
   // Initialize translation hook
-  const { t } = useTranslation();
+  const {t} = useTranslation();
 
   const [details, setDetails] = useState({});
   const [serviceArray, setServiceArray] = useState([]);
-  const { tracking_id } = useRoute().params;
+  const {tracking_id} = useRoute().params;
   const [paymentExpanded, setPaymentExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState({}); // Timestamps & status
@@ -70,7 +70,9 @@ const ServiceBookingItem = () => {
   // Timeline data generation based on status object
   const getTimelineData = useMemo(() => {
     const statusKeys = Object.keys(status);
-    const currentStatusIndex = statusKeys.findIndex((key) => status[key] === null);
+    const currentStatusIndex = statusKeys.findIndex(
+      key => status[key] === null,
+    );
     return statusKeys.map((statusKey, index) => ({
       key: statusKey,
       title: statusDisplayNames[statusKey],
@@ -92,9 +94,9 @@ const ServiceBookingItem = () => {
         setLoading(true);
         const response = await axios.post(
           `https://backend.clicksolver.com/api/service/booking/item/details`,
-          { tracking_id },
+          {tracking_id},
         );
-        const { data } = response.data;
+        const {data} = response.data;
         // console.log("servive data", data);
         setStatus(data.time || {});
         setDetails(data);
@@ -132,12 +134,14 @@ const ServiceBookingItem = () => {
               navigation.dispatch(
                 CommonActions.reset({
                   index: 0,
-                  routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-                })
+                  routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+                }),
               );
             }}
           />
-          <Text style={styles.headerText}>{t('service_trackings') || 'Service Trackings'}</Text>
+          <Text style={styles.headerText}>
+            {t('service_trackings') || 'Service Trackings'}
+          </Text>
         </View>
 
         <ScrollView>
@@ -160,11 +164,14 @@ const ServiceBookingItem = () => {
 
           {/* Service Details */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionBookedTitle}>{t('service_details') || 'Service Details'}</Text>
+            <Text style={styles.sectionBookedTitle}>
+              {t('service_details') || 'Service Details'}
+            </Text>
             <View style={styles.innerContainer}>
               {serviceArray.map((service, index) => (
                 <Text key={index} style={styles.serviceDetail}>
-                 { t(`singleService_${service.main_service_id}`) || service.serviceName } 
+                  {t(`singleService_${service.main_service_id}`) ||
+                    service.serviceName}
                 </Text>
               ))}
             </View>
@@ -175,12 +182,14 @@ const ServiceBookingItem = () => {
           {/* Service Timeline */}
           <View style={styles.sectionContainer}>
             <View style={styles.serviceTimeLineContainer}>
-              <Text style={styles.sectionTitle}>{t('service_timeline') || 'Service Timeline'}</Text>
+              <Text style={styles.sectionTitle}>
+                {t('service_timeline') || 'Service Timeline'}
+              </Text>
             </View>
             <View style={styles.innerContainerLine}>
               {getTimelineData.map((item, index) => (
                 <View key={index} style={styles.timelineItem}>
-                  <View style={{ alignItems: 'center' }}>
+                  <View style={{alignItems: 'center'}}>
                     <MaterialCommunityIcons
                       name="circle"
                       size={14}
@@ -192,7 +201,8 @@ const ServiceBookingItem = () => {
                         style={[
                           styles.lineSegment,
                           {
-                            backgroundColor: getTimelineData[index + 1].iconColor,
+                            backgroundColor:
+                              getTimelineData[index + 1].iconColor,
                           },
                         ]}
                       />
@@ -233,12 +243,13 @@ const ServiceBookingItem = () => {
               style={styles.paymentSummaryContainer}
               onPress={togglePaymentDetails}
               accessibilityRole="button"
-              accessibilityLabel={t('toggle_payment_details') || 'Toggle Payment Details'}
-            >
+              accessibilityLabel={
+                t('toggle_payment_details') || 'Toggle Payment Details'
+              }>
               <Text style={styles.sectionPaymentTitle}>
                 {t('payment_details') || 'Payment Details'}
               </Text>
-              <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
+              <Animated.View style={{transform: [{rotate: rotateInterpolate}]}}>
                 <Entypo name="chevron-small-right" size={20} color="#ff4500" />
               </Animated.View>
             </TouchableOpacity>
@@ -250,7 +261,11 @@ const ServiceBookingItem = () => {
                 <View style={styles.PaymentItemContainer}>
                   {serviceArray.map((service, index) => (
                     <View key={index} style={styles.paymentRow}>
-                      <Text style={styles.paymentLabelHead}> { t(`singleService_${service.main_service_id}`) || service.serviceName }</Text>
+                      <Text style={styles.paymentLabelHead}>
+                        {' '}
+                        {t(`singleService_${service.main_service_id}`) ||
+                          service.serviceName}
+                      </Text>
                       <Text style={styles.paymentValue}>
                         ₹{service.cost.toFixed(2)}
                       </Text>
@@ -261,12 +276,18 @@ const ServiceBookingItem = () => {
                       <Text style={styles.paymentLabel}>
                         {t('cashback')} {/* Translation key for "Cashback" */}
                       </Text>
-                      <Text style={styles.paymentValue}>₹{details.discount}</Text>
+                      <Text style={styles.paymentValue}>
+                        ₹{details.discount}
+                      </Text>
                     </View>
                   )}
                   <View style={styles.paymentRow}>
-                    <Text style={styles.paymentValue}>{t('grand_total') || 'Grand Total'}</Text>
-                    <Text style={styles.paymentValue}>₹{details.total_cost}</Text>
+                    <Text style={styles.paymentValue}>
+                      {t('grand_total') || 'Grand Total'}
+                    </Text>
+                    <Text style={styles.paymentValue}>
+                      ₹{details.total_cost}
+                    </Text>
                   </View>
                 </View>
               </>
@@ -304,11 +325,11 @@ const dynamicStyles = (width, height, isDarkMode) => {
       alignItems: 'center',
       padding: isTablet ? 20 : 16,
       paddingBottom: isTablet ? 16 : 12,
-      elevation: 2,
-      shadowColor: '#1D2951',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
+      elevation: Platform.OS === 'ios' ? 0 : 2,
+      // shadowColor: '#1D2951',
+      // shadowOffset: {width: 0, height: 2},
+      // shadowOpacity: 0.2,
+      // shadowRadius: 4,
       backgroundColor: isDarkMode ? '#333' : '#ffffff',
     },
     backIcon: {

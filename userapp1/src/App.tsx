@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   AppState,
   Platform,
+  SafeAreaView,
   View,
 } from 'react-native';
 import {
@@ -103,27 +104,22 @@ function TabNavigator() {
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           size = focused ? 28 : 24;
-          let iconName;
           if (route.name === 'Home') {
-            iconName = 'home';
-            return <Feather name={iconName} size={size} color={color} />;
+            return <Feather name="home" size={size} color={color} />;
           }
           if (route.name === 'Bookings') {
-            iconName = 'clipboard';
-            return <Feather name={iconName} size={size} color={color} />;
+            return <Feather name="clipboard" size={size} color={color} />;
           }
           if (route.name === 'Tracking') {
-            iconName = 'shopping-bag';
-            return <Feather name={iconName} size={size} color={color} />;
-          }
-          if (route.name === 'Rewards') {
-            iconName = 'wallet';
-            return <Entypo name={iconName} size={size} color={color} />;
+            return <Feather name="shopping-bag" size={size} color={color} />;
           }
           if (route.name === 'Account') {
-            iconName = 'account-outline';
             return (
-              <MaterialCommunityIcons name={iconName} size={size} color={color} />
+              <MaterialCommunityIcons
+                name="account-outline"
+                size={size}
+                color={color}
+              />
             );
           }
         },
@@ -131,11 +127,12 @@ function TabNavigator() {
         tabBarInactiveTintColor: isDarkMode ? 'lightgray' : 'gray',
         tabBarLabelStyle: { fontSize: 12 },
         tabBarStyle: {
-          height: 60,
-          paddingBottom: 5,
+          height: Platform.OS === 'ios' ? 70 : 60,
+          paddingBottom: Platform.OS === 'ios' ? 20 : 5,
           paddingTop: 5,
           backgroundColor: isDarkMode ? '#222' : '#fff',
         },
+        tabBarSafeAreaInset: { bottom: 'always' },
       })}
     >
       <Tab.Screen
@@ -161,6 +158,7 @@ function TabNavigator() {
     </Tab.Navigator>
   );
 }
+
 
 /* -------------------------------------------------------------------------
  * MAIN APP
@@ -271,7 +269,9 @@ function App() {
    * -------------------------------------------- */
   const syncFcmToken = async () => {
     try {
+      console.log("token function")
       const token = await messaging().getToken();
+      console.log("token",token)
       console.log("fc token",token)
       const stored = await EncryptedStorage.getItem('user_fcm_token');
       const auth = await EncryptedStorage.getItem('cs_token');
@@ -300,7 +300,7 @@ function App() {
     } catch (err) {
       console.log('storeNotificationLocally error', err);
     }
-  };
+  }; 
 
   const flushPendingNotification = useCallback(async () => {
     const pending = await EncryptedStorage.getItem('pendingNotification');
@@ -332,8 +332,8 @@ function App() {
    * EFFECT: PUSH / FCM CONFIG
    * -------------------------------------------- */
   useEffect(() => {
-    requestAllPermissions();
-    syncFcmToken();
+    // requestAllPermissions();
+    // syncFcmToken();
 
     PushNotification.createChannel({ channelId: 'default', channelName: 'Default' }, () => {});
     PushNotification.createChannel({ channelId: 'silent', channelName: 'Silent', importance: 1, vibrate: false }, () => {});
@@ -434,7 +434,7 @@ function App() {
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="VerificationScreen" component={VerificationScreen} />
           <Stack.Screen name="SignUpScreen" component={SignUpScreen} />
-
+          <Stack.Screen name='AccountDelete' component={AccountDelete} />
           {/* main flow */}
           <Stack.Screen name="UserLocation" component={UserLocation} />
           <Stack.Screen name="OrderScreen" component={OrderScreen} />

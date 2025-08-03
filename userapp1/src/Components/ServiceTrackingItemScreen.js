@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, {useEffect, useState, useMemo, useCallback} from 'react';
 import {
   View,
   Text,
@@ -8,34 +8,36 @@ import {
   ScrollView,
   Linking,
   Animated,
+  Platform,
   ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/FontAwesome6';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Entypo from 'react-native-vector-icons/Entypo';
 import axios from 'axios';
-import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {useNavigation, useRoute, CommonActions} from '@react-navigation/native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import messaging from '@react-native-firebase/messaging';
-import { useTheme } from '../context/ThemeContext';
+import {useTheme} from '../context/ThemeContext';
 // Import the useTranslation hook from react-i18next
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
 const ServiceTrackingItemScreen = () => {
   // Screen dimensions
-  const { width, height } = useWindowDimensions();
+  const {width, height} = useWindowDimensions();
+  const isTablet = width >= 600; // ✅ Add this line
   // Dark mode flag & dynamic styles
-  const { isDarkMode } = useTheme();
+  const {isDarkMode} = useTheme();
   const styles = dynamicStyles(width, height, isDarkMode);
 
   // Initialize translation hook
-  const { t } = useTranslation();
+  const {t} = useTranslation();
 
   const [details, setDetails] = useState({});
   const [serviceArray, setServiceArray] = useState([]);
-  const { tracking_id } = useRoute().params;
+  const {tracking_id} = useRoute().params;
   const [pin, setPin] = useState('4567');
   const [paymentExpanded, setPaymentExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -52,12 +54,12 @@ const ServiceTrackingItemScreen = () => {
     try {
       const response = await axios.post(
         'https://backend.clicksolver.com/api/worker/tracking/call',
-        { tracking_id },
+        {tracking_id},
       );
       if (response.status === 200 && response.data.mobile) {
         const phoneNumber = response.data.mobile;
         const dialURL = `tel:${phoneNumber}`;
-        Linking.openURL(dialURL).catch((err) =>
+        Linking.openURL(dialURL).catch(err =>
           console.error('Error opening dialer:', err),
         );
       } else {
@@ -74,10 +76,22 @@ const ServiceTrackingItemScreen = () => {
   // Build timeline data using translation for status titles.
   const getTimelineData = useMemo(() => {
     // Define keys and fallback English labels.
-    const timelineKeys = ['collected_item', 'work_started', 'work_completed', 'delivered'];
-    const fallbackStatuses = ['Collected Item', 'Work Started', 'Work Completed', 'Delivered'];
+    const timelineKeys = [
+      'collected_item',
+      'work_started',
+      'work_completed',
+      'delivered',
+    ];
+    const fallbackStatuses = [
+      'Collected Item',
+      'Work Started',
+      'Work Completed',
+      'Delivered',
+    ];
     // Create translated statuses while preserving fallback for index matching.
-    const statuses = timelineKeys.map((key, index) => t(key) || fallbackStatuses[index]);
+    const statuses = timelineKeys.map(
+      (key, index) => t(key) || fallbackStatuses[index],
+    );
     // Use fallbackStatuses for index matching (assuming service_status is in English)
     const currentStatusIndex = fallbackStatuses.indexOf(details.service_status);
     return statuses.map((status, index) => ({
@@ -107,9 +121,9 @@ const ServiceTrackingItemScreen = () => {
       setLoading(true);
       const response = await axios.post(
         `https://backend.clicksolver.com/api/service/tracking/user/item/details`,
-        { tracking_id },
+        {tracking_id},
       );
-      const { data } = response.data;
+      const {data} = response.data;
       // console.log("Fetched data:", data.data);
       setPin(data.tracking_pin);
       setDetails(data);
@@ -142,7 +156,9 @@ const ServiceTrackingItemScreen = () => {
     const url = 'phonepe://scan';
     Linking.openURL(url).catch(() => {
       // If opening PhonePe fails, open Play Store link
-      Linking.openURL('https://play.google.com/store/apps/details?id=com.phonepe.app');
+      Linking.openURL(
+        'https://play.google.com/store/apps/details?id=com.phonepe.app',
+      );
     });
   }, []);
 
@@ -161,20 +177,27 @@ const ServiceTrackingItemScreen = () => {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Icon
-            name="arrow-left-long"
-            size={20}
-            color={isDarkMode ? '#fff' : "#212121"}
-            style={styles.backIcon}
+          <TouchableOpacity
             onPress={() => {
               navigation.dispatch(
                 CommonActions.reset({
                   index: 0,
-                  routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-                })
+                  routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+                }),
               );
-            }} 
-          />
+            }}
+            style={{
+              position: 'absolute',
+              left: isTablet ? 20 : 16,
+              zIndex: 2,
+            }}>
+            <Icon
+              name="arrow-back"
+              size={20}
+              color={isDarkMode ? '#fff' : '#212121'}
+            />
+          </TouchableOpacity>
+
           <Text style={styles.headerText}>
             {t('service_trackings') || 'Service Trackings'}
           </Text>
@@ -184,14 +207,16 @@ const ServiceTrackingItemScreen = () => {
           {/* User Profile */}
           <View style={styles.profileContainer}>
             <View style={styles.profileImage}>
-              <Image source={{ uri: details.profile }} style={styles.image} />
+              <Image source={{uri: details.profile}} style={styles.image} />
             </View>
             <View style={styles.profileTextContainer}>
               <View>
                 <Text style={styles.userName}>{details.name}</Text>
                 <Text style={styles.userDesignation}>{details.service}</Text>
               </View>
-              <TouchableOpacity style={styles.callIconContainer} onPress={phoneCall}>
+              <TouchableOpacity
+                style={styles.callIconContainer}
+                onPress={phoneCall}>
                 <MaterialIcons name="call" size={22} color="#FF5722" />
               </TouchableOpacity>
             </View>
@@ -199,9 +224,7 @@ const ServiceTrackingItemScreen = () => {
 
           {/* PIN */}
           <View style={styles.pinContainer}>
-            <Text style={styles.pinText}>
-              {t('pin') || 'PIN'}
-            </Text>
+            <Text style={styles.pinText}>{t('pin') || 'PIN'}</Text>
             <View style={styles.pinBoxesContainer}>
               {pin.split('').map((digit, index) => (
                 <View key={index} style={styles.pinBox}>
@@ -221,7 +244,8 @@ const ServiceTrackingItemScreen = () => {
             <View style={styles.innerContainer}>
               {serviceArray.map((service, index) => (
                 <Text key={index} style={styles.serviceDetail}>
-                  { t(`singleService_${service.main_service_id}`) || service.serviceName }
+                  {t(`singleService_${service.main_service_id}`) ||
+                    service.serviceName}
                 </Text>
               ))}
             </View>
@@ -237,12 +261,13 @@ const ServiceTrackingItemScreen = () => {
             <View style={styles.additionalInfoContainer}>
               {details.data?.estimatedDuration ? (
                 <Text style={styles.infoText}>
-                  {t('estimated_time') || 'Estimated Time:'} {details.data.estimatedDuration}
+                  {t('estimated_time') || 'Estimated Time:'}{' '}
+                  {details.data.estimatedDuration}
                 </Text>
               ) : null}
               {details.data?.image ? (
                 <Image
-                  source={{ uri: details.data.image }}
+                  source={{uri: details.data.image}}
                   style={styles.additionalImage}
                 />
               ) : null}
@@ -261,7 +286,7 @@ const ServiceTrackingItemScreen = () => {
             <View style={styles.innerContainerLine}>
               {getTimelineData.map((item, index) => (
                 <View key={index} style={styles.timelineItem}>
-                  <View style={{ alignItems: 'center' }}>
+                  <View style={{alignItems: 'center'}}>
                     <MaterialCommunityIcons
                       name="circle"
                       size={14}
@@ -272,7 +297,10 @@ const ServiceTrackingItemScreen = () => {
                       <View
                         style={[
                           styles.lineSegment,
-                          { backgroundColor: getTimelineData[index + 1].iconColor },
+                          {
+                            backgroundColor:
+                              getTimelineData[index + 1].iconColor,
+                          },
                         ]}
                       />
                     )}
@@ -290,9 +318,7 @@ const ServiceTrackingItemScreen = () => {
 
           {/* Address */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>
-              {t('address') || 'Address'}
-            </Text>
+            <Text style={styles.sectionTitle}>{t('address') || 'Address'}</Text>
             <View style={styles.addressContainer}>
               <Image
                 source={{
@@ -312,12 +338,13 @@ const ServiceTrackingItemScreen = () => {
               style={styles.paymentSummaryContainer}
               onPress={togglePaymentDetails}
               accessibilityRole="button"
-              accessibilityLabel={t('toggle_payment_details') || 'Toggle Payment Details'}
-            >
+              accessibilityLabel={
+                t('toggle_payment_details') || 'Toggle Payment Details'
+              }>
               <Text style={styles.sectionPaymentTitle}>
                 {t('payment_details') || 'Payment Details'}
               </Text>
-              <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
+              <Animated.View style={{transform: [{rotate: rotateInterpolate}]}}>
                 <Entypo name="chevron-small-right" size={20} color="#ff4500" />
               </Animated.View>
             </TouchableOpacity>
@@ -329,7 +356,8 @@ const ServiceTrackingItemScreen = () => {
                 {serviceArray.map((service, index) => (
                   <View key={index} style={styles.paymentRow}>
                     <Text style={styles.paymentLabelHead}>
-                    { t(`singleService_${service.main_service_id}`) || service.serviceName }
+                      {t(`singleService_${service.main_service_id}`) ||
+                        service.serviceName}
                     </Text>
                     <Text style={styles.paymentValue}>
                       ₹{service.cost.toFixed(2)}
@@ -354,10 +382,10 @@ const ServiceTrackingItemScreen = () => {
             )}
           </View>
 
-          <TouchableOpacity style={styles.payButton} onPress={openPhonePeScanner}>
-            <Text style={styles.payButtonText}>
-              {t('pay') || 'PAY'}
-            </Text>
+          <TouchableOpacity
+            style={styles.payButton}
+            onPress={openPhonePeScanner}>
+            <Text style={styles.payButtonText}>{t('pay') || 'PAY'}</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -382,22 +410,26 @@ function dynamicStyles(width, height, isDarkMode) {
     header: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center', // Center everything
       padding: isTablet ? 20 : 16,
       paddingBottom: isTablet ? 16 : 12,
-      elevation: 2,
-      shadowColor: isDarkMode ? '#000' : '#1D2951',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      backgroundColor: isDarkMode ? '#333' : '#ffffff',
+      elevation: Platform.OS === 'ios' ? 0 : 2,
+      // shadowColor: isDarkMode ? '#000' : '#1D2951',
+      // shadowOffset: {width: 0, height: 2},
+      // shadowOpacity: 0.2,
+      // shadowRadius: 4,
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
+      position: 'relative',
     },
+
     backIcon: {
       marginRight: isTablet ? 15 : 10,
     },
     headerText: {
-      fontSize: isTablet ? 20 : 16,
+      fontSize: isTablet ? 20 : 18,
       fontFamily: 'RobotoSlab-Medium',
-      color: isDarkMode ? '#fff' : '#212121',
+      color: isDarkMode ? '#fff' : '#000',
+      textAlign: 'center',
     },
     profileContainer: {
       flexDirection: 'row',
@@ -424,7 +456,7 @@ function dynamicStyles(width, height, isDarkMode) {
       borderRadius: 50,
       padding: isTablet ? 10 : 8,
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
+      shadowOffset: {width: 0, height: 2},
       shadowOpacity: 0.3,
       shadowRadius: 4,
     },
@@ -504,7 +536,7 @@ function dynamicStyles(width, height, isDarkMode) {
       alignItems: 'flex-start',
     },
     timelineIcon: {
-      marginBottom: 5,
+      marginBottom: 0,
     },
     timelineTextContainer: {
       flex: 1,

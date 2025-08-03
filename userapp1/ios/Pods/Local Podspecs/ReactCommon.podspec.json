@@ -45,11 +45,15 @@
         "React-logger": [
           "0.74.3"
         ],
-        "DoubleConversion": [],
+        "DoubleConversion": [
+
+        ],
         "fmt": [
           "9.1.0"
         ],
-        "glog": []
+        "glog": [
+
+        ]
       },
       "subspecs": [
         {

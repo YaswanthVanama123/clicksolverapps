@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -15,14 +15,14 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Icon from 'react-native-vector-icons/Ionicons';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
-import { useNavigation } from '@react-navigation/native';
-import { useTheme } from '../context/ThemeContext';
+import {useNavigation} from '@react-navigation/native';
+import {useTheme} from '../context/ThemeContext';
 import i18n from 'i18next';
 import '../i18n/i18n';
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
 // Helper: format the date
-const formatDate = (dateString) => {
+const formatDate = dateString => {
   if (!dateString) return 'Pending';
 
   const date = new Date(dateString);
@@ -38,9 +38,9 @@ const formatDate = (dateString) => {
 };
 
 // Card component for a single service item
-const ServiceItemCard = ({ item, styles, tab }) => {
+const ServiceItemCard = ({item, styles, tab}) => {
   const navigation = useNavigation();
-  const { t } = useTranslation();
+  const {t} = useTranslation();
   const isCancelled =
     item.complete_status === 'cancel' ||
     item.complete_status === 'usercanceled' ||
@@ -63,7 +63,7 @@ const ServiceItemCard = ({ item, styles, tab }) => {
     <View style={styles.cardContainer}>
       <Image
         style={styles.cardImage}
-        source={imageUrl ? { uri: imageUrl } : null}
+        source={imageUrl ? {uri: imageUrl} : null}
       />
       <View style={styles.cardInfo}>
         <Text style={styles.cardTitle} numberOfLines={1}>
@@ -87,14 +87,12 @@ const ServiceItemCard = ({ item, styles, tab }) => {
             }
           }
         }}
-        disabled={disabled}
-      >
+        disabled={disabled}>
         <Text
           style={[
             styles.cardButtonText,
             disabled && styles.cardButtonTextDisabled,
-          ]}
-        >
+          ]}>
           {buttonLabel}
         </Text>
       </TouchableOpacity>
@@ -103,35 +101,32 @@ const ServiceItemCard = ({ item, styles, tab }) => {
 };
 
 // A reusable component to display the error view with retry
-const ErrorRetryView = ({ onRetry, styles }) => {
-  const { t } = useTranslation();
+const ErrorRetryView = ({onRetry, styles}) => {
+  const {t} = useTranslation();
   return (
     <View style={styles.errorContainer}>
       <MaterialIcons name="error-outline" size={48} color="#FF0000" />
       <Text style={styles.errorText}>
-        {t('something_went_wrong') ||
-          'Something went wrong. Please try again.'}
+        {t('something_went_wrong') || 'Something went wrong. Please try again.'}
       </Text>
       <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-        <Text style={styles.retryButtonText}>
-          {t('retry') || 'Retry'}
-        </Text>
+        <Text style={styles.retryButtonText}>{t('retry') || 'Retry'}</Text>
       </TouchableOpacity>
     </View>
   );
 };
 
 const RecentServices = () => {
-  const { width, height } = useWindowDimensions();
-  const { isDarkMode } = useTheme();
+  const {width, height} = useWindowDimensions();
+  const {isDarkMode} = useTheme();
   const styles = dynamicStyles(width, height, isDarkMode);
-  const { t } = useTranslation();
+  const {t} = useTranslation();
 
   // Define tabs as objects with an id and label
   const TABS = [
-    { id: 'ongoing', label: t('ongoing') || 'Ongoing' },
-    { id: 'completed', label: t('completed') || 'Completed' },
-    { id: 'cancelled', label: t('cancelled') || 'Cancelled' },
+    {id: 'ongoing', label: t('ongoing') || 'Ongoing'},
+    {id: 'completed', label: t('completed') || 'Completed'},
+    {id: 'cancelled', label: t('cancelled') || 'Cancelled'},
   ];
 
   // Set selectedTab to the identifier of the first tab
@@ -161,12 +156,12 @@ const RecentServices = () => {
       if (selectedTab === 'ongoing') {
         response = await axios.get(
           `https://backend.clicksolver.com/api/user/ongoingBookings`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          {headers: {Authorization: `Bearer ${token}`}},
         );
       } else {
         response = await axios.get(
           `https://backend.clicksolver.com/api/user/bookings`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          {headers: {Authorization: `Bearer ${token}`}},
         );
       }
       setBookingsData(response.data);
@@ -187,24 +182,24 @@ const RecentServices = () => {
     let data = [];
     if (selectedTab === 'completed') {
       data = bookingsData.filter(
-        (item) =>
+        item =>
           item.complete_status !== 'cancel' &&
           item.complete_status !== 'usercanceled' &&
-          item.complete_status !== 'workercanceled'
+          item.complete_status !== 'workercanceled',
       );
     } else if (selectedTab === 'cancelled') {
       data = bookingsData.filter(
-        (item) =>
+        item =>
           item.complete_status === 'cancel' ||
           item.complete_status === 'usercanceled' ||
-          item.complete_status === 'workercanceled'
+          item.complete_status === 'workercanceled',
       );
     } else {
       data = bookingsData;
     }
     if (searchActive && searchText.trim()) {
       const lowerSearch = searchText.toLowerCase();
-      data = data.filter((item) => {
+      data = data.filter(item => {
         if (
           item.service_booked &&
           item.service_booked.length > 0 &&
@@ -234,13 +229,8 @@ const RecentServices = () => {
           onPress={() => {
             setSearchActive(!searchActive);
             setSearchText('');
-          }}
-        >
-          <Icon
-            name="search"
-            size={24}
-            color={isDarkMode ? '#fff' : '#000'}
-          />
+          }}>
+          <Icon name="search" size={24} color={isDarkMode ? '#fff' : '#000'} />
         </TouchableOpacity>
       </View>
 
@@ -257,23 +247,18 @@ const RecentServices = () => {
         </View>
       ) : (
         <View style={styles.tabContainer}>
-          {TABS.map((tabItem) => {
+          {TABS.map(tabItem => {
             const active = tabItem.id === selectedTab;
             return (
               <TouchableOpacity
                 key={tabItem.id}
-                style={[
-                  styles.tabButton,
-                  active && styles.tabButtonActive,
-                ]}
-                onPress={() => setSelectedTab(tabItem.id)}
-              >
+                style={[styles.tabButton, active && styles.tabButtonActive]}
+                onPress={() => setSelectedTab(tabItem.id)}>
                 <Text
                   style={[
                     styles.tabButtonText,
                     active && styles.tabButtonTextActive,
-                  ]}
-                >
+                  ]}>
                   {tabItem.label}
                 </Text>
               </TouchableOpacity>
@@ -307,15 +292,9 @@ const RecentServices = () => {
         ) : (
           <FlatList
             data={filteredData}
-            keyExtractor={(item, index) =>
-              `${item.notification_id}_${index}`
-            }
-            renderItem={({ item }) => (
-              <ServiceItemCard
-                item={item}
-                styles={styles}
-                tab={selectedTab}
-              />
+            keyExtractor={(item, index) => `${item.notification_id}_${index}`}
+            renderItem={({item}) => (
+              <ServiceItemCard item={item} styles={styles} tab={selectedTab} />
             )}
             contentContainerStyle={styles.listContent}
           />
@@ -340,11 +319,11 @@ const dynamicStyles = (width, height, isDarkMode) => {
       backgroundColor: isDarkMode ? '#222' : '#fff',
       paddingVertical: isTablet ? 16 : 12,
       paddingHorizontal: isTablet ? 24 : 16,
-      elevation: 2,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
+      elevation: Platform.OS === 'ios' ? 0 : 2,
+      // shadowColor: '#000',
+      // shadowOffset: {width: 0, height: 1},
+      // shadowOpacity: 0.1,
+      // shadowRadius: 2,
     },
     topBarTitle: {
       fontSize: isTablet ? 22 : 18,
@@ -458,9 +437,9 @@ const dynamicStyles = (width, height, isDarkMode) => {
       padding: isTablet ? 16 : 12,
       alignItems: 'center',
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
+      shadowOffset: {width: 0, height: 1},
       shadowOpacity: 0.1,
-      shadowRadius: 2,
+      shadowRadius: 1,
     },
     cardImage: {
       width: isTablet ? 80 : 60,

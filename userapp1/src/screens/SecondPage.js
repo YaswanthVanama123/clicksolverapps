@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import React, {useEffect, useState, useMemo, useCallback, useRef} from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,6 @@ import {
   useWindowDimensions,
   Platform,
   ActivityIndicator,
-  
 } from 'react-native';
 import {
   requestMultiple,
@@ -20,7 +19,7 @@ import {
   PERMISSIONS,
   RESULTS,
 } from 'react-native-permissions';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Feather from 'react-native-vector-icons/Feather';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -31,28 +30,28 @@ import LottieView from 'lottie-react-native';
 import crashlytics from '@react-native-firebase/crashlytics';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import QuickSearch from '../Components/QuickSearch';
-import { useFocusEffect } from '@react-navigation/native';
-import { useTheme } from '../context/ThemeContext';
+import {useFocusEffect} from '@react-navigation/native';
+import {useTheme} from '../context/ThemeContext';
 
 // 1. Import i18n (this initializes translation)
 import '../i18n/i18n';
 // 2. Import the helper to change language
-import { changeAppLanguage } from '../i18n/languageChange';
+import {changeAppLanguage} from '../i18n/languageChange';
 // 3. Import useTranslation hook from react-i18next
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
-function ServiceApp({ navigation, route }) { 
-  const { width, height } = useWindowDimensions();
-  const { isDarkMode } = useTheme();
-  const { t, i18n } = useTranslation();
+function ServiceApp({navigation, route}) {
+  const {width, height} = useWindowDimensions();
+  const {isDarkMode} = useTheme();
+  const {t, i18n} = useTranslation();
   const styles = dynamicStyles(width, height, isDarkMode);
 
   // State variables for backend data and feedback
-  const [profile, setProfile] = useState("");
+  const [profile, setProfile] = useState('');
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [specialOffer, setSpecialOffer] = useState([]);
-  const [offersLoading, setOffersLoading] = useState(false);  
+  const [offersLoading, setOffersLoading] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [greetingIcon, setGreetingIcon] = useState(null);
   const [messageBoxDisplay, setMessageBoxDisplay] = useState(false);
@@ -64,7 +63,6 @@ function ServiceApp({ navigation, route }) {
   const [decodedId, setDecodedId] = useState(null);
 
   const scrollViewRef = useRef(null);
-
 
   const specialOffers = useMemo(
     () => [
@@ -108,7 +106,6 @@ function ServiceApp({ navigation, route }) {
     [isDarkMode, t],
   );
 
-
   const requestAllPermissions = async () => {
     try {
       if (Platform.OS === 'android') {
@@ -117,62 +114,71 @@ function ServiceApp({ navigation, route }) {
           PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION,
         ];
         const statuses = await checkMultiple(perms);
-        const toAsk = perms.filter((p) => statuses[p] !== RESULTS.GRANTED);
+        const toAsk = perms.filter(p => statuses[p] !== RESULTS.GRANTED);
         if (toAsk.length) await requestMultiple(toAsk);
         if (Platform.Version >= 33) {
-          await requestNotifications(['alert', 'sound', 'badge']);
+          console.log('asking permissions fom second page');
+          // await requestNotifications(['alert', 'sound', 'badge']);
         }
       } else if (Platform.OS === 'ios') {
-        const perms = [
-          PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
-          PERMISSIONS.IOS.NOTIFICATIONS,
-        ];
-        const statuses = await checkMultiple(perms);
-        const toAsk = perms.filter((p) => statuses[p] !== RESULTS.GRANTED);
+        // 1. Request location
+        const locationPerms = [PERMISSIONS.IOS.LOCATION_WHEN_IN_USE];
+        const locationStatuses = await checkMultiple(locationPerms);
+        const toAsk = locationPerms.filter(
+          p => locationStatuses[p] !== RESULTS.GRANTED,
+        );
         if (toAsk.length) await requestMultiple(toAsk);
+        console.log('asking permissions fom second page 2');
+        // 2. Request notifications (this is the proper API)
+        // const {status} = await requestNotifications([
+        //   'alert',
+        //   'sound',
+        //   'badge',
+        // ]);
+
+        console.log('iOS Notification Permission Status:', status);
       }
     } catch (err) {
       // // console.log('Permission request error', err);
     }
   };
 
-
-    // NEW: Function to translate user name if target language is not English
-    const translateUserName = async (userName, targetLang) => {
-      if (targetLang.toLowerCase() === 'en') {
-        return userName;
-      }
-      try {
-        const response = await axios.post('https://backend.clicksolver.com/api/translate', {
+  // NEW: Function to translate user name if target language is not English
+  const translateUserName = async (userName, targetLang) => {
+    if (targetLang.toLowerCase() === 'en') {
+      return userName;
+    }
+    try {
+      const response = await axios.post(
+        'https://backend.clicksolver.com/api/translate',
+        {
           text: userName,
           fromLang: 'en',
-          toLang: targetLang  // send as "toLang" instead of "targetLang"
-        });
-        if (response.data && response.data.translatedText) {
-          return response.data.translatedText;
-        }
-      } catch (error) {
-        console.error('Translation error:', error);
+          toLang: targetLang, // send as "toLang" instead of "targetLang"
+        },
+      );
+      if (response.data && response.data.translatedText) {
+        return response.data.translatedText;
       }
-      return userName;
-    };
-    
-    
+    } catch (error) {
+      console.error('Translation error:', error);
+    }
+    return userName;
+  };
 
   // useEffect(() => {
   //   crashlytics.log('ServiceApp component mounted');
   // }, []);
 
   useEffect(() => {
-    const { encodedId } = route.params || {};
+    const {encodedId} = route.params || {};
     // console.log("encodedId",encodedId)
     if (encodedId) {
-      try {  
-        const decoded = atob(encodedId); 
+      try {
+        const decoded = atob(encodedId);
         // console.log("decodedId",decoded)
         setDecodedId(decoded);
         setModalVisible(true);
-
       } catch (error) {
         console.error('Failed to decode encodedId:', error);
       }
@@ -184,37 +190,35 @@ function ServiceApp({ navigation, route }) {
       setOffersLoading(true);
       try {
         const response = await axios.get(
-          'https://backend.clicksolver.com/api/special/offers'
+          'https://backend.clicksolver.com/api/special/offers',
         );
         // assume the API returns an array of objects with keys:
         // { id, title, subtitle, description, imageBACKENDAP, backgroundColor, color }
         // console.log("offers",response.data)
         setSpecialOffer(response.data.offers);
       } catch (err) {
-        console.error('Error fetching special offers:', err); 
+        console.error('Error fetching special offers:', err);
       } finally {
-        setOffersLoading(false); 
+        setOffersLoading(false);
       }
     };
-  
+
     fetchSpecialOffers();
   }, []);
-  
 
   useEffect(() => {
     fetchServices();
-    requestAllPermissions();
+    //requestAllPermissions();
     setGreetingBasedOnTime();
   }, []);
 
   useFocusEffect(
     useCallback(() => {
       fetchTrackDetails();
-       
-    }, [])
+    }, []),
   );
 
-  // Fetch tracking details from the backend 
+  // Fetch tracking details from the backend
   // When fetching tracking details, send the user's name for translation if needed.
   const fetchTrackDetails = async () => {
     try {
@@ -224,17 +228,20 @@ function ServiceApp({ navigation, route }) {
         const response = await axios.get(
           'https://backend.clicksolver.com/api/user/track/details',
           {
-            headers: { Authorization: `Bearer ${cs_token}` }, 
-          }
-        ); 
+            headers: {Authorization: `Bearer ${cs_token}`},
+          },
+        );
         const track = response?.data?.track || [];
         // // console.log(track)
-        const { user, profile } = response.data;
+        const {user, profile} = response.data;
         // console.log("Track response:", response.data);
         // Get the target language from your app settings (assuming i18n.language holds the code)
         const targetLang = i18n.language || 'en';
         // Translate the user's name if needed
-        const translatedName = await translateUserName(user || response.data, targetLang);
+        const translatedName = await translateUserName(
+          user || response.data,
+          targetLang,
+        );
         setName(translatedName);
         setProfile(profile);
         setMessageBoxDisplay(track.length > 0);
@@ -245,14 +252,13 @@ function ServiceApp({ navigation, route }) {
     }
   };
 
-
   // Fetch available service categories from the backend
   const fetchServices = async () => {
     try {
       setLoading(true);
       // log('Attempting to fetch services from API');
       const response = await axios.get(
-        'https://backend.clicksolver.com/api/servicecategories'
+        'https://backend.clicksolver.com/api/servicecategories',
       );
       // // console.log("date",response.data)
       // log('Services fetched successfully');
@@ -265,7 +271,7 @@ function ServiceApp({ navigation, route }) {
       recordError(error);
       console.error('Detailed Error:', error.toJSON ? error.toJSON() : error);
     } finally {
-      setLoading(false); 
+      setLoading(false);
     }
   };
 
@@ -277,8 +283,8 @@ function ServiceApp({ navigation, route }) {
     navigation.push('Help');
   };
 
-  const handleBookCommander = (serviceId,id) => {
-    navigation.push('serviceCategory', { serviceObject: serviceId ,id});
+  const handleBookCommander = (serviceId, id) => {
+    navigation.push('serviceCategory', {serviceObject: serviceId, id});
   };
 
   // Set greeting text and icon based on time of day, using translations
@@ -294,7 +300,13 @@ function ServiceApp({ navigation, route }) {
       icon = <Feather name="sunset" size={16} color="#F24E1E" />;
     } else {
       greetingMessage = t('good_evening') || 'Good Evening';
-      icon = <MaterialIcons name="nights-stay" size={16} color={isDarkMode ? "#fff" : "#000"} />;
+      icon = (
+        <MaterialIcons
+          name="nights-stay"
+          size={16}
+          color={isDarkMode ? '#fff' : '#000'}
+        />
+      );
     }
     setGreeting(greetingMessage);
     setGreetingIcon(icon);
@@ -305,19 +317,27 @@ function ServiceApp({ navigation, route }) {
     return specialOffer.map(offer => (
       <View
         key={offer.id}
-        style={[styles.offerCard, { backgroundColor: offer.backgroundcolor }]}>
+        style={[styles.offerCard, {backgroundColor: offer.backgroundcolor}]}>
         <View style={styles.offerDetails}>
-          <Text style={[styles.offerTitle, { color: '#ff4500' }]}>
+          <Text style={[styles.offerTitle, {color: '#ff4500'}]}>
             {offer.discount_percentage}%
           </Text>
-          <Text style={[styles.offerSubtitle, { color: isDarkMode ? '#4a4a4a' : '#4a4a4a' }]}>
+          <Text
+            style={[
+              styles.offerSubtitle,
+              {color: isDarkMode ? '#4a4a4a' : '#4a4a4a'},
+            ]}>
             {offer.summary}
           </Text>
-          <Text style={[styles.offerDescription, { color: isDarkMode ? '#4a4a4a' : '#4a4a4a' }]}>
+          <Text
+            style={[
+              styles.offerDescription,
+              {color: isDarkMode ? '#4a4a4a' : '#4a4a4a'},
+            ]}>
             {offer.description}
           </Text>
         </View>
-        <Image source={{ uri: offer.image }} style={styles.offerImg} />
+        <Image source={{uri: offer.image}} style={styles.offerImg} />
       </View>
     ));
   };
@@ -349,7 +369,6 @@ function ServiceApp({ navigation, route }) {
   //     </View>
   //   ));
   // };
-  
 
   // Render service cards from backend data
   const renderServices = () => {
@@ -375,11 +394,18 @@ function ServiceApp({ navigation, route }) {
           resizeMode="stretch"
         />
         <View style={styles.serviceDetails}>
-          <Text style={styles.serviceTitle}> { t(`service_${service.service_id}`) || service.service_name }</Text>
+          <Text style={styles.serviceTitle}>
+            {' '}
+            {t(`service_${service.service_id}`) || service.service_name}
+          </Text>
           <TouchableOpacity
             style={styles.bookButton}
-            onPress={() => handleBookCommander(service.service_name,service.service_id)}>
-            <Text style={styles.bookButtonText}>{t('book_now') || 'Book Now ➔'}</Text>
+            onPress={() =>
+              handleBookCommander(service.service_name, service.service_id)
+            }>
+            <Text style={styles.bookButtonText}>
+              {t('book_now') || 'Book Now ➔'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -388,17 +414,19 @@ function ServiceApp({ navigation, route }) {
 
   // Submit user feedback
   const submitFeedback = async () => {
-    try { 
+    try {
       const response = await axios.post(
         'https://backend.clicksolver.com/api/user/feedback',
         {
           rating,
           comment,
-          notification_id: decodedId, 
+          notification_id: decodedId,
         },
         {
           headers: {
-            Authorization: `Bearer ${await EncryptedStorage.getItem('cs_token')}`,
+            Authorization: `Bearer ${await EncryptedStorage.getItem(
+              'cs_token',
+            )}`,
           },
         },
       );
@@ -417,7 +445,7 @@ function ServiceApp({ navigation, route }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <View style={styles.container}>
         {/* Language Selector Button – navigates to a dedicated LanguageSelector screen */}
         {/* <View style={{ alignSelf: 'flex-end', margin: 10 }}>
@@ -430,20 +458,22 @@ function ServiceApp({ navigation, route }) {
         {/* Header Row */}
         <View style={styles.header}>
           <View style={styles.userInfo}>
-            <TouchableOpacity onPress={() =>
-              navigation.navigate('Tabs', { screen: 'Account' })
-            }>
-              {profile ? 
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Tabs', {screen: 'Account'})}>
+              {profile ? (
                 <View>
-                  <Image source={{ uri: profile }} style={styles.userInitialCircle} />
+                  <Image
+                    source={{uri: profile}}
+                    style={styles.userInitialCircle}
+                  />
                 </View>
-              :
+              ) : (
                 <View style={styles.userInitialCircle}>
                   <Text style={styles.userInitialText}>
                     {name?.charAt?.(0)?.toUpperCase() || 'U'}
                   </Text>
-                </View>  
-              }
+                </View>
+              )}
             </TouchableOpacity>
             <View style={styles.greeting}>
               <Text style={styles.greetingText}>
@@ -455,10 +485,18 @@ function ServiceApp({ navigation, route }) {
           </View>
           <View style={styles.headerIcons}>
             <TouchableOpacity onPress={handleNotification}>
-              <Icon name="notifications-outline" size={23} color={isDarkMode ? '#fff' : "#212121"} />
+              <Icon
+                name="notifications-outline"
+                size={23}
+                color={isDarkMode ? '#fff' : '#212121'}
+              />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleHelp}>
-              <Feather name="help-circle" size={23} color={isDarkMode ? '#fff' : "#212121"} />
+              <Feather
+                name="help-circle"
+                size={23}
+                color={isDarkMode ? '#fff' : '#212121'}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -467,13 +505,17 @@ function ServiceApp({ navigation, route }) {
         <QuickSearch />
 
         {/* Main Scrollable Content */}
+
         <ScrollView
           contentContainerStyle={styles.scrollViewContent}
+          style={{flex: 1}}
           showsVerticalScrollIndicator={false}>
           {/* Special Offers */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{t('special_offers') || 'Special Offers'}</Text>
+              <Text style={styles.sectionTitle}>
+                {t('special_offers') || 'Special Offers'}
+              </Text>
             </View>
             <ScrollView
               horizontal
@@ -486,7 +528,9 @@ function ServiceApp({ navigation, route }) {
           {/* Services */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{t('services') || 'Services'}</Text>
+              <Text style={styles.sectionTitle}>
+                {t('services') || 'Services'}
+              </Text>
             </View>
             {renderServices()}
           </View>
@@ -528,25 +572,46 @@ function ServiceApp({ navigation, route }) {
                       {item.screen === 'Paymentscreen' ? (
                         <Foundation name="paypal" size={24} color="#ffffff" />
                       ) : item.screen === 'UserNavigation' ? (
-                        <MaterialCommunityIcons name="truck" size={24} color="#ffffff" />
+                        <MaterialCommunityIcons
+                          name="truck"
+                          size={24}
+                          color="#ffffff"
+                        />
                       ) : item.screen === 'userwaiting' ? (
                         <Feather name="search" size={24} color="#ffffff" />
                       ) : item.screen === 'OtpVerification' ? (
                         <Feather name="shield" size={24} color="#ffffff" />
                       ) : item.screen === 'worktimescreen' ? (
-                        <MaterialCommunityIcons name="hammer" size={24} color="#ffffff" />
+                        <MaterialCommunityIcons
+                          name="hammer"
+                          size={24}
+                          color="#ffffff"
+                        />
                       ) : (
-                        <Feather name="alert-circle" size={24} color={isDarkMode ? "#fff" : "#000"} />
+                        <Feather
+                          name="alert-circle"
+                          size={24}
+                          color={isDarkMode ? '#fff' : '#000'}
+                        />
                       )}
                     </View>
 
-                    <View style={{ marginLeft: 10 }}>
-                      <Text style={styles.serviceBookedText} numberOfLines={1} ellipsizeMode="tail">
+                    <View style={{marginLeft: 10}}>
+                      <Text
+                        style={styles.serviceBookedText}
+                        numberOfLines={1}
+                        ellipsizeMode="tail">
                         {item.serviceBooked && item.serviceBooked.length > 0
                           ? item.serviceBooked
                               .slice(0, 2)
-                              .map(service =>  t(`singleService_${service.main_service_id}`) || service.serviceName )
-                              .join(', ') + (item.serviceBooked.length > 2 ? '...' : '')
+                              .map(
+                                service =>
+                                  t(
+                                    `singleService_${service.main_service_id}`,
+                                  ) || service.serviceName,
+                              )
+                              .join(', ') +
+                            (item.serviceBooked.length > 2 ? '...' : '')
                           : t('service_booked', 'Service Booked')}
                       </Text>
 
@@ -556,7 +621,10 @@ function ServiceApp({ navigation, route }) {
                           : item.screen === 'UserNavigation'
                           ? t('commander_on_the_way', 'Commander is on the way')
                           : item.screen === 'OtpVerification'
-                          ? t('user_waiting_for_help', 'User is waiting for your help')
+                          ? t(
+                              'user_waiting_for_help',
+                              'User is waiting for your help',
+                            )
                           : item.screen === 'worktimescreen'
                           ? t('work_in_progress', 'Work in progress')
                           : t('nothing', 'Nothing')}
@@ -580,7 +648,8 @@ function ServiceApp({ navigation, route }) {
                 <Icon name="close" size={20} color="#FFFFFF" />
               </TouchableOpacity>
               <Text style={styles.modalTitle}>
-                {t('feedback_modal_title') || 'How was the quality of your Service?'}
+                {t('feedback_modal_title') ||
+                  'How was the quality of your Service?'}
               </Text>
               <Text style={styles.modalSubtitle}>
                 {t('feedback_modal_subtitle') ||
@@ -602,19 +671,25 @@ function ServiceApp({ navigation, route }) {
               </View>
               <TextInput
                 style={styles.commentBox}
-                placeholder={t('feedback_placeholder') || 'Write your comment here...'}
+                placeholder={
+                  t('feedback_placeholder') || 'Write your comment here...'
+                }
                 placeholderTextColor={isDarkMode ? '#A9A9A9' : '#A9A9A9'}
                 multiline
                 value={comment}
                 onChangeText={setComment}
               />
               <View style={styles.modalButtons}>
-                <TouchableOpacity onPress={closeModal} style={styles.notNowButton}>
+                <TouchableOpacity
+                  onPress={closeModal}
+                  style={styles.notNowButton}>
                   <Text style={styles.notNowText}>
                     {t('feedback_not_now') || 'Not now'}
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={submitFeedback} style={styles.submitButton}>
+                <TouchableOpacity
+                  onPress={submitFeedback}
+                  style={styles.submitButton}>
                   <Text style={styles.submitText}>
                     {t('feedback_submit') || 'Submit'}
                   </Text>
@@ -623,7 +698,6 @@ function ServiceApp({ navigation, route }) {
             </View>
           </View>
         </Modal>
-
       </View>
     </SafeAreaView>
   );
@@ -652,11 +726,11 @@ const dynamicStyles = (width, height, isDarkMode) => {
       flexDirection: 'row',
       alignItems: 'center',
     },
-    image:{
-      width:30,
-      height:30,
-      borderRadius:15
-    }, 
+    image: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+    },
     userInitialCircle: {
       width: isTablet ? 50 : 40,
       height: isTablet ? 50 : 40,
@@ -714,6 +788,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
     offersScrollView: {
       display: 'flex',
       gap: 10,
+      paddingLeft: 5,
     },
     offerCard: {
       flexDirection: 'row',
@@ -794,11 +869,10 @@ const dynamicStyles = (width, height, isDarkMode) => {
       marginTop: 10,
       borderRadius: 15,
       backgroundColor: '#FF4500',
-      alignSelf: 'flex-start',    // so it wraps its content
+      alignSelf: 'flex-start', // so it wraps its content
       opacity: 0.88,
     },
-    
-    
+
     bookButtonText: {
       color: '#ffffff',
       fontFamily: 'RobotoSlab-SemiBold',

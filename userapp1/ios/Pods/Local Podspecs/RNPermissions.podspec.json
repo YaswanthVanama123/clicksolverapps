@@ -35,6 +35,8 @@
     "UserNotifications"
   ],
   "dependencies": {
-    "React-Core": []
+    "React-Core": [
+
+    ]
   }
 }

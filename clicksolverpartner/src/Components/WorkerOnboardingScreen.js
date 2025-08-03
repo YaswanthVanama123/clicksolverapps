@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, {useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -11,19 +11,19 @@ import {
 } from 'react-native';
 import Swiper from 'react-native-swiper';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import {useNavigation, CommonActions} from '@react-navigation/native';
 import {
-  requestNotifications, 
+  requestNotifications,
   checkNotifications,
 } from 'react-native-permissions';
-import { request, PERMISSIONS } from 'react-native-permissions';
+import {request, PERMISSIONS} from 'react-native-permissions';
 
 const WorkerOnboardingScreen = () => {
   const swiperRef = useRef(null);
   const navigation = useNavigation();
-  const { width, height } = useWindowDimensions();
+  const {width, height} = useWindowDimensions();
   const styles = dynamicStyles(width, height);
 
   // Track which flows are done
@@ -51,8 +51,9 @@ const WorkerOnboardingScreen = () => {
       key: '3',
       title: 'Seamless Navigation & Tracking',
       text: 'We update your location in the background to provide accurate navigation and timely job assignments.',
-      image: 'https://i.postimg.cc/8zBvSLJn/vecteezy-isometric-illustration-concept-location-finder-map-5638544-1-1.jpg',
-      bg1: '#1E90FF', 
+      image:
+        'https://i.postimg.cc/8zBvSLJn/vecteezy-isometric-illustration-concept-location-finder-map-5638544-1-1.jpg',
+      bg1: '#1E90FF',
       bg2: '#00BFFF',
     },
   ];
@@ -104,14 +105,14 @@ const WorkerOnboardingScreen = () => {
 
   const requestNotifPermissions = async () => {
     try {
-      const { status } = await requestNotifications(['alert', 'sound', 'badge']);
+      const {status} = await requestNotifications(['alert', 'sound', 'badge']);
       if (status === 'granted') {
         setNotifsGranted(true);
         swiperRef.current.scrollBy(1);
       } else {
         Alert.alert(
           'Notification Permission',
-          'We need notification permission to send you job alerts.'
+          'We need notification permission to send you job alerts.',
         );
       }
     } catch (e) {
@@ -124,15 +125,20 @@ const WorkerOnboardingScreen = () => {
       // Foreground
       const fine = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
       if (fine !== 'granted') {
-        Alert.alert('Location Permission', 'Fine location permission is required.');
+        Alert.alert(
+          'Location Permission',
+          'Fine location permission is required.',
+        );
         return;
       }
       // Background
-      const back = await request(PERMISSIONS.ANDROID.ACCESS_BACKGROUND_LOCATION);
+      const back = await request(
+        PERMISSIONS.ANDROID.ACCESS_BACKGROUND_LOCATION,
+      );
       if (back !== 'granted') {
         Alert.alert(
           'Background Location',
-          'Background location permission is required to receive nearby jobs.'
+          'Background location permission is required to receive nearby jobs.',
         );
         return;
       }
@@ -146,23 +152,22 @@ const WorkerOnboardingScreen = () => {
   const finishOnboarding = async () => {
     try {
       await EncryptedStorage.setItem('worker_onboarded', 'true');
-      const pcs_token = await EncryptedStorage.getItem("pcs_token");
-      if(pcs_token){
+      const pcs_token = await EncryptedStorage.getItem('pcs_token');
+      if (pcs_token) {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-          })
-        )
-      }else{
-              navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [{ name: 'Login' }],
-                })
-              );
+            routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+          }),
+        );
+      } else {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{name: 'Login'}],
+          }),
+        );
       }
-
     } catch (error) {
       console.error(error);
     }
@@ -177,16 +182,14 @@ const WorkerOnboardingScreen = () => {
           dotStyle={styles.dotStyle}
           activeDotStyle={styles.activeDotStyle}
           paginationStyle={styles.paginationStyle}
-          showsButtons={false}
-        >
+          showsButtons={false}>
           {slides.map((slide, index) => (
             <View key={slide.key} style={styles.slide}>
               <LinearGradient
                 colors={[slide.bg1, slide.bg2]}
-                style={styles.innerCard}
-              >
+                style={styles.innerCard}>
                 <Image
-                  source={{ uri: slide.image }}
+                  source={{uri: slide.image}}
                   style={styles.image}
                   resizeMode="contain"
                 />
@@ -201,15 +204,13 @@ const WorkerOnboardingScreen = () => {
                 {index < slides.length - 1 && (
                   <TouchableOpacity
                     style={[styles.button, styles.skipButton]}
-                    onPress={handleSkipPress}
-                  >
+                    onPress={handleSkipPress}>
                     <Text style={styles.skipButtonText}>Skip</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
                   style={[styles.button, styles.nextButton]}
-                  onPress={() => handleNextPress(index)}
-                >
+                  onPress={() => handleNextPress(index)}>
                   <Text style={styles.buttonText}>
                     {index === slides.length - 1 ? 'Get Started' : 'Next'}
                   </Text>
@@ -225,8 +226,8 @@ const WorkerOnboardingScreen = () => {
 
 const dynamicStyles = (width, height) =>
   StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#fff' },
-    slide: { flex: 1 },
+    safeArea: {flex: 1, backgroundColor: '#fff'},
+    slide: {flex: 1},
     innerCard: {
       height: '40%',
       borderBottomRightRadius: 25,
@@ -234,7 +235,7 @@ const dynamicStyles = (width, height) =>
       justifyContent: 'center',
       alignItems: 'center',
     },
-    image: { width: '80%', height: '80%' },
+    image: {width: '80%', height: '80%'},
     onboardingContent: {
       flex: 1,
       justifyContent: 'center',
@@ -253,7 +254,7 @@ const dynamicStyles = (width, height) =>
       textAlign: 'center',
       color: 'rgba(0, 0, 0, 0.5)',
     },
-    paginationStyle: { bottom: 100 },
+    paginationStyle: {bottom: 100},
     dotStyle: {
       backgroundColor: '#C0C0C0',
       width: 8,
