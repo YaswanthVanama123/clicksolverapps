@@ -120,5 +120,16 @@
 	<false/>
 	<key>firebase_crashlytics_debug_enabled</key>
 	<false/>
+	<key>FIREBASE_ANALYTICS_COLLECTION_ENABLED</key>
+	<false/>
+	<key>FIREBASE_SCREEN_REPORTING_ENABLED</key>
+	<false/>
+	<key>GoogleAnalyticsDefaultAllowAdPersonalizationSignals</key>
+	<false/>
+	<key>NSUserTrackingUsageDescription</key>
+<string>
+  This identifier is used to improve analytics and app performance.
+</string>
+
 </dict>
 </plist>

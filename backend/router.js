@@ -134,7 +134,7 @@ const {
   cashbackHistory,
   getWorkerServiceHistory,
   currentService,
-  balanceHistory ,
+  balanceHistory,
   workerScreenChange,
   getPendingWorkersNotStarted,
   administratorDetails,
@@ -146,7 +146,7 @@ const {
   createOrder,
   verifyPayment,
   createFundAccount,
-  validateAndSaveUPI ,
+  validateAndSaveUPI,
   userLogout,
   workerLogout,
   phoneCall,
@@ -173,7 +173,8 @@ const {
   initiateCall,
   getServiceBookingUserItemDetails,
   getSpecialOffers,
-  partnerSendOtp
+  partnerSendOtp,
+  sendNotificationsToWorkers,
 } = require("./controller.js");
 
 const router = express.Router();
@@ -181,37 +182,37 @@ const { authenticateToken } = require("./src/middlewares/authMiddleware.js");
 const {
   authenticateWorkerToken,
 } = require("./src/middlewares/authworkerMiddleware.js");
-const { authAdminMiddleware } = require("./src/middlewares/authAdminMiddleware.js");
+const {
+  authAdminMiddleware,
+} = require("./src/middlewares/authAdminMiddleware.js");
 
 // Define the route for getting service details
 router.post("/single/service", getServiceByName);
 
-router.get("/home/services",homeServices)
+router.get("/home/services", homeServices);
 
-router.post("/route",getRoute)
+router.post("/route", getRoute);
 
-router.post('/worker/call', phoneCall);
-router.post('/user/call', UserPhoneCall);
+router.post("/worker/call", phoneCall);
+router.post("/user/call", UserPhoneCall);
 
-router.post('/worker/tracking/call',workerTrackingCall)
-router.post('/user/tracking/call',userTrackingCall);
+router.post("/worker/tracking/call", workerTrackingCall);
+router.post("/user/tracking/call", userTrackingCall);
 
-router.post('/workerLogout', workerLogout);
+router.post("/workerLogout", workerLogout);
 
 router.post("/individual/worker/pending/verification", getPendingWorkerDetails);
 
-router.post("/create-order",authenticateWorkerToken, createOrder);
+router.post("/create-order", authenticateWorkerToken, createOrder);
 
 // Route to verify payment
-router.post("/verify-payment",authenticateWorkerToken, verifyPayment);
-
+router.post("/verify-payment", authenticateWorkerToken, verifyPayment);
 
 router.get("/workers/pending/verification", getPendingWorkers);
 
 router.get("/workers/pending/notStarted", getPendingWorkersNotStarted);
 
-router.post("/administrator/service/date/details",administratorDetails)
-
+router.post("/administrator/service/date/details", administratorDetails);
 
 router.post(
   "/service/tracking/delivery/verification",
@@ -278,27 +279,36 @@ router.post(
 
 router.post("/service/booking/item/details", getServiceBookingItemDetails);
 
-router.post("/service/booking/user/item/details", getServiceBookingUserItemDetails);
+router.post(
+  "/service/booking/user/item/details",
+  getServiceBookingUserItemDetails
+);
 
+router.post(
+  "/service/ongoing/booking/item/details",
+  getServiceOngoingItemDetails
+);
 
+router.get("/worker/getMessages", workerGetMessage);
 
-router.post("/service/ongoing/booking/item/details", getServiceOngoingItemDetails);
+router.post(
+  "/service/ongoing/worker/booking/item/details",
+  getServiceOngoingWorkerItemDetails
+);
 
-router.get("/worker/getMessages",workerGetMessage);
+router.post("/send/message/worker", sendMessageWorker);
 
-
-
-router.post("/service/ongoing/worker/booking/item/details", getServiceOngoingWorkerItemDetails);
-
-router.post("/send/message/worker",sendMessageWorker);
-
-router.post("/send/message/user",sendMessageUser);
+router.post("/send/message/user", sendMessageUser);
 
 router.post("/user/coupons", authenticateToken, userCoupons);
 
-router.post("/user/updateProfileImage",authenticateToken,userProfileUpdate)
+router.post("/user/updateProfileImage", authenticateToken, userProfileUpdate);
 
-router.post("/worker/updateProfileImage",authenticateWorkerToken,workerProfileUpdate)
+router.post(
+  "/worker/updateProfileImage",
+  authenticateWorkerToken,
+  workerProfileUpdate
+);
 
 // Define the route for processing payment
 router.post("/user/payed", processPayment);
@@ -307,13 +317,15 @@ router.post("/add/tracking", insertTracking);
 
 router.post("/user/details/update", authenticateToken, accountDetailsUpdate);
 
-router.post("/user/details/delete",authenticateToken,accountDelete)
+router.post("/user/details/delete", authenticateToken, accountDelete);
 
 router.post("/user/profile", authenticateToken, userProfileDetails);
 
-
-router.post("/worker/profile", authenticateWorkerToken, workerProfileScreenDetails);
-
+router.post(
+  "/worker/profile",
+  authenticateWorkerToken,
+  workerProfileScreenDetails
+);
 
 // Route to add a new user
 router.post("/add/worker", async (req, res) => {
@@ -399,9 +411,9 @@ router.post("/worker/payment/scanner/details", async (req, res) => {
   //   discountAmount,
   //   fetchedFinalTotalAmount,
   // } = await getWorkerDetails(notification_id);
-  res.json({ 
+  res.json({
     totalAmount: total_cost,
-    name, 
+    name,
     service,
     discount,
   });
@@ -441,7 +453,7 @@ router.post("/worker/earnings", authenticateWorkerToken, getWorkerEarnings);
 //     // fetchedFinalTotalAmount,
 //     profile,
 //     total_cost
-//   } = workerDetails; 
+//   } = workerDetails;
 
 //   res.json({
 //     // start_time,
@@ -476,9 +488,9 @@ router.post("/worker/earnings", authenticateWorkerToken, getWorkerEarnings);
 //   });
 // });
 
-router.post("/payment/details",  getWorkerDetails);
+router.post("/payment/details", getWorkerDetails);
 
-router.post('/userLogout', userLogout);
+router.post("/userLogout", userLogout);
 
 router.post("/worker/details/rating", async (req, res) => {
   const { notification_id } = req.body;
@@ -653,15 +665,18 @@ router.post(
   profileChangesSubmit
 );
 
-
 router.post("/account/submit", authenticateWorkerToken, addBankAccount);
 
-router.post("/account/fund_account",authenticateWorkerToken,createFundAccount)
+router.post(
+  "/account/fund_account",
+  authenticateWorkerToken,
+  createFundAccount
+);
 
-router.post("/upi/submit", authenticateWorkerToken, validateAndSaveUPI );
+router.post("/upi/submit", authenticateWorkerToken, validateAndSaveUPI);
 
 router.post(
-  "/onboarding/step-status", 
+  "/onboarding/step-status",
   authenticateWorkerToken,
   onboardingSteps
 );
@@ -674,12 +689,11 @@ router.post("/otp/send", sendOtp);
 
 router.post("/partner/otp/send", partnerSendOtp);
 
-
 router.post("/partner/sendOtp", partnerSendOtp);
 
-router.post("/worker/sendOtp",WorkerSendOtp)
+router.post("/worker/sendOtp", WorkerSendOtp);
 
-router.get("/worker/validateOtp",WorkerValidateOtp)
+router.get("/worker/validateOtp", WorkerValidateOtp);
 
 // GET request to validate OTP
 router.get("/validate", validateOtp);
@@ -705,7 +719,7 @@ router.get(
   getWorkerTrackingServices
 );
 
-router.post("/callMasking",callMasking)
+router.post("/callMasking", callMasking);
 
 router.get("/all/tracking/services", getAllTrackingServices);
 
@@ -715,33 +729,36 @@ router.post("/worker/working/status/updated", workerWorkingStatusUpdated);
 
 router.post("/worker/work/progress/details", WorkerWorkInProgressDetails);
 
-router.get("/worker/balance/history",balanceHistory);
+router.get("/worker/balance/history", balanceHistory);
 
 router.post("/administrator/service/date/details", getDashboardDetails);
 
 router.get("/workers/pending/cashback", getWorkersPendingCashback);
 
-router.post("/worker/screen/change",workerScreenChange)
+router.post("/worker/screen/change", workerScreenChange);
 
 router.post("/worker/pending/cashback", getWorkerCashbackDetails);
 
-router.post("/worker/pending/balance", getWorkerBalanceDetails); 
+router.post("/worker/pending/balance", getWorkerBalanceDetails);
 
-router.post("/worker/token/verification",authenticateWorkerToken,workerTokenVerification)
+router.post(
+  "/worker/token/verification",
+  authenticateWorkerToken,
+  workerTokenVerification
+);
 
 router.get("/worker/service/history", getWorkerServiceHistory);
 
 router.get("/worker/current/service", currentService);
 
-router.get("/admin/login",adminLogin)
+router.get("/admin/login", adminLogin);
 
 router.post("/worker/message", workerMessage);
-
 
 router.get("/pending/balance/workers", pendingBalanceWorkers);
 
 router.get(
-  "/user/tracking/services", 
+  "/user/tracking/services",
   authenticateToken,
   getUserTrackingServices
 );
@@ -757,11 +774,13 @@ router.get("/worker/bookings", authenticateWorkerToken, getWorkerBookings);
 
 router.get("/user/bookings", authenticateToken, getUserAllBookings);
 
-router.get("/user/ongoingBookings",authenticateToken, getUserOngoingBookings);
+router.get("/user/ongoingBookings", authenticateToken, getUserOngoingBookings);
 
-router.get("/worker/ongoingBookings",authenticateWorkerToken, getWorkerOngoingBookings);
-
-
+router.get(
+  "/worker/ongoingBookings",
+  authenticateWorkerToken,
+  getWorkerOngoingBookings
+);
 
 router.get(
   "/worker/profile/details",
@@ -781,7 +800,7 @@ router.post("/worker/store-fcm-token", authenticateWorkerToken, storeFcmToken);
 
 router.post("/user/store-fcm-token", authenticateToken, storeUserFcmToken);
 
-router.post("/initiateCall",initiateCall);
+router.post("/initiateCall", initiateCall);
 
 router.post(
   "/worker/store-notification",
@@ -797,7 +816,7 @@ router.post(
 
 router.get("/user/track/details", authenticateToken, getUserTrackRoute);
 
-router.get("/user/offers",authenticateToken,fetchOffers)
+router.get("/user/offers", authenticateToken, fetchOffers);
 
 router.get(
   "/worker/track/details",
@@ -811,8 +830,9 @@ router.get(
   getWorkerNotifications
 );
 
-router.post('/translate', translateText);
+router.post("/translate", translateText);
 
+router.post("/send/notifications", sendNotificationsToWorkers);
 
 router.get("/user/notifications", authenticateToken, getUserNotifications);
 
@@ -847,7 +867,7 @@ router.post("/user/work/cancel", userNavigationCancel);
 
 router.post("/worker/work/cancel", workerNavigationCancel);
 
-router.post("/user/validate-offer",authenticateToken,offerValidation)
+router.post("/user/validate-offer", authenticateToken, offerValidation);
 
 router.post(
   "/registration/status",
@@ -912,7 +932,7 @@ router.post("/reject/request", authenticateWorkerToken, rejectRequest);
 
 router.get("/checking/status", checkStatus);
 
-router.get("/special/offers",getSpecialOffers)
+router.get("/special/offers", getSpecialOffers);
 
 router.post("/task/confirm/status", checkTaskStatus);
 
@@ -926,6 +946,6 @@ router.get("/services", getServicesBySearch);
 
 router.get("/worker/search", workerSearch);
 
-router.get("/worker/cashback/history",cashbackHistory)
+router.get("/worker/cashback/history", cashbackHistory);
 
 module.exports = router;

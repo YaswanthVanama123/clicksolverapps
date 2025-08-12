@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import React, {useEffect, useState, useMemo, useCallback, useRef} from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   useWindowDimensions,
   Button,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Feather from 'react-native-vector-icons/Feather';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -19,27 +19,27 @@ import Foundation from 'react-native-vector-icons/Foundation';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
 import LottieView from 'lottie-react-native';
-import crashlytics from '@react-native-firebase/crashlytics';
+// import crashlytics from '@react-native-firebase/crashlytics';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import QuickSearch from '../Components/QuickSearch';
-import { useFocusEffect } from '@react-navigation/native';
-import { useTheme } from '../context/ThemeContext';
+import {useFocusEffect} from '@react-navigation/native';
+import {useTheme} from '../context/ThemeContext';
 
 // 1. Import i18n (this initializes translation)
 import '../i18n/i18n';
 // 2. Import the helper to change language
-import { changeAppLanguage } from '../i18n/languageChange';
+import {changeAppLanguage} from '../i18n/languageChange';
 // 3. Import useTranslation hook from react-i18next
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
-function Home({ navigation, route }) { 
-  const { width, height } = useWindowDimensions();
-  const { isDarkMode } = useTheme();
-  const { t, i18n } = useTranslation();
+function Home({navigation, route}) {
+  const {width, height} = useWindowDimensions();
+  const {isDarkMode} = useTheme();
+  const {t, i18n} = useTranslation();
   const styles = dynamicStyles(width, height, isDarkMode);
 
   // State variables for backend data and feedback
-  const [profile, setProfile] = useState("");
+  const [profile, setProfile] = useState('');
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [greeting, setGreeting] = useState('');
@@ -97,35 +97,35 @@ function Home({ navigation, route }) {
     [isDarkMode, t],
   );
 
-
-    // NEW: Function to translate user name if target language is not English
-    const translateUserName = async (userName, targetLang) => {
-      if (targetLang.toLowerCase() === 'en') {
-        return userName;
-      }
-      try {
-        const response = await axios.post('https://backend.clicksolver.com/api/translate', {
+  // NEW: Function to translate user name if target language is not English
+  const translateUserName = async (userName, targetLang) => {
+    if (targetLang.toLowerCase() === 'en') {
+      return userName;
+    }
+    try {
+      const response = await axios.post(
+        'https://backend.clicksolver.com/api/translate',
+        {
           text: userName,
           fromLang: 'en',
-          toLang: targetLang  // send as "toLang" instead of "targetLang"
-        });
-        if (response.data && response.data.translatedText) {
-          return response.data.translatedText;
-        }
-      } catch (error) {
-        console.error('Translation error:', error);
+          toLang: targetLang, // send as "toLang" instead of "targetLang"
+        },
+      );
+      if (response.data && response.data.translatedText) {
+        return response.data.translatedText;
       }
-      return userName;
-    };
-    
-    
+    } catch (error) {
+      console.error('Translation error:', error);
+    }
+    return userName;
+  };
 
   // useEffect(() => {
   //   crashlytics.log('ServiceApp component mounted');
   // }, []);
 
   useEffect(() => {
-    const { encodedId } = route.params || {};
+    const {encodedId} = route.params || {};
     if (encodedId) {
       try {
         const decoded = atob(encodedId);
@@ -145,10 +145,10 @@ function Home({ navigation, route }) {
   useFocusEffect(
     useCallback(() => {
       fetchTrackDetails();
-    }, [])
+    }, []),
   );
 
-  // Fetch tracking details from the backend 
+  // Fetch tracking details from the backend
   // When fetching tracking details, send the user's name for translation if needed.
   const fetchTrackDetails = async () => {
     try {
@@ -158,17 +158,20 @@ function Home({ navigation, route }) {
         const response = await axios.get(
           'https://backend.clicksolver.com/api/user/track/details',
           {
-            headers: { Authorization: `Bearer ${cs_token}` }, 
-          }
-        ); 
+            headers: {Authorization: `Bearer ${cs_token}`},
+          },
+        );
         const track = response?.data?.track || [];
         // console.log(track)
-        const { user, profile } = response.data;
+        const {user, profile} = response.data;
         // console.log("Track response:", response.data);
         // Get the target language from your app settings (assuming i18n.language holds the code)
         const targetLang = i18n.language || 'en';
         // Translate the user's name if needed
-        const translatedName = await translateUserName(user || response.data, targetLang);
+        const translatedName = await translateUserName(
+          user || response.data,
+          targetLang,
+        );
         setName(translatedName);
         setProfile(profile);
         setMessageBoxDisplay(track.length > 0);
@@ -179,21 +182,20 @@ function Home({ navigation, route }) {
     }
   };
 
-
   // Fetch available service categories from the backend
   const fetchServices = async () => {
     try {
       setLoading(true);
       // log('Attempting to fetch services from API');
       const response = await axios.get(
-        'https://backend.clicksolver.com/api/home/services'
+        'https://backend.clicksolver.com/api/home/services',
       );
       setServices(response.data);
     } catch (error) {
       recordError(error);
       console.error('Detailed Error:', error.toJSON ? error.toJSON() : error);
     } finally {
-      setLoading(false); 
+      setLoading(false);
     }
   };
 
@@ -205,8 +207,8 @@ function Home({ navigation, route }) {
     navigation.push('Help');
   };
 
-  const handleBookCommander = (serviceId,id) => {
-    navigation.push('serviceCategory', { serviceObject: serviceId ,id});
+  const handleBookCommander = (serviceId, id) => {
+    navigation.push('serviceCategory', {serviceObject: serviceId, id});
   };
 
   // Set greeting text and icon based on time of day, using translations
@@ -222,7 +224,13 @@ function Home({ navigation, route }) {
       icon = <Feather name="sunset" size={16} color="#F24E1E" />;
     } else {
       greetingMessage = t('good_evening') || 'Good Evening';
-      icon = <MaterialIcons name="nights-stay" size={16} color={isDarkMode ? "#fff" : "#000"} />;
+      icon = (
+        <MaterialIcons
+          name="nights-stay"
+          size={16}
+          color={isDarkMode ? '#fff' : '#000'}
+        />
+      );
     }
     setGreeting(greetingMessage);
     setGreetingIcon(icon);
@@ -233,118 +241,124 @@ function Home({ navigation, route }) {
     return specialOffers.map(offer => (
       <View
         key={offer.id}
-        style={[styles.offerCard, { backgroundColor: offer.backgroundColor }]}>
+        style={[styles.offerCard, {backgroundColor: offer.backgroundColor}]}>
         <View style={styles.offerDetails}>
-          <Text style={[styles.offerTitle, { color: '#ff4500' }]}>
+          <Text style={[styles.offerTitle, {color: '#ff4500'}]}>
             {offer.title}
           </Text>
-          <Text style={[styles.offerSubtitle, { color: isDarkMode ? '#4a4a4a' : '#4a4a4a' }]}>
+          <Text
+            style={[
+              styles.offerSubtitle,
+              {color: isDarkMode ? '#4a4a4a' : '#4a4a4a'},
+            ]}>
             {offer.subtitle}
           </Text>
-          <Text style={[styles.offerDescription, { color: isDarkMode ? '#4a4a4a' : '#4a4a4a' }]}>
+          <Text
+            style={[
+              styles.offerDescription,
+              {color: isDarkMode ? '#4a4a4a' : '#4a4a4a'},
+            ]}>
             {offer.description}
           </Text>
         </View>
-        <Image source={{ uri: offer.imageBACKENDAP }} style={styles.offerImg} />
+        <Image source={{uri: offer.imageBACKENDAP}} style={styles.offerImg} />
       </View>
     ));
   };
 
   // Render service cards from backend data
-//   const renderServices = () => {
-//     if (loading) {
-//       return (
-//         <View style={styles.fullScreenLoader}>
-//           <LottieView
-//             source={require('../assets/cardsLoading.json')}
-//             autoPlay
-//             loop
-//             style={styles.loadingAnimation}
-//           />
-//         </View>
-//       );
-//     }
-//     return services.map(service => (
-//       <View key={service.service_id} style={styles.serviceCard}>
-//         <Image
-//           source={{
-//             uri: service.service_urls || 'https://via.placeholder.com/100x100',
-//           }}
-//           style={styles.serviceImg}
-//           resizeMode="stretch"
-//         />
-//         <View style={styles.serviceDetails}>
-//           <Text style={styles.serviceTitle}> { t(`service_${service.service_id}`) || service.service_name }</Text>
-//           <TouchableOpacity
-//             style={styles.bookButton}
-//             onPress={() => handleBookCommander(service.service_name,service.service_id)}>
-//             <Text style={styles.bookButtonText}>{t('book_now') || 'Book Now ➔'}</Text>
-//           </TouchableOpacity>
-//         </View>
-//       </View>
-//     ));
-//   };
+  //   const renderServices = () => {
+  //     if (loading) {
+  //       return (
+  //         <View style={styles.fullScreenLoader}>
+  //           <LottieView
+  //             source={require('../assets/cardsLoading.json')}
+  //             autoPlay
+  //             loop
+  //             style={styles.loadingAnimation}
+  //           />
+  //         </View>
+  //       );
+  //     }
+  //     return services.map(service => (
+  //       <View key={service.service_id} style={styles.serviceCard}>
+  //         <Image
+  //           source={{
+  //             uri: service.service_urls || 'https://via.placeholder.com/100x100',
+  //           }}
+  //           style={styles.serviceImg}
+  //           resizeMode="stretch"
+  //         />
+  //         <View style={styles.serviceDetails}>
+  //           <Text style={styles.serviceTitle}> { t(`service_${service.service_id}`) || service.service_name }</Text>
+  //           <TouchableOpacity
+  //             style={styles.bookButton}
+  //             onPress={() => handleBookCommander(service.service_name,service.service_id)}>
+  //             <Text style={styles.bookButtonText}>{t('book_now') || 'Book Now ➔'}</Text>
+  //           </TouchableOpacity>
+  //         </View>
+  //       </View>
+  //     ));
+  //   };
 
+  // Render each service_title section with a horizontal scroll of its items
+  const renderServiceSections = () => {
+    if (loading) {
+      return (
+        <View style={styles.fullScreenLoader}>
+          <LottieView
+            source={require('../assets/cardsLoading.json')}
+            autoPlay
+            loop
+            style={styles.loadingAnimation}
+          />
+        </View>
+      );
+    }
 
-    // Render each service_title section with a horizontal scroll of its items
-    const renderServiceSections = () => {
-        if (loading) {
-          return (
-            <View style={styles.fullScreenLoader}>
-              <LottieView
-                source={require('../assets/cardsLoading.json')}
-                autoPlay
-                loop
-                style={styles.loadingAnimation}
+    return services.map(section => (
+      <View key={section.service_title} style={styles.section}>
+        {/* Section header */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{section.service_title}</Text>
+          <TouchableOpacity
+            onPress={() => {
+              // navigate to a full list screen, passing the section
+              navigation.push('ServiceList', {
+                title: section.service_title,
+                items: section,
+              });
+            }}>
+            <Text style={styles.seeAllText}>{t('see_all') || 'See All'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Horizontal scroll of items */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.horizontalList}>
+          {section.service_ids.map((id, idx) => (
+            <TouchableOpacity
+              key={id}
+              style={styles.serviceCard}
+              onPress={() =>
+                handleBookCommander(section.service_names[idx], id)
+              }>
+              <Image
+                source={{uri: section.service_urls[idx]}}
+                style={styles.serviceImg}
+                resizeMode="cover"
               />
-            </View>
-          );
-        }
-    
-        return services.map(section => (
-          <View key={section.service_title} style={styles.section}>
-            {/* Section header */}
-            <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>{section.service_title}</Text>
-                <TouchableOpacity
-                    onPress={() => {
-                    // navigate to a full list screen, passing the section
-                    navigation.push('ServiceList', { title: section.service_title, items: section });
-                    }}
-                >
-                    <Text style={styles.seeAllText}>{t('see_all') || 'See All'}</Text>
-                </TouchableOpacity>
-                </View>
-
-    
-            {/* Horizontal scroll of items */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalList}
-            >
-              {section.service_ids.map((id, idx) => (
-                <TouchableOpacity
-                  key={id}
-                  style={styles.serviceCard}
-                  onPress={() => handleBookCommander(section.service_names[idx], id)}
-                >
-                  <Image
-                    source={{ uri: section.service_urls[idx] }}
-                    style={styles.serviceImg}
-                    resizeMode="cover"
-                  />
-                  <Text style={styles.serviceNameText}>
-                    {t(`IndivService_${id}`) || section.service_names[idx]}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        ));
-      };
-    
-    
+              <Text style={styles.serviceNameText}>
+                {t(`IndivService_${id}`) || section.service_names[idx]}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    ));
+  };
 
   // Submit user feedback
   const submitFeedback = async () => {
@@ -358,7 +372,9 @@ function Home({ navigation, route }) {
         },
         {
           headers: {
-            Authorization: `Bearer ${await EncryptedStorage.getItem('cs_token')}`,
+            Authorization: `Bearer ${await EncryptedStorage.getItem(
+              'cs_token',
+            )}`,
           },
         },
       );
@@ -390,20 +406,19 @@ function Home({ navigation, route }) {
         {/* Header Row */}
         <View style={styles.header}>
           <View style={styles.userInfo}>
-            <TouchableOpacity onPress={() =>
-              navigation.navigate('Tabs', { screen: 'Account' })
-            }>
-              {profile ? 
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Tabs', {screen: 'Account'})}>
+              {profile ? (
                 <View>
-                  <Image source={{ uri: profile }} style={styles.image} />
+                  <Image source={{uri: profile}} style={styles.image} />
                 </View>
-              :
+              ) : (
                 <View style={styles.userInitialCircle}>
                   <Text style={styles.userInitialText}>
                     {name?.charAt?.(0)?.toUpperCase() || 'U'}
                   </Text>
-                </View>  
-              }
+                </View>
+              )}
             </TouchableOpacity>
             <View style={styles.greeting}>
               <Text style={styles.greetingText}>
@@ -415,10 +430,18 @@ function Home({ navigation, route }) {
           </View>
           <View style={styles.headerIcons}>
             <TouchableOpacity onPress={handleNotification}>
-              <Icon name="notifications-outline" size={23} color={isDarkMode ? '#fff' : "#212121"} />
+              <Icon
+                name="notifications-outline"
+                size={23}
+                color={isDarkMode ? '#fff' : '#212121'}
+              />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleHelp}>
-              <Feather name="help-circle" size={23} color={isDarkMode ? '#fff' : "#212121"} />
+              <Feather
+                name="help-circle"
+                size={23}
+                color={isDarkMode ? '#fff' : '#212121'}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -433,7 +456,9 @@ function Home({ navigation, route }) {
           {/* Special Offers */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{t('special_offers') || 'Special Offers'}</Text>
+              <Text style={styles.sectionTitle}>
+                {t('special_offers') || 'Special Offers'}
+              </Text>
             </View>
             <ScrollView
               horizontal
@@ -452,7 +477,7 @@ function Home({ navigation, route }) {
           </View>
         </ScrollView>
 
-        {/* Tracking Message Box */}  
+        {/* Tracking Message Box */}
         {messageBoxDisplay && (
           <ScrollView
             horizontal
@@ -488,25 +513,46 @@ function Home({ navigation, route }) {
                       {item.screen === 'Paymentscreen' ? (
                         <Foundation name="paypal" size={24} color="#ffffff" />
                       ) : item.screen === 'UserNavigation' ? (
-                        <MaterialCommunityIcons name="truck" size={24} color="#ffffff" />
+                        <MaterialCommunityIcons
+                          name="truck"
+                          size={24}
+                          color="#ffffff"
+                        />
                       ) : item.screen === 'userwaiting' ? (
                         <Feather name="search" size={24} color="#ffffff" />
                       ) : item.screen === 'OtpVerification' ? (
                         <Feather name="shield" size={24} color="#ffffff" />
                       ) : item.screen === 'worktimescreen' ? (
-                        <MaterialCommunityIcons name="hammer" size={24} color="#ffffff" />
+                        <MaterialCommunityIcons
+                          name="hammer"
+                          size={24}
+                          color="#ffffff"
+                        />
                       ) : (
-                        <Feather name="alert-circle" size={24} color={isDarkMode ? "#fff" : "#000"} />
+                        <Feather
+                          name="alert-circle"
+                          size={24}
+                          color={isDarkMode ? '#fff' : '#000'}
+                        />
                       )}
                     </View>
 
-                    <View style={{ marginLeft: 10 }}>
-                      <Text style={styles.serviceBookedText} numberOfLines={1} ellipsizeMode="tail">
+                    <View style={{marginLeft: 10}}>
+                      <Text
+                        style={styles.serviceBookedText}
+                        numberOfLines={1}
+                        ellipsizeMode="tail">
                         {item.serviceBooked && item.serviceBooked.length > 0
                           ? item.serviceBooked
                               .slice(0, 2)
-                              .map(service =>  t(`singleService_${service.main_service_id}`) || service.serviceName )
-                              .join(', ') + (item.serviceBooked.length > 2 ? '...' : '')
+                              .map(
+                                service =>
+                                  t(
+                                    `singleService_${service.main_service_id}`,
+                                  ) || service.serviceName,
+                              )
+                              .join(', ') +
+                            (item.serviceBooked.length > 2 ? '...' : '')
                           : t('service_booked', 'Service Booked')}
                       </Text>
 
@@ -516,7 +562,10 @@ function Home({ navigation, route }) {
                           : item.screen === 'UserNavigation'
                           ? t('commander_on_the_way', 'Commander is on the way')
                           : item.screen === 'OtpVerification'
-                          ? t('user_waiting_for_help', 'User is waiting for your help')
+                          ? t(
+                              'user_waiting_for_help',
+                              'User is waiting for your help',
+                            )
                           : item.screen === 'worktimescreen'
                           ? t('work_in_progress', 'Work in progress')
                           : t('nothing', 'Nothing')}
@@ -540,7 +589,8 @@ function Home({ navigation, route }) {
                 <Icon name="close" size={20} color="#FFFFFF" />
               </TouchableOpacity>
               <Text style={styles.modalTitle}>
-                {t('feedback_modal_title') || 'How was the quality of your Service?'}
+                {t('feedback_modal_title') ||
+                  'How was the quality of your Service?'}
               </Text>
               <Text style={styles.modalSubtitle}>
                 {t('feedback_modal_subtitle') ||
@@ -562,19 +612,25 @@ function Home({ navigation, route }) {
               </View>
               <TextInput
                 style={styles.commentBox}
-                placeholder={t('feedback_placeholder') || 'Write your comment here...'}
+                placeholder={
+                  t('feedback_placeholder') || 'Write your comment here...'
+                }
                 placeholderTextColor={isDarkMode ? '#A9A9A9' : '#A9A9A9'}
                 multiline
                 value={comment}
                 onChangeText={setComment}
               />
               <View style={styles.modalButtons}>
-                <TouchableOpacity onPress={closeModal} style={styles.notNowButton}>
+                <TouchableOpacity
+                  onPress={closeModal}
+                  style={styles.notNowButton}>
                   <Text style={styles.notNowText}>
                     {t('feedback_not_now') || 'Not now'}
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={submitFeedback} style={styles.submitButton}>
+                <TouchableOpacity
+                  onPress={submitFeedback}
+                  style={styles.submitButton}>
                   <Text style={styles.submitText}>
                     {t('feedback_submit') || 'Submit'}
                   </Text>
@@ -583,7 +639,6 @@ function Home({ navigation, route }) {
             </View>
           </View>
         </Modal>
-
       </View>
     </SafeAreaView>
   );
@@ -612,11 +667,11 @@ const dynamicStyles = (width, height, isDarkMode) => {
       flexDirection: 'row',
       alignItems: 'center',
     },
-    image:{
-      width:30,
-      height:30,
-      borderRadius:15
-    }, 
+    image: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+    },
     userInitialCircle: {
       width: isTablet ? 50 : 40,
       height: isTablet ? 50 : 40,
@@ -714,31 +769,31 @@ const dynamicStyles = (width, height, isDarkMode) => {
     },
     // container for each card in the horizontal list
     serviceCard: {
-        width: isTablet ? 140 : 120,    // fixed square width
-        marginRight: 12,
-        alignItems: 'center',           // center image and text
-      },
-      // square image
-      serviceImg: {
-        width: '100%',
-        aspectRatio: 1,                 // makes height = width
-        borderRadius: 10,
-        backgroundColor: '#eee',        // placeholder bg
-      },
-      // text under the image
-      serviceNameText: {
-        marginTop: 8,
-        textAlign: 'center',
-        fontSize: isTablet ? 14 : 12,
-        fontFamily: 'RobotoSlab-Bold',
-        color: isDarkMode ? '#fff' : '#333',
-      },
-      // horizontal list container
-      horizontalList: {
-        paddingLeft: 10,
-        paddingRight: 10,
-      },
-  
+      width: isTablet ? 140 : 120, // fixed square width
+      marginRight: 12,
+      alignItems: 'center', // center image and text
+    },
+    // square image
+    serviceImg: {
+      width: '100%',
+      aspectRatio: 1, // makes height = width
+      borderRadius: 10,
+      backgroundColor: '#eee', // placeholder bg
+    },
+    // text under the image
+    serviceNameText: {
+      marginTop: 8,
+      textAlign: 'center',
+      fontSize: isTablet ? 14 : 12,
+      fontFamily: 'RobotoSlab-Bold',
+      color: isDarkMode ? '#fff' : '#333',
+    },
+    // horizontal list container
+    horizontalList: {
+      paddingLeft: 10,
+      paddingRight: 10,
+    },
+
     messageBoxWrapper: {
       marginTop: 10,
     },
@@ -875,12 +930,11 @@ const dynamicStyles = (width, height, isDarkMode) => {
       height: 150,
     },
     horizontalList: {
-        paddingLeft: 10,
-        paddingRight: 10,
-        // optional gap if you want space between cards:
-        // gap: 10,
-      }, 
-  
+      paddingLeft: 10,
+      paddingRight: 10,
+      // optional gap if you want space between cards:
+      // gap: 10,
+    },
   });
 };
 

@@ -84,16 +84,6 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
-		<key>FirebaseCrashlytics-FirebaseCrashlytics_Privacy.xcscheme</key>
-		<dict>
-			<key>isShown</key>
-			<false/>
-		</dict>
-		<key>FirebaseCrashlytics.xcscheme</key>
-		<dict>
-			<key>isShown</key>
-			<false/>
-		</dict>
 		<key>FirebaseInstallations-FirebaseInstallations_Privacy.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -110,16 +100,6 @@
 			<false/>
 		</dict>
 		<key>FirebaseMessaging.xcscheme</key>
-		<dict>
-			<key>isShown</key>
-			<false/>
-		</dict>
-		<key>FirebaseRemoteConfigInterop.xcscheme</key>
-		<dict>
-			<key>isShown</key>
-			<false/>
-		</dict>
-		<key>FirebaseSessions.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -204,16 +184,6 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
-		<key>PromisesSwift-Promises_Privacy.xcscheme</key>
-		<dict>
-			<key>isShown</key>
-			<false/>
-		</dict>
-		<key>PromisesSwift.xcscheme</key>
-		<dict>
-			<key>isShown</key>
-			<false/>
-		</dict>
 		<key>RCT-Folly.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -255,11 +225,6 @@
 			<false/>
 		</dict>
 		<key>RNFBAuth.xcscheme</key>
-		<dict>
-			<key>isShown</key>
-			<false/>
-		</dict>
-		<key>RNFBCrashlytics.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -625,6 +590,11 @@
 			<false/>
 		</dict>
 		<key>react-native-splash-screen.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>react-native-tracking-transparency.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>

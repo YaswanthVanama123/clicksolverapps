@@ -10,12 +10,12 @@ var cron = require("node-cron");
 const {
   generateToken,
   generateWorkerToken,
-  generateAdminToken
+  generateAdminToken,
 } = require("./src/utils/generateToken.js");
 const { response } = require("express");
 const request = require("request");
 const { off, constrainedMemory } = require("process");
-const { v4: uuidv4 } = require('uuid');
+const { v4: uuidv4 } = require("uuid");
 
 // Telesign API credentials
 const customerId = "1D0C4D6D-48D8-40A2-BD9D-CE2160F6B3E9";
@@ -23,12 +23,11 @@ const apiKey =
   "BQXK2DGbESmYMvO0JC2sNAd9AtOTh48AwaPZIWL7bd8o8mB63TjwAJ/BhNxO3/YD6pjjZFQR5j6Ke1wEA1TCew==";
 const smsEndpoint = `https://rest-api.telesign.com/v1/messaging`;
 
-
-const subscriptionKey = '1rFYPImsvNSHdC4MqvEUBYCUdJNaiCOAObvtk2N6fGhJ3BtIItNxJQQJ99BCACGhslBXJ3w3AAAbACOGxFd0';
-const region = 'centralindia';
-const endpoint = 'https://api.cognitive.microsofttranslator.com';
-const apiVersion =  '3.0';
-
+const subscriptionKey =
+  "1rFYPImsvNSHdC4MqvEUBYCUdJNaiCOAObvtk2N6fGhJ3BtIItNxJQQJ99BCACGhslBXJ3w3AAAbACOGxFd0";
+const region = "centralindia";
+const endpoint = "https://api.cognitive.microsofttranslator.com";
+const apiVersion = "3.0";
 
 // Initialize Razorpay
 const razorpayInstance = new Razorpay({
@@ -39,27 +38,29 @@ const razorpayInstance = new Razorpay({
 // Create Order API
 const createOrder = async (req, res) => {
   try {
-    const { amount, currency = 'INR' } = req.body;
+    const { amount, currency = "INR" } = req.body;
     const worker_id = req.worker.id; // from authenticateWorkerToken
-    console.log("wo",worker_id)
+    console.log("wo", worker_id);
     // Convert amount from rupees to paise for Razorpay
     const rupeesAmount = parseFloat(amount).toFixed(2);
     const paiseAmount = Math.round(parseFloat(amount) * 100);
 
     // Set options for Razorpay order creation
     const options = {
-      amount: paiseAmount,       // Amount in paise
+      amount: paiseAmount, // Amount in paise
       currency,
       receipt: `receipt_${Date.now()}`,
-      payment_capture: 1,        // Auto-capture payment
+      payment_capture: 1, // Auto-capture payment
     };
 
     // Create the order with Razorpay
     const order = await razorpayInstance.orders.create(options);
-    console.log('Razorpay Order:', order); // Debug log
+    console.log("Razorpay Order:", order); // Debug log
 
     if (!order || !order.id) {
-      throw new Error('Order creation failed: No valid order returned from Razorpay.');
+      throw new Error(
+        "Order creation failed: No valid order returned from Razorpay."
+      );
     }
 
     // Insert the pending order into the orders table
@@ -67,7 +68,12 @@ const createOrder = async (req, res) => {
       INSERT INTO orders (worker_id, order_id, amount, currency, status, created_at)
       VALUES ($1, $2, $3, $4, 'pending', NOW())
     `;
-    await client.query(insertOrderQuery, [worker_id, order.id, rupeesAmount, currency]);
+    await client.query(insertOrderQuery, [
+      worker_id,
+      order.id,
+      rupeesAmount,
+      currency,
+    ]);
 
     res.status(200).json({
       success: true,
@@ -76,7 +82,7 @@ const createOrder = async (req, res) => {
       currency,
     });
   } catch (error) {
-    console.error('Error in createOrder:', error.message);
+    console.error("Error in createOrder:", error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -86,7 +92,7 @@ const getRoute = async (req, res) => {
     // Expect payload:
     // { startPoint: [lng, lat], endPoint: [lng, lat] }
     const { startPoint, endPoint } = req.body;
-    console.log('Request body:', req.body);
+    console.log("Request body:", req.body);
 
     if (
       !startPoint ||
@@ -98,7 +104,7 @@ const getRoute = async (req, res) => {
     ) {
       return res.status(400).json({
         error:
-          'Missing or invalid parameters: startPoint and endPoint are required as arrays [lng, lat].',
+          "Missing or invalid parameters: startPoint and endPoint are required as arrays [lng, lat].",
       });
     }
 
@@ -107,9 +113,12 @@ const getRoute = async (req, res) => {
     const [endLng, endLat] = endPoint;
 
     // Ola Maps API key
-    const apiKey = process.env.OLA_API_KEY || 'q0k6sOfYNxdt3bGvqF6W1yvANHeVtrsu9T5KW9a4';
+    const apiKey =
+      process.env.OLA_API_KEY || "q0k6sOfYNxdt3bGvqF6W1yvANHeVtrsu9T5KW9a4";
     if (!apiKey) {
-      return res.status(500).json({ error: 'API key not configured on server' });
+      return res
+        .status(500)
+        .json({ error: "API key not configured on server" });
     }
 
     // Format URL for Ola Maps Directions API.
@@ -119,15 +128,15 @@ const getRoute = async (req, res) => {
     // Use POST method and include required headers:
     const response = await axios.post(url, null, {
       headers: {
-        'X-Request-Id': `req-${Date.now()}`,
-        'Origin': 'https://clicksolver.com' // Replace with your actual domain
+        "X-Request-Id": `req-${Date.now()}`,
+        Origin: "https://clicksolver.com", // Replace with your actual domain
       },
     });
 
     res.status(200).json(response.data);
   } catch (error) {
     console.error(
-      'Error fetching route:',
+      "Error fetching route:",
       error.response ? error.response.data : error.message
     );
     res.status(500).json({ error: error.toString() });
@@ -136,23 +145,26 @@ const getRoute = async (req, res) => {
 
 const verifyPayment = async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+      req.body;
     const worker_id = req.worker.id; // from authenticateWorkerToken
     console.log("worker_id", worker_id);
 
     // Generate expected signature using HMAC with SHA256
     const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_SECRET)
+      .createHmac("sha256", process.env.RAZORPAY_SECRET)
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-      .digest('hex');
+      .digest("hex");
 
-    const paymentStatus = expectedSignature === razorpay_signature ? 'success' : 'failed';
+    const paymentStatus =
+      expectedSignature === razorpay_signature ? "success" : "failed";
     console.log("status", paymentStatus);
-    const payment_method = req.body.method || 'unknown';
-    const error_message = paymentStatus === 'failed' ? 'Invalid payment signature' : null;
+    const payment_method = req.body.method || "unknown";
+    const error_message =
+      paymentStatus === "failed" ? "Invalid payment signature" : null;
 
     // Begin transaction
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     // 1) Update orders and insert payment (using chained CTEs)
     const cteQuery = `
@@ -244,16 +256,16 @@ const verifyPayment = async (req, res) => {
     ]);
 
     // Commit the transaction
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
     res.status(200).json({
       success: true,
-      message: 'Payment verified successfully!',
+      message: "Payment verified successfully!",
       data: paymentResult.rows,
     });
   } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error in verifyPayment:', error.message);
+    await client.query("ROLLBACK");
+    console.error("Error in verifyPayment:", error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -295,12 +307,12 @@ const workerTrackingCall = async (req, res) => {
 
     // Call the external API
     const apiResponse = await axios.post(
-      'https://apiv1.cloudshope.com/api/outboundCall',
+      "https://apiv1.cloudshope.com/api/outboundCall",
       { from_number, mobile_number },
       {
         headers: {
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEwMzgzLCJ1c2VybmFtZSI6Illhc2h3YW50NjU0OTQiLCJtYWluX3VzZXIiOjEwMzgzLCJpYXQiOjE3Mzk3NzIzOTB9.HKURS7DdnYsizBBDgeTn6E5JpkKk1C8qkuRDL3l3qDE`
-        }
+          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEwMzgzLCJ1c2VybmFtZSI6Illhc2h3YW50NjU0OTQiLCJtYWluX3VzZXIiOjEwMzgzLCJpYXQiOjE3Mzk3NzIzOTB9.HKURS7DdnYsizBBDgeTn6E5JpkKk1C8qkuRDL3l3qDE`,
+        },
       }
     );
 
@@ -311,15 +323,14 @@ const workerTrackingCall = async (req, res) => {
 
     res.status(200).json({
       message: "Call initiated successfully.",
-      mobile: responseData
+      mobile: responseData,
     });
-
   } catch (error) {
     console.error("Error initiating call:", error.message);
 
     res.status(500).json({
       message: "Internal server error.",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -361,12 +372,12 @@ const phoneCall = async (req, res) => {
 
     // Call the external API
     const apiResponse = await axios.post(
-      'https://apiv1.cloudshope.com/api/outboundCall',
+      "https://apiv1.cloudshope.com/api/outboundCall",
       { from_number, mobile_number },
       {
         headers: {
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEwMzgzLCJ1c2VybmFtZSI6Illhc2h3YW50NjU0OTQiLCJtYWluX3VzZXIiOjEwMzgzLCJpYXQiOjE3Mzk3NzIzOTB9.HKURS7DdnYsizBBDgeTn6E5JpkKk1C8qkuRDL3l3qDE`
-        }
+          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEwMzgzLCJ1c2VybmFtZSI6Illhc2h3YW50NjU0OTQiLCJtYWluX3VzZXIiOjEwMzgzLCJpYXQiOjE3Mzk3NzIzOTB9.HKURS7DdnYsizBBDgeTn6E5JpkKk1C8qkuRDL3l3qDE`,
+        },
       }
     );
 
@@ -377,15 +388,14 @@ const phoneCall = async (req, res) => {
 
     res.status(200).json({
       message: "Call initiated successfully.",
-      mobile: responseData
+      mobile: responseData,
     });
-
   } catch (error) {
     console.error("Error initiating call:", error.message);
 
     res.status(500).json({
       message: "Internal server error.",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -395,7 +405,9 @@ const userTrackingCall = async (req, res) => {
     const { tracking_id } = req.body;
 
     if (!tracking_id) {
-      return res.status(400).json({ message: "Valid tracking_id is required." });
+      return res
+        .status(400)
+        .json({ message: "Valid tracking_id is required." });
     }
 
     // Fetch `from_number` from servicetracking table by joining with user and workersverified tables
@@ -423,16 +435,21 @@ const userTrackingCall = async (req, res) => {
       return res.status(500).json({ message: "Invalid phone number format." });
     }
 
-    console.log("From Number:", from_number, "User's Mobile Number:", mobile_number);
+    console.log(
+      "From Number:",
+      from_number,
+      "User's Mobile Number:",
+      mobile_number
+    );
 
     // Call the external API
     const apiResponse = await axios.post(
-      'https://apiv1.cloudshope.com/api/outboundCall',
+      "https://apiv1.cloudshope.com/api/outboundCall",
       { from_number, mobile_number },
       {
         headers: {
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEwMzgzLCJ1c2VybmFtZSI6Illhc2h3YW50NjU0OTQiLCJtYWluX3VzZXIiOjEwMzgzLCJpYXQiOjE3Mzk3NzIzOTB9.HKURS7DdnYsizBBDgeTn6E5JpkKk1C8qkuRDL3l3qDE`
-        }
+          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEwMzgzLCJ1c2VybmFtZSI6Illhc2h3YW50NjU0OTQiLCJtYWluX3VzZXIiOjEwMzgzLCJpYXQiOjE3Mzk3NzIzOTB9.HKURS7DdnYsizBBDgeTn6E5JpkKk1C8qkuRDL3l3qDE`,
+        },
       }
     );
 
@@ -443,19 +460,17 @@ const userTrackingCall = async (req, res) => {
 
     res.status(200).json({
       message: "Call initiated successfully.",
-      mobile: responseData
+      mobile: responseData,
     });
-
   } catch (error) {
     console.error("Error initiating call:", error.message);
 
     res.status(500).json({
       message: "Internal server error.",
-      error: error.message
+      error: error.message,
     });
   }
 };
-
 
 const UserPhoneCall = async (req, res) => {
   try {
@@ -490,16 +505,21 @@ const UserPhoneCall = async (req, res) => {
       return res.status(500).json({ message: "Invalid phone number format." });
     }
 
-    console.log("From Number:", from_number, "User's Mobile Number:", mobile_number);
+    console.log(
+      "From Number:",
+      from_number,
+      "User's Mobile Number:",
+      mobile_number
+    );
 
     // Call the external API
     const apiResponse = await axios.post(
-      'https://apiv1.cloudshope.com/api/outboundCall',
+      "https://apiv1.cloudshope.com/api/outboundCall",
       { from_number, mobile_number },
       {
         headers: {
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEwMzgzLCJ1c2VybmFtZSI6Illhc2h3YW50NjU0OTQiLCJtYWluX3VzZXIiOjEwMzgzLCJpYXQiOjE3Mzk3NzIzOTB9.HKURS7DdnYsizBBDgeTn6E5JpkKk1C8qkuRDL3l3qDE`
-        }
+          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEwMzgzLCJ1c2VybmFtZSI6Illhc2h3YW50NjU0OTQiLCJtYWluX3VzZXIiOjEwMzgzLCJpYXQiOjE3Mzk3NzIzOTB9.HKURS7DdnYsizBBDgeTn6E5JpkKk1C8qkuRDL3l3qDE`,
+        },
       }
     );
 
@@ -510,15 +530,14 @@ const UserPhoneCall = async (req, res) => {
 
     res.status(200).json({
       message: "Call initiated successfully.",
-      mobile: responseData
+      mobile: responseData,
     });
-
   } catch (error) {
     console.error("Error initiating call:", error.message);
 
     res.status(500).json({
       message: "Internal server error.",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -543,13 +562,19 @@ const updateWorkerNoDueStatus = async () => {
   }
 };
 
-cron.schedule("0 10 * * *", () => {
-  const now = new Date();
-  console.log(`Job ran at ${now.toISOString()} (UTC) and ${now.toString()} (local time)`);
-  updateWorkerNoDueStatus();
-}, {
-  timezone: "Asia/Kolkata"
-});
+cron.schedule(
+  "0 10 * * *",
+  () => {
+    const now = new Date();
+    console.log(
+      `Job ran at ${now.toISOString()} (UTC) and ${now.toString()} (local time)`
+    );
+    updateWorkerNoDueStatus();
+  },
+  {
+    timezone: "Asia/Kolkata",
+  }
+);
 
 const sendDuePaymentNotifications = async () => {
   try {
@@ -601,14 +626,24 @@ const sendDuePaymentNotifications = async () => {
       try {
         // Send notification using sendEachForMulticast
         const response = await admin.messaging().sendEachForMulticast(message);
-        console.log(`Notification sent to worker ${worker_id} (Tokens: ${data.tokens.join(", ")})`);
+        console.log(
+          `Notification sent to worker ${worker_id} (Tokens: ${data.tokens.join(
+            ", "
+          )})`
+        );
         response.responses.forEach((resp, index) => {
           if (!resp.success) {
-            console.error(`Error sending to token ${data.tokens[index]}: `, resp.error);
+            console.error(
+              `Error sending to token ${data.tokens[index]}: `,
+              resp.error
+            );
           }
         });
       } catch (error) {
-        console.error(`Error sending notification to worker ${worker_id}:`, error);
+        console.error(
+          `Error sending notification to worker ${worker_id}:`,
+          error
+        );
       }
     }
   } catch (error) {
@@ -617,12 +652,16 @@ const sendDuePaymentNotifications = async () => {
 };
 
 // Schedule the function to run every day at 9 AM
-cron.schedule("0 9 * * *", () => {
-  console.log("Running due payment notification job at 9 AM IST...");
-  sendDuePaymentNotifications();
-}, {
-  timezone: "Asia/Kolkata"
-});
+cron.schedule(
+  "0 9 * * *",
+  () => {
+    console.log("Running due payment notification job at 9 AM IST...");
+    sendDuePaymentNotifications();
+  },
+  {
+    timezone: "Asia/Kolkata",
+  }
+);
 
 const sendLogoutNotificationAndDeleteTokens = async (workerId) => {
   try {
@@ -632,7 +671,7 @@ const sendLogoutNotificationAndDeleteTokens = async (workerId) => {
 
     if (fcmResult.rows.length === 0) return; // No active devices
 
-    const tokens = fcmResult.rows.map(row => row.fcm_token);
+    const tokens = fcmResult.rows.map((row) => row.fcm_token);
 
     // Send FCM logout notification
     const message = {
@@ -650,61 +689,80 @@ const sendLogoutNotificationAndDeleteTokens = async (workerId) => {
     // Delete all FCM tokens from the fcm table for this worker
     await client.query("DELETE FROM fcm WHERE worker_id = $1", [workerId]);
     console.log(`Deleted all FCM tokens for worker_id: ${workerId}`);
-
   } catch (error) {
-    console.error("Error sending logout notification or deleting FCM tokens:", error);
+    console.error(
+      "Error sending logout notification or deleting FCM tokens:",
+      error
+    );
   }
 };
 
 const workerLogout = async (req, res) => {
   try {
-      const { fcm_token } = req.body;
-      
-      console.log("workerlogout",fcm_token)
+    const { fcm_token } = req.body;
 
-      if (!fcm_token) {
-          return res.status(400).json({ success: false, message: 'FCM token is required' });
-      }
+    console.log("workerlogout", fcm_token);
 
-      // Delete FCM token from the `fcm` table
-      const result = await client.query(
-          'DELETE FROM fcm WHERE fcm_token = $1',
-          [fcm_token]
-      );
+    if (!fcm_token) {
+      return res
+        .status(400)
+        .json({ success: false, message: "FCM token is required" });
+    }
 
-      if (result.rowCount > 0) {
-          return res.status(200).json({ success: true, message: 'Worker logged out and FCM token deleted' });
-      } else {
-          return res.status(200).json({ success: false, message: 'worker already logout' });
-      }
+    // Delete FCM token from the `fcm` table
+    const result = await client.query("DELETE FROM fcm WHERE fcm_token = $1", [
+      fcm_token,
+    ]);
+
+    if (result.rowCount > 0) {
+      return res
+        .status(200)
+        .json({
+          success: true,
+          message: "Worker logged out and FCM token deleted",
+        });
+    } else {
+      return res
+        .status(200)
+        .json({ success: false, message: "worker already logout" });
+    }
   } catch (error) {
-      console.error('Error in workerLogout:', error);
-      res.status(500).json({ success: false, message: 'Internal server error' });
+    console.error("Error in workerLogout:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
 const userLogout = async (req, res) => {
   try {
-      const { fcm_token } = req.body;
+    const { fcm_token } = req.body;
 
-      if (!fcm_token) {
-          return res.status(400).json({ success: false, message: 'FCM token is required' });
-      }
+    if (!fcm_token) {
+      return res
+        .status(400)
+        .json({ success: false, message: "FCM token is required" });
+    }
 
-      // Delete FCM token from the `userfcm` table
-      const result = await client.query(
-          'DELETE FROM userfcm WHERE fcm_token = $1',
-          [fcm_token]
-      );
+    // Delete FCM token from the `userfcm` table
+    const result = await client.query(
+      "DELETE FROM userfcm WHERE fcm_token = $1",
+      [fcm_token]
+    );
 
-      if (result.rowCount > 0) {
-          return res.status(200).json({ success: true, message: 'User logged out and FCM token deleted' });
-      } else {
-          return res.status(200).json({ success: false, message: 'FCM token not found' });
-      }
+    if (result.rowCount > 0) {
+      return res
+        .status(200)
+        .json({
+          success: true,
+          message: "User logged out and FCM token deleted",
+        });
+    } else {
+      return res
+        .status(200)
+        .json({ success: false, message: "FCM token not found" });
+    }
   } catch (error) {
-      console.error('Error in userLogout:', error);
-      res.status(500).json({ success: false, message: 'Internal server error' });
+    console.error("Error in userLogout:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
@@ -713,31 +771,30 @@ const workerTokenVerification = async (req, res) => {
     const { pcsToken } = req.body;
     const worker_id = req.worker.id; // Ensure worker_id is being extracted correctly
 
-
-
     // Validate input
     if (!pcsToken || !worker_id) {
       return res.status(400).json({ message: "Missing pcsToken or worker_id" });
     }
 
     // Corrected SQL query with PostgreSQL syntax
-    const query = "SELECT session_token FROM workersverified WHERE worker_id = $1";
+    const query =
+      "SELECT session_token FROM workersverified WHERE worker_id = $1";
     const result = await client.query(query, [worker_id]);
 
     // If worker_id is found in the table
     if (result.rows.length > 0) {
       const { session_token } = result.rows[0];
-   
 
       // Check if the session token matches the provided pcsToken
       if (session_token !== pcsToken) {
         return res.status(205).json({ message: "Session token mismatch" });
       } else {
-        
         return res.status(200).json({ message: "Token verified" });
       }
     } else {
-      return res.status(200).json({ message: "Worker not verified, proceeding with verification" });
+      return res
+        .status(200)
+        .json({ message: "Worker not verified, proceeding with verification" });
     }
   } catch (error) {
     console.error("Error in workerTokenVerification:", error);
@@ -755,7 +812,8 @@ const WorkerSendOtp = (req, res) => {
     method: "POST",
     url: `https://cpaas.messagecentral.com/verification/v3/send?countryCode=91&customerId=${process.env.WORKER_CUSTOMER_ID}&flowType=SMS&mobileNumber=${mobileNumber}`,
     headers: {
-      authToken: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLTI0OEY5ODhBOUQ5QzQzOCIsImlhdCI6MTc0NTY4Mjk3NywiZXhwIjoxOTAzMzYyOTc3fQ.9-y_44egQuG0MuLs08d7gLWKxkSGW8ldsceKotcrTzP8Dl2XqrSXZGpVtkPJQAL-LJ-HCTPnab1FVHn-A_IJRA",
+      authToken:
+        "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLTI0OEY5ODhBOUQ5QzQzOCIsImlhdCI6MTc0NTY4Mjk3NywiZXhwIjoxOTAzMzYyOTc3fQ.9-y_44egQuG0MuLs08d7gLWKxkSGW8ldsceKotcrTzP8Dl2XqrSXZGpVtkPJQAL-LJ-HCTPnab1FVHn-A_IJRA",
     },
   };
 
@@ -779,12 +837,12 @@ const WorkerSendOtp = (req, res) => {
       }
     } catch (parseError) {
       console.error("Error parsing OTP response:", parseError);
-      return res.status(500).json({ message: "Failed to parse response", error: parseError });
+      return res
+        .status(500)
+        .json({ message: "Failed to parse response", error: parseError });
     }
   });
 };
-
-
 
 // WorkerValidateOtp function – Validates the OTP provided by the worker
 const WorkerValidateOtp = (req, res) => {
@@ -797,8 +855,9 @@ const WorkerValidateOtp = (req, res) => {
     method: "GET",
     url: `https://cpaas.messagecentral.com/verification/v3/validateOtp?countryCode=91&mobileNumber=${mobileNumber}&verificationId=${verificationId}&customerId=${process.env.CUSTOMER_ID}&code=${otpCode}`,
     headers: {
-      authToken: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUIzNzUzRUNBNDNCRDQzNSIsImlhdCI6MTcyNjI1OTQwNiwiZXhwIjoxODgzOTM5NDA2fQ.Gme6ijpbtUge-n9NpEgJR7lIsNQTqH4kDWkoe9Wp6Nnd6AE0jaAKCuuGuYtkilkBrcC1wCj8GrlMNQodR-Gelg",
-   },
+      authToken:
+        "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUIzNzUzRUNBNDNCRDQzNSIsImlhdCI6MTcyNjI1OTQwNiwiZXhwIjoxODgzOTM5NDA2fQ.Gme6ijpbtUge-n9NpEgJR7lIsNQTqH4kDWkoe9Wp6Nnd6AE0jaAKCuuGuYtkilkBrcC1wCj8GrlMNQodR-Gelg",
+    },
   };
 
   request(options, (error, response, body) => {
@@ -808,14 +867,20 @@ const WorkerValidateOtp = (req, res) => {
     }
     try {
       const data = JSON.parse(body);
-      if (data && data.data && data.data.verificationStatus === "VERIFICATION_COMPLETED") {
+      if (
+        data &&
+        data.data &&
+        data.data.verificationStatus === "VERIFICATION_COMPLETED"
+      ) {
         return res.status(200).json({ message: "OTP Verified" });
       } else {
         return res.status(200).json({ message: "Invalid OTP" });
       }
     } catch (parseError) {
       console.error("Error parsing OTP validation response:", parseError);
-      return res.status(500).json({ message: "Failed to parse response", error: parseError });
+      return res
+        .status(500)
+        .json({ message: "Failed to parse response", error: parseError });
     }
   });
 };
@@ -849,13 +914,13 @@ const accountDelete = async (req, res) => {
                      END
       ) AS result;
     `;
-    
+
     const { rows } = await client.query(query, [workerId]);
     const result = rows[0].result;
     return res.status(result.status).json({ message: result.message });
   } catch (error) {
-    console.error('Error in accountDelete:', error);
-    return res.status(500).json({ message: 'Internal Server Error.' });
+    console.error("Error in accountDelete:", error);
+    return res.status(500).json({ message: "Internal Server Error." });
   }
 };
 
@@ -931,7 +996,9 @@ const Partnerlogin = async (req, res) => {
         });
       }
     } else {
-      return res.status(203).json({ message: "Phone number not registered", phone_number });
+      return res
+        .status(203)
+        .json({ message: "Phone number not registered", phone_number });
     }
   } catch (error) {
     console.error("Error logging in worker:", error);
@@ -1120,7 +1187,10 @@ const workerCompleteSignUp = async (req, res) => {
       message: "Sign up complete",
     });
   } catch (error) {
-    console.error("Error completing sign up:", error.response?.data || error.message);
+    console.error(
+      "Error completing sign up:",
+      error.response?.data || error.message
+    );
     return res.status(500).json({
       message: "Internal server error",
       error: error.response?.data || error.message,
@@ -1269,7 +1339,7 @@ const getServiceTrackingUserItemDetails = async (req, res) => {
       });
     }
 
-    console.log("data",result.rows[0])
+    console.log("data", result.rows[0]);
     res.status(200).json({ data: result.rows[0] });
   } catch (error) {
     console.error(
@@ -1500,7 +1570,9 @@ const serviceTrackingUpdateStatus = async (req, res) => {
   try {
     // Validate required fields.
     if (!tracking_id || !newStatus) {
-      return res.status(400).json({ message: "tracking_id and newStatus are required." });
+      return res
+        .status(400)
+        .json({ message: "tracking_id and newStatus are required." });
     }
 
     // Update the servicetracking table and return only necessary columns.
@@ -1515,7 +1587,7 @@ const serviceTrackingUpdateStatus = async (req, res) => {
       FROM updated
       JOIN userfcm uf ON updated.user_id = uf.user_id;
     `;
-    
+
     const values = [newStatus, tracking_id];
     const { rows } = await client.query(query, values);
 
@@ -1524,44 +1596,51 @@ const serviceTrackingUpdateStatus = async (req, res) => {
     }
 
     // Extract FCM tokens from the returned rows.
-    const tokens = rows.map(row => row.fcm_token);
+    const tokens = rows.map((row) => row.fcm_token);
 
     // Prepare the multicast message payload.
     const multicastMessage = {
       tokens,
       data: {
         status: newStatus.toString(),
-        message: "Service status updated."
+        message: "Service status updated.",
       },
       android: {
-        priority: "high"
+        priority: "high",
       },
       apns: {
         payload: {
           aps: {
-            contentAvailable: true
-          }
-        }
-      }
+            contentAvailable: true,
+          },
+        },
+      },
     };
 
     // Send notifications using sendEachForMulticast.
     try {
-      const fcmResponse = await getMessaging().sendEachForMulticast(multicastMessage);
+      const fcmResponse = await getMessaging().sendEachForMulticast(
+        multicastMessage
+      );
       fcmResponse.responses.forEach((resp, index) => {
         if (!resp.success) {
-          console.error(`Error sending message to token ${tokens[index]}:`, resp.error);
+          console.error(
+            `Error sending message to token ${tokens[index]}:`,
+            resp.error
+          );
         }
       });
 
       return res.status(200).json({
         message: "Service status updated successfully and FCM message sent.",
         data: rows[0],
-        fcmResponse
+        fcmResponse,
       });
     } catch (fcmError) {
       console.error("Error sending notifications:", fcmError);
-      return res.status(500).json({ message: "Internal server error", error: fcmError });
+      return res
+        .status(500)
+        .json({ message: "Internal server error", error: fcmError });
     }
   } catch (error) {
     console.error("Error updating service status:", error);
@@ -1597,13 +1676,171 @@ const getWorkerDetails = async (req, res) => {
     const result = await client.query(query, [notification_id]);
 
     if (result.rows.length === 0) {
-      return res.json({ error: "No worker details found for the provided notification ID." });
+      return res.json({
+        error: "No worker details found for the provided notification ID.",
+      });
     }
 
     return res.json(result.rows[0]);
   } catch (error) {
     console.error("Error fetching worker details:", error);
-    return res.json({ error: "An error occurred while fetching worker details." });
+    return res.json({
+      error: "An error occurred while fetching worker details.",
+    });
+  }
+};
+
+// Tune these for your infra
+const DB_PAGE_SIZE = 5000; // tokens fetched from DB per page
+const FCM_CHUNK_SIZE = 500; // FCM hard limit
+const MAX_WORKER_IDS = 50000; // protect against accidental huge payloads
+const MAX_TOTAL_TOKENS = 250000; // hard cap to avoid runaway sends
+
+// helper: return chunks as an array
+function toChunks(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) {
+    out.push(arr.slice(i, i + size));
+  }
+  return out;
+}
+
+const sendNotificationsToWorkers = async (req, res) => {
+  let { worker_ids: workerIds, title, body, data } = req.body;
+
+  // 1) Validate input early
+  if (!Array.isArray(workerIds) || workerIds.length === 0) {
+    return res
+      .status(400)
+      .json({ message: "worker_ids (non-empty array) is required." });
+  }
+  workerIds = [...new Set(workerIds.map(Number).filter(Number.isInteger))];
+  if (workerIds.length === 0) {
+    return res
+      .status(400)
+      .json({ message: "worker_ids must contain integers." });
+  }
+  if (workerIds.length > MAX_WORKER_IDS) {
+    return res
+      .status(413)
+      .json({
+        message: `Too many worker_ids. Max allowed is ${MAX_WORKER_IDS}.`,
+      });
+  }
+
+  title = title ?? "New update from Click Solver";
+  body = body ?? "You have a new notification.";
+  data = Object.fromEntries(
+    Object.entries(data ?? {}).map(([k, v]) => [String(k), String(v)])
+  );
+
+  // 2) Tight base payload (use data-only by removing "notification" block if desired)
+  const basePayload = {
+    notification: { title, body },
+    data,
+    android: { priority: "high" },
+    apns: {
+      headers: { "apns-priority": "10" },
+      payload: { aps: { sound: "default" } },
+    },
+  };
+
+  // 3) Page through tokens to keep memory low
+  //    NOTE: Add this unique index in DB to avoid DISTINCT:
+  //    CREATE UNIQUE INDEX IF NOT EXISTS ux_workerfcm_worker_token ON workerfcm(worker_id, fcm_token);
+  const tokensSql = `
+    SELECT fcm_token
+    FROM workerfcm
+    WHERE worker_id = ANY($1::int[])
+      AND is_active = TRUE
+      AND fcm_token IS NOT NULL
+      AND fcm_token <> ''
+    ORDER BY worker_id, fcm_token
+    LIMIT $2 OFFSET $3
+  `;
+
+  let offset = 0;
+  let grandTotal = 0;
+  let successCount = 0;
+  let failureCount = 0;
+  const perPageSummaries = [];
+
+  try {
+    while (true) {
+      const { rows } = await client.query(tokensSql, [
+        workerIds,
+        DB_PAGE_SIZE,
+        offset,
+      ]);
+      if (rows.length === 0) break;
+
+      const pageTokens = rows.map((r) => r.fcm_token);
+      grandTotal += pageTokens.length;
+
+      if (grandTotal > MAX_TOTAL_TOKENS) {
+        return res.status(413).json({
+          message: `Aborting: total tokens exceed cap (${MAX_TOTAL_TOKENS}).`,
+          scannedTokens: grandTotal,
+        });
+      }
+
+      // 4) FCM chunking per page
+      let pageSuccess = 0;
+      let pageFailure = 0;
+      const pageErrors = [];
+
+      for (const chunk of toChunks(pageTokens, FCM_CHUNK_SIZE)) {
+        const resp = await getMessaging().sendEachForMulticast({
+          ...basePayload,
+          tokens: chunk,
+        });
+
+        pageSuccess += resp.successCount;
+        pageFailure += resp.failureCount;
+
+        // gather token-level errors (only when needed)
+        resp.responses.forEach((r, idx) => {
+          if (!r.success) {
+            pageErrors.push({
+              token: chunk[idx],
+              code: r.error?.code,
+              message: r.error?.message,
+            });
+          }
+        });
+
+        // yield event loop between bursts to keep server responsive
+        await new Promise((r) => setImmediate(r));
+      }
+
+      successCount += pageSuccess;
+      failureCount += pageFailure;
+      perPageSummaries.push({
+        pageSize: rows.length,
+        success: pageSuccess,
+        failure: pageFailure,
+        errorsSample: pageErrors.slice(0, 10), // include a small sample to keep response light
+      });
+
+      offset += DB_PAGE_SIZE;
+    }
+
+    return res.status(200).json({
+      message: "Notifications processed.",
+      totalTokens: grandTotal,
+      successCount,
+      failureCount,
+      pages: perPageSummaries.length,
+      perPageSummaries,
+    });
+  } catch (err) {
+    console.error("sendNotificationsToWorkers error:", err);
+    return res
+      .status(500)
+      .json({
+        message: "Internal Server Error.",
+        error: err?.message ?? String(err),
+      });
   }
 };
 
@@ -1650,7 +1887,6 @@ const workerProfileScreenDetails = async (req, res) => {
     LEFT JOIN workerskills ws ON w.worker_id = ws.worker_id
     WHERE w.worker_id = $1;
   `;
-  
 
     // Execute the query with the userId as a parameter
     const result = await client.query(query, [workerId]);
@@ -1658,7 +1894,9 @@ const workerProfileScreenDetails = async (req, res) => {
     if (result.rows.length === 0) {
       return res
         .status(404)
-        .json({ message: "No worker details found for the provided worker ID." });
+        .json({
+          message: "No worker details found for the provided worker ID.",
+        });
     }
 
     const { name, email, phone_number, profile } = result.rows[0];
@@ -1680,9 +1918,10 @@ const profileChangesSubmit = async (req, res) => {
   console.log("Received selectedStatus:", selectedStatus);
 
   // Ensure we get a string value for selectedStatus
-  const statusValue = typeof selectedStatus === 'object' && selectedStatus.selectedStatus 
-    ? selectedStatus.selectedStatus 
-    : selectedStatus;
+  const statusValue =
+    typeof selectedStatus === "object" && selectedStatus.selectedStatus
+      ? selectedStatus.selectedStatus
+      : selectedStatus;
   console.log("Using selectedStatus value:", statusValue);
 
   // Extract data from formData
@@ -1758,12 +1997,20 @@ const profileChangesSubmit = async (req, res) => {
 
     console.log("Executing query with values:", values);
     const result = await client.query(query, values);
-    console.log("CTE query executed successfully. Update result:", JSON.stringify(result.rows, null, 2));
+    console.log(
+      "CTE query executed successfully. Update result:",
+      JSON.stringify(result.rows, null, 2)
+    );
 
     // Send success response along with the updated data for debugging
-    res.status(200).json({ message: "Registration successful", updatedData: result.rows });
+    res
+      .status(200)
+      .json({ message: "Registration successful", updatedData: result.rows });
   } catch (error) {
-    console.error("Error inserting/updating workerskills or updating issues in workers table:", error);
+    console.error(
+      "Error inserting/updating workerskills or updating issues in workers table:",
+      error
+    );
     res.status(500).json({ message: "Error registering worker", error });
   }
 };
@@ -1851,7 +2098,12 @@ const addBankAccount = async (req, res) => {
     const razorpayResponse = await axios.post(
       "https://api.razorpay.com/v1/bank_accounts/validate",
       { account_number: accountNumber, ifsc: ifscCode },
-      { auth: { username: process.env.RAZORPAY_KEY, password: process.env.RAZORPAY_SECRET } }
+      {
+        auth: {
+          username: process.env.RAZORPAY_KEY,
+          password: process.env.RAZORPAY_SECRET,
+        },
+      }
     );
 
     // If Razorpay returns a valid response, consider it verified.
@@ -1886,15 +2138,18 @@ const addBankAccount = async (req, res) => {
 
     await client.query(query, values);
 
-    res.status(200).json({ 
-      message: "Bank account verified and added successfully", 
-      bank_details: verificationResult 
+    res.status(200).json({
+      message: "Bank account verified and added successfully",
+      bank_details: verificationResult,
     });
   } catch (error) {
-    console.error("Error inserting or updating bank account:", error.response?.data || error.message);
-    res.status(500).json({ 
-      message: "Error adding account", 
-      error: error.response?.data || error.message 
+    console.error(
+      "Error inserting or updating bank account:",
+      error.response?.data || error.message
+    );
+    res.status(500).json({
+      message: "Error adding account",
+      error: error.response?.data || error.message,
     });
   }
 };
@@ -1908,7 +2163,9 @@ const createFundAccount = async (req, res) => {
 
     // Validate required fields (you can add further validation as needed)
     if (!name || !ifsc || !account_number || !bank_name) {
-      return res.status(400).json({ message: "All bank account details are required." });
+      return res
+        .status(400)
+        .json({ message: "All bank account details are required." });
     }
 
     // Fetch the worker's Razorpay contact_id from your workers table.
@@ -1916,7 +2173,11 @@ const createFundAccount = async (req, res) => {
     const contactQuery = "SELECT contact_id FROM workers WHERE worker_id = $1";
     const contactResult = await client.query(contactQuery, [worker_id]);
     if (contactResult.rows.length === 0 || !contactResult.rows[0].contact_id) {
-      return res.status(400).json({ message: "Contact ID not found. Create a Razorpay contact first." });
+      return res
+        .status(400)
+        .json({
+          message: "Contact ID not found. Create a Razorpay contact first.",
+        });
     }
     const contact_id = contactResult.rows[0].contact_id;
 
@@ -1976,7 +2237,10 @@ const createFundAccount = async (req, res) => {
       contact_id,
     });
   } catch (error) {
-    console.error("Error creating fund account:", error.response?.data || error.message);
+    console.error(
+      "Error creating fund account:",
+      error.response?.data || error.message
+    );
     res.status(500).json({
       success: false,
       message: "Error adding bank account",
@@ -2037,7 +2301,7 @@ const onboardingSteps = async (req, res) => {
       step1,
       step2,
       bankAccount: bankaccount, // Step 3A: Bank Account
-      upiId: upiid,             // Step 3B: UPI ID
+      upiId: upiid, // Step 3B: UPI ID
     };
 
     // Send response
@@ -2541,7 +2805,7 @@ const insertTracking = async (req, res) => {
         data,
         (SELECT ARRAY_AGG(fcm_token) FROM selected) AS fcm_tokens;
     `;
-    
+
     const values = [
       notification_id,
       trackingPin,
@@ -2549,20 +2813,27 @@ const insertTracking = async (req, res) => {
       serviceStatus,
       details, // This should be a valid JSON string/object
     ];
-    
+
     const result = await client.query(query, values);
 
     if (result.rows.length === 0) {
-      return res.status(400).json({ 
-        message: "Tracking for this notification_id already exists." 
+      return res.status(400).json({
+        message: "Tracking for this notification_id already exists.",
       });
     }
 
     const { user_id, service_booked, worker_id } = result.rows[0];
     const screen = "";
-    const encodedId = Buffer.from(notification_id.toString()).toString("base64");
+    const encodedId = Buffer.from(notification_id.toString()).toString(
+      "base64"
+    );
 
-    await createUserBackgroundAction(user_id, encodedId, screen, service_booked);
+    await createUserBackgroundAction(
+      user_id,
+      encodedId,
+      screen,
+      service_booked
+    );
     await updateWorkerAction(worker_id, encodedId, screen);
 
     const fcmTokens = result.rows
@@ -2583,7 +2854,9 @@ const insertTracking = async (req, res) => {
       };
 
       try {
-        const response = await getMessaging().sendEachForMulticast(multicastMessage);
+        const response = await getMessaging().sendEachForMulticast(
+          multicastMessage
+        );
         response.responses.forEach((res, index) => {
           if (!res.success) {
             console.error(
@@ -2649,7 +2922,9 @@ const workerMessage = async (req, res) => {
     const { worker_id, message } = req.body;
 
     if (!worker_id || !message) {
-      return res.status(400).json({ error: "worker_id and message are required" });
+      return res
+        .status(400)
+        .json({ error: "worker_id and message are required" });
     }
 
     // Fetch FCM tokens for the worker
@@ -2657,11 +2932,13 @@ const workerMessage = async (req, res) => {
     const { rows } = await client.query(fcmQuery, [worker_id]);
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: "No FCM tokens found for this worker." });
+      return res
+        .status(404)
+        .json({ error: "No FCM tokens found for this worker." });
     }
 
     // Extract FCM tokens
-    const fcmTokens = rows.map(row => row.fcm_token);
+    const fcmTokens = rows.map((row) => row.fcm_token);
 
     // Construct the FCM multicast message
     const multicastMessage = {
@@ -2684,12 +2961,17 @@ const workerMessage = async (req, res) => {
 
     // Send message using Firebase Admin SDK
     try {
-      const response = await getMessaging().sendEachForMulticast(multicastMessage);
+      const response = await getMessaging().sendEachForMulticast(
+        multicastMessage
+      );
 
       // Log failures if any
       response.responses.forEach((res, index) => {
         if (!res.success) {
-          console.error(`Error sending message to token ${fcmTokens[index]}:`, res.error);
+          console.error(
+            `Error sending message to token ${fcmTokens[index]}:`,
+            res.error
+          );
         }
       });
 
@@ -2698,7 +2980,6 @@ const workerMessage = async (req, res) => {
         message: "Message sent successfully",
         response: response.responses,
       });
-
     } catch (error) {
       console.error("Error sending notifications:", error);
       return res.status(500).json({ error: "Failed to send message" });
@@ -2712,34 +2993,35 @@ const workerMessage = async (req, res) => {
 const callMasking = async (req, res) => {
   try {
     // Dummy data for demonstration
-    const workerNumber = "9392365494";       // Worker's actual phone number
-    const customerNumber = "7981793632";      // Customer's actual phone number
-    const virtualDID = "8071500945";           // Virtual DID (provided DID)
-    const channelID = "3";                   // Channel id for the given DID
+    const workerNumber = "9392365494"; // Worker's actual phone number
+    const customerNumber = "7981793632"; // Customer's actual phone number
+    const virtualDID = "8071500945"; // Virtual DID (provided DID)
+    const channelID = "3"; // Channel id for the given DID
     const eventID = "uniqueEventID_" + Date.now(); // Unique event ID for tracking
 
     // Build the payload according to Bonvoice AutoCall API
     const payload = {
-      autocallType: "3",               // Dial single number mode
-      destination: workerNumber,       // Call is initiated to the worker
-      ringStrategy: "ringall",         // Ring strategy
-      legACallerID: virtualDID,        // Virtual number to mask caller's real number (worker)
+      autocallType: "3", // Dial single number mode
+      destination: workerNumber, // Call is initiated to the worker
+      ringStrategy: "ringall", // Ring strategy
+      legACallerID: virtualDID, // Virtual number to mask caller's real number (worker)
       legAChannelID: channelID,
       legADialAttempts: "1",
       legBDestination: customerNumber, // Customer number to be called once worker picks up
-      legBCallerID: virtualDID,        // Virtual number to mask customer's real number
+      legBCallerID: virtualDID, // Virtual number to mask customer's real number
       legBChannelID: channelID,
       legBDialAttempts: "1",
-      eventID: eventID                 // Unique identifier for the call
+      eventID: eventID, // Unique identifier for the call
     };
 
     // API endpoint for Bonvoice AutoCall API
-    const url = 'https://backend.pbx.bonvoice.com/autoDialManagement/autoCallBridging/';
+    const url =
+      "https://backend.pbx.bonvoice.com/autoDialManagement/autoCallBridging/";
 
     // HTTP headers including the provided token
     const headers = {
-      'Content-Type': 'application/json',
-      'Authorization': 'Token ff7f0eb0ed9bc1295ac7e0d7b7a643e0a2348b37'
+      "Content-Type": "application/json",
+      Authorization: "Token ff7f0eb0ed9bc1295ac7e0d7b7a643e0a2348b37",
     };
 
     // Make the POST request to initiate the call
@@ -2747,15 +3029,16 @@ const callMasking = async (req, res) => {
 
     // If successful, return the virtual DID which the worker should call
     return res.status(200).json({
-      message: 'Call masking initiated successfully. Please dial the virtual DID.',
+      message:
+        "Call masking initiated successfully. Please dial the virtual DID.",
       dialNumber: virtualDID,
-      data: response.data
+      data: response.data,
     });
   } catch (error) {
-    console.error('Error in callMasking:', error.message);
+    console.error("Error in callMasking:", error.message);
     return res.status(500).json({
-      message: 'Error initiating call masking',
-      error: error.message
+      message: "Error initiating call masking",
+      error: error.message,
     });
   }
 };
@@ -2777,7 +3060,6 @@ const getAllTrackingServices = async (req, res) => {
 
     // Execute the query
     const result = await client.query(query);
-
 
     res.status(200).json(result.rows);
   } catch (error) {
@@ -2901,7 +3183,6 @@ const getPendingWorkers = async (req, res) => {
     INNER JOIN workerskills ws ON w.worker_id = ws.worker_id
     WHERE w.worker_id IS NOT NULL;
   `;
-  
 
     const { rows } = await client.query(query);
     res.status(200).json({ success: true, data: rows });
@@ -2925,10 +3206,9 @@ const getPendingWorkersNotStarted = async (req, res) => {
     WHERE ws.worker_id IS NULL;
 
   `;
-  
 
     const { rows } = await client.query(query);
-    console.log(rows)
+    console.log(rows);
     res.status(200).json({ success: true, data: rows });
   } catch (error) {
     console.error("Error fetching pending workers:", error);
@@ -2985,15 +3265,18 @@ const updateIssues = async (req, res) => {
       )
       SELECT fcm_token FROM fcm;
     `;
-    const result = await client.query(query, [workerId, JSON.stringify(issues)]);
-    const tokens = result.rows.map(row => row.fcm_token);
+    const result = await client.query(query, [
+      workerId,
+      JSON.stringify(issues),
+    ]);
+    const tokens = result.rows.map((row) => row.fcm_token);
 
     // If tokens exist, send notifications to all devices
     if (tokens.length > 0) {
       const message = {
         notification: {
-          title: 'Issue Updated',
-          body: 'Worker issues have been updated.',
+          title: "Issue Updated",
+          body: "Worker issues have been updated.",
         },
         data: {
           screen: "ApprovalScreen", // Ensure IDs are strings
@@ -3009,18 +3292,21 @@ const updateIssues = async (req, res) => {
         const response = await admin.messaging().sendEachForMulticast(message);
         response.responses.forEach((resp, index) => {
           if (!resp.success) {
-            console.error(`Error sending to token ${user_fcm_tokens[index]}: `, resp.error);
+            console.error(
+              `Error sending to token ${user_fcm_tokens[index]}: `,
+              resp.error
+            );
           }
         });
         console.log(`Notifications sent to user_id: ${user_id}`);
       } catch (err) {
         console.error("Error sending user payment notification:", err);
       }
-      console.log('Notification response:', response);
+      console.log("Notification response:", response);
     }
 
     return res.status(200).json({
-      message: "Issues updated and notifications sent successfully."
+      message: "Issues updated and notifications sent successfully.",
     });
   } catch (error) {
     console.error("Error updating issues:", error);
@@ -3094,7 +3380,7 @@ const checkApprovalVerificationStatus = async (req, res) => {
       LEFT JOIN workerskills ws ON t.worker_id = ws.worker_id
       LIMIT 1;
     `;
-    
+
     const result = await client.query(query, [workerId]);
 
     if (result.rows.length === 0) {
@@ -3169,14 +3455,14 @@ const workerApprove = async (req, res) => {
     }
 
     // Extract tokens from the result
-    const tokens = result.rows.map(row => row.fcm_token);
+    const tokens = result.rows.map((row) => row.fcm_token);
 
     // If tokens exist, send a notification to the worker
     if (tokens.length > 0) {
       const message = {
         notification: {
-          title: 'Account Approved',
-          body: 'Your account is approved and now you are a family in ClickSolver!',
+          title: "Account Approved",
+          body: "Your account is approved and now you are a family in ClickSolver!",
         },
         data: {
           screen: "ApprovalScreen",
@@ -3191,10 +3477,13 @@ const workerApprove = async (req, res) => {
         const response = await admin.messaging().sendEachForMulticast(message);
         response.responses.forEach((resp, index) => {
           if (!resp.success) {
-            console.error(`Error sending to token ${tokens[index]}: `, resp.error);
+            console.error(
+              `Error sending to token ${tokens[index]}: `,
+              resp.error
+            );
           }
         });
-        console.log('Notifications sent to user');
+        console.log("Notifications sent to user");
       } catch (err) {
         console.error("Error sending user notification:", err);
       }
@@ -3202,7 +3491,10 @@ const workerApprove = async (req, res) => {
 
     return res
       .status(200)
-      .json({ message: "Worker approved, moved to workersverified, and added to workerlife." });
+      .json({
+        message:
+          "Worker approved, moved to workersverified, and added to workerlife.",
+      });
   } catch (error) {
     console.error("Error in workerApprove:", error.message);
     return res
@@ -3216,11 +3508,13 @@ const sendMessageWorker = async (req, res) => {
 
   try {
     // Prepare the new message object as a JSON string wrapped in an array
-    const newMessageJSON = JSON.stringify([{
-      key: senderType,
-      message,
-      timestamp: new Date().toISOString(),
-    }]);
+    const newMessageJSON = JSON.stringify([
+      {
+        key: senderType,
+        message,
+        timestamp: new Date().toISOString(),
+      },
+    ]);
 
     /*  
       This query performs the following in one step:
@@ -3248,14 +3542,16 @@ const sendMessageWorker = async (req, res) => {
       FROM updated
       JOIN accepted_data ON true;
     `;
-    
+
     const values = [request_id, newMessageJSON];
     const result = await client.query(query, values);
 
     console.log("Rows updated:", result.rowCount);
 
     if (result.rowCount === 0) {
-      return res.status(205).json({ error: 'Request not found or update failed' });
+      return res
+        .status(205)
+        .json({ error: "Request not found or update failed" });
     }
 
     const updatedMessages = result.rows[0].messages;
@@ -3265,7 +3561,10 @@ const sendMessageWorker = async (req, res) => {
     const multicastMessage = {
       tokens: fcmTokens,
       notification: {
-        title: senderType === 'user' ? 'User sent a message' : 'Worker sent a message',
+        title:
+          senderType === "user"
+            ? "User sent a message"
+            : "Worker sent a message",
         body: message,
       },
       data: {
@@ -3276,21 +3575,26 @@ const sendMessageWorker = async (req, res) => {
     };
 
     // Send notifications using sendEachForMulticast
-    const response = await getMessaging().sendEachForMulticast(multicastMessage);
+    const response = await getMessaging().sendEachForMulticast(
+      multicastMessage
+    );
     response.responses.forEach((resp, index) => {
       if (!resp.success) {
-        console.error(`Error sending message to token ${fcmTokens[index]}:`, resp.error);
+        console.error(
+          `Error sending message to token ${fcmTokens[index]}:`,
+          resp.error
+        );
       }
     });
 
     return res.status(200).json({
-      message: 'Message stored and FCM notification sent successfully!',
+      message: "Message stored and FCM notification sent successfully!",
       messages: updatedMessages,
       fcmResponse: response,
     });
   } catch (error) {
-    console.error('Error in sendMessageWorker:', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error in sendMessageWorker:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -3300,11 +3604,13 @@ const sendMessageUser = async (req, res) => {
 
   try {
     // Prepare the new message object as a JSON string wrapped in an array
-    const newMessageJSON = JSON.stringify([{
-      key: senderType,
-      message,
-      timestamp: new Date().toISOString(),
-    }]);
+    const newMessageJSON = JSON.stringify([
+      {
+        key: senderType,
+        message,
+        timestamp: new Date().toISOString(),
+      },
+    ]);
 
     /*  
       This query performs the following in one step:
@@ -3332,14 +3638,16 @@ const sendMessageUser = async (req, res) => {
       FROM updated
       JOIN accepted_data ON true;
     `;
-    
+
     const values = [request_id, newMessageJSON];
     const result = await client.query(query, values);
 
     console.log("Rows updated:", result.rowCount);
 
     if (result.rowCount === 0) {
-      return res.status(205).json({ error: 'Request not found or update failed' });
+      return res
+        .status(205)
+        .json({ error: "Request not found or update failed" });
     }
 
     const updatedMessages = result.rows[0].messages;
@@ -3349,7 +3657,10 @@ const sendMessageUser = async (req, res) => {
     const multicastMessage = {
       tokens: fcmTokens,
       notification: {
-        title: senderType === 'user' ? 'User sent a message' : 'Worker sent a message',
+        title:
+          senderType === "user"
+            ? "User sent a message"
+            : "Worker sent a message",
         body: message,
       },
       data: {
@@ -3360,27 +3671,31 @@ const sendMessageUser = async (req, res) => {
     };
 
     // Send notifications using sendEachForMulticast
-    const response = await getMessaging().sendEachForMulticast(multicastMessage);
+    const response = await getMessaging().sendEachForMulticast(
+      multicastMessage
+    );
     response.responses.forEach((resp, index) => {
       if (!resp.success) {
-        console.error(`Error sending message to token ${fcmTokens[index]}:`, resp.error);
+        console.error(
+          `Error sending message to token ${fcmTokens[index]}:`,
+          resp.error
+        );
       }
     });
 
     return res.status(200).json({
-      message: 'Message stored and FCM notification sent successfully!',
+      message: "Message stored and FCM notification sent successfully!",
       messages: updatedMessages,
       fcmResponse: response,
     });
   } catch (error) {
-    console.error('Error in sendMessageWorker:', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error in sendMessageWorker:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
 const workerGetMessage = async (req, res) => {
   const { request_id } = req.query;
-
 
   try {
     const query = `
@@ -3393,14 +3708,14 @@ const workerGetMessage = async (req, res) => {
     const result = await client.query(query, values);
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Request not found' });
+      return res.status(404).json({ error: "Request not found" });
     }
 
     const messages = result.rows[0].messages;
     return res.status(200).json({ messages });
   } catch (error) {
-    console.error('Error in workerGetMessage:', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error in workerGetMessage:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -3506,8 +3821,6 @@ const getServiceByName = async (req, res) => {
       ON a.service_tag = ANY(r.related_services_arr)
     ORDER BY array_position(r.related_services_arr, a.service_tag);
   `;
-  
-  
 
     const result = await client.query(query, [serviceName]);
 
@@ -3897,11 +4210,10 @@ const getWorkerBookings = async (req, res) => {
 };
 
 const getWorkerOngoingBookings = async (req, res) => {
-  console.log("called id")
+  console.log("called id");
   const workerId = req.worker.id;
 
   try {
-
     const query = `
     SELECT 
         n.notification_id,
@@ -3916,7 +4228,7 @@ const getWorkerOngoingBookings = async (req, res) => {
     `;
 
     const { rows } = await client.query(query, [workerId]);
-    console.log("=roes ",rows[0])
+    console.log("=roes ", rows[0]);
     res.status(200).json(rows);
   } catch (error) {
     console.error("Error fetching user bookings:", error);
@@ -3924,7 +4236,7 @@ const getWorkerOngoingBookings = async (req, res) => {
       .status(500)
       .json({ error: "An error occurred while fetching user bookings" });
   }
-}
+};
 
 const getUserAllBookings = async (req, res) => {
   const userId = req.user.id;
@@ -3959,7 +4271,6 @@ const getUserOngoingBookings = async (req, res) => {
   const userId = req.user.id;
 
   try {
-
     const query = `
     SELECT 
         n.notification_id,
@@ -3974,7 +4285,7 @@ const getUserOngoingBookings = async (req, res) => {
     `;
 
     const { rows } = await client.query(query, [userId]);
-    console.log("=roes ",rows[0])
+    console.log("=roes ", rows[0]);
     res.status(200).json(rows);
   } catch (error) {
     console.error("Error fetching user bookings:", error);
@@ -3982,7 +4293,7 @@ const getUserOngoingBookings = async (req, res) => {
       .status(500)
       .json({ error: "An error occurred while fetching user bookings" });
   }
-}
+};
 
 const workerAuthentication = async (req, res) => {
   const workerId = req.worker.id;
@@ -4105,8 +4416,12 @@ const storeNotification = async (req, res) => {
 
 const updateWorkerAction = async (workerId, encodedId, screen) => {
   try {
-    console.log("updateWorkerAction called with:", { workerId, encodedId, screen });
-    
+    console.log("updateWorkerAction called with:", {
+      workerId,
+      encodedId,
+      screen,
+    });
+
     const params = JSON.stringify({ encodedId });
     console.log("Constructed params:", params);
 
@@ -4128,7 +4443,7 @@ const updateWorkerAction = async (workerId, encodedId, screen) => {
           END
       RETURNING *;
     `;
-    
+
     console.log("Executing SQL query:", query);
     const result = await client.query(query, [workerId, screen, params]);
     console.log("Query executed successfully. Result:", result.rows[0]);
@@ -4183,7 +4498,7 @@ const createUserAction = async (req, res) => {
     location,
     discount,
     tipAmount,
-    offer
+    offer,
   } = req.body;
 
   // console.log("User action creation initiated", req.body);
@@ -4308,16 +4623,16 @@ const createUserAction = async (req, res) => {
 
 const userActionRemove = async (req, res) => {
   const userId = req.user.id; // Assuming req.user contains the authenticated user's information
-  const { screen, encodedId,offer } = req.body;
+  const { screen, encodedId, offer } = req.body;
 
-  console.log("offer applied",offer)
+  console.log("offer applied", offer);
 
   // console.log("Removing user action");
 
   try {
-    if(offer){
-      const offerCodeValue = offer.offer_code
-      console.log("offers applied changes",offerCodeValue)
+    if (offer) {
+      const offerCodeValue = offer.offer_code;
+      console.log("offers applied changes", offerCodeValue);
       const queryText = `
         UPDATE "user" AS u
         SET offers_used = (
@@ -4391,14 +4706,14 @@ const getWorkerTrackRoute = async (req, res) => {
     JOIN workersverified wv ON wa.worker_id = wv.worker_id
     WHERE wa.worker_id = $1
   `;
-  
+
     const result = await client.query(query, [id]);
 
     if (result.rows.length > 0) {
       const route = result.rows[0].screen_name;
       const parameter = result.rows[0].params;
       const name = result.rows[0].name;
-      const no_due = result.rows[0].no_due
+      const no_due = result.rows[0].no_due;
       res.status(200).json({ route, parameter, name, no_due });
     } else {
       res
@@ -4419,7 +4734,7 @@ const translateText = async (req, res) => {
   if (!text || !fromLang || !toLang) {
     return res
       .status(400)
-      .json({ error: 'Missing required fields: text, fromLang, toLang' });
+      .json({ error: "Missing required fields: text, fromLang, toLang" });
   }
 
   try {
@@ -4428,10 +4743,10 @@ const translateText = async (req, res) => {
 
     // Set up headers for authentication and content type
     const headers = {
-      'Ocp-Apim-Subscription-Key': subscriptionKey,
-      'Ocp-Apim-Subscription-Region': region,
-      'Content-Type': 'application/json',
-      'X-ClientTraceId': uuidv4().toString(),
+      "Ocp-Apim-Subscription-Key": subscriptionKey,
+      "Ocp-Apim-Subscription-Region": region,
+      "Content-Type": "application/json",
+      "X-ClientTraceId": uuidv4().toString(),
     };
 
     // Request body must be an array of objects with a "Text" property
@@ -4442,12 +4757,15 @@ const translateText = async (req, res) => {
 
     // Extract the translated text from response
     const translatedText =
-      response.data[0]?.translations[0]?.text || 'Translation not available';
+      response.data[0]?.translations[0]?.text || "Translation not available";
 
     res.json({ translatedText });
   } catch (error) {
-    console.error('Error in translation:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Translation failed' });
+    console.error(
+      "Error in translation:",
+      error.response?.data || error.message
+    );
+    res.status(500).json({ error: "Translation failed" });
   }
 };
 
@@ -4469,10 +4787,10 @@ const getUserTrackRoute = async (req, res) => {
 
       if (track) {
         // If track exists, return both the track and user name
-        res.status(200).json({ track, user: name,profile });
+        res.status(200).json({ track, user: name, profile });
       } else {
         // If no track, return only the user name
-        res.status(203).json({ user: name,profile });
+        res.status(203).json({ user: name, profile });
       }
     } else {
       // If no user found, return a 404 error
@@ -4505,7 +4823,8 @@ const loginStatus = async (req, res) => {
 
 const getUserByPhoneNumber = async (phone_number) => {
   try {
-    const query = 'SELECT user_id, name, phone_number FROM "user" WHERE phone_number = $1';
+    const query =
+      'SELECT user_id, name, phone_number FROM "user" WHERE phone_number = $1';
     const result = await client.query(query, [phone_number]);
 
     return result.rows.length ? result.rows[0] : null;
@@ -4517,7 +4836,7 @@ const getUserByPhoneNumber = async (phone_number) => {
 
 const login = async (req, res) => {
   const { phone_number } = req.body;
-  console.log("phonenumber",phone_number)
+  console.log("phonenumber", phone_number);
   if (!phone_number) {
     return res.status(400).json({ message: "Phone number is required" });
   }
@@ -4525,7 +4844,7 @@ const login = async (req, res) => {
   try {
     // Find the user by phone number
     const user = await getUserByPhoneNumber(phone_number);
-    console.log("user there are not ",user)
+    console.log("user there are not ", user);
     if (user) {
       // Generate a token for the user
       const token = generateToken(user);
@@ -4537,7 +4856,7 @@ const login = async (req, res) => {
       });
       return res.status(200).json({ token });
     } else {
-      console.log("user there are not there 205",)
+      console.log("user there are not there 205");
       // Use status 205 (or an alternative status) to indicate that the user does not exist
       return res.status(205).json({ message: "User not found" });
     }
@@ -4566,8 +4885,10 @@ const getAllServices = async () => {
 
 const getServicesBySearch = async (req, res) => {
   // Get the search query in lowercase and trim any extra spaces
-  const searchQuery = req.query.search ? req.query.search.toLowerCase().trim() : "";
-  
+  const searchQuery = req.query.search
+    ? req.query.search.toLowerCase().trim()
+    : "";
+
   try {
     const allServices = await getAllServices();
 
@@ -4609,11 +4930,13 @@ const getServicesBySearch = async (req, res) => {
     // Map services to include a computed score
     const scoredServices = allServices.map((service) => ({
       ...service,
-      score: calculateScore(service)
+      score: calculateScore(service),
     }));
 
     // Filter out services with no matches (score === 0)
-    const filteredServices = scoredServices.filter(service => service.score > 0);
+    const filteredServices = scoredServices.filter(
+      (service) => service.score > 0
+    );
 
     // Sort the results by score (highest score first)
     filteredServices.sort((a, b) => b.score - a.score);
@@ -4693,7 +5016,9 @@ const storeUserFcmToken = async (req, res) => {
       return res.status(200).json({ message: "FCM token stored successfully" });
     } else {
       // The row already existed for this user, or ON CONFLICT prevented insert
-      return res.status(200).json({ message: "FCM token already exists for this user" });
+      return res
+        .status(200)
+        .json({ message: "FCM token already exists for this user" });
     }
   } catch (error) {
     console.error("Error storing FCM token:", error);
@@ -4730,7 +5055,9 @@ const storeFcmToken = async (req, res) => {
       res.status(200).json({ message: "FCM token stored successfully" });
     } else {
       // The row already existed for this worker, or ON CONFLICT prevented insert
-      res.status(200).json({ message: "FCM token already exists for this worker" });
+      res
+        .status(200)
+        .json({ message: "FCM token already exists for this worker" });
     }
   } catch (error) {
     console.error("Error storing FCM token:", error);
@@ -4745,7 +5072,9 @@ const initiateCall = async (req, res) => {
     console.log("Request Body:", req.body);
 
     if (!from || !to) {
-      return res.status(400).json({ error: 'Both "from" and "to" numbers are required.' });
+      return res
+        .status(400)
+        .json({ error: 'Both "from" and "to" numbers are required.' });
     }
 
     // Build the payload.
@@ -4754,18 +5083,22 @@ const initiateCall = async (req, res) => {
       api_id: "APIMQSArLJl140228",
       api_password: "W2tbf56h",
       ivr_number: "1732351343", // Replace with your active IVR number.
-      dial: "agent",          // "agent" means the system will not automatically call the from number.
-      receiver_number: to,     // The number to connect when the IVR is dialed.
-      agent_number: from,      // The from person's number.
+      dial: "agent", // "agent" means the system will not automatically call the from number.
+      receiver_number: to, // The number to connect when the IVR is dialed.
+      agent_number: from, // The from person's number.
       scheduled: scheduled || 0,
       timezone_id: timezone_id || "",
-      scheduled_datetime: scheduled_datetime || ""
+      scheduled_datetime: scheduled_datetime || "",
     };
 
     // Make the API call.
-    const apiResponse = await axios.post('https://www.bulksmsplans.com/api/ivr/makeACall', payload, {
-      headers: { 'Content-Type': 'application/json' }
-    });
+    const apiResponse = await axios.post(
+      "https://www.bulksmsplans.com/api/ivr/makeACall",
+      payload,
+      {
+        headers: { "Content-Type": "application/json" },
+      }
+    );
 
     console.log("API Response:", apiResponse.data);
     const { code, message, data } = apiResponse.data;
@@ -4780,11 +5113,13 @@ const initiateCall = async (req, res) => {
     return res.json({
       message: instruction,
       callMaskingNumber: payload.ivr_number,
-      details: data
+      details: data,
     });
   } catch (err) {
     console.error("Error in initiateCall:", err.message);
-    return res.status(500).json({ error: 'Internal server error.', details: err.message });
+    return res
+      .status(500)
+      .json({ error: "Internal server error.", details: err.message });
   }
 };
 
@@ -4827,7 +5162,7 @@ const getLocationDetails = async (req, res) => {
 
 // Function to fetch location details from the database
 const fetchLocationDetails = async (notificationId) => {
-  console.log(notificationId)
+  console.log(notificationId);
   try {
     // Query to get the start and endpoint details using a JOIN between accepted and workerlocation tables
     const query = `
@@ -4904,76 +5239,79 @@ const userCoupons = async (req, res) => {
 };
 
 const userProfileUpdate = async (req, res) => {
-    const user_id = req.user.id;
-    const {  profileImage } = req.body;
+  const user_id = req.user.id;
+  const { profileImage } = req.body;
 
-    // Check if both parameters are provided
-    if (!user_id || !profileImage) {
-        return res.status(400).json({ error: "user_id and profileImage are required." });
-    }
+  // Check if both parameters are provided
+  if (!user_id || !profileImage) {
+    return res
+      .status(400)
+      .json({ error: "user_id and profileImage are required." });
+  }
 
-    try {
-        // Update the user's profile image
-        const query = `
+  try {
+    // Update the user's profile image
+    const query = `
             UPDATE "user"
             SET profile = $1
             WHERE user_id = $2
             RETURNING *;
         `;
-        
-        const values = [profileImage, user_id];
 
-        const result = await client.query(query, values);
+    const values = [profileImage, user_id];
 
-        if (result.rowCount === 0) {
-            return res.status(404).json({ error: "User not found." });
-        }
+    const result = await client.query(query, values);
 
-        res.status(200).json({
-            message: "Profile updated successfully.",
-            updatedUser: result.rows[0]
-        });
-    } catch (error) {
-        console.error("Error updating profile:", error);
-        res.status(500).json({ error: "Internal server error." });
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "User not found." });
     }
+
+    res.status(200).json({
+      message: "Profile updated successfully.",
+      updatedUser: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
 };
 
 const workerProfileUpdate = async (req, res) => {
   const worker_id = req.worker.id;
-  console.log("called")
-  const {  profileImage } = req.body;
+  console.log("called");
+  const { profileImage } = req.body;
 
   // Check if both parameters are provided
   if (!worker_id || !profileImage) {
-      return res.status(400).json({ error: "user_id and profileImage are required." });
+    return res
+      .status(400)
+      .json({ error: "user_id and profileImage are required." });
   }
 
   try {
-      // Update the user's profile image
-      const query = `
+    // Update the user's profile image
+    const query = `
       UPDATE workerskills
       SET profile = $1
       WHERE worker_id = $2
       RETURNING *;
   `;
-  
-      
-      const values = [profileImage, worker_id];
 
-      const result = await client.query(query, values);
+    const values = [profileImage, worker_id];
 
-      if (result.rowCount === 0) {
-          return res.status(404).json({ error: "User not found." });
-      }
+    const result = await client.query(query, values);
 
-      res.status(200).json({
-          message: "Profile updated successfully.",
-          updatedUser: result.rows[0]
-      });
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    res.status(200).json({
+      message: "Profile updated successfully.",
+      updatedUser: result.rows[0],
+    });
   } catch (error) {
-      console.error("Error updating profile:", error);
-      res.status(500).json({ error: "Internal server error." });
+    console.error("Error updating profile:", error);
+    res.status(500).json({ error: "Internal server error." });
   }
 };
 
@@ -5551,13 +5889,13 @@ const acceptRequest = async (req, res) => {
 //       `
 //       WITH verification AS (
 //         SELECT verification_status, worker_id, service_booked
-//         FROM accepted 
+//         FROM accepted
 //         WHERE notification_id = $1
 //       ),
 //       updated AS (
 //         UPDATE accepted
 //         SET user_navigation_cancel_status = 'usercanceled'
-//         WHERE notification_id = $1 
+//         WHERE notification_id = $1
 //           AND (SELECT NOT verification_status FROM verification)
 //         RETURNING *
 //       ),
@@ -5567,7 +5905,7 @@ const acceptRequest = async (req, res) => {
 //           longitude, latitude, created_at, worker_id, complete_status,
 //           service_booked, time, discount, total_cost, tip_amount
 //         )
-//         SELECT 
+//         SELECT
 //           accepted_id, notification_id, user_id, user_notification_id,
 //           longitude, latitude, created_at, worker_id, 'usercanceled',
 //           service_booked, time, discount, total_cost, tip_amount
@@ -5587,7 +5925,7 @@ const acceptRequest = async (req, res) => {
 //         )
 //         WHERE u.user_id = $3
 //           AND EXISTS (
-//             SELECT 1 
+//             SELECT 1
 //             FROM updated a
 //             WHERE a.user_id = $3
 //               AND a.coupons_applied IS NOT NULL
@@ -5599,9 +5937,9 @@ const acceptRequest = async (req, res) => {
 //           )
 //         RETURNING u.user_id
 //       )
-//       SELECT 
+//       SELECT
 //         v.verification_status AS verified,
-//         COALESCE(i.worker_id, v.worker_id) AS worker_id, 
+//         COALESCE(i.worker_id, v.worker_id) AS worker_id,
 //         service_booked,
 //         f.fcm_token
 //       FROM verification v
@@ -5620,8 +5958,8 @@ const acceptRequest = async (req, res) => {
 
 //     // Execute the deletion as a separate query.
 //     await client.query(
-//       `DELETE FROM accepted 
-//        WHERE notification_id = $1 
+//       `DELETE FROM accepted
+//        WHERE notification_id = $1
 //          AND verification_status = false`,
 //       [notification_id]
 //     );
@@ -5760,7 +6098,7 @@ const userNavigationCancel = async (req, res) => {
     if (combinedQuery.rows.length === 0) {
       await client.query("ROLLBACK");
       return res.status(404).json({
-        error: "Cancellation not performed. Invalid ID or already canceled."
+        error: "Cancellation not performed. Invalid ID or already canceled.",
       });
     }
 
@@ -5773,26 +6111,29 @@ const userNavigationCancel = async (req, res) => {
     );
 
     await client.query("COMMIT");
-    console.log("Transaction committed successfully for notification_id:", notification_id);
+    console.log(
+      "Transaction committed successfully for notification_id:",
+      notification_id
+    );
 
     // 3) Destructure DB-sourced values
     const {
       verified,
       worker_id: workerId,
       user_id: dbUserId,
-      service_booked: serviceBooked
+      service_booked: serviceBooked,
     } = combinedQuery.rows[0];
 
     // If already verified, block cancel
     if (verified) {
       return res.status(205).json({
-        message: "Cancellation blocked – verification already completed."
+        message: "Cancellation blocked – verification already completed.",
       });
     }
 
     // Gather FCM tokens
     const fcmTokens = combinedQuery.rows
-      .map(r => r.fcm_token)
+      .map((r) => r.fcm_token)
       .filter(Boolean);
 
     // 4) Send FCM notifications
@@ -5821,11 +6162,7 @@ const userNavigationCancel = async (req, res) => {
     );
 
     if (workerId) {
-      await updateWorkerAction(
-        workerId,
-        encodedUserNotificationId,
-        screen
-      );
+      await updateWorkerAction(workerId, encodedUserNotificationId, screen);
     } else {
       console.warn("No worker_id available for workerAction");
     }
@@ -5837,7 +6174,6 @@ const userNavigationCancel = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
-
 
 // const workerNavigationCancel = async (req, res) => {
 //   const { notification_id, offer_code } = req.body;
@@ -5854,7 +6190,7 @@ const userNavigationCancel = async (req, res) => {
 //         UPDATE accepted
 //         SET user_navigation_cancel_status = 'workercanceled'
 //         WHERE notification_id = $1
-//         RETURNING 
+//         RETURNING
 //           accepted_id, user_id, user_notification_id,
 //           longitude, latitude, created_at, worker_id,
 //           service_booked, time, discount, total_cost,
@@ -5866,7 +6202,7 @@ const userNavigationCancel = async (req, res) => {
 //           longitude, latitude, created_at, worker_id, complete_status,
 //           service_booked, time, discount, total_cost, tip_amount
 //         )
-//         SELECT 
+//         SELECT
 //           accepted_id, $1, user_id, user_notification_id,
 //           longitude, latitude, created_at, worker_id, 'workercanceled',
 //           service_booked, time, discount, total_cost, tip_amount
@@ -5896,9 +6232,9 @@ const userNavigationCancel = async (req, res) => {
 //           )
 //         RETURNING u.user_id
 //       )
-//       SELECT 
-//         i.user_id, 
-//         f.fcm_token, 
+//       SELECT
+//         i.user_id,
+//         f.fcm_token,
 //         i.service_booked,
 //         i.worker_id
 //       FROM inserted i
@@ -5968,7 +6304,9 @@ const userNavigationCancel = async (req, res) => {
 
 const workerNavigationCancel = async (req, res) => {
   const { notification_id, offer_code } = req.body;
-  const encodedUserNotificationId = Buffer.from(notification_id.toString()).toString("base64");
+  const encodedUserNotificationId = Buffer.from(
+    notification_id.toString()
+  ).toString("base64");
 
   try {
     await client.query("BEGIN");
@@ -6073,21 +6411,26 @@ const workerNavigationCancel = async (req, res) => {
     if (combinedQuery.rows.length === 0) {
       await client.query("ROLLBACK");
       return res.status(205).json({
-        message: "Cancellation not performed. Either invalid ID or already canceled."
+        message:
+          "Cancellation not performed. Either invalid ID or already canceled.",
       });
     }
 
     // Now delete the original accepted record
-    await client.query(
-      `DELETE FROM accepted WHERE notification_id = $1`,
-      [notification_id]
-    );
+    await client.query(`DELETE FROM accepted WHERE notification_id = $1`, [
+      notification_id,
+    ]);
 
     await client.query("COMMIT");
-    console.log("Transaction committed successfully for notification_id:", notification_id);
+    console.log(
+      "Transaction committed successfully for notification_id:",
+      notification_id
+    );
 
     const { user_id, service_booked, worker_id } = combinedQuery.rows[0];
-    const fcmTokens = combinedQuery.rows.map(r => r.fcm_token).filter(Boolean);
+    const fcmTokens = combinedQuery.rows
+      .map((r) => r.fcm_token)
+      .filter(Boolean);
 
     // Send FCM notifications if any
     if (fcmTokens.length > 0) {
@@ -6113,21 +6456,15 @@ const workerNavigationCancel = async (req, res) => {
       "",
       service_booked
     );
-    await updateWorkerAction(
-      worker_id,
-      encodedUserNotificationId,
-      ""
-    );
+    await updateWorkerAction(worker_id, encodedUserNotificationId, "");
 
     return res.status(200).json({ message: "Cancellation successful" });
-
   } catch (error) {
     await client.query("ROLLBACK");
     console.error("Error processing request:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
-
 
 const workCompletedRequest = async (req, res) => {
   const { notification_id } = req.body;
@@ -6355,16 +6692,16 @@ const getWorkersNearby = async (req, res) => {
       city,
       alternateName,
       alternatePhoneNumber,
-      serviceBooked,   // array of { serviceName, cost }
+      serviceBooked, // array of { serviceName, cost }
       discount,
       tipAmount,
-      offer
+      offer,
     } = req.body;
 
-    console.log("req.body",req.body)
+    console.log("req.body", req.body);
 
     const created_at = getCurrentTimestamp();
-    const serviceArray = JSON.stringify(serviceBooked);   // e.g. '[{"serviceName":"...","cost": 250}, ...]'
+    const serviceArray = JSON.stringify(serviceBooked); // e.g. '[{"serviceName":"...","cost": 250}, ...]'
     const serviceNames = serviceBooked.map((s) => s.serviceName);
     const totalCost =
       serviceBooked.reduce((acc, s) => acc + s.cost, 0) - discount + tipAmount;
@@ -6416,15 +6753,15 @@ const getWorkersNearby = async (req, res) => {
     `;
 
     const query1Params = [
-      user_id,           // $1
-      created_at,        // $2
-      area,              // $3
-      pincode,           // $4
-      city,              // $5
-      alternateName,     // $6
+      user_id, // $1
+      created_at, // $2
+      area, // $3
+      pincode, // $4
+      city, // $5
+      alternateName, // $6
       alternatePhoneNumber, // $7
-      serviceArray,      // $8
-      serviceNames,      // $9 :: text[]
+      serviceArray, // $8
+      serviceNames, // $9 :: text[]
     ];
 
     const result1 = await client.query(query1, query1Params);
@@ -6434,7 +6771,8 @@ const getWorkersNearby = async (req, res) => {
         .json("No user found or no worker matches subservices");
     }
 
-    const { user_notification_id, worker_ids, user_lat, user_lon } = result1.rows[0];
+    const { user_notification_id, worker_ids, user_lat, user_lon } =
+      result1.rows[0];
 
     if (!user_notification_id) {
       return res.status(404).json("Failed to insert user notification");
@@ -6446,9 +6784,11 @@ const getWorkersNearby = async (req, res) => {
     // ------------------------------------------------------------------
     //  3) Firestore: Get worker locations once, filter by 2km radius
     // ------------------------------------------------------------------
-    const workerDb = await getAllLocations(worker_ids); 
+    const workerDb = await getAllLocations(worker_ids);
     if (!workerDb || workerDb.length === 0) {
-      return res.status(200).json("No Firestore location data for these workers");
+      return res
+        .status(200)
+        .json("No Firestore location data for these workers");
     }
 
     const MAX_DISTANCE = 2; // 2km
@@ -6507,17 +6847,17 @@ const getWorkersNearby = async (req, res) => {
 
     const query2Params = [
       user_notification_id, // $1
-      user_id,              // $2
-      user_lon,             // $3
-      user_lat,             // $4
-      created_at,           // $5
-      pin,                  // $6
-      serviceArray,         // $7
-      nearbyWorkers,        // $8 :: int[]
-      discount,             // $9
-      totalCost,            // $10
-      tipAmount,            // $11
-      offer                 // $12 (for coupons_applied)
+      user_id, // $2
+      user_lon, // $3
+      user_lat, // $4
+      created_at, // $5
+      pin, // $6
+      serviceArray, // $7
+      nearbyWorkers, // $8 :: int[]
+      discount, // $9
+      totalCost, // $10
+      tipAmount, // $11
+      offer, // $12 (for coupons_applied)
     ];
 
     const result2 = await client.query(query2, query2Params);
@@ -6556,8 +6896,8 @@ const getWorkersNearby = async (req, res) => {
       const normalNotificationMessage = {
         tokens,
         notification: {
-          title:  "🔔 ClickSolver Has a Job for You!",
-          body:   "💼 A user needs help! Accept now to support your ClickSolver family. 🤝"
+          title: "🔔 ClickSolver Has a Job for You!",
+          body: "💼 A user needs help! Accept now to support your ClickSolver family. 🤝",
         },
         data: {
           user_notification_id: encodedUserNotificationId,
@@ -6575,8 +6915,10 @@ const getWorkersNearby = async (req, res) => {
       };
 
       try {
-        const fcmResponse = await getMessaging().sendEachForMulticast(normalNotificationMessage);
-        
+        const fcmResponse = await getMessaging().sendEachForMulticast(
+          normalNotificationMessage
+        );
+
         // Optional: track success/failure
         let successCount = 0;
         let failureCount = 0;
@@ -6585,10 +6927,15 @@ const getWorkersNearby = async (req, res) => {
             successCount++;
           } else {
             failureCount++;
-            console.error(`❌ Error sending to token ${tokens[idx]}:`, resp.error);
+            console.error(
+              `❌ Error sending to token ${tokens[idx]}:`,
+              resp.error
+            );
           }
         });
-        console.log(`FCM Summary: ${successCount} success, ${failureCount} failures.`);
+        console.log(
+          `FCM Summary: ${successCount} success, ${failureCount} failures.`
+        );
       } catch (err) {
         console.error("❌ Error sending FCM notifications:", err);
       }
@@ -6715,7 +7062,7 @@ const getVerificationStatus = async (req, res) => {
 //     const query = `
 //       WITH updated AS (
 //         UPDATE accepted
-//         SET 
+//         SET
 //           verification_status = TRUE,
 //           time = jsonb_set(
 //             COALESCE(time, '{}'::jsonb),
@@ -6725,7 +7072,7 @@ const getVerificationStatus = async (req, res) => {
 //         WHERE notification_id = $1 AND pin = $2
 //         RETURNING user_id, user_navigation_cancel_status, service_booked,worker_id
 //       )
-//       SELECT 
+//       SELECT
 //         updated.user_navigation_cancel_status,
 //         updated.user_id,
 //         updated.service_booked,
@@ -6888,7 +7235,9 @@ const workerVerifyOtp = async (req, res) => {
             screen: "worktimescreen",
           },
         };
-        const resp = await getMessaging().sendEachForMulticast(multicastMessage);
+        const resp = await getMessaging().sendEachForMulticast(
+          multicastMessage
+        );
         resp.responses.forEach((r, i) => {
           if (!r.success) {
             console.error(`FCM error for ${validTokens[i]}:`, r.error);
@@ -6903,8 +7252,15 @@ const workerVerifyOtp = async (req, res) => {
 
     // Record background actions
     const screen = "worktimescreen";
-    const encodedId = Buffer.from(notification_id.toString()).toString("base64");
-    await createUserBackgroundAction(user_id, encodedId, screen, service_booked);
+    const encodedId = Buffer.from(notification_id.toString()).toString(
+      "base64"
+    );
+    await createUserBackgroundAction(
+      user_id,
+      encodedId,
+      screen,
+      service_booked
+    );
     await updateWorkerAction(worker_id, encodedId, screen);
 
     return res.status(200).json({ status: "Verification successful" });
@@ -6913,7 +7269,6 @@ const workerVerifyOtp = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 const getCleaningServices = async () => {
   try {
@@ -6964,7 +7319,8 @@ const sendOtp = (req, res) => {
     method: "POST",
     url: `https://cpaas.messagecentral.com/verification/v3/send?countryCode=91&customerId=${process.env.CUSTOMER_ID}&flowType=SMS&mobileNumber=${mobileNumber}`,
     headers: {
-      authToken: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUIzNzUzRUNBNDNCRDQzNSIsImlhdCI6MTcyNjI1OTQwNiwiZXhwIjoxODgzOTM5NDA2fQ.Gme6ijpbtUge-n9NpEgJR7lIsNQTqH4kDWkoe9Wp6Nnd6AE0jaAKCuuGuYtkilkBrcC1wCj8GrlMNQodR-Gelg",
+      authToken:
+        "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUIzNzUzRUNBNDNCRDQzNSIsImlhdCI6MTcyNjI1OTQwNiwiZXhwIjoxODgzOTM5NDA2fQ.Gme6ijpbtUge-n9NpEgJR7lIsNQTqH4kDWkoe9Wp6Nnd6AE0jaAKCuuGuYtkilkBrcC1wCj8GrlMNQodR-Gelg",
     },
   };
 
@@ -6988,7 +7344,9 @@ const sendOtp = (req, res) => {
       }
     } catch (parseError) {
       console.error("Error parsing OTP response:", parseError);
-      return res.status(500).json({ message: "Failed to parse response", error: parseError });
+      return res
+        .status(500)
+        .json({ message: "Failed to parse response", error: parseError });
     }
   });
 };
@@ -7003,7 +7361,8 @@ const partnerSendOtp = (req, res) => {
     method: "POST",
     url: `https://cpaas.messagecentral.com/verification/v3/send?countryCode=91&customerId=${process.env.WORKER_CUSTOMER_ID}&flowType=SMS&mobileNumber=${mobileNumber}`,
     headers: {
-      authToken: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLTI0OEY5ODhBOUQ5QzQzOCIsImlhdCI6MTc0NTY4Mjk3NywiZXhwIjoxOTAzMzYyOTc3fQ.9-y_44egQuG0MuLs08d7gLWKxkSGW8ldsceKotcrTzP8Dl2XqrSXZGpVtkPJQAL-LJ-HCTPnab1FVHn-A_IJRA",
+      authToken:
+        "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLTI0OEY5ODhBOUQ5QzQzOCIsImlhdCI6MTc0NTY4Mjk3NywiZXhwIjoxOTAzMzYyOTc3fQ.9-y_44egQuG0MuLs08d7gLWKxkSGW8ldsceKotcrTzP8Dl2XqrSXZGpVtkPJQAL-LJ-HCTPnab1FVHn-A_IJRA",
     },
   };
 
@@ -7027,7 +7386,9 @@ const partnerSendOtp = (req, res) => {
       }
     } catch (parseError) {
       console.error("Error parsing OTP response:", parseError);
-      return res.status(500).json({ message: "Failed to parse response", error: parseError });
+      return res
+        .status(500)
+        .json({ message: "Failed to parse response", error: parseError });
     }
   });
 };
@@ -7043,7 +7404,8 @@ const partnerValidateOtp = (req, res) => {
     method: "GET",
     url: `https://cpaas.messagecentral.com/verification/v3/validateOtp?countryCode=91&mobileNumber=${mobileNumber}&verificationId=${verificationId}&customerId=${process.env.WORKER_CUSTOMER_ID}&code=${otpCode}`,
     headers: {
-      authToken: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLTI0OEY5ODhBOUQ5QzQzOCIsImlhdCI6MTc0NTY4Mjk3NywiZXhwIjoxOTAzMzYyOTc3fQ.9-y_44egQuG0MuLs08d7gLWKxkSGW8ldsceKotcrTzP8Dl2XqrSXZGpVtkPJQAL-LJ-HCTPnab1FVHn-A_IJRA",
+      authToken:
+        "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLTI0OEY5ODhBOUQ5QzQzOCIsImlhdCI6MTc0NTY4Mjk3NywiZXhwIjoxOTAzMzYyOTc3fQ.9-y_44egQuG0MuLs08d7gLWKxkSGW8ldsceKotcrTzP8Dl2XqrSXZGpVtkPJQAL-LJ-HCTPnab1FVHn-A_IJRA",
     },
   };
 
@@ -7065,7 +7427,9 @@ const partnerValidateOtp = (req, res) => {
       }
     } catch (parseError) {
       console.error("Error parsing OTP validation response:", parseError);
-      return res.status(500).json({ message: "Failed to parse response", error: parseError });
+      return res
+        .status(500)
+        .json({ message: "Failed to parse response", error: parseError });
     }
   });
 };
@@ -7082,7 +7446,8 @@ const validateOtp = (req, res) => {
     method: "GET",
     url: `https://cpaas.messagecentral.com/verification/v3/validateOtp?countryCode=91&mobileNumber=${mobileNumber}&verificationId=${verificationId}&customerId=${process.env.CUSTOMER_ID}&code=${otpCode}`,
     headers: {
-      authToken: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUIzNzUzRUNBNDNCRDQzNSIsImlhdCI6MTcyNjI1OTQwNiwiZXhwIjoxODgzOTM5NDA2fQ.Gme6ijpbtUge-n9NpEgJR7lIsNQTqH4kDWkoe9Wp6Nnd6AE0jaAKCuuGuYtkilkBrcC1wCj8GrlMNQodR-Gelg",
+      authToken:
+        "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUIzNzUzRUNBNDNCRDQzNSIsImlhdCI6MTcyNjI1OTQwNiwiZXhwIjoxODgzOTM5NDA2fQ.Gme6ijpbtUge-n9NpEgJR7lIsNQTqH4kDWkoe9Wp6Nnd6AE0jaAKCuuGuYtkilkBrcC1wCj8GrlMNQodR-Gelg",
     },
   };
 
@@ -7104,7 +7469,9 @@ const validateOtp = (req, res) => {
       }
     } catch (parseError) {
       console.error("Error parsing OTP validation response:", parseError);
-      return res.status(500).json({ message: "Failed to parse response", error: parseError });
+      return res
+        .status(500)
+        .json({ message: "Failed to parse response", error: parseError });
     }
   });
 };
@@ -7130,7 +7497,9 @@ const CheckStartTime = async (req, res) => {
 
       if (start_time) {
         // If start_time exists, return it
-        return res.status(200).json({ worked_time: start_time, worker_id, payment });
+        return res
+          .status(200)
+          .json({ worked_time: start_time, worker_id, payment });
       } else if (worker_id) {
         // If start_time doesn't exist, insert current timestamp into ServiceCall
         const currentTime = getCurrentTimestamp();
@@ -7139,7 +7508,9 @@ const CheckStartTime = async (req, res) => {
           [notification_id, worker_id, currentTime, payment]
         );
 
-        return res.status(200).json({ worked_time: currentTime, worker_id, payment });
+        return res
+          .status(200)
+          .json({ worked_time: currentTime, worker_id, payment });
       }
     }
 
@@ -7321,11 +7692,11 @@ const getTimeDifferenceInIST = (start_time, end_time) => {
 //     // Single query using CTEs to fetch, check, update, and return only necessary data.
 //     const query = `
 //       WITH fetched_data AS (
-//         SELECT 
+//         SELECT
 //           sc.notification_id,
-//           sc.start_time, 
-//           sc.end_time, 
-//           a.user_id, 
+//           sc.start_time,
+//           sc.end_time,
+//           a.user_id,
 //           a.service_booked,
 //           a.worker_id
 //         FROM servicecall sc
@@ -7334,19 +7705,19 @@ const getTimeDifferenceInIST = (start_time, end_time) => {
 //         FOR UPDATE
 //       ),
 //       check_end_time AS (
-//         SELECT 
+//         SELECT
 //           start_time,
 //           user_id,
 //           service_booked,
-//           CASE 
-//             WHEN end_time IS NOT NULL THEN TRUE 
-//             ELSE FALSE 
+//           CASE
+//             WHEN end_time IS NOT NULL THEN TRUE
+//             ELSE FALSE
 //           END AS is_end_time_set
 //         FROM fetched_data
 //       ),
 //       update_servicecall AS (
 //         UPDATE servicecall sc
-//         SET 
+//         SET
 //           end_time = $2,
 //           time_worked = TO_CHAR(EXTRACT(EPOCH FROM ($2 - sc.start_time)) / 3600, 'FM00') || ':' ||
 //                         TO_CHAR((EXTRACT(EPOCH FROM ($2 - sc.start_time)) / 60) % 60, 'FM00') || ':' ||
@@ -7357,7 +7728,7 @@ const getTimeDifferenceInIST = (start_time, end_time) => {
 //       ),
 //       update_accepted AS (
 //         UPDATE accepted a
-//         SET 
+//         SET
 //           time = jsonb_set(
 //             COALESCE(a.time, '{}'::jsonb),
 //             '{workCompleted}',
@@ -7372,7 +7743,7 @@ const getTimeDifferenceInIST = (start_time, end_time) => {
 //         FROM userfcm u
 //         WHERE u.user_id = (SELECT user_id FROM fetched_data LIMIT 1)
 //       )
-//       SELECT 
+//       SELECT
 //         cd.start_time,
 //         cd.user_id,
 //         cd.service_booked,
@@ -7577,7 +7948,7 @@ const serviceCompleted = async (req, res) => {
       updated_end_time,
       updated_time_worked,
       updated_time,
-      fcm_tokens
+      fcm_tokens,
     } = result.rows[0];
 
     // If already completed
@@ -7589,14 +7960,14 @@ const serviceCompleted = async (req, res) => {
     let time_worked = updated_time_worked;
     if (!time_worked) {
       const seconds = Math.floor((end_time - start_time) / 1000);
-      const hrs = String(Math.floor(seconds / 3600)).padStart(2, '0');
-      const mins = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
-      const secs = String(seconds % 60).padStart(2, '0');
+      const hrs = String(Math.floor(seconds / 3600)).padStart(2, "0");
+      const mins = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
+      const secs = String(seconds % 60).padStart(2, "0");
       time_worked = `${hrs}:${mins}:${secs}`;
     }
 
     // Send FCM notifications
-    const tokens = (fcm_tokens || []).filter(t => t);
+    const tokens = (fcm_tokens || []).filter((t) => t);
     if (tokens.length > 0) {
       const multicast = {
         tokens,
@@ -7625,7 +7996,12 @@ const serviceCompleted = async (req, res) => {
     }
 
     // Background actions
-    await createUserBackgroundAction(user_id, encodedId, "Paymentscreen", service_booked);
+    await createUserBackgroundAction(
+      user_id,
+      encodedId,
+      "Paymentscreen",
+      service_booked
+    );
     await updateWorkerAction(worker_id, encodedId, "Paymentscreen");
 
     // Final response
@@ -7635,7 +8011,6 @@ const serviceCompleted = async (req, res) => {
       time_worked,
       updated_time,
     });
-
   } catch (error) {
     console.error("Error updating end time:", error);
     return res.status(500).json({ error: "Internal server error." });
@@ -7659,24 +8034,15 @@ const getSpecialOffers = async (req, res) => {
     `);
 
     return res.status(200).json({
-      offers: result.rows
+      offers: result.rows,
     });
-  }
-  catch (error) {
-    console.error('Error fetching special offers:', error);
+  } catch (error) {
+    console.error("Error fetching special offers:", error);
     return res.status(500).json({
-      error: 'Internal server error'
+      error: "Internal server error",
     });
   }
 };
-
-
-
-
-
-
-   
-
 
 const stopStopwatch = async (notification_id) => {
   if (stopwatchInterval) {
@@ -7989,7 +8355,6 @@ const getWorkerNavigationDetails = async (req, res) => {
     WHERE 
       n.notification_id = $1;
   `;
-  
 
     const result = await client.query(query, [notificationId]);
 
@@ -8010,8 +8375,7 @@ const getWorkerNavigationDetails = async (req, res) => {
       city,
       service_booked,
       average_rating,
-      service_counts
-
+      service_counts,
     } = result.rows[0];
 
     // Send the response
@@ -8025,7 +8389,7 @@ const getWorkerNavigationDetails = async (req, res) => {
       city,
       service_booked,
       average_rating,
-      service_counts
+      service_counts,
     });
   } catch (error) {
     console.error("Error getting worker navigation details:", error);
@@ -8055,7 +8419,7 @@ const registrationStatus = async (req, res) => {
 
 const subservices = async (req, res) => {
   const { selectedService } = req.body;
-  console.log(selectedService)
+  console.log(selectedService);
   try {
     const result = await client.query(
       `SELECT 
@@ -8162,12 +8526,16 @@ const checkInactiveUsers = async () => {
   }
 };
 
-cron.schedule("0 9 * * *", () => {
-  console.log("Running checkInactiveUsers notification job at 9 AM IST...");
-  checkInactiveUsers();
-}, {
-  timezone: "Asia/Kolkata"
-});
+cron.schedule(
+  "0 9 * * *",
+  () => {
+    console.log("Running checkInactiveUsers notification job at 9 AM IST...");
+    checkInactiveUsers();
+  },
+  {
+    timezone: "Asia/Kolkata",
+  }
+);
 
 // Function to run the DELETE query
 const deleteOldUserNotifications = async () => {
@@ -8190,12 +8558,18 @@ const deleteOldUserNotifications = async () => {
   }
 };
 
-cron.schedule("0 2 * * *", () => {
-  console.log("Running deleteOldUserNotifications notification job at 9 AM IST...");
-  deleteOldUserNotifications();
-}, {
-  timezone: "Asia/Kolkata"
-});
+cron.schedule(
+  "0 2 * * *",
+  () => {
+    console.log(
+      "Running deleteOldUserNotifications notification job at 9 AM IST..."
+    );
+    deleteOldUserNotifications();
+  },
+  {
+    timezone: "Asia/Kolkata",
+  }
+);
 
 // ***
 const cancelRequest = async (req, res) => {
@@ -8521,7 +8895,8 @@ const processPayment = async (req, res) => {
 
   if (!paymentMethod || !decodedId) {
     return res.status(402).json({
-      error: "Missing required fields: totalAmount, paymentMethod, and decodedId.",
+      error:
+        "Missing required fields: totalAmount, paymentMethod, and decodedId.",
     });
   }
 
@@ -8651,12 +9026,12 @@ const processPayment = async (req, res) => {
     `;
 
     const values = [
-      totalAmount,   // $1: payment
+      totalAmount, // $1: payment
       paymentMethod, // $2: payment_type
-      decodedId,     // $3: notification_id
-      end_time,      // $4: timestamp
+      decodedId, // $3: notification_id
+      end_time, // $4: timestamp
       paymentMethod, // $5: for workerlife logic (cash vs non-cash)
-      totalAmount,   // $6: money earned
+      totalAmount, // $6: money earned
     ];
 
     const combinedResult = await client.query(combinedQuery, values);
@@ -8665,10 +9040,9 @@ const processPayment = async (req, res) => {
     }
 
     // Remove the processed accepted row
-    await client.query(
-      `DELETE FROM accepted WHERE notification_id = $1;`,
-      [decodedId]
-    );
+    await client.query(`DELETE FROM accepted WHERE notification_id = $1;`, [
+      decodedId,
+    ]);
 
     const {
       user_id,
@@ -8679,8 +9053,15 @@ const processPayment = async (req, res) => {
     } = combinedResult.rows[0];
 
     // Background actions
-    const encodedNotificationId = Buffer.from(decodedId.toString()).toString("base64");
-    await createUserBackgroundAction(user_id, encodedNotificationId, "", service_booked);
+    const encodedNotificationId = Buffer.from(decodedId.toString()).toString(
+      "base64"
+    );
+    await createUserBackgroundAction(
+      user_id,
+      encodedNotificationId,
+      "",
+      service_booked
+    );
     await updateWorkerAction(worker_id, encodedNotificationId, "");
 
     // Send FCM to the user
@@ -8712,12 +9093,12 @@ const submitFeedback = async (req, res) => {
     const rawNotificationId = req.body.notification_id;
     const rawRating = req.body.rating;
     const rawUserId = req.user.id;
-    
+
     // Convert to numbers and check for validity
     const notification_id = parseInt(rawNotificationId, 10);
     const rating = parseInt(rawRating, 10);
     const user_id = parseInt(rawUserId, 10);
-    
+
     if (isNaN(notification_id) || isNaN(rating) || isNaN(user_id)) {
       return res.status(400).json({
         message: "Notification ID, rating, and user ID must be valid numbers.",
@@ -8753,7 +9134,9 @@ const submitFeedback = async (req, res) => {
     const result = await client.query(query, values);
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Worker ID not found or update failed." });
+      return res
+        .status(404)
+        .json({ message: "Worker ID not found or update failed." });
     }
 
     res.status(201).json({
@@ -8761,18 +9144,20 @@ const submitFeedback = async (req, res) => {
       feedback: {
         worker_id: result.rows[0].worker_id,
         ratings_count: result.rows[0].ratings_count,
-        average_rating: Number(result.rows[0].average_rating).toFixed(2)
+        average_rating: Number(result.rows[0].average_rating).toFixed(2),
       },
     });
   } catch (error) {
     // If duplicate key error occurs, send a conflict response.
-    if (error.code === '23505') {
+    if (error.code === "23505") {
       return res.status(409).json({
-        message: "Feedback already submitted for this notification."
+        message: "Feedback already submitted for this notification.",
       });
     }
     console.error("Error submitting feedback:", error);
-    res.status(500).json({ message: "Internal server error.", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal server error.", error: error.message });
   }
 };
 
@@ -8851,7 +9236,7 @@ const workerDetails = async (req, res, notification_id) => {
 
 const getServiceCompletedDetails = async (req, res) => {
   const { notification_id } = req.body;
-  console.log("notification",notification_id)
+  console.log("notification", notification_id);
 
   try {
     const query = `
@@ -8873,10 +9258,20 @@ const getServiceCompletedDetails = async (req, res) => {
     const result = await client.query(query, [notification_id]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Notification or related data not found" });
+      return res
+        .status(404)
+        .json({ error: "Notification or related data not found" });
     }
 
-    const { payment, payment_type, service_booked, longitude, latitude, area, name } = result.rows[0];
+    const {
+      payment,
+      payment_type,
+      service_booked,
+      longitude,
+      latitude,
+      area,
+      name,
+    } = result.rows[0];
     const jsonbServiceBooked =
       typeof service_booked === "object"
         ? JSON.stringify(service_booked)
@@ -9027,7 +9422,7 @@ function convertToDateString(isoDate) {
 //     } = result.rows[0];
 
 //     console.log("rej",rejected_count)
- 
+
 //     res.json({
 //       total_payment: Number(total_payment) || 0,
 //       cash_payment: Number(cash_payment) || 0,
@@ -9056,19 +9451,23 @@ const getWorkerEarnings = async (req, res) => {
   // 1) Parse incoming dates
   if (startDate && endDate) {
     selectStartDate = convertToDateString(startDate);
-    selectEndDate   = convertToDateString(endDate);
+    selectEndDate = convertToDateString(endDate);
 
     if (!selectStartDate || !selectEndDate) {
       console.log("❌ Invalid start/end format:", startDate, endDate);
-      return res.status(400).json({ error: "Invalid startDate or endDate format" });
+      return res
+        .status(400)
+        .json({ error: "Invalid startDate or endDate format" });
     }
     if (new Date(selectStartDate) > new Date(selectEndDate)) {
       console.log("❌ startDate > endDate:", selectStartDate, selectEndDate);
-      return res.status(400).json({ error: "startDate cannot be after endDate" });
+      return res
+        .status(400)
+        .json({ error: "startDate cannot be after endDate" });
     }
   } else if (date) {
     selectStartDate = convertToDateString(date);
-    selectEndDate   = selectStartDate;
+    selectEndDate = selectStartDate;
     if (!selectStartDate) {
       console.log("❌ Invalid single date:", date);
       return res.status(400).json({ error: "Invalid date format" });
@@ -9080,7 +9479,7 @@ const getWorkerEarnings = async (req, res) => {
 
   // 2) Trim to YYYY-MM-DD only
   const start = selectStartDate.slice(0, 10);
-  const end   = selectEndDate.slice(0, 10);
+  const end = selectEndDate.slice(0, 10);
 
   console.log("🕵️ getWorkerEarnings params:", { workerId, start, end });
 
@@ -9191,29 +9590,23 @@ const getWorkerEarnings = async (req, res) => {
     });
 
     return res.json({
-      total_payment: Number(total_payment)                 || 0,
-      cash_payment: Number(cash_payment)                   || 0,
-      payment_count: Number(payment_count)                 || 0,
-      life_earnings: Number(life_earnings)                 || 0,
-      avg_rating: Number(avg_rating)                       || 0,
-      rejected_count: Number(rejected_count)               || 0,
-      pending_count: Number(pending_count)                 || 0,
+      total_payment: Number(total_payment) || 0,
+      cash_payment: Number(cash_payment) || 0,
+      payment_count: Number(payment_count) || 0,
+      life_earnings: Number(life_earnings) || 0,
+      avg_rating: Number(avg_rating) || 0,
+      rejected_count: Number(rejected_count) || 0,
+      pending_count: Number(pending_count) || 0,
       total_time_worked_hours: Number(total_time_worked_hours) || 0,
-      service_counts: Number(service_counts)               || 0,
+      service_counts: Number(service_counts) || 0,
       cashback_approved_times: Number(cashback_approved_times) || 0,
-      cashback_gain: Number(cashback_gain)                 || 0,
+      cashback_gain: Number(cashback_gain) || 0,
     });
   } catch (error) {
     console.error("🔥 Error fetching worker earnings:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
-
-
-
-
-
-
 
 const userWorkerInProgressDetails = async (req, res) => {
   const { decodedId } = req.body;
@@ -9242,7 +9635,7 @@ const userWorkerInProgressDetails = async (req, res) => {
 
     const result = await client.query(query, [decodedId]);
 
-    console.log("data",result.rows)
+    console.log("data", result.rows);
 
     if (result.rows.length === 0) {
       return res
@@ -9287,11 +9680,13 @@ const workerWorkingStatusUpdated = async (req, res) => {
     const { rows } = await client.query(query, values);
 
     if (rows.length === 0) {
-      return res.status(404).json({ message: "Record not found or update failed." });
+      return res
+        .status(404)
+        .json({ message: "Record not found or update failed." });
     }
 
     // Extract FCM tokens from the result (if multiple rows, there might be duplicates)
-    const tokens = rows.map(row => row.fcm_token);
+    const tokens = rows.map((row) => row.fcm_token);
 
     // Prepare the multicast message payload with a data payload.
     const multicastMessage = {
@@ -9299,37 +9694,44 @@ const workerWorkingStatusUpdated = async (req, res) => {
       data: {
         status: currentTime.toString(),
         statusKey,
-        message: "Status updated"
+        message: "Status updated",
       },
       android: {
-        priority: "high"
+        priority: "high",
       },
       apns: {
         payload: {
           aps: {
-            contentAvailable: true
-          }
-        }
-      }
+            contentAvailable: true,
+          },
+        },
+      },
     };
 
     // Send notifications using sendEachForMulticast
     try {
-      const fcmResponse = await getMessaging().sendEachForMulticast(multicastMessage);
+      const fcmResponse = await getMessaging().sendEachForMulticast(
+        multicastMessage
+      );
       fcmResponse.responses.forEach((resp, index) => {
         if (!resp.success) {
-          console.error(`Error sending message to token ${tokens[index]}:`, resp.error);
+          console.error(
+            `Error sending message to token ${tokens[index]}:`,
+            resp.error
+          );
         }
       });
 
       return res.status(200).json({
         message: "Service status updated successfully and FCM message sent.",
         data: rows[0],
-        fcmResponse
+        fcmResponse,
       });
     } catch (fcmError) {
       console.error("Error sending notifications:", fcmError);
-      return res.status(500).json({ message: "Internal server error", error: fcmError });
+      return res
+        .status(500)
+        .json({ message: "Internal server error", error: fcmError });
     }
   } catch (error) {
     console.error("Error updating service status:", error);
@@ -9504,7 +9906,6 @@ const workerSearch = async (req, res) => {
 
     // Return the first result (assuming phone_number is unique)
     return res.status(200).json(rows[0]);
-
   } catch (error) {
     console.error("Error searching worker:", error);
     return res.status(500).json({ error: "Internal Server Error" });
@@ -9549,7 +9950,7 @@ const balanceHistory = async (req, res) => {
   const { worker_id } = req.query;
 
   if (!worker_id) {
-    return res.status(400).json({ error: 'worker_id is required' });
+    return res.status(400).json({ error: "worker_id is required" });
   }
 
   try {
@@ -9561,13 +9962,13 @@ const balanceHistory = async (req, res) => {
     const { rows } = await client.query(query, [worker_id]);
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Worker not found' });
+      return res.status(404).json({ error: "Worker not found" });
     }
 
     res.status(200).json(rows[0]);
   } catch (error) {
-    console.error('Error fetching balance history:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error fetching balance history:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -9600,7 +10001,7 @@ const currentService = async (req, res) => {
 
   // Validate input
   if (!worker_id) {
-    return res.status(400).json({ error: 'worker_id is required' });
+    return res.status(400).json({ error: "worker_id is required" });
   }
 
   try {
@@ -9617,14 +10018,16 @@ const currentService = async (req, res) => {
 
     // Check if any data is found
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'No current service found for the worker' });
+      return res
+        .status(404)
+        .json({ error: "No current service found for the worker" });
     }
 
     // Respond with the fetched data
     res.status(200).json(rows[0]);
   } catch (error) {
-    console.error('Error fetching current service:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error fetching current service:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -9697,7 +10100,7 @@ const workerScreenChange = async (req, res) => {
     // Execute the query
     const result = await client.query(query, [worker_id, screen, encodedId]);
 
-    console.log("rows",result.rows)
+    console.log("rows", result.rows);
 
     return res.status(200).json({
       success: true,
@@ -9724,21 +10127,25 @@ const administratorDetails = async (req, res) => {
     let paramIndex = 1;
 
     // Worker & User date condition
-    let workerUserDateCondition = '1=1'; // Default: No filter
+    let workerUserDateCondition = "1=1"; // Default: No filter
     if (date) {
       workerUserDateCondition = `DATE(created_at) = $${paramIndex}`;
       queryParams.push(date);
       paramIndex++;
     } else if (startDate && endDate) {
-      workerUserDateCondition = `DATE(created_at) BETWEEN $${paramIndex} AND $${paramIndex + 1}`;
+      workerUserDateCondition = `DATE(created_at) BETWEEN $${paramIndex} AND $${
+        paramIndex + 1
+      }`;
       queryParams.push(startDate, endDate);
       paramIndex += 2;
     }
 
     // Service call condition
-    let serviceCallCondition = '1=1';
+    let serviceCallCondition = "1=1";
     if (startDate && endDate) {
-      serviceCallCondition = `DATE(end_time) BETWEEN $${paramIndex} AND $${paramIndex + 1}`;
+      serviceCallCondition = `DATE(end_time) BETWEEN $${paramIndex} AND $${
+        paramIndex + 1
+      }`;
       queryParams.push(startDate, endDate);
       paramIndex += 2;
     } else if (date) {
@@ -9748,9 +10155,11 @@ const administratorDetails = async (req, res) => {
     }
 
     // Cancellation count condition
-    let cancelCondition = '1=1';
+    let cancelCondition = "1=1";
     if (startDate && endDate) {
-      cancelCondition = `DATE(created_at) BETWEEN $${paramIndex} AND $${paramIndex + 1} AND complete_status = 'cancel'`;
+      cancelCondition = `DATE(created_at) BETWEEN $${paramIndex} AND $${
+        paramIndex + 1
+      } AND complete_status = 'cancel'`;
       queryParams.push(startDate, endDate);
       paramIndex += 2;
     } else if (date) {
@@ -9809,13 +10218,11 @@ const administratorDetails = async (req, res) => {
     // Execute Query Securely
     const result = await client.query(query, queryParams);
 
-
     res.status(200).json({
       success: true,
       message: "Administrator details fetched successfully",
       data: result.rows[0],
     });
-
   } catch (error) {
     console.error("Error fetching administrator details:", error);
     res.status(500).json({
@@ -9829,7 +10236,7 @@ const administratorDetails = async (req, res) => {
 const fetchOffers = async (req, res) => {
   try {
     const user_id = req.user.id;
-    const role = req.user && req.user.role ? req.user.role : 'user';
+    const role = req.user && req.user.role ? req.user.role : "user";
 
     const query = `
       SELECT 
@@ -9892,7 +10299,8 @@ const offerValidation = async (req, res) => {
     if (!user_id || !offer_code || totalAmount == null) {
       return res.status(400).json({
         success: false,
-        message: "Missing required parameters: user_id, offer_code, or totalAmount",
+        message:
+          "Missing required parameters: user_id, offer_code, or totalAmount",
       });
     }
 
@@ -9921,7 +10329,9 @@ const offerValidation = async (req, res) => {
     const userResult = await client.query(userQuery, [user_id]);
 
     if (userResult.rowCount === 0) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     const user = userResult.rows[0];
@@ -9930,8 +10340,9 @@ const offerValidation = async (req, res) => {
     // 3) WELCOME offer specific validation
     if (offer_code.includes("WELCOME")) {
       const hasUsedWelcome = offersUsed.some(
-        item => item.offer_code === offer_code && 
-        (item.status === "applied" || item.status === "used")
+        (item) =>
+          item.offer_code === offer_code &&
+          (item.status === "applied" || item.status === "used")
       );
 
       if (hasUsedWelcome) {
@@ -9945,7 +10356,9 @@ const offerValidation = async (req, res) => {
     }
 
     // 4) Single conditional update for missing offers using JSONB operations
-    const offerExists = offersUsed.some(item => item.offer_code === offer_code);
+    const offerExists = offersUsed.some(
+      (item) => item.offer_code === offer_code
+    );
     if (!offerExists) {
       const updateQuery = `
         UPDATE "user"
@@ -9956,18 +10369,16 @@ const offerValidation = async (req, res) => {
           FROM jsonb_array_elements(COALESCE(offers_used, '[]'::jsonb)) AS item
           WHERE item->>'offer_code' = $3
         )`;
-        await client.query(
-          updateQuery,
-          [
-            JSON.stringify([{ offer_code, status: "pending", quantity: 0 }]),
-            user_id,
-            offer_code
-          ]
-        );        
+      await client.query(updateQuery, [
+        JSON.stringify([{ offer_code, status: "pending", quantity: 0 }]),
+        user_id,
+        offer_code,
+      ]);
     }
 
     // 5) Final validation and calculation
-    const { discount_percentage, min_booking_amount, max_discount_amount } = offerResult.rows[0];
+    const { discount_percentage, min_booking_amount, max_discount_amount } =
+      offerResult.rows[0];
 
     if (Number(totalAmount) < Number(min_booking_amount)) {
       return res.status(200).json({
@@ -9990,10 +10401,11 @@ const offerValidation = async (req, res) => {
       newTotal,
       error: null,
     });
-
   } catch (error) {
     console.error("Error in offer validation:", error);
-    return res.status(500).json({ success: false, message: "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
   }
 };
 
@@ -10132,7 +10544,7 @@ module.exports = {
   balanceHistory,
   getWorkerServiceHistory,
   currentService,
-  workerScreenChange ,
+  workerScreenChange,
   getPendingWorkersNotStarted,
   administratorDetails,
   workerTokenVerification,
@@ -10171,5 +10583,6 @@ module.exports = {
   getServiceBookingUserItemDetails,
   homeServices,
   getSpecialOffers,
-  partnerSendOtp
+  partnerSendOtp,
+  sendNotificationsToWorkers,
 };

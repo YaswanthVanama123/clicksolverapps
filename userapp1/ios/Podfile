@@ -5,25 +5,33 @@ use_modular_headers!
 require_relative '../node_modules/react-native/scripts/react_native_pods'
 require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
 require_relative '../node_modules/react-native-permissions/scripts/setup'
-
 prepare_react_native_project!
 
 $RNFirebaseAsStaticFramework = true
 
 target 'userapp1' do
+  # Standard React-Native autolinking
   config = use_native_modules!
 
   use_react_native!(
-    :path             => config[:reactNativePath],
-    :app_path         => "#{Pod::Config.instance.installation_root}/..",
-    :hermes_enabled   => false,
-    :fabric_enabled   => false,
-    :new_arch_enabled => false
+    path:            config[:reactNativePath],
+    hermes_enabled:  false,
+    fabric_enabled:  false,
+    new_arch_enabled:false
   )
 
-  # ✅ fixed pod name matching podspec
-  pod 'rnmapbox-maps', :podspec => '../node_modules/@rnmapbox/maps/rnmapbox-maps.podspec'
+  # Extra pods
+  pod 'rnmapbox-maps',
+      podspec: '../node_modules/@rnmapbox/maps/rnmapbox-maps.podspec'
 
+  pod 'react-native-image-picker',
+      path: '../node_modules/react-native-image-picker'
+
+  pod 'RNCPushNotificationIOS',
+      path: '../node_modules/@react-native-community/push-notification-ios'
+
+  # React-Native-Permissions — only subspecs you need.
+  # ⬇︎ This automatically pulls the umbrella RNPermissions pod.
   setup_permissions(%w[
     LocationWhenInUse
     LocationAlways
@@ -33,9 +41,6 @@ target 'userapp1' do
     Camera
   ])
 
-  pod 'react-native-image-picker', :path => '../node_modules/react-native-image-picker'
-  pod 'RNCPushNotificationIOS',   :path => '../node_modules/@react-native-community/push-notification-ios'
-
   target 'userapp1Tests' do
     inherit! :complete
   end
@@ -43,21 +48,12 @@ target 'userapp1' do
   post_install do |installer|
     react_native_post_install(installer, config[:reactNativePath])
 
+    # ❌ DO NOT delete the RNPermissions target any more!
     installer.pods_project.targets.each do |tgt|
-      tgt.remove_from_project if tgt.name == 'RNMapboxMapsSpecs'
       tgt.build_configurations.each do |cfg|
-        cfg.build_settings['IPHONEOS_DEPLOYMENT_TARGET']   = '16.0'
+        cfg.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
         cfg.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
-        cfg.build_settings['CLANG_CXX_LIBRARY_STANDARD'] = 'libc++'
-
-        traits = File.join(__dir__, 'char_traits_uc.h')
-        flags  = cfg.build_settings['OTHER_CPLUSPLUSFLAGS'] || '$(inherited)'
-        flags += %Q( -include "#{traits}") + ' -D_LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW'
-        cfg.build_settings['OTHER_CPLUSPLUSFLAGS'] = flags
-
-        if tgt.name == 'Flipper'
-          cfg.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
-        end
+        cfg.build_settings['CLANG_CXX_LIBRARY_STANDARD']  = 'libc++'
       end
     end
   end

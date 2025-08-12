@@ -56,9 +56,8 @@
 // // Custom hook for consuming the theme context
 // export const useTheme = () => useContext(ThemeContext);
 
-
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Appearance } from 'react-native';
+import React, {createContext, useContext, useState, useEffect} from 'react';
+import {Appearance} from 'react-native';
 
 const ThemeContext = createContext();
 
@@ -69,7 +68,7 @@ const ThemeContext = createContext();
   
   The isDarkMode state holds the actual theme value.
 */
-export const ThemeProvider = ({ children }) => {
+export const ThemeProvider = ({children}) => {
   // Initially, use system setting.
   const systemIsDark = Appearance.getColorScheme() === 'dark';
   const [themeMode, setThemeMode] = useState('system');
@@ -78,7 +77,7 @@ export const ThemeProvider = ({ children }) => {
   // When in system mode, listen for system changes.
   useEffect(() => {
     if (themeMode === 'system') {
-      const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      const subscription = Appearance.addChangeListener(({colorScheme}) => {
         setIsDarkMode(colorScheme === 'dark');
       });
       return () => subscription.remove();
@@ -105,7 +104,8 @@ export const ThemeProvider = ({ children }) => {
   };
 
   return (
-    <ThemeContext.Provider value={{ isDarkMode, toggleTheme, useSystemTheme, themeMode }}>
+    <ThemeContext.Provider
+      value={{isDarkMode, toggleTheme, useSystemTheme, themeMode}}>
       {children}
     </ThemeContext.Provider>
   );
@@ -113,9 +113,6 @@ export const ThemeProvider = ({ children }) => {
 
 // Custom hook for consuming the theme context.
 export const useTheme = () => useContext(ThemeContext);
-
-
-
 
 // import React, { createContext, useContext, useState, useEffect } from 'react';
 // import { Appearance } from 'react-native';

@@ -15,6 +15,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import axios from 'axios';
 import messaging from '@react-native-firebase/messaging';
+import { requestTrackingPermission } from 'react-native-tracking-transparency';
 import PushNotification from 'react-native-push-notification';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { useTranslation } from 'react-i18next';
@@ -311,6 +312,16 @@ function App() {
     }
   }, [handleNotificationNavigation]);
 
+    useEffect(() => {
+    (async () => {
+      try {
+        await requestTrackingPermission();
+      } catch (e) {
+        // ignore any errors
+      }
+    })();
+  }, []);
+
   /* -----------------------------------------------
    * EFFECT: INITIAL ROUTE
    * -------------------------------------------- */
@@ -334,7 +345,7 @@ function App() {
   useEffect(() => {
     // requestAllPermissions();
     syncFcmToken();
-
+    // (messaging() as any).setDeliveryMetricsExportToBigQueryEnabled(false);
     // @ts-ignore
     // messaging().setForegroundNotificationPresentationOptions({
     //   alert: true,
