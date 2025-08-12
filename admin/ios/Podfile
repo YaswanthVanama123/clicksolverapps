@@ -1,0 +1,52 @@
+# ios/Podfile
+
+platform :ios, '16.0'
+use_frameworks! :linkage => :static
+use_modular_headers!
+
+# React Native core pod helpers
+require_relative '../node_modules/react-native/scripts/react_native_pods'
+# CLI helper for native modules (defines `use_native_modules!`)
+require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
+
+prepare_react_native_project!
+
+target 'Admin' do
+  # Pull in all auto-linked pods
+  config = use_native_modules!
+
+  use_react_native!(
+    :path             => config[:reactNativePath],
+    :app_path         => "#{Pod::Config.instance.installation_root}/..",
+    # Disable Hermes if you prefer
+    :hermes_enabled   => false,
+    :fabric_enabled   => false,
+    :new_arch_enabled => false
+  )
+
+  # Add any custom pods here:
+  # pod 'react-native-image-picker', :path => '../node_modules/react-native-image-picker'
+
+  post_install do |installer|
+    # Standard RN post-install hook
+    react_native_post_install(
+      installer,
+      config[:reactNativePath],
+      mac_catalyst_enabled: false
+    )
+
+    # Enforce iOS 16.0 and modern C++ settings across all pods
+    installer.pods_project.targets.each do |tgt|
+      tgt.build_configurations.each do |cfg|
+        cfg.build_settings['IPHONEOS_DEPLOYMENT_TARGET']   = '16.0'
+        cfg.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
+        cfg.build_settings['CLANG_CXX_LIBRARY_STANDARD']  = 'libc++'
+
+        # If you see a Flipper target and need to exclude arm64 on simulator:
+        if tgt.name == 'Flipper'
+          cfg.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+        end
+      end
+    end
+  end
+end
