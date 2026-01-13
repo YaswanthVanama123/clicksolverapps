@@ -1,3 +1,9 @@
+/**
+ * AboutCS Component
+ * Displays information about ClickSolver company and mission
+ * Features: Multi-language support, dark mode, company logo
+ */
+
 import React from 'react';
 import {
   ScrollView,
@@ -6,21 +12,54 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  useWindowDimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import {useNavigation} from '@react-navigation/native';
-import {useTheme} from '../context/ThemeContext';
-// Import the translation hook
-import {useTranslation} from 'react-i18next';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext';
+import { getColors } from '../theme/colors';
+import { useTranslation } from 'react-i18next';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const LOGO_URL = 'https://i.postimg.cc/hjjpy2SW/Button-1.png';
 
+/**
+ * AboutCS - About ClickSolver screen
+ * Displays company information, mission, and founder details
+ * @returns {JSX.Element}
+ */
 const AboutCS = () => {
   const navigation = useNavigation();
-  const {isDarkMode} = useTheme();
-  const {t} = useTranslation();
-  const styles = dynamicStyles(isDarkMode);
+  const { isDarkMode } = useTheme();
+  const { width } = useWindowDimensions();
+  const colors = getColors(isDarkMode);
+  const { t } = useTranslation();
+  const styles = dynamicStyles(width, isDarkMode, colors);
+
+  /**
+   * Company information sections
+   */
+  const aboutSections = [
+    {
+      key: 'intro',
+      text: t('about_description_1') ||
+        'Welcome to Clicksolver! We are dedicated to delivering innovative solutions that streamline your digital experience. Our platform is designed to empower you to solve complex challenges with simple clicks, enhancing productivity and driving success.',
+    },
+    {
+      key: 'mission',
+      text: t('about_description_2') ||
+        'At Clicksolver, our mission is to simplify tasks and transform the way you work. With a focus on intuitive design and cutting-edge technology, we strive to provide tools that are both powerful and user-friendly.',
+    },
+    {
+      key: 'commitment',
+      text: t('about_description_3') ||
+        'Thank you for choosing Clicksolver as your trusted partner in navigating the digital world. We are committed to continuous improvement and excellence, ensuring that your journey with us is as smooth and rewarding as possible.',
+    },
+    {
+      key: 'founder',
+      text: t('about_founded') || 'Founded in 2025 by Yaswanth Vanama.',
+    },
+  ];
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -29,11 +68,13 @@ const AboutCS = () => {
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            style={styles.backButton}>
+            style={styles.backButton}
+            activeOpacity={0.7}
+          >
             <Icon
               name="arrow-back"
               size={24}
-              color={isDarkMode ? '#fff' : '#333'}
+              color={colors.text.primary}
             />
           </TouchableOpacity>
           <Text style={styles.headerText}>{t('about_us') || 'About Us'}</Text>
@@ -41,81 +82,151 @@ const AboutCS = () => {
 
         {/* Content */}
         <View style={styles.content}>
-          <Text style={styles.description}>
-            {t('about_description_1') ||
-              'Welcome to Clicksolver! We are dedicated to delivering innovative solutions that streamline your digital experience. Our platform is designed to empower you to solve complex challenges with simple clicks, enhancing productivity and driving success.'}
-          </Text>
-          <Text style={styles.description}>
-            {t('about_description_2') ||
-              'At Clicksolver, our mission is to simplify tasks and transform the way you work. With a focus on intuitive design and cutting-edge technology, we strive to provide tools that are both powerful and user-friendly.'}
-          </Text>
-          <Text style={styles.description}>
-            {t('about_description_3') ||
-              'Thank you for choosing Clicksolver as your trusted partner in navigating the digital world. We are committed to continuous improvement and excellence, ensuring that your journey with us is as smooth and rewarding as possible.'}
-          </Text>
-          {/* New founder and year info */}
-          <Text style={styles.description}>
-            {t('about_founded') || 'Founded in 2025 by Yaswanth Vanama.'}
-          </Text>
+          {aboutSections.map((section, index) => (
+            <View key={section.key} style={styles.sectionContainer}>
+              <Text style={styles.description}>{section.text}</Text>
+              {index < aboutSections.length - 1 && (
+                <View style={styles.divider} />
+              )}
+            </View>
+          ))}
+
+          {/* Company values */}
+          <View style={styles.valuesContainer}>
+            <Text style={styles.valuesTitle}>
+              {t('our_values') || 'Our Values'}
+            </Text>
+            <View style={styles.valueItem}>
+              <Icon name="check-circle" size={20} color={colors.success} />
+              <Text style={styles.valueText}>
+                {t('value_innovation') || 'Innovation & Excellence'}
+              </Text>
+            </View>
+            <View style={styles.valueItem}>
+              <Icon name="check-circle" size={20} color={colors.success} />
+              <Text style={styles.valueText}>
+                {t('value_customer') || 'Customer-First Approach'}
+              </Text>
+            </View>
+            <View style={styles.valueItem}>
+              <Icon name="check-circle" size={20} color={colors.success} />
+              <Text style={styles.valueText}>
+                {t('value_reliability') || 'Reliability & Trust'}
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Logo at the bottom center */}
         <View style={styles.logoContainer}>
           <Image
-            source={{uri: LOGO_URL}}
+            source={{ uri: LOGO_URL }}
             style={styles.logo}
             resizeMode="contain"
           />
+          <Text style={styles.logoCaption}>ClickSolver</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-const dynamicStyles = isDarkMode =>
-  StyleSheet.create({
+/**
+ * Dynamic styles based on theme and screen size
+ * @param {number} width - Screen width
+ * @param {boolean} isDarkMode - Theme mode
+ * @param {object} colors - Color palette
+ * @returns {object} StyleSheet object
+ */
+const dynamicStyles = (width, isDarkMode, colors) => {
+  const isTablet = width >= 600;
+
+  return StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
+      backgroundColor: colors.background,
     },
     container: {
       flexGrow: 1,
-      padding: 20,
-      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
+      padding: isTablet ? 24 : 20,
+      backgroundColor: colors.background,
       justifyContent: 'space-between',
     },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: 20,
+      marginBottom: isTablet ? 30 : 20,
     },
     backButton: {
       padding: 5,
+      marginRight: 10,
     },
     headerText: {
-      fontSize: 26,
+      fontSize: isTablet ? 28 : 26,
       fontWeight: 'bold',
-      marginLeft: 10,
-      color: isDarkMode ? '#fff' : '#333333',
+      color: colors.text.primary,
+      fontFamily: 'RobotoSlab-Bold',
     },
     content: {
       flex: 1,
     },
+    sectionContainer: {
+      marginBottom: isTablet ? 20 : 15,
+    },
     description: {
-      fontSize: 16,
-      lineHeight: 24,
-      color: isDarkMode ? '#ccc' : '#666666',
-      marginBottom: 15,
+      fontSize: isTablet ? 17 : 16,
+      lineHeight: isTablet ? 28 : 24,
+      color: colors.text.secondary,
       textAlign: 'justify',
+      fontFamily: 'RobotoSlab-Regular',
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors.divider,
+      marginTop: isTablet ? 20 : 15,
+    },
+    valuesContainer: {
+      marginTop: isTablet ? 30 : 25,
+      padding: isTablet ? 20 : 16,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      borderLeftWidth: 4,
+      borderLeftColor: colors.primary,
+    },
+    valuesTitle: {
+      fontSize: isTablet ? 20 : 18,
+      fontWeight: 'bold',
+      color: colors.text.primary,
+      marginBottom: isTablet ? 16 : 12,
+      fontFamily: 'RobotoSlab-Bold',
+    },
+    valueItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: isTablet ? 12 : 10,
+      gap: 12,
+    },
+    valueText: {
+      fontSize: isTablet ? 16 : 15,
+      color: colors.text.secondary,
+      fontFamily: 'RobotoSlab-Regular',
     },
     logoContainer: {
       alignItems: 'center',
-      marginBottom: 10,
+      marginTop: isTablet ? 40 : 30,
+      marginBottom: isTablet ? 20 : 10,
     },
     logo: {
-      width: 50,
-      height: 50,
+      width: isTablet ? 70 : 50,
+      height: isTablet ? 70 : 50,
+    },
+    logoCaption: {
+      marginTop: 8,
+      fontSize: isTablet ? 16 : 14,
+      color: colors.text.tertiary,
+      fontFamily: 'RobotoSlab-Regular',
     },
   });
+};
 
 export default AboutCS;

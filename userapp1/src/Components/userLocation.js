@@ -1,323 +1,89 @@
-import React, {useEffect, useRef, useState, useCallback} from 'react';
+import React, {useState, useCallback} from 'react';
 import {
   StyleSheet,
   View,
-  PermissionsAndroid,
-  Platform,
   TextInput,
-  FlatList,
   Text,
   TouchableOpacity,
-  Modal,
   ActivityIndicator,
   BackHandler,
   Dimensions,
-  Alert,
+  Platform,
 } from 'react-native';
-import Mapbox from '@rnmapbox/maps';
-import Geolocation from 'react-native-geolocation-service';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {
-  CommonActions,
-  useNavigation,
-  useFocusEffect,
-  useRoute,
-} from '@react-navigation/native';
-import {
-  request,
-  check,
-  openSettings,
-  PERMISSIONS,
-  RESULTS,
-} from 'react-native-permissions';
-import EncryptedStorage from 'react-native-encrypted-storage';
-import axios from 'axios';
+import {CommonActions, useNavigation, useFocusEffect, useRoute} from '@react-navigation/native';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
-import EvilIcons from 'react-native-vector-icons/AntDesign';
 import Octicons from 'react-native-vector-icons/Octicons';
-import {Places} from 'ola-maps';
+import EvilIcons from 'react-native-vector-icons/AntDesign';
 import {useTheme} from '../context/ThemeContext';
-
-// Import i18n so translations are loaded
-import '../i18n/i18n';
-// Import useTranslation hook
 import {useTranslation} from 'react-i18next';
+import '../i18n/i18n';
 
-Mapbox.setAccessToken(
-  'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw',
-);
-const placesClient = new Places('iN1RT7PQ41Z0DVxin6jlf7xZbmbIZPtb9CyNwtlT');
+// Custom hooks
+import useUserLocation from '../hooks/useUserLocation';
+import useGeofencing from '../hooks/useGeofencing';
+import useReverseGeocode from '../hooks/useReverseGeocode';
 
+// Components
+import LocationMap from './location/LocationMap';
+import ServiceList from './location/ServiceList';
+import OutOfServiceModal from './location/OutOfServiceModal';
+import AddressConfirmationModal from './location/AddressConfirmationModal';
+
+// API services
+import {sendUserLocation, fetchUserData} from '../api/locationService';
+
+/**
+ * UserLocation Screen - Refactored
+ * Allows users to select location, confirm address, and proceed with booking
+ */
 const UserLocation = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  // Extract route params including serviceName, savings, tipAmount, offer, and suggestion if any
-  const {serviceName, savings, tipAmount, offer, suggestion} = route.params;
-  // console.log("UserLocation route params", route.params);
-
   const {isDarkMode} = useTheme();
   const styles = dynamicStyles(isDarkMode);
-  // Get translation function
   const {t} = useTranslation();
 
-  // Local state variables
-  const [service, setService] = useState([]);
-  const [discount, setDiscount] = useState(0);
-  const [location, setLocation] = useState(null);
-  const [locationLoading, setLocationLoading] = useState(true);
+  // Extract route params
+  const {serviceName, savings, tipAmount, offer, suggestion} = route.params;
+
+  // State
+  const [service, setService] = useState(serviceName || []);
+  const [discount, setDiscount] = useState(savings || 0);
+  const [inputText, setInputText] = useState(suggestion ? suggestion.title : '');
   const [confirmLoading, setConfirmLoading] = useState(false);
-  const [suggestionName, setSuggestionName] = useState({});
+  const [showMessageBox, setShowMessageBox] = useState(false);
+  const [showOutOfPolygonModal, setShowOutOfPolygonModal] = useState(false);
+
+  // Address form state
   const [city, setCity] = useState('');
   const [area, setArea] = useState('');
   const [pincode, setPincode] = useState('');
   const [alternatePhoneNumber, setAlternatePhoneNumber] = useState('');
   const [alternateName, setAlternateName] = useState('');
-  const [cityError, setCityError] = useState('');
-  const [areaError, setAreaError] = useState('');
-  const [pincodeError, setPincodeError] = useState('');
-  const [phoneError, setPhoneError] = useState('');
-  const [nameError, setNameError] = useState('');
-  const [inputText, setInputText] = useState(
-    suggestion ? suggestion.title : '',
-  );
-  const [showMessageBox, setShowMessageBox] = useState(false);
-  const [showOutOfPolygonModal, setShowOutOfPolygonModal] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
-  const mapRef = useRef(null);
-  const screenHeight = Dimensions.get('window').height;
+  // Custom hooks
+  const {location, loading: locationLoading, updateLocation, refreshLocation} = useUserLocation(suggestion);
+  const {validateLocation, geofenceFeatures} = useGeofencing();
+  const {addressData} = useReverseGeocode();
 
-  // Example polygon geofences
-  const polygonGeofences = [
-    {
-      id: 'zone1',
-      coordinates: [
-        [17.006761409194525, 80.53093335197622],
-        [17.005373260064985, 80.53291176992008],
-        [16.998813039026402, 80.52664649280518],
-        [16.993702747389463, 80.52215964720267],
-        [16.98846563857974, 80.5205112174242],
-        [16.985436512096513, 80.52097340481015],
-        [16.982407772736835, 80.51886205401541],
-        [16.987520443064497, 80.51325397397363],
-        [16.99023324951544, 80.51463921162184],
-        [16.995343035509578, 80.51463907310551],
-        [16.997739960285273, 80.5172774280341],
-        [16.998812144956858, 80.5151667160207],
-        [17.001713715885202, 80.51609017256038],
-        [17.002827038610846, 80.51776432647671],
-        [17.003291715895045, 80.52011454583169],
-        [17.00505854929827, 80.52875703518436],
-        [17.00682448638898, 80.5309333429243],
-        [17.006761409194525, 80.53093335197622],
-      ],
-    },
-    {
-      id: 'zone2',
-      coordinates: [
-        [16.743659016732067, 81.08236641250511],
-        [16.74034916284056, 81.1094786505995],
-        [16.75332517520627, 81.11236934565574],
-        [16.75189061713202, 81.12344773457119],
-        [16.74132482137297, 81.13930188707656],
-        [16.738499354073056, 81.14316076908437],
-        [16.727924964128718, 81.14435289187736],
-        [16.72342039833586, 81.14527321552549],
-        [16.714353330434236, 81.14475480852309],
-        [16.703383261743355, 81.13502168775335],
-        [16.696706590762375, 81.11606570973981],
-        [16.690277614635917, 81.11161284859327],
-        [16.690514707521203, 81.10219147444412],
-        [16.682222407654322, 81.09411194809388],
-        [16.680443872924542, 81.08526753004003],
-        [16.681096564850336, 81.08063131598783],
-        [16.68719744307066, 81.07017793961404],
-        [16.70130255228827, 81.06808977263063],
-        [16.696116367178703, 81.04868074812543],
-        [16.712614628885774, 81.05789409014807],
-        [16.730789178638346, 81.06475183815792],
-        [16.74056558441238, 81.0761195443987],
-        [16.743659016732067, 81.08236641250511],
-      ],
-    },
-    {
-      id: 'zone3',
-      coordinates: [
-        [16.67255137959924, 81.03321330178159],
-        [16.6824145262823, 81.04647950748898],
-        [16.6901906618056, 81.05994340182195],
-        [16.694552978963202, 81.06568533268029],
-        [16.677859504990124, 81.07340809687918],
-        [16.681463988530027, 81.09657586209278],
-        [16.68506890661233, 81.11340498431895],
-        [16.68392977309564, 81.12271419996296],
-        [16.68750736693913, 81.13547809505661],
-        [16.689781680226105, 81.14855623455043],
-        [16.701923001073155, 81.14795977957687],
-        [16.710268916909044, 81.13191111175911],
-        [16.710459773455327, 81.13230954617364],
-        [16.715581889330167, 81.14954722240287],
-        [16.734167808346427, 81.14736380596997],
-        [16.749717375531958, 81.14795614271736],
-        [16.753503098884124, 81.12557160723918],
-        [16.75689984714704, 81.10200134965078],
-        [16.739837869176796, 81.07013329316601],
-        [16.719937818724915, 81.05944242728924],
-        [16.707614321072228, 81.04677046623345],
-        [16.707993326270454, 81.0238103387914],
-        [16.672526135042432, 81.03270663044418],
-      ],
-    },
-    {
-      id: 'zone4',
-      coordinates: [
-        [17.091730887270444, 80.60650204489468],
-        [17.09513456976032, 80.62335172753689],
-        [17.109038349803853, 80.63004799391479],
-        [17.121936424446076, 80.63527313830275],
-        [17.131033832357872, 80.6446897485315],
-        [17.13762235049235, 80.62366357630856],
-        [17.13463581504783, 80.60368200587993],
-      ],
-    },
-    {
-      id: 'gachibowli',
-      coordinates: [
-        [17.441144863330976, 78.3376254568987],
-        [17.428701935872226, 78.35687667241433],
-        [17.42800101387249, 78.3767413879973],
-        [17.43381411455306, 78.38748327347525],
-        [17.445021109810384, 78.40529511275628],
-        [17.47106054889956, 78.3945966028669],
-        [17.472566887863067, 78.37674057114202],
-        [17.467409875390615, 78.35340358285953],
-        [17.45496302403113, 78.34790606796042],
-        [17.441697955004187, 78.33820169415065],
-        [17.441144863330976, 78.3376254568987],
-      ],
-    },
-  ];
+  // Update address fields when geocoding completes
+  React.useEffect(() => {
+    if (addressData.city) setCity(addressData.city);
+    if (addressData.area) setArea(addressData.area);
+    if (addressData.pincode) setPincode(addressData.pincode);
+  }, [addressData]);
 
-  // Ray-casting algorithm to check if a point is in a polygon
-  const isPointInPolygon = (point, polygon) => {
-    const x = point[1];
-    const y = point[0];
-    let inside = false;
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const xi = polygon[i][0],
-        yi = polygon[i][1];
-      const xj = polygon[j][0],
-        yj = polygon[j][1];
-      const intersect =
-        yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
-      if (intersect) inside = !inside;
+  // Send location to backend whenever it changes
+  React.useEffect(() => {
+    if (location) {
+      const [lon, lat] = location;
+      sendUserLocation(lon, lat);
     }
-    return inside;
-  };
+  }, [location]);
 
-  // Set service and discount from route params
-  useEffect(() => {
-    if (serviceName) {
-      setService(serviceName);
-      setDiscount(savings);
-    }
-    if (suggestion) {
-      setSuggestionName(suggestion);
-    }
-  }, [route.params]);
-
-  // Request location permission and get current position
-  useEffect(() => {
-    const requestLocationPermission = async () => {
-      try {
-        let status;
-
-        if (Platform.OS === 'android') {
-          status = (await PermissionsAndroid.check(
-            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          ))
-            ? RESULTS.GRANTED
-            : await PermissionsAndroid.request(
-                PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-                {
-                  title:
-                    t('location_permission_title') || 'Location Permission',
-                  message:
-                    t('location_permission_message') ||
-                    'This app needs access to your location',
-                  buttonNeutral: t('ask_me_later') || 'Ask Me Later',
-                  buttonNegative: t('cancel') || 'Cancel',
-                  buttonPositive: t('ok') || 'OK',
-                },
-              );
-        } else {
-          // iOS
-          status = await check(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
-          if (status === RESULTS.DENIED) {
-            // first-time or user hasn’t chosen yet
-            status = await request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
-          }
-        }
-
-        if (status === RESULTS.BLOCKED) {
-          // user has permanently denied → send to settings
-          Alert.alert(
-            t('location_permission_blocked_title') || 'Location Disabled',
-            t('location_permission_blocked_message') ||
-              'Please enable location access in Settings to use this feature.',
-            [
-              {text: t('cancel') || 'Cancel', style: 'cancel'},
-              {
-                text: t('open_settings') || 'Open Settings',
-                onPress: () => {
-                  openSettings().catch(() => {
-                    // fallback
-                    Linking.openURL('app-settings:');
-                  });
-                },
-              },
-            ],
-          );
-          setLocationLoading(false);
-          return;
-        }
-
-        if (status !== RESULTS.GRANTED) {
-          // still not granted after request → bail
-          // console.log('Location permission not granted:', status);
-          setLocationLoading(false);
-          return;
-        }
-
-        // GRANTED → get location
-        Geolocation.getCurrentPosition(
-          position => {
-            const {latitude, longitude} = suggestion
-              ? suggestion
-              : position.coords;
-            fetchAndSetPlaceDetails(latitude, longitude);
-            setLocation([longitude, latitude]);
-            sendDataToServer(longitude, latitude);
-            setLocationLoading(false);
-          },
-          error => {
-            console.error(
-              t('geolocation_error') || 'Geolocation error:',
-              error,
-            );
-            setLocationLoading(false);
-          },
-          {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
-        );
-      } catch (err) {
-        console.warn(err);
-        setLocationLoading(false);
-      }
-    };
-
-    requestLocationPermission();
-  }, [suggestion, t]);
-
-  // Handle Android back press
+  // Handle Android back button
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -325,284 +91,109 @@ const UserLocation = () => {
         return true;
       };
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () =>
-        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
     }, []),
   );
 
-  // Reverse geocode using Ola Maps API
-  const fetchAndSetPlaceDetails = useCallback(
-    async (latitude, longitude) => {
-      try {
-        const response = await placesClient.reverse_geocode(
-          latitude,
-          longitude,
-        );
-        if (response && response.body && response.body.results.length > 0) {
-          const place = response.body.results[0];
-          const addressComponents = place.address_components;
-          const pincode =
-            addressComponents.find(component =>
-              component.types.includes('postal_code'),
-            )?.long_name || '';
-          let city =
-            addressComponents.find(component =>
-              component.types.includes('locality'),
-            )?.long_name || '';
-          if (!city) {
-            city =
-              addressComponents.find(component =>
-                component.types.includes('administrative_area_level_3'),
-              )?.long_name || '';
-          }
-          if (!city) {
-            city =
-              addressComponents.find(component =>
-                component.types.includes('administrative_area_level_2'),
-              )?.long_name || '';
-          }
-          let area = place.formatted_address || '';
-
-          // console.log(t('extracted_location_details') || 'Extracted Location Details:', { city, area, pincode });
-
-          setCity(city);
-          setArea(area);
-          setPincode(pincode);
-        } else {
-          console.warn(t('no_address_found') || 'No address details found.');
-        }
-      } catch (error) {
-        console.error(
-          t('failed_to_fetch_place_details') ||
-            'Failed to fetch place details:',
-          error,
-        );
-      }
-    },
-    [t],
-  );
-
-  // Send location data to backend
-  const sendDataToServer = useCallback(
-    async (longitude, latitude) => {
-      try {
-        const token = await EncryptedStorage.getItem('cs_token');
-        if (!token) {
-          console.error(t('no_token_found') || 'No token found');
-          return;
-        }
-        const response = await axios.post(
-          `https://backend.clicksolver.com/api/user/location`,
-          {longitude: String(longitude), latitude: String(latitude)},
-          {headers: {Authorization: `Bearer ${token}`}},
-        );
-        if (response.status === 200) {
-          // console.log(t('location_sent_successfully') || 'User location sent successfully');
-        }
-      } catch (error) {
-        console.error(
-          t('failed_to_send_location') || 'Failed to send user location:',
-          error,
-        );
-      }
-    },
-    [t],
-  );
-
-  // Handle crosshairs press to re-fetch location
-  const handleCrosshairsPress = () => {
-    setInputText('');
-    Geolocation.getCurrentPosition(
-      position => {
-        const {latitude, longitude} = position.coords;
-        setLocation([longitude, latitude]);
-        sendDataToServer(longitude, latitude);
-        fetchAndSetPlaceDetails(latitude, longitude);
-      },
-      error => {
-        console.error(t('geolocation_error') || 'Geolocation error:', error);
-      },
-      {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
-    );
+  // Handle map location press
+  const handlePressLocation = e => {
+    const coordinates = e.geometry.coordinates;
+    const [lon, lat] = coordinates;
+    updateLocation(lon, lat);
   };
 
-  // Confirm location and check if it lies within any polygon geofence
+  // Handle crosshairs press (refresh location)
+  const handleCrosshairsPress = () => {
+    setInputText('');
+    refreshLocation();
+  };
+
+  // Handle back navigation
+  const handleBackPress = () => {
+    navigation.goBack();
+  };
+
+  // Validate form fields
+  const validateForm = () => {
+    const errors = {};
+    if (!city) errors.city = t('city_required') || 'City is required.';
+    if (!area) errors.area = t('area_required') || 'Area is required.';
+    if (!pincode) errors.pincode = t('pincode_required') || 'Pincode is required.';
+    if (!alternatePhoneNumber) errors.phone = t('phone_required') || 'Phone number is required.';
+    if (!alternateName) errors.name = t('name_required') || 'Name is required.';
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Handle location confirmation
   const handleConfirmLocation = async () => {
     setConfirmLoading(true);
+
+    // Validate geofence
     if (location) {
-      const inAnyGeofence = polygonGeofences.some(fence =>
-        isPointInPolygon(location, fence.coordinates),
-      );
-      if (!inAnyGeofence) {
+      const {isValid} = validateLocation(location);
+      if (!isValid) {
         setShowOutOfPolygonModal(true);
         setConfirmLoading(false);
         return;
       }
     }
-    setShowMessageBox(true);
-    try {
-      const token = await EncryptedStorage.getItem('cs_token');
-      if (!token) {
-        console.error(t('no_token_found') || 'No token found');
-        setConfirmLoading(false);
-        return;
-      }
-      const response = await axios.get(
-        `https://backend.clicksolver.com/api/get/user`,
-        {
-          headers: {Authorization: `Bearer ${token}`},
-        },
-      );
-      if (response.status === 200) {
-        const data = response.data;
-        // console.log(t('user_data_fetched') || 'User data fetched:', data);
-        setAlternatePhoneNumber(data.phone_number || '');
-        setAlternateName(data.name);
-      } else {
-        console.warn(
-          t('unexpected_response') || 'Unexpected response:',
-          response,
-        );
-      }
-    } catch (error) {
-      console.error(
-        t('failed_to_fetch_user_data') || 'Failed to fetch user data:',
-        error,
-      );
-      setShowMessageBox(false);
+
+    // Fetch user data
+    const result = await fetchUserData();
+    if (result.success) {
+      setAlternatePhoneNumber(result.data.phoneNumber);
+      setAlternateName(result.data.name);
+      setShowMessageBox(true);
+    } else {
+      console.error('Failed to fetch user data');
     }
+
     setConfirmLoading(false);
   };
 
-  // Handle "Remind Me" when location is out-of-service
+  // Handle "Remind Me" for out-of-service location
   const handleRemindMe = async () => {
-    try {
-      const token = await EncryptedStorage.getItem('cs_token');
-      if (!token) {
-        console.error(t('no_token_found') || 'No token found');
-        setShowOutOfPolygonModal(false);
-        return;
-      }
-      // const response = await axios.post(
-      //   `https://backend.clicksolver.com/api/send/reminder`,
-      //   {area, city},
-      //   {headers: {Authorization: `Bearer ${token}`}},
-      // );
-      // console.log(t('reminder_sent') || 'Reminder sent successfully:', response.data);
-    } catch (error) {
-      console.error(
-        t('failed_to_send_reminder') || 'Failed to send reminder:',
-        error,
-      );
-    } finally {
-      setShowOutOfPolygonModal(false);
-    }
-  };
-
-  const handleCancelOutModal = () => {
     setShowOutOfPolygonModal(false);
   };
 
+  // Handle booking confirmation
   const handleBookCommander = () => {
-    let hasError = false;
-    setCityError('');
-    setAreaError('');
-    setPincodeError('');
-    setPhoneError('');
-    setNameError('');
-    if (!city) {
-      setCityError(t('city_required') || 'City is required.');
-      hasError = true;
+    if (!validateForm()) {
+      return;
     }
-    if (!area) {
-      setAreaError(t('area_required') || 'Area is required.');
-      hasError = true;
-    }
-    if (!pincode) {
-      setPincodeError(t('pincode_required') || 'Pincode is required.');
-      hasError = true;
-    }
-    if (!alternatePhoneNumber) {
-      setPhoneError(t('phone_required') || 'Phone number is required.');
-      hasError = true;
-    }
-    if (!alternateName) {
-      setNameError(t('name_required') || 'Name is required.');
-      hasError = true;
-    }
-    if (!hasError) {
-      setShowMessageBox(false);
-      setTimeout(() => {
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [
-              {
-                name: 'userwaiting',
-                params: {
-                  area,
-                  city,
-                  pincode,
-                  alternateName,
-                  alternatePhoneNumber,
-                  serviceBooked: service,
-                  location,
-                  discount,
-                  tipAmount,
-                  offer: offer || null,
-                },
+
+    setShowMessageBox(false);
+    setTimeout(() => {
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'userwaiting',
+              params: {
+                area,
+                city,
+                pincode,
+                alternateName,
+                alternatePhoneNumber,
+                serviceBooked: service,
+                location,
+                discount,
+                tipAmount,
+                offer: offer || null,
               },
-            ],
-          }),
-        );
-      }, 0);
-    }
-  };
-
-  const handlePressLocation = e => {
-    const coordinates = e.geometry.coordinates;
-    setLocation(coordinates);
-    const [lon, lat] = coordinates;
-    sendDataToServer(lon, lat);
-  };
-
-  const handleBackPress = () => {
-    navigation.goBack();
-  };
-
-  const totalServiceCost = service.reduce((sum, s) => sum + s.totalCost, 0);
-
-  const renderServiceItem = ({item}) => {
-    if (discount > 0) {
-      const allocatedDiscount = Math.round(
-        (item.totalCost / totalServiceCost) * discount,
+            },
+          ],
+        }),
       );
-      const finalCost = item.totalCost - allocatedDiscount;
-      return (
-        <View style={styles.serviceItem}>
-          <Text style={styles.serviceName} numberOfLines={2}>
-            {t(`singleService_${item.main_service_id}`) || item.serviceName}
-          </Text>
-          <Text style={styles.cost}>
-            <Text style={styles.strikeThrough}>₹{item.totalCost}</Text> ₹
-            {finalCost}
-          </Text>
-        </View>
-      );
-    } else {
-      return (
-        <View style={styles.serviceItem}>
-          <Text style={styles.serviceName} numberOfLines={2}>
-            {t(`singleService_${item.main_service_id}`) || item.serviceName}
-          </Text>
-          <Text style={styles.cost}>₹{item.totalCost}</Text>
-        </View>
-      );
-    }
+    }, 0);
   };
 
   return (
     <SafeAreaView style={styles.page}>
+      {/* Search Box */}
       <View style={styles.searchBoxContainer}>
         <View style={styles.searchInnerContainer}>
           <TouchableOpacity onPress={handleBackPress} style={{marginRight: 10}}>
@@ -626,72 +217,35 @@ const UserLocation = () => {
               })
             }
           />
-          <TouchableOpacity onPress={() => setSuggestionName({})}>
+          <TouchableOpacity onPress={() => setInputText('')}>
             <EvilIcons name="hearto" size={20} color="#808080" />
           </TouchableOpacity>
         </View>
       </View>
 
-      <View
-        style={[
-          styles.container,
-          {height: Dimensions.get('window').height * 0.75},
-        ]}>
-        <Mapbox.MapView
-          ref={mapRef}
-          style={styles.map}
-          zoomEnabled
-          styleURL="mapbox://styles/mapbox/streets-v11"
-          onPress={handlePressLocation}>
-          {location && (
-            <>
-              <Mapbox.Camera zoomLevel={18} centerCoordinate={location} />
-              <Mapbox.PointAnnotation id="userLocation" coordinate={location}>
-                <View style={styles.markerContainer}>
-                  <View style={styles.marker} />
-                </View>
-              </Mapbox.PointAnnotation>
-            </>
-          )}
-          <Mapbox.ShapeSource
-            id="polygonGeofence"
-            shape={{
-              type: 'FeatureCollection',
-              features: polygonGeofences.map(fence => ({
-                type: 'Feature',
-                geometry: {
-                  type: 'Polygon',
-                  coordinates: [fence.coordinates],
-                },
-                properties: {id: fence.id},
-              })),
-            }}>
-            <Mapbox.FillLayer
-              id="polygonGeofenceFill"
-              style={{fillColor: 'rgba(255, 0, 0, 0.2)'}}
-            />
-          </Mapbox.ShapeSource>
-        </Mapbox.MapView>
-        {locationLoading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#FF5722" />
-          </View>
-        )}
-      </View>
+      {/* Map */}
+      <LocationMap
+        location={location}
+        onLocationPress={handlePressLocation}
+        geofenceFeatures={geofenceFeatures}
+        height={Dimensions.get('window').height * 0.75}
+        isDarkMode={isDarkMode}
+      />
 
+      {locationLoading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#FF5722" />
+        </View>
+      )}
+
+      {/* Booking Card */}
       <View
         style={[
           styles.bookingCard,
           {height: Dimensions.get('window').height * 0.3},
         ]}>
         <View>
-          <View style={styles.flatContainer}>
-            <FlatList
-              data={service}
-              renderItem={renderServiceItem}
-              keyExtractor={(item, index) => index.toString()}
-            />
-          </View>
+          <ServiceList services={service} discount={discount} isDarkMode={isDarkMode} />
           <TouchableOpacity
             style={styles.confirmButton}
             onPress={handleConfirmLocation}>
@@ -706,158 +260,36 @@ const UserLocation = () => {
         </View>
       </View>
 
-      {showOutOfPolygonModal && (
-        <Modal
-          transparent
-          visible={showOutOfPolygonModal}
-          animationType="slide"
-          onRequestClose={() => setShowOutOfPolygonModal(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>
-                {t('location_not_serviceable') || 'Location Not Serviceable'}
-              </Text>
-              <Text style={styles.modalMessage}>
-                {t('location_not_available', {
-                  city: city || t('this') || 'this',
-                }) ||
-                  `We are not in ${city} location. Please choose another location or tap "Remind Me" to get a notification when service is available.`}
-              </Text>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-around',
-                  width: '100%',
-                }}>
-                <TouchableOpacity
-                  style={styles.modalCancelButton}
-                  onPress={handleCancelOutModal}>
-                  <Text style={styles.modalCancelButtonText}>
-                    {t('cancel') || 'Cancel'}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.modalButton}
-                  onPress={handleRemindMe}>
-                  <Text style={styles.modalButtonText}>
-                    {t('remind_me') || 'Remind Me'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      )}
+      {/* Out of Service Modal */}
+      <OutOfServiceModal
+        visible={showOutOfPolygonModal}
+        onClose={() => setShowOutOfPolygonModal(false)}
+        onRemindMe={handleRemindMe}
+        city={city}
+        isDarkMode={isDarkMode}
+      />
 
-      {showMessageBox && (
-        <Modal
-          transparent
-          visible={showMessageBox}
-          animationType="slide"
-          onRequestClose={() => setShowMessageBox(false)}>
-          <View style={styles.messageBoxBackdrop}>
-            <View style={styles.messageBox}>
-              {confirmLoading ? (
-                <View style={styles.loadingContent}>
-                  <ActivityIndicator size="large" color="#FF5722" />
-                  <Text style={styles.loadingText}>
-                    {t('fetching_details') || 'Fetching details...'}
-                  </Text>
-                </View>
-              ) : (
-                <>
-                  <Text style={styles.completeAddressHead}>
-                    {t('enter_complete_address') || 'Enter complete address!'}
-                  </Text>
-                  <Text style={styles.label}>{t('city') || 'City'}</Text>
-                  <View style={styles.inputView}>
-                    <TextInput
-                      style={styles.input}
-                      placeholder={t('city_placeholder') || 'City'}
-                      placeholderTextColor={isDarkMode ? '#aaa' : '#000'}
-                      value={city}
-                      onChangeText={setCity}
-                    />
-                    {cityError ? (
-                      <Text style={styles.errorText}>{cityError}</Text>
-                    ) : null}
-                  </View>
-                  <Text style={styles.label}>{t('area') || 'Area'}</Text>
-                  <View style={styles.inputView}>
-                    <TextInput
-                      style={styles.input}
-                      placeholder={t('area_placeholder') || 'Area'}
-                      placeholderTextColor={isDarkMode ? '#aaa' : '#000'}
-                      value={area}
-                      onChangeText={setArea}
-                    />
-                    {areaError ? (
-                      <Text style={styles.errorText}>{areaError}</Text>
-                    ) : null}
-                  </View>
-                  <Text style={styles.label}>{t('pincode') || 'Pincode'}</Text>
-                  <View style={styles.inputView}>
-                    <TextInput
-                      style={styles.input}
-                      placeholder={t('pincode_placeholder') || 'Pincode'}
-                      placeholderTextColor={isDarkMode ? '#aaa' : '#000'}
-                      value={pincode}
-                      onChangeText={setPincode}
-                    />
-                    {pincodeError ? (
-                      <Text style={styles.errorText}>{pincodeError}</Text>
-                    ) : null}
-                  </View>
-                  <Text style={styles.label}>
-                    {t('phone_number') || 'Phone number'}
-                  </Text>
-                  <View style={styles.inputView}>
-                    <TextInput
-                      style={styles.input}
-                      placeholder={
-                        t('alternate_phone') || 'Alternate phone number'
-                      }
-                      placeholderTextColor={isDarkMode ? '#aaa' : '#000'}
-                      keyboardType="phone-pad"
-                      value={alternatePhoneNumber}
-                      onChangeText={setAlternatePhoneNumber}
-                    />
-                    {phoneError ? (
-                      <Text style={styles.errorText}>{phoneError}</Text>
-                    ) : null}
-                  </View>
-                  <Text style={styles.label}>{t('name') || 'Name'}</Text>
-                  <View style={styles.inputView}>
-                    <TextInput
-                      style={styles.input}
-                      placeholder={t('alternate_name') || 'Alternate name'}
-                      placeholderTextColor={isDarkMode ? '#aaa' : '#000'}
-                      value={alternateName}
-                      onChangeText={setAlternateName}
-                    />
-                    {nameError ? (
-                      <Text style={styles.errorText}>{nameError}</Text>
-                    ) : null}
-                  </View>
-                  <TouchableOpacity
-                    style={styles.bookButton}
-                    onPress={handleBookCommander}>
-                    <Text style={styles.bookButtonText}>
-                      {t('book_commander') || 'Book Commander'}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.closeButton}
-                    onPress={() => setShowMessageBox(false)}>
-                    <Text style={styles.closeButtonText}>×</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-          </View>
-        </Modal>
-      )}
+      {/* Address Confirmation Modal */}
+      <AddressConfirmationModal
+        visible={showMessageBox}
+        onClose={() => setShowMessageBox(false)}
+        onConfirm={handleBookCommander}
+        loading={false}
+        city={city}
+        setCity={setCity}
+        area={area}
+        setArea={setArea}
+        pincode={pincode}
+        setPincode={setPincode}
+        alternatePhoneNumber={alternatePhoneNumber}
+        setAlternatePhoneNumber={setAlternatePhoneNumber}
+        alternateName={alternateName}
+        setAlternateName={setAlternateName}
+        errors={formErrors}
+        isDarkMode={isDarkMode}
+      />
 
+      {/* Crosshairs Button */}
       <View style={styles.crosshairsContainer}>
         <TouchableOpacity onPress={handleCrosshairsPress}>
           <FontAwesome6

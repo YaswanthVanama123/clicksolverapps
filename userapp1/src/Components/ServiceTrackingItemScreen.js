@@ -1,3 +1,9 @@
+/**
+ * ServiceTrackingItemScreen Component
+ * Displays detailed tracking information for a single service booking
+ * Shows worker profile, PIN, service details, timeline, address, and payment info
+ */
+
 import React, {useEffect, useState, useMemo, useCallback} from 'react';
 import {
   View,
@@ -9,73 +15,95 @@ import {
   Linking,
   Animated,
   Platform,
-  ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Entypo from 'react-native-vector-icons/Entypo';
-import axios from 'axios';
 import {useNavigation, useRoute, CommonActions} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import messaging from '@react-native-firebase/messaging';
-import {useTheme} from '../context/ThemeContext';
-// Import the useTranslation hook from react-i18next
 import {useTranslation} from 'react-i18next';
 
-const ServiceTrackingItemScreen = () => {
-  // Screen dimensions
-  const {width, height} = useWindowDimensions();
-  const isTablet = width >= 600; // ✅ Add this line
-  // Dark mode flag & dynamic styles
-  const {isDarkMode} = useTheme();
-  const styles = dynamicStyles(width, height, isDarkMode);
+// Theme and styling
+import {useTheme} from '../context/ThemeContext';
+import {getColors} from '../theme/colors';
 
-  // Initialize translation hook
+// State components
+import LoadingState from './molecules/LoadingState';
+import ErrorState from './molecules/ErrorState';
+
+// Utilities
+import {formatCurrency, formatDate, formatPhoneNumber} from '../utils/formatters';
+
+// API services
+import axios from 'axios';
+
+/**
+ * ServiceTrackingItemScreen Component
+ * @returns {JSX.Element} Tracking item screen
+ */
+const ServiceTrackingItemScreen = () => {
+  // Screen dimensions and theme
+  const {width, height} = useWindowDimensions();
+  const isTablet = width >= 600;
+  const {isDarkMode, theme} = useTheme();
+  const colors = getColors(isDarkMode);
+  const styles = dynamicStyles(width, height, isDarkMode, colors);
+
+  // Translation hook
   const {t} = useTranslation();
 
+  // Navigation
+  const navigation = useNavigation();
+  const {tracking_id} = useRoute().params;
+
+  // State management
   const [details, setDetails] = useState({});
   const [serviceArray, setServiceArray] = useState([]);
-  const {tracking_id} = useRoute().params;
   const [pin, setPin] = useState('4567');
   const [paymentExpanded, setPaymentExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
-  const navigation = useNavigation();
+  const [error, setError] = useState(null);
 
+  // Animation for payment dropdown
   const rotateAnimation = useMemo(() => new Animated.Value(0), []);
 
-  // Toggle Payment Details
-  const togglePaymentDetails = () => {
-    setPaymentExpanded(!paymentExpanded);
-  };
+  /**
+   * Toggle payment details visibility
+   */
+  const togglePaymentDetails = useCallback(() => {
+    setPaymentExpanded(prev => !prev);
+  }, []);
 
-  const phoneCall = async () => {
+  /**
+   * Initiate phone call to worker
+   */
+  const phoneCall = useCallback(async () => {
     try {
       const response = await axios.post(
         'https://backend.clicksolver.com/api/worker/tracking/call',
         {tracking_id},
       );
+
       if (response.status === 200 && response.data.mobile) {
         const phoneNumber = response.data.mobile;
         const dialURL = `tel:${phoneNumber}`;
-        Linking.openURL(dialURL).catch(err =>
-          console.error('Error opening dialer:', err),
-        );
-      } else {
-        // console.log('Failed to initiate call:', response.data);
+        await Linking.openURL(dialURL);
       }
     } catch (error) {
-      console.error(
-        'Error initiating call:',
-        error.response ? error.response.data : error.message,
-      );
+      console.error('Error initiating call:', error.response?.data || error.message);
+      setError({
+        message: t('call_failed') || 'Failed to initiate call',
+        originalError: error,
+      });
     }
-  };
+  }, [tracking_id, t]);
 
-  // Build timeline data using translation for status titles.
+  /**
+   * Build timeline data with translated status titles
+   */
   const getTimelineData = useMemo(() => {
-    // Define keys and fallback English labels.
     const timelineKeys = [
       'collected_item',
       'work_started',
@@ -88,20 +116,26 @@ const ServiceTrackingItemScreen = () => {
       'Work Completed',
       'Delivered',
     ];
-    // Create translated statuses while preserving fallback for index matching.
+
+    // Create translated statuses
     const statuses = timelineKeys.map(
       (key, index) => t(key) || fallbackStatuses[index],
     );
-    // Use fallbackStatuses for index matching (assuming service_status is in English)
+
+    // Find current status index
     const currentStatusIndex = fallbackStatuses.indexOf(details.service_status);
+
     return statuses.map((status, index) => ({
       title: status,
-      time: '', // You can update this if needed
-      iconColor: index <= currentStatusIndex ? '#ff4500' : '#a1a1a1',
-      lineColor: index <= currentStatusIndex ? '#ff4500' : '#a1a1a1',
+      time: '',
+      iconColor: index <= currentStatusIndex ? colors.primary : colors.textSecondary,
+      lineColor: index <= currentStatusIndex ? colors.primary : colors.textSecondary,
     }));
-  }, [details.service_status, t]);
+  }, [details.service_status, t, colors]);
 
+  /**
+   * Animate payment dropdown icon
+   */
   useEffect(() => {
     Animated.timing(rotateAnimation, {
       toValue: paymentExpanded ? 1 : 0,
@@ -115,43 +149,56 @@ const ServiceTrackingItemScreen = () => {
     outputRange: ['0deg', '180deg'],
   });
 
-  // Fetch booking details
-  const fetchBookings = async () => {
+  /**
+   * Fetch booking details from API
+   */
+  const fetchBookings = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
+
       const response = await axios.post(
-        `https://backend.clicksolver.com/api/service/tracking/user/item/details`,
+        'https://backend.clicksolver.com/api/service/tracking/user/item/details',
         {tracking_id},
       );
+
       const {data} = response.data;
-      // console.log("Fetched data:", data.data);
       setPin(data.tracking_pin);
       setDetails(data);
-      setServiceArray(data.service_booked);
+      setServiceArray(data.service_booked || []);
     } catch (error) {
       console.error('Error fetching bookings data:', error);
+      setError({
+        message: t('fetch_error') || 'Failed to fetch booking details',
+        originalError: error,
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [tracking_id, t]);
 
+  /**
+   * Initial data fetch
+   */
   useEffect(() => {
     fetchBookings();
-  }, [tracking_id]);
+  }, [fetchBookings]);
 
-  // Listen for FCM notifications and refresh data if status key exists.
+  /**
+   * Listen for FCM notifications and refresh data
+   */
   useEffect(() => {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
-      // console.log('FCM notification received in ServiceTrackingItemScreen:', remoteMessage);
-      if (remoteMessage.data && remoteMessage.data.status) {
-        // console.log('Notification has status key. Fetching bookings...');
+      if (remoteMessage.data?.status) {
         fetchBookings();
       }
     });
     return () => unsubscribe();
-  }, [tracking_id]);
+  }, [fetchBookings]);
 
-  // Open PhonePe Scanner
+  /**
+   * Open PhonePe scanner for payment
+   */
   const openPhonePeScanner = useCallback(() => {
     const url = 'phonepe://scan';
     Linking.openURL(url).catch(() => {
@@ -162,11 +209,51 @@ const ServiceTrackingItemScreen = () => {
     });
   }, []);
 
+  /**
+   * Navigate back to home
+   */
+  const navigateToHome = useCallback(() => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
+      }),
+    );
+  }, [navigation]);
+
+  // Show loading state
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FF5722" />
+        <LoadingState message={t('loading_details') || 'Loading details...'} />
+      </SafeAreaView>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity
+              onPress={navigateToHome}
+              style={styles.backButton}>
+              <Icon
+                name="arrow-back"
+                size={20}
+                color={colors.text}
+              />
+            </TouchableOpacity>
+            <Text style={styles.headerText}>
+              {t('service_trackings') || 'Service Trackings'}
+            </Text>
+          </View>
+          <ErrorState
+            error={error.message}
+            onRetry={fetchBookings}
+            title={t('error') || 'Error'}
+          />
         </View>
       </SafeAreaView>
     );
@@ -178,23 +265,12 @@ const ServiceTrackingItemScreen = () => {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => {
-              navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [{name: 'Tabs', state: {routes: [{name: 'Home'}]}}],
-                }),
-              );
-            }}
-            style={{
-              position: 'absolute',
-              left: isTablet ? 20 : 16,
-              zIndex: 2,
-            }}>
+            onPress={navigateToHome}
+            style={styles.backButton}>
             <Icon
               name="arrow-back"
               size={20}
-              color={isDarkMode ? '#fff' : '#212121'}
+              color={colors.text}
             />
           </TouchableOpacity>
 
@@ -204,7 +280,7 @@ const ServiceTrackingItemScreen = () => {
         </View>
 
         <ScrollView>
-          {/* User Profile */}
+          {/* Worker Profile */}
           <View style={styles.profileContainer}>
             <View style={styles.profileImage}>
               <Image source={{uri: details.profile}} style={styles.image} />
@@ -216,13 +292,15 @@ const ServiceTrackingItemScreen = () => {
               </View>
               <TouchableOpacity
                 style={styles.callIconContainer}
-                onPress={phoneCall}>
-                <MaterialIcons name="call" size={22} color="#FF5722" />
+                onPress={phoneCall}
+                accessibilityLabel={t('call_worker') || 'Call worker'}
+                accessibilityRole="button">
+                <Icon name="call" size={22} color={colors.primary} />
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* PIN */}
+          {/* PIN Display */}
           <View style={styles.pinContainer}>
             <Text style={styles.pinText}>{t('pin') || 'PIN'}</Text>
             <View style={styles.pinBoxesContainer}>
@@ -254,27 +332,30 @@ const ServiceTrackingItemScreen = () => {
           <View style={styles.horizantalLine} />
 
           {/* Additional Info Section */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>
-              {t('additional_info') || 'Additional Info'}
-            </Text>
-            <View style={styles.additionalInfoContainer}>
-              {details.data?.estimatedDuration ? (
-                <Text style={styles.infoText}>
-                  {t('estimated_time') || 'Estimated Time:'}{' '}
-                  {details.data.estimatedDuration}
+          {(details.data?.estimatedDuration || details.data?.image) && (
+            <>
+              <View style={styles.sectionContainer}>
+                <Text style={styles.sectionTitle}>
+                  {t('additional_info') || 'Additional Info'}
                 </Text>
-              ) : null}
-              {details.data?.image ? (
-                <Image
-                  source={{uri: details.data.image}}
-                  style={styles.additionalImage}
-                />
-              ) : null}
-            </View>
-          </View>
-
-          <View style={styles.horizantalLine} />
+                <View style={styles.additionalInfoContainer}>
+                  {details.data?.estimatedDuration && (
+                    <Text style={styles.infoText}>
+                      {t('estimated_time') || 'Estimated Time:'}{' '}
+                      {details.data.estimatedDuration}
+                    </Text>
+                  )}
+                  {details.data?.image && (
+                    <Image
+                      source={{uri: details.data.image}}
+                      style={styles.additionalImage}
+                    />
+                  )}
+                </View>
+              </View>
+              <View style={styles.horizantalLine} />
+            </>
+          )}
 
           {/* Service Timeline */}
           <View style={styles.sectionContainer}>
@@ -307,7 +388,9 @@ const ServiceTrackingItemScreen = () => {
                   </View>
                   <View style={styles.timelineTextContainer}>
                     <Text style={styles.timelineText}>{item.title}</Text>
-                    <Text style={styles.timelineTime}>{item.time}</Text>
+                    {item.time && (
+                      <Text style={styles.timelineTime}>{item.time}</Text>
+                    )}
                   </View>
                 </View>
               ))}
@@ -345,7 +428,7 @@ const ServiceTrackingItemScreen = () => {
                 {t('payment_details') || 'Payment Details'}
               </Text>
               <Animated.View style={{transform: [{rotate: rotateInterpolate}]}}>
-                <Entypo name="chevron-small-right" size={20} color="#ff4500" />
+                <Entypo name="chevron-small-right" size={20} color={colors.primary} />
               </Animated.View>
             </TouchableOpacity>
           </View>
@@ -360,7 +443,7 @@ const ServiceTrackingItemScreen = () => {
                         service.serviceName}
                     </Text>
                     <Text style={styles.paymentValue}>
-                      ₹{service.cost.toFixed(2)}
+                      {formatCurrency(service.cost)}
                     </Text>
                   </View>
                 ))}
@@ -369,14 +452,18 @@ const ServiceTrackingItemScreen = () => {
                     <Text style={styles.paymentLabel}>
                       {t('discount') || 'Discount'}
                     </Text>
-                    <Text style={styles.paymentValue}>₹{details.discount}</Text>
+                    <Text style={styles.paymentValue}>
+                      {formatCurrency(details.discount)}
+                    </Text>
                   </View>
                 )}
                 <View style={styles.paymentRow}>
                   <Text style={styles.paymentLabel}>
                     {t('grand_total') || 'Grand Total'}
                   </Text>
-                  <Text style={styles.paymentValue}>₹{details.total_cost}</Text>
+                  <Text style={styles.paymentValue}>
+                    {formatCurrency(details.total_cost)}
+                  </Text>
                 </View>
               </View>
             )}
@@ -384,7 +471,9 @@ const ServiceTrackingItemScreen = () => {
 
           <TouchableOpacity
             style={styles.payButton}
-            onPress={openPhonePeScanner}>
+            onPress={openPhonePeScanner}
+            accessibilityLabel={t('pay') || 'PAY'}
+            accessibilityRole="button">
             <Text style={styles.payButtonText}>{t('pay') || 'PAY'}</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -394,41 +483,43 @@ const ServiceTrackingItemScreen = () => {
 };
 
 /**
- * DYNAMIC STYLES with Dark Theme Support
+ * Dynamic styles with Dark Theme Support
+ * @param {number} width - Screen width
+ * @param {number} height - Screen height
+ * @param {boolean} isDarkMode - Dark mode flag
+ * @param {object} colors - Theme colors
+ * @returns {object} StyleSheet object
  */
-function dynamicStyles(width, height, isDarkMode) {
+function dynamicStyles(width, height, isDarkMode, colors) {
   const isTablet = width >= 600;
   return StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
+      backgroundColor: colors.background,
     },
     container: {
       flex: 1,
-      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
+      backgroundColor: colors.background,
     },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center', // Center everything
+      justifyContent: 'center',
       padding: isTablet ? 20 : 16,
       paddingBottom: isTablet ? 16 : 12,
       elevation: Platform.OS === 'ios' ? 0 : 2,
-      // shadowColor: isDarkMode ? '#000' : '#1D2951',
-      // shadowOffset: {width: 0, height: 2},
-      // shadowOpacity: 0.2,
-      // shadowRadius: 4,
-      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
+      backgroundColor: colors.background,
       position: 'relative',
     },
-
-    backIcon: {
-      marginRight: isTablet ? 15 : 10,
+    backButton: {
+      position: 'absolute',
+      left: isTablet ? 20 : 16,
+      zIndex: 2,
     },
     headerText: {
       fontSize: isTablet ? 20 : 18,
       fontFamily: 'RobotoSlab-Medium',
-      color: isDarkMode ? '#fff' : '#000',
+      color: colors.text,
       textAlign: 'center',
     },
     profileContainer: {
@@ -452,13 +543,14 @@ function dynamicStyles(width, height, isDarkMode) {
       paddingRight: isTablet ? 20 : 16,
     },
     callIconContainer: {
-      backgroundColor: isDarkMode ? '#121212' : '#fff',
+      backgroundColor: colors.background,
       borderRadius: 50,
       padding: isTablet ? 10 : 8,
       shadowColor: '#000',
       shadowOffset: {width: 0, height: 2},
       shadowOpacity: 0.3,
       shadowRadius: 4,
+      elevation: 3,
     },
     pinContainer: {
       flexDirection: 'row',
@@ -468,7 +560,7 @@ function dynamicStyles(width, height, isDarkMode) {
       paddingLeft: isTablet ? 20 : 16,
     },
     pinText: {
-      color: isDarkMode ? '#fff' : '#1D2951',
+      color: colors.text,
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 18 : 16,
       paddingTop: isTablet ? 12 : 10,
@@ -483,17 +575,17 @@ function dynamicStyles(width, height, isDarkMode) {
       justifyContent: 'center',
       alignItems: 'center',
       borderWidth: 1,
-      borderColor: isDarkMode ? '#fff' : '#212121',
+      borderColor: colors.text,
       borderRadius: 5,
     },
     pinNumber: {
-      color: isDarkMode ? '#fff' : '#212121',
+      color: colors.text,
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 16 : 14,
     },
     horizantalLine: {
       height: 2,
-      backgroundColor: isDarkMode ? '#333' : '#F5F5F5',
+      backgroundColor: colors.border,
       marginBottom: isTablet ? 16 : 12,
     },
     sectionContainer: {
@@ -505,7 +597,7 @@ function dynamicStyles(width, height, isDarkMode) {
     sectionBookedTitle: {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Medium',
-      color: isDarkMode ? '#fff' : '#212121',
+      color: colors.text,
       marginBottom: 8,
     },
     innerContainer: {
@@ -513,7 +605,7 @@ function dynamicStyles(width, height, isDarkMode) {
     },
     serviceDetail: {
       fontSize: isTablet ? 16 : 14,
-      color: isDarkMode ? '#fff' : '#212121',
+      color: colors.text,
       fontFamily: 'RobotoSlab-Regular',
       marginBottom: 4,
     },
@@ -524,7 +616,7 @@ function dynamicStyles(width, height, isDarkMode) {
     sectionTitle: {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Medium',
-      color: isDarkMode ? '#fff' : '#212121',
+      color: colors.text,
       marginBottom: 8,
       paddingBottom: isTablet ? 20 : 15,
     },
@@ -544,12 +636,12 @@ function dynamicStyles(width, height, isDarkMode) {
     },
     timelineText: {
       fontSize: isTablet ? 16 : 14,
-      color: isDarkMode ? '#fff' : '#212121',
+      color: colors.text,
       fontFamily: 'RobotoSlab-Regular',
     },
     timelineTime: {
       fontSize: isTablet ? 12 : 10,
-      color: isDarkMode ? '#ccc' : '#4a4a4a',
+      color: colors.textSecondary,
       fontFamily: 'RobotoSlab-Regular',
     },
     lineSegment: {
@@ -571,12 +663,12 @@ function dynamicStyles(width, height, isDarkMode) {
     },
     address: {
       fontSize: isTablet ? 14 : 12,
-      color: isDarkMode ? '#fff' : '#212121',
+      color: colors.text,
       fontFamily: 'RobotoSlab-Regular',
     },
     paymentInnerContainer: {
       padding: isTablet ? 15 : 10,
-      backgroundColor: isDarkMode ? '#121212' : '#f5f5f5',
+      backgroundColor: colors.cardBackground,
       marginTop: isTablet ? 15 : 10,
       marginBottom: isTablet ? 15 : 10,
     },
@@ -588,7 +680,7 @@ function dynamicStyles(width, height, isDarkMode) {
     sectionPaymentTitle: {
       fontSize: isTablet ? 18 : 16,
       fontFamily: 'RobotoSlab-Medium',
-      color: isDarkMode ? '#fff' : '#212121',
+      color: colors.text,
       marginBottom: 8,
       paddingLeft: isTablet ? 15 : 10,
     },
@@ -605,20 +697,20 @@ function dynamicStyles(width, height, isDarkMode) {
       width: '80%',
       fontSize: isTablet ? 14 : 12,
       fontFamily: 'RobotoSlab-Regular',
-      color: isDarkMode ? '#fff' : '#212121',
+      color: colors.text,
     },
     paymentLabel: {
       fontSize: isTablet ? 14 : 12,
-      color: isDarkMode ? '#fff' : '#212121',
+      color: colors.text,
       fontFamily: 'RobotoSlab-Regular',
     },
     paymentValue: {
       fontSize: isTablet ? 16 : 14,
-      color: isDarkMode ? '#fff' : '#212121',
+      color: colors.text,
       fontFamily: 'RobotoSlab-Medium',
     },
     payButton: {
-      backgroundColor: '#ff4500',
+      backgroundColor: colors.primary,
       paddingVertical: isTablet ? 14 : 12,
       borderRadius: 8,
       alignItems: 'center',
@@ -634,27 +726,21 @@ function dynamicStyles(width, height, isDarkMode) {
     userName: {
       fontSize: isTablet ? 19 : 16,
       fontFamily: 'RobotoSlab-Bold',
-      color: isDarkMode ? '#fff' : '#4A4A4A',
+      color: colors.text,
       lineHeight: 21.09,
     },
     userDesignation: {
       fontSize: isTablet ? 18 : 15,
-      color: isDarkMode ? '#ccc' : '#4a4a4a',
+      color: colors.textSecondary,
       fontFamily: 'RobotoSlab-Regular',
     },
-    loadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    // Additional Info Styles
     additionalInfoContainer: {
       marginVertical: isTablet ? 12 : 10,
       alignItems: 'center',
     },
     infoText: {
       fontSize: isTablet ? 16 : 14,
-      color: isDarkMode ? '#fff' : '#212121',
+      color: colors.text,
       fontFamily: 'RobotoSlab-Regular',
       marginBottom: 8,
     },

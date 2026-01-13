@@ -1,3 +1,11 @@
+/**
+ * ProfileScreen Component
+ * Main user profile screen displaying user information, settings, and navigation options
+ * Features: profile image upload, theme toggle, logout, and navigation to various profile-related screens
+ *
+ * @module ProfileScreen
+ */
+
 import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
@@ -11,9 +19,7 @@ import {
 } from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import Entypo from 'react-native-vector-icons/Entypo';
-import axios from 'axios';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import LottieView from 'lottie-react-native';
 import {launchImageLibrary} from 'react-native-image-picker';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -21,15 +27,32 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import EvilIcons from 'react-native-vector-icons/EvilIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-// Global theme hook
+
+// Theme and utilities
 import {useTheme} from '../context/ThemeContext';
-
-// Import i18n initialization (ensure this file initializes i18next)
-import '../i18n/i18n';
-// Import the translation hook
 import {useTranslation} from 'react-i18next';
+import '../i18n/i18n';
 
-// Helper function to upload an image
+// State components
+import LoadingState from '../Components/molecules/LoadingState';
+import ErrorState from '../Components/molecules/ErrorState';
+
+// API services
+import {getUserProfile, updateProfileImage} from '../api/services/user.service';
+
+// Store
+import useUserStore from '../store/userStore';
+
+// Validators and formatters
+import {validateEmail, validatePhone} from '../utils/validators';
+import {formatPhoneNumber} from '../utils/formatters';
+
+/**
+ * Helper function to upload an image to external service
+ * @param {string} uri - Local image URI
+ * @returns {Promise<string>} - Uploaded image URL
+ * @throws {Error} - If upload fails
+ */
 const uploadImage = async uri => {
   const apiKey = '287b4ba48139a6a59e75b5a8266bbea2';
   const apiUrl = 'https://api.imgbb.com/1/upload';
@@ -43,13 +66,18 @@ const uploadImage = async uri => {
   });
 
   try {
-    const response = await axios.post(apiUrl, formData, {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      body: formData,
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
-    if (response.status === 200) {
-      return response.data.data.url;
+
+    const data = await response.json();
+
+    if (response.ok && data.data) {
+      return data.data.url;
     } else {
       throw new Error(`Upload failed with status ${response.status}`);
     }
@@ -59,6 +87,10 @@ const uploadImage = async uri => {
   }
 };
 
+/**
+ * ProfileScreen Component
+ * @returns {JSX.Element} Profile screen with user details and navigation options
+ */
 const ProfileScreen = () => {
   const navigation = useNavigation();
   const [account, setAccount] = useState({});
@@ -66,41 +98,60 @@ const ProfileScreen = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  // State to control the logout confirmation modal
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
-  // Global theme values
+  // Global theme and translations
   const {isDarkMode, toggleTheme} = useTheme();
   const styles = dynamicStyles(isDarkMode);
-
-  // Get translation function
   const {t} = useTranslation();
 
-  // Fetch profile details from backend
+  // User store
+  const {setProfile, clearUserData} = useUserStore();
+
+  /**
+   * Fetch profile details from backend
+   * @async
+   */
   const fetchProfileDetails = async () => {
     try {
       setLoading(true);
       setError(false);
+
       const jwtToken = await EncryptedStorage.getItem('cs_token');
       if (!jwtToken) {
         setIsLoggedIn(false);
         setLoading(false);
         return;
       }
+
       setIsLoggedIn(true);
-      const response = await axios.post(
-        'https://backend.clicksolver.com/api/user/profile',
-        {},
-        {headers: {Authorization: `Bearer ${jwtToken}`}},
-      );
-      const {name, email, phone_number, profile} = response.data;
+
+      // Use API service
+      const profileData = await getUserProfile();
+      const {name, email, phone_number, profile} = profileData;
+
+      // Validate data
+      if (email && !validateEmail(email)) {
+        console.warn('Invalid email format:', email);
+      }
+
+      if (phone_number && !validatePhone(phone_number)) {
+        console.warn('Invalid phone format:', phone_number);
+      }
+
       setImage(profile);
-      setAccount({
+      const userData = {
         name,
         email,
         phoneNumber: phone_number,
         profile,
-      });
+      };
+
+      setAccount(userData);
+
+      // Update store
+      setProfile(userData);
+
     } catch (err) {
       console.error('Error fetching profile details:', err);
       if (err.response && err.response.status === 401) {
@@ -121,12 +172,15 @@ const ProfileScreen = () => {
     }, []),
   );
 
-  // Handle image editing (uploading a new profile image)
+  /**
+   * Handle image editing (uploading a new profile image)
+   * @async
+   */
   const handleEditImage = async () => {
     const options = {mediaType: 'photo', quality: 0.8};
     launchImageLibrary(options, async response => {
       if (response.didCancel) {
-        // console.log('User cancelled image picker');
+        return;
       } else if (response.errorMessage) {
         console.error('ImagePicker Error:', response.errorMessage);
       } else if (response.assets && response.assets.length > 0) {
@@ -134,13 +188,11 @@ const ProfileScreen = () => {
         try {
           const uploadedUrl = await uploadImage(uri);
           setImage(uploadedUrl);
+
           const jwtToken = await EncryptedStorage.getItem('cs_token');
           if (jwtToken) {
-            await axios.post(
-              'https://backend.clicksolver.com/api/user/updateProfileImage',
-              {profileImage: uploadedUrl},
-              {headers: {Authorization: `Bearer ${jwtToken}`}},
-            );
+            // Use API service
+            await updateProfileImage(uploadedUrl);
             setAccount(prev => ({...prev, profileImage: uploadedUrl}));
           }
         } catch (error) {
@@ -150,51 +202,35 @@ const ProfileScreen = () => {
     });
   };
 
-  // Handle logout
-  // const handleLogout = async () => {
-  //   try {
-  //     const user_fcm_token = await EncryptedStorage.getItem('user_fcm_token');
-  //     if (user_fcm_token) {
-  //       // await axios.post('https://backend.clicksolver.com/api/userLogout', {
-  //       //   user_fcm_token,
-  //       // });
-  //     }
-  //     console.log('user logged out');
-  //     await EncryptedStorage.removeItem('cs_token');
-  //     await EncryptedStorage.removeItem('user_fcm_token');
-  //     await EncryptedStorage.removeItem('notifications');
-  //     await EncryptedStorage.removeItem('messageBox');
-  //     setIsLoggedIn(false);
-  //     setLogoutModalVisible(false);
-  //     navigation.navigate('Login');
-  //   } catch (err) {
-  //     console.error('Error logging out:', err);
-  //   }
-  // };
-
+  /**
+   * Handle user logout
+   * Clears all user data and navigates to login screen
+   * @async
+   */
   const handleLogout = async () => {
     try {
-      // 1. Read the FCM token, if any
       const userFcmToken = await EncryptedStorage.getItem('user_fcm_token');
 
       if (userFcmToken) {
-        // 2. Attempt backend logout, but don’t let failures block the rest
         try {
-          const response = await axios.post(
+          const response = await fetch(
             'https://backend.clicksolver.com/api/userLogout',
-            {user_fcm_token: userFcmToken},
+            {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({user_fcm_token: userFcmToken}),
+            }
           );
-          // you can inspect response.status here if you like:
+
           if (response.status !== 200) {
             console.warn('Logout API returned status', response.status);
           }
         } catch (apiErr) {
-          console.error('Logout API error:', apiErr.response?.status ?? apiErr);
-          // *don’t* return––we still want to clear storage & navigate
+          console.error('Logout API error:', apiErr);
         }
       }
 
-      // 3. Define all keys you want to clear
+      // Clear all storage keys
       const keysToClear = [
         'cs_token',
         'user_fcm_token',
@@ -202,7 +238,6 @@ const ProfileScreen = () => {
         'messageBox',
       ];
 
-      // 4. Only remove keys that actually exist
       for (const key of keysToClear) {
         const value = await EncryptedStorage.getItem(key);
         if (value != null) {
@@ -211,19 +246,29 @@ const ProfileScreen = () => {
         }
       }
 
-      // 5. Update your UI state & navigate
+      // Clear user store
+      await clearUserData();
+
+      // Update UI state & navigate
       setIsLoggedIn(false);
       setLogoutModalVisible(false);
       navigation.navigate('Login');
     } catch (err) {
-      // This only catches storage/navigation errors
       console.error('Error in logout flow:', err);
     }
   };
 
+  /**
+   * Show logout confirmation modal
+   */
   const confirmLogout = () => setLogoutModalVisible(true);
+
+  /**
+   * Close logout modal
+   */
   const closeModal = () => setLogoutModalVisible(false);
 
+  // Not logged in state
   if (!isLoggedIn) {
     return (
       <View style={styles.loginContainer}>
@@ -281,32 +326,23 @@ const ProfileScreen = () => {
     );
   }
 
+  // Loading state
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loadingContainer}>
-          <LottieView
-            source={require('../assets/profileAnimation.json')}
-            autoPlay
-            loop
-            style={styles.loadingAnimation}
-          />
-        </View>
+        <LoadingState message={t('loading_profile') || 'Loading profile...'} />
       </SafeAreaView>
     );
   }
 
+  // Error state
   if (error) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{t('something_went_wrong')}</Text>
-          <TouchableOpacity
-            style={styles.retryButton}
-            onPress={fetchProfileDetails}>
-            <Text style={styles.retryButtonText}>{t('retry')}</Text>
-          </TouchableOpacity>
-        </View>
+        <ErrorState
+          error={t('something_went_wrong')}
+          onRetry={fetchProfileDetails}
+        />
       </SafeAreaView>
     );
   }
@@ -358,7 +394,7 @@ const ProfileScreen = () => {
               <Text style={styles.countryCode}>+91</Text>
             </View>
             <TextInput
-              value={account.phoneNumber}
+              value={formatPhoneNumber(account.phoneNumber) || account.phoneNumber}
               editable={false}
               style={styles.phoneInput}
             />
@@ -479,7 +515,10 @@ const ProfileScreen = () => {
   );
 };
 
-// Menu Item Components
+/**
+ * Menu Item Components
+ */
+
 const ProfileMenuItem = ({text, onPress, styles}) => (
   <TouchableOpacity style={styles.menuItem} onPress={onPress}>
     <Ionicons name="bookmarks-outline" size={22} color={styles.iconColor} />
@@ -540,11 +579,15 @@ const LogoutMenuItem = ({text, onPress, styles}) => (
 const LanguageChangeMenuItem = ({text, onPress, styles}) => (
   <TouchableOpacity style={styles.menuItem} onPress={onPress}>
     <Entypo name="language" size={22} color={styles.iconColor} />
-
     <Text style={styles.menuText}>{text}</Text>
   </TouchableOpacity>
 );
 
+/**
+ * Dynamic styles based on theme
+ * @param {boolean} isDarkMode - Whether dark mode is active
+ * @returns {object} StyleSheet object
+ */
 const dynamicStyles = isDarkMode => {
   const backgroundColor = isDarkMode ? '#121212' : '#fff';
   const textColor = isDarkMode ? '#fff' : '#333';
@@ -704,41 +747,6 @@ const dynamicStyles = isDarkMode => {
       fontSize: 16,
       fontFamily: 'RobotoSlab-Medium',
     },
-    loadingContainer: {
-      width: '100%',
-      height: 300,
-      backgroundColor,
-      alignItems: 'center',
-      justifyContent: 'flex-start',
-    },
-    loadingAnimation: {
-      width: '100%',
-      height: '100%',
-    },
-    errorContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingHorizontal: 16,
-    },
-    errorText: {
-      fontSize: 16,
-      color: textColor,
-      marginBottom: 10,
-      fontFamily: 'RobotoSlab-Medium',
-      textAlign: 'center',
-    },
-    retryButton: {
-      backgroundColor: '#FF4500',
-      paddingHorizontal: 20,
-      paddingVertical: 10,
-      borderRadius: 5,
-    },
-    retryButtonText: {
-      color: '#fff',
-      fontSize: 14,
-      fontFamily: 'RobotoSlab-Medium',
-    },
     toggleTrack: {
       width: 50,
       height: 30,
@@ -829,7 +837,6 @@ const dynamicStyles = isDarkMode => {
       fontSize: 16,
       fontFamily: 'RobotoSlab-Medium',
     },
-    // New property for toggle icon color based on theme
     toggleIconColor: isDarkMode ? '#FFCC00' : '#FFA500',
     iconColor,
   });

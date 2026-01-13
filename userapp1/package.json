@@ -17,6 +17,7 @@
     "@react-native-firebase/app": "^21.12.3",
     "@react-native-firebase/auth": "^21.12.3",
     "@react-native-firebase/messaging": "^21.12.3",
+    "@react-native-masked-view/masked-view": "^0.3.0",
     "@react-native-picker/picker": "^2.7.7",
     "@react-navigation/bottom-tabs": "^6.6.1",
     "@react-navigation/native": "^6.1.18",
@@ -29,8 +30,10 @@
     "lottie-react-native": "^6.7.2",
     "ola-maps": "^0.0.6",
     "react": "18.2.0",
+    "react-native-reanimated": "^3.6.0",
     "react-i18next": "^15.4.1",
     "react-native": "0.74.3",
+    "react-native-paper": "^5.12.0",
     "react-native-asset": "^2.1.1",
     "react-native-code-push": "^9.0.1",
     "react-native-config": "^1.5.3",
@@ -48,7 +51,8 @@
     "react-native-splash-screen": "^3.3.0",
     "react-native-swiper": "^1.6.0",
     "react-native-tracking-transparency": "^0.1.2",
-    "react-native-vector-icons": "^10.1.0"
+    "react-native-vector-icons": "^10.1.0",
+    "zustand": "^4.5.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

@@ -1,10 +1,15 @@
+/**
+ * HelpScreen Component
+ * Displays step-by-step guide for booking services and support contact options
+ * Features: Multi-language support, contact via email/phone, dark mode
+ */
+
 import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   TouchableOpacity,
   Linking,
   ActivityIndicator,
@@ -17,19 +22,28 @@ import { CommonActions, useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import axios from 'axios';
 import { useTheme } from '../context/ThemeContext';
-// Import the translation hook from react-i18next
+import { getColors } from '../theme/colors';
 import { useTranslation } from 'react-i18next';
+import ErrorState from './molecules/ErrorState';
 
+/**
+ * HelpScreen - User guide and support contact screen
+ * @returns {JSX.Element}
+ */
 const HelpScreen = () => {
   const { width } = useWindowDimensions();
   const { isDarkMode } = useTheme();
-  const styles = dynamicStyles(width, isDarkMode);
+  const colors = getColors(isDarkMode);
+  const styles = dynamicStyles(width, isDarkMode, colors);
   const navigation = useNavigation();
   const { t } = useTranslation();
 
   const [loadingCall, setLoadingCall] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Define steps array within the component to allow translation of texts
+  /**
+   * Step-by-step guide for booking services
+   */
   const steps = [
     {
       number: '1',
@@ -54,7 +68,7 @@ const HelpScreen = () => {
     {
       number: '5',
       title: t('worker_arrives') || 'Worker Arrives',
-      description: t('track_worker_arrival') || 'Track the worker’s arrival',
+      description: t('track_worker_arrival') || 'Track the worker\'s arrival',
     },
     {
       number: '6',
@@ -63,113 +77,176 @@ const HelpScreen = () => {
     },
   ];
 
+  /**
+   * Opens email client with support email
+   */
   const handleEmailPress = () => {
-    Linking.openURL('mailto:customer.support@clicksolver.com').catch(() =>
-      Alert.alert(t('error') || 'Error', t('unable_to_open_mail_app') || 'Unable to open mail app')
-    );
+    setError(null);
+    Linking.openURL('mailto:customer.support@clicksolver.com').catch((err) => {
+      console.error('[HelpScreen] Failed to open email:', err);
+      Alert.alert(
+        t('error') || 'Error',
+        t('unable_to_open_mail_app') || 'Unable to open mail app'
+      );
+    });
   };
 
+  /**
+   * Initiates phone call to support
+   */
   const handleCallPress = async () => {
     setLoadingCall(true);
+    setError(null);
+
     try {
-      // Uncomment and update the axios call if you want to fetch the phone number from the backend
-      // const response = await axios.get('https://backend.clicksolver.com/customer/care');
-      const phoneNumber = "7981793632";
+      // Option: Fetch phone number from backend
+      // const response = await axios.get(
+      //   'https://backend.clicksolver.com/customer/care',
+      //   { timeout: 5000 }
+      // );
+      // const phoneNumber = response.data?.phone;
+
+      const phoneNumber = '7981793632';
+
       if (phoneNumber) {
-        Linking.openURL(`tel:${phoneNumber}`).catch(() =>
-          Alert.alert(t('error') || 'Error', t('unable_to_open_dialer') || 'Unable to open dialer')
-        );
+        await Linking.openURL(`tel:${phoneNumber}`);
       } else {
-        Alert.alert(t('error') || 'Error', t('no_phone_number_received') || 'No phone number received');
+        throw new Error(t('no_phone_number_received') || 'No phone number received');
       }
-    } catch {
-      Alert.alert(t('error') || 'Error', t('failed_to_retrieve_phone_number') || 'Failed to retrieve phone number');
+    } catch (err) {
+      console.error('[HelpScreen] Failed to initiate call:', err);
+      Alert.alert(
+        t('error') || 'Error',
+        err.message || t('failed_to_retrieve_phone_number') || 'Failed to retrieve phone number'
+      );
+      setError(err.message || 'Failed to initiate call');
     } finally {
       setLoadingCall(false);
     }
   };
 
+  /**
+   * Navigates to Home screen
+   */
+  const handleBookService = () => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
+      })
+    );
+  };
+
+  // Show error state if critical error occurs
+  if (error && error.includes('critical')) {
+    return (
+      <ErrorState
+        error={error}
+        onRetry={() => {
+          setError(null);
+        }}
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
-    <View style={styles.container}>
-      {/* Custom Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#fff' : '#212121'} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {t('help_support') || 'Help & Support'}
-        </Text>
-        <TouchableOpacity onPress={handleEmailPress}>
-          <Ionicons name="mail-outline" size={24} color="#ff4500" />
-        </TouchableOpacity> 
-      </View>
+      <View style={styles.container}>
+        {/* Custom Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>
+            {t('help_support') || 'Help & Support'}
+          </Text>
+          <TouchableOpacity onPress={handleEmailPress}>
+            <Ionicons name="mail-outline" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
 
-      {/* Steps Section */}
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Text style={styles.subheading}>
-          {t('follow_steps') || 'Follow these simple steps to get started'}
-        </Text>
+        {/* Steps Section */}
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <Text style={styles.subheading}>
+            {t('follow_steps') || 'Follow these simple steps to get started'}
+          </Text>
 
-        {steps.map((step, index) => (
-          <View key={index} style={styles.stepContainer}>
-            <View style={styles.stepCircle}>
-              <Text style={styles.stepNumber}>{step.number}</Text>
+          {steps.map((step, index) => (
+            <View key={index} style={styles.stepContainer}>
+              <View style={styles.stepCircle}>
+                <Text style={styles.stepNumber}>{step.number}</Text>
+              </View>
+              <View style={styles.stepContent}>
+                <Text style={styles.stepTitle}>{step.title}</Text>
+                <Text style={styles.stepDescription}>{step.description}</Text>
+              </View>
             </View>
-            <View style={styles.stepContent}>
-              <Text style={styles.stepTitle}>{step.title}</Text>
-              <Text style={styles.stepDescription}>{step.description}</Text>
-            </View>
-          </View>
-        ))}
+          ))}
 
-        {/* CTA Button */}
-        <TouchableOpacity
-          style={styles.ctaButton}
-          onPress={() => {
-            navigation.dispatch(
-              CommonActions.reset({
-                index: 0,
-                routes: [{ name: 'Tabs', state: { routes: [{ name: 'Home' }] } }],
-              })
-            );
-          }}
-        >
-          <LinearGradient colors={['#ff5722', '#ff4500']} style={styles.gradientButton}>
-            <Text style={styles.ctaButtonText}>
-              {t('book_service_now') || 'Book a Service Now'}
+          {/* CTA Button */}
+          <TouchableOpacity
+            style={styles.ctaButton}
+            onPress={handleBookService}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={[colors.primary, '#ff4500']}
+              style={styles.gradientButton}
+            >
+              <Text style={styles.ctaButtonText}>
+                {t('book_service_now') || 'Book a Service Now'}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* Support Info */}
+          <View style={styles.supportInfo}>
+            <Text style={styles.supportTitle}>
+              {t('need_more_help') || 'Need More Help?'}
             </Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </ScrollView>
+            <Text style={styles.supportText}>
+              {t('contact_support_text') ||
+                'Our support team is available 24/7 to assist you with any questions or concerns.'}
+            </Text>
+          </View>
+        </ScrollView>
 
-      {/* Floating Call Button */}
-      <TouchableOpacity style={styles.floatingCallButton} onPress={handleCallPress}>
-        {loadingCall ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Ionicons name="call" size={24} color="#fff" />
-        )}
-      </TouchableOpacity>
-    </View>
+        {/* Floating Call Button */}
+        <TouchableOpacity
+          style={styles.floatingCallButton}
+          onPress={handleCallPress}
+          disabled={loadingCall}
+          activeOpacity={0.8}
+        >
+          {loadingCall ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Ionicons name="call" size={24} color="#fff" />
+          )}
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
 
-/** 
- * DYNAMIC STYLES 
+/**
+ * Dynamic styles based on theme and screen size
+ * @param {number} width - Screen width
+ * @param {boolean} isDarkMode - Theme mode
+ * @param {object} colors - Color palette
+ * @returns {object} StyleSheet object
  */
-function dynamicStyles(width, isDarkMode) {
+function dynamicStyles(width, isDarkMode, colors) {
   const isTablet = width >= 600;
 
   return StyleSheet.create({
-        safeArea: {
+    safeArea: {
       flex: 1,
-      backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
+      backgroundColor: colors.background,
     },
     container: {
       flex: 1,
-      backgroundColor: isDarkMode ? '#121212' : '#f5f5f5',
+      backgroundColor: colors.surface,
     },
     header: {
       flexDirection: 'row',
@@ -177,13 +254,18 @@ function dynamicStyles(width, isDarkMode) {
       justifyContent: 'space-between',
       paddingHorizontal: isTablet ? 24 : 20,
       paddingVertical: isTablet ? 14 : 10,
-      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
+      backgroundColor: colors.background,
       elevation: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
     },
     headerTitle: {
       fontSize: isTablet ? 20 : 18,
       fontWeight: '600',
-      color: isDarkMode ? '#fff' : '#212121',
+      color: colors.text.primary,
+      fontFamily: 'RobotoSlab-SemiBold',
     },
     scrollContainer: {
       flexGrow: 1,
@@ -194,13 +276,14 @@ function dynamicStyles(width, isDarkMode) {
       fontSize: isTablet ? 18 : 16,
       fontWeight: '500',
       textAlign: 'center',
-      color: isDarkMode ? '#cccccc' : '#4a4a4a',
+      color: colors.text.secondary,
       marginBottom: isTablet ? 30 : 25,
+      fontFamily: 'RobotoSlab-Medium',
     },
     stepContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: isDarkMode ? '#2c2c2c' : '#ffffff',
+      backgroundColor: colors.background,
       padding: isTablet ? 16 : 14,
       borderRadius: 50,
       marginBottom: isTablet ? 18 : 15,
@@ -214,7 +297,7 @@ function dynamicStyles(width, isDarkMode) {
       width: isTablet ? 40 : 36,
       height: isTablet ? 40 : 36,
       borderRadius: 20,
-      backgroundColor: '#ff4500',
+      backgroundColor: colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: isTablet ? 18 : 15,
@@ -223,6 +306,7 @@ function dynamicStyles(width, isDarkMode) {
       color: '#ffffff',
       fontSize: isTablet ? 20 : 18,
       fontWeight: '600',
+      fontFamily: 'RobotoSlab-SemiBold',
     },
     stepContent: {
       flex: 1,
@@ -230,11 +314,13 @@ function dynamicStyles(width, isDarkMode) {
     stepTitle: {
       fontSize: isTablet ? 18 : 16,
       fontWeight: '500',
-      color: isDarkMode ? '#fff' : '#212121',
+      color: colors.text.primary,
+      fontFamily: 'RobotoSlab-Medium',
     },
     stepDescription: {
       fontSize: isTablet ? 16 : 14,
-      color: isDarkMode ? '#cccccc' : '#4a4a4a',
+      color: colors.text.secondary,
+      fontFamily: 'RobotoSlab-Regular',
     },
     ctaButton: {
       marginTop: isTablet ? 30 : 25,
@@ -247,23 +333,53 @@ function dynamicStyles(width, isDarkMode) {
       alignItems: 'center',
       borderRadius: 50,
       elevation: 3,
+      shadowColor: colors.primary,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 3,
     },
     ctaButtonText: {
       fontSize: isTablet ? 18 : 16,
       fontWeight: '600',
       color: '#ffffff',
+      fontFamily: 'RobotoSlab-SemiBold',
+    },
+    supportInfo: {
+      marginTop: isTablet ? 30 : 25,
+      padding: isTablet ? 20 : 16,
+      backgroundColor: colors.background,
+      borderRadius: 12,
+      borderLeftWidth: 4,
+      borderLeftColor: colors.primary,
+    },
+    supportTitle: {
+      fontSize: isTablet ? 18 : 16,
+      fontWeight: '600',
+      color: colors.text.primary,
+      marginBottom: 8,
+      fontFamily: 'RobotoSlab-SemiBold',
+    },
+    supportText: {
+      fontSize: isTablet ? 15 : 14,
+      color: colors.text.secondary,
+      lineHeight: 22,
+      fontFamily: 'RobotoSlab-Regular',
     },
     floatingCallButton: {
       position: 'absolute',
       bottom: 20,
       right: 20,
-      backgroundColor: '#ff4500',
+      backgroundColor: colors.primary,
       width: 56,
       height: 56,
       borderRadius: 28,
       justifyContent: 'center',
       alignItems: 'center',
       elevation: 5,
+      shadowColor: colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 5,
     },
   });
 }

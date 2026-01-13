@@ -1,3 +1,11 @@
+/**
+ * AccountDelete Component
+ * Allows users to permanently delete their account
+ * Features: confirmation modal, logout on deletion, and proper error handling
+ *
+ * @module AccountDelete
+ */
+
 import React, {useEffect, useState} from 'react';
 import {
   View,
@@ -11,15 +19,34 @@ import {
   useWindowDimensions,
   Modal,
   ScrollView,
+  Alert,
 } from 'react-native';
-import {useRoute, useNavigation, CommonActions} from '@react-navigation/native';
+import {useRoute, useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
+
+// Theme and utilities
 import {useTheme} from '../context/ThemeContext';
-// Import the translation hook from react-i18next
 import {useTranslation} from 'react-i18next';
 
+// State components
+import LoadingState from '../Components/molecules/LoadingState';
+import ErrorState from '../Components/molecules/ErrorState';
+
+// API services
+import {deleteUserAccount} from '../api/services/user.service';
+
+// Store
+import useUserStore from '../store/userStore';
+
+// Validators and formatters
+import {validateEmail, validatePhone} from '../utils/validators';
+import {formatPhoneNumber} from '../utils/formatters';
+
+/**
+ * AccountDelete Component
+ * @returns {JSX.Element} Account deletion screen with confirmation
+ */
 const AccountDelete = () => {
   const {width, height} = useWindowDimensions();
   const {isDarkMode} = useTheme();
@@ -27,68 +54,101 @@ const AccountDelete = () => {
 
   const navigation = useNavigation();
   const {t} = useTranslation();
+  const route = useRoute();
 
+  // State
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [updateLoading, setUpdateLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const route = useRoute();
+  // User store
+  const {clearUserData} = useUserStore();
 
+  /**
+   * Fetch profile details from route params
+   */
   const fetchProfileDetails = async () => {
-    const {details} = route.params;
-    setEmail(details.email);
-    setPhone(details.phoneNumber);
-    setFullName(details.name);
-  };
-
-  // Function to delete the account (update profile)
-  const updateProfile = async () => {
     try {
-      setUpdateLoading(true);
-      const jwtToken = await EncryptedStorage.getItem('cs_token');
-
-      if (!jwtToken) {
-        console.error('No JWT token found');
-        return;
-      }
-
-      const response = await axios.post(
-        `https://backend.clicksolver.com/api/user/details/delete`,
-        {name: fullName, email, phone},
-        {
-          headers: {Authorization: `Bearer ${jwtToken}`},
-        },
-      );
-
-      if (response.status === 200) {
-        // On successful account deletion, perform logout
-        handleLogout();
-      } else {
-        console.error('Failed to update profile. Status: ', response.status);
+      const {details} = route.params;
+      if (details) {
+        setEmail(details.email || '');
+        setPhone(details.phoneNumber || '');
+        setFullName(details.name || '');
       }
     } catch (error) {
-      console.error('Error response: ', error.response?.data || error.message);
+      console.error('Error fetching profile details:', error);
+    }
+  };
+
+  /**
+   * Delete user account
+   * @async
+   */
+  const deleteAccount = async () => {
+    try {
+      setUpdateLoading(true);
+
+      // Use API service
+      await deleteUserAccount({
+        name: fullName,
+        email: email,
+        phone: phone,
+      });
+
+      // On successful account deletion, perform logout
+      await handleLogout();
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      Alert.alert(
+        t('error') || 'Error',
+        error.response?.data?.message || t('delete_failed') || 'Failed to delete account. Please try again.',
+      );
     } finally {
       setUpdateLoading(false);
     }
   };
 
-  // Logout: clear tokens and navigate to Login
+  /**
+   * Logout: clear tokens and navigate to Login
+   * @async
+   */
   const handleLogout = async () => {
     try {
       const user_fcm_token = await EncryptedStorage.getItem('user_fcm_token');
-      if (user_fcm_token) {
-        await axios.post('https://backend.clicksolver.com/api/userLogout', {
-          user_fcm_token,
-        });
-      }
-      await EncryptedStorage.removeItem('cs_token');
-      await EncryptedStorage.removeItem('user_fcm_token');
-      await EncryptedStorage.removeItem('notifications');
-      await EncryptedStorage.removeItem('messageBox');
 
+      if (user_fcm_token) {
+        try {
+          await fetch('https://backend.clicksolver.com/api/userLogout', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({user_fcm_token}),
+          });
+        } catch (apiErr) {
+          console.error('Logout API error:', apiErr);
+        }
+      }
+
+      // Clear all storage keys
+      const keysToClear = [
+        'cs_token',
+        'user_fcm_token',
+        'notifications',
+        'messageBox',
+      ];
+
+      for (const key of keysToClear) {
+        const value = await EncryptedStorage.getItem(key);
+        if (value != null) {
+          await EncryptedStorage.removeItem(key);
+        }
+      }
+
+      // Clear user store
+      await clearUserData();
+
+      // Navigate to Login
       navigation.reset({
         index: 0,
         routes: [{name: 'Login'}],
@@ -98,15 +158,19 @@ const AccountDelete = () => {
     }
   };
 
-  // Open the confirmation modal
+  /**
+   * Open the confirmation modal
+   */
   const openConfirmationModal = () => {
     setModalVisible(true);
   };
 
-  // Close modal and proceed with account deletion
-  const handleUpdate = () => {
+  /**
+   * Close modal and proceed with account deletion
+   */
+  const handleDelete = () => {
     setModalVisible(false);
-    updateProfile();
+    deleteAccount();
   };
 
   useEffect(() => {
@@ -129,6 +193,16 @@ const AccountDelete = () => {
         </View>
 
         <View style={styles.form}>
+          {/* Warning Message */}
+          <View style={styles.warningContainer}>
+            <Icon name="warning" size={24} color="#EF4444" />
+            <Text style={styles.warningText}>
+              {t('delete_account_warning') ||
+                'Warning: This action cannot be undone. All your data will be permanently deleted.'}
+            </Text>
+          </View>
+
+          {/* Full Name Field */}
           <View>
             <Text style={styles.label}>{t('full_name') || 'Full Name'}</Text>
             <TextInput
@@ -140,12 +214,13 @@ const AccountDelete = () => {
             />
           </View>
 
+          {/* Email Field */}
           <View>
             <Text style={styles.label}>
               {t('email_address') || 'Email Address'}
             </Text>
             <View style={styles.inputWithIcon}>
-              <Icon name="email" size={20} color="gray" />
+              <Icon name="email" size={20} color={isDarkMode ? '#fff' : 'gray'} />
               <TextInput
                 style={styles.inputText}
                 value={email}
@@ -156,6 +231,7 @@ const AccountDelete = () => {
             </View>
           </View>
 
+          {/* Phone Field */}
           <View>
             <Text style={styles.label}>
               {t('phone_number') || 'Phone Number'}
@@ -180,7 +256,7 @@ const AccountDelete = () => {
           </View>
 
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, updateLoading && styles.buttonDisabled]}
             onPress={openConfirmationModal}
             disabled={updateLoading}>
             {updateLoading ? (
@@ -194,7 +270,7 @@ const AccountDelete = () => {
         </View>
       </ScrollView>
 
-      {/* Modal for confirmation */}
+      {/* Confirmation Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -202,12 +278,13 @@ const AccountDelete = () => {
         onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
+            <Icon name="warning" size={48} color="#EF4444" style={styles.modalIcon} />
             <Text style={styles.modalTitle}>
               {t('confirm_delete') || 'Confirm Delete'}
             </Text>
             <Text style={styles.modalMessage}>
               {t('confirm_delete_message') ||
-                'Are you sure you want to delete your profile?'}
+                'Are you absolutely sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.'}
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -218,8 +295,8 @@ const AccountDelete = () => {
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, {backgroundColor: '#FF4500'}]}
-                onPress={handleUpdate}>
+                style={[styles.modalButton, {backgroundColor: '#EF4444'}]}
+                onPress={handleDelete}>
                 <Text style={styles.modalButtonText}>
                   {t('delete') || 'Delete'}
                 </Text>
@@ -232,6 +309,13 @@ const AccountDelete = () => {
   );
 };
 
+/**
+ * Dynamic styles based on theme and screen dimensions
+ * @param {number} width - Screen width
+ * @param {number} height - Screen height
+ * @param {boolean} isDarkMode - Whether dark mode is active
+ * @returns {object} StyleSheet object
+ */
 const dynamicStyles = (width, height, isDarkMode) => {
   const isTablet = width >= 600;
 
@@ -259,6 +343,24 @@ const dynamicStyles = (width, height, isDarkMode) => {
       flexDirection: 'column',
       gap: isTablet ? 15 : 10,
     },
+    warningContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: isDarkMode ? '#2D1B1B' : '#FEE2E2',
+      borderRadius: 8,
+      padding: isTablet ? 16 : 12,
+      marginBottom: isTablet ? 20 : 15,
+      borderLeftWidth: 4,
+      borderLeftColor: '#EF4444',
+    },
+    warningText: {
+      flex: 1,
+      marginLeft: 12,
+      fontSize: isTablet ? 14 : 13,
+      fontFamily: 'RobotoSlab-Regular',
+      color: isDarkMode ? '#FCA5A5' : '#991B1B',
+      lineHeight: 20,
+    },
     label: {
       fontSize: isTablet ? 16 : 14,
       fontFamily: 'RobotoSlab-Medium',
@@ -273,7 +375,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
       borderRadius: 8,
       paddingHorizontal: 10,
       backgroundColor: isDarkMode ? '#1e1e1e' : '#f9f9f9',
-      color: isDarkMode ? '#fff' : '#212121',
+      color: isDarkMode ? '#666' : '#999',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 18 : 16,
     },
@@ -290,7 +392,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
       flex: 1,
       height: isTablet ? 55 : 50,
       marginLeft: isTablet ? 15 : 10,
-      color: isDarkMode ? '#fff' : '#212121',
+      color: isDarkMode ? '#666' : '#999',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 18 : 16,
     },
@@ -311,23 +413,26 @@ const dynamicStyles = (width, height, isDarkMode) => {
     callingCode: {
       marginRight: 10,
       fontSize: isTablet ? 18 : 16,
-      color: isDarkMode ? '#fff' : '#212121',
+      color: isDarkMode ? '#666' : '#999',
       fontFamily: 'RobotoSlab-Regular',
     },
     phoneInput: {
       flex: 1,
       height: isTablet ? 55 : 50,
-      color: isDarkMode ? '#fff' : '#212121',
+      color: isDarkMode ? '#666' : '#999',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 18 : 16,
     },
     button: {
-      backgroundColor: '#FF4500',
+      backgroundColor: '#EF4444',
       height: isTablet ? 55 : 50,
       borderRadius: isTablet ? 27.5 : 25,
       justifyContent: 'center',
       alignItems: 'center',
       marginTop: isTablet ? 50 : 40,
+    },
+    buttonDisabled: {
+      opacity: 0.6,
     },
     buttonText: {
       color: '#fff',
@@ -347,11 +452,14 @@ const dynamicStyles = (width, height, isDarkMode) => {
       alignItems: 'center',
       width: '100%',
     },
+    modalIcon: {
+      marginBottom: 16,
+    },
     modalTitle: {
       fontSize: isTablet ? 20 : 18,
       fontFamily: 'RobotoSlab-Medium',
       marginBottom: 10,
-      color: isDarkMode ? '#fff' : '#1D2951',
+      color: isDarkMode ? '#FCA5A5' : '#DC2626',
     },
     modalMessage: {
       fontSize: isTablet ? 16 : 14,
@@ -359,6 +467,7 @@ const dynamicStyles = (width, height, isDarkMode) => {
       marginBottom: 20,
       textAlign: 'center',
       color: isDarkMode ? '#ccc' : '#212121',
+      lineHeight: 22,
     },
     modalButtons: {
       flexDirection: 'row',

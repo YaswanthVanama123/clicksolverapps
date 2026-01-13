@@ -1,3 +1,13 @@
+/**
+ * OrderScreen Component
+ * Displays shopping cart with services, pricing, offers, and checkout functionality
+ * Allows users to manage cart items, apply coupons, add tips, and proceed to checkout
+ *
+ * @component
+ * @example
+ * <OrderScreen route={{ params: { serviceName: [services] } }} />
+ */
+
 import React, {useEffect, useState, useCallback, useRef} from 'react';
 import {
   View,
@@ -20,26 +30,30 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import axios from 'axios';
-import {useTheme} from '../context/ThemeContext';
-
-// 1) Import i18n so translations are loaded
-import '../i18n/i18n';
-// 2) Import the useTranslation hook
 import {useTranslation} from 'react-i18next';
 
+// Theme and utilities
+import {useTheme} from '../context/ThemeContext';
+import {formatCurrency} from '../utils/formatters';
+import {LoadingState, ErrorState} from '../Components/molecules';
+
+// i18n
+import '../i18n/i18n';
+
+/**
+ * OrderScreen Component
+ * Cart management and checkout screen with offer application
+ */
 const OrderScreen = () => {
   const {width} = useWindowDimensions();
-  const {isDarkMode} = useTheme();
+  const {theme, isDarkMode} = useTheme();
   const navigation = useNavigation();
   const route = useRoute();
-  // 3) Destructure serviceName from route params
   const {serviceName} = route.params || [];
-
-  // 4) Use the useTranslation hook
   const {t} = useTranslation();
 
-  // 5) Dynamic styles based on theme + device width
-  const styles = dynamicStyles(width, isDarkMode);
+  // Dynamic styles based on theme + device width
+  const styles = dynamicStyles(width, isDarkMode, theme);
 
   // States
   const [services, setServices] = useState([]);
@@ -55,15 +69,22 @@ const OrderScreen = () => {
     title: '',
     message: '',
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const didMountRef = useRef(false);
-  // Show error modal with title + message
+
+  /**
+   * Show error modal with title and message
+   * @param {string} title - Error title
+   * @param {string} message - Error message
+   */
   const showErrorModal = (title, message) => {
     setErrorModalContent({title, message});
     setErrorModalVisible(true);
   };
 
   /**
-   * 1) Load services from route params
+   * Load services from route params
    */
   useEffect(() => {
     if (serviceName && Array.isArray(serviceName)) {
@@ -82,7 +103,9 @@ const OrderScreen = () => {
     }
   }, [serviceName]);
 
-  // NEW: only run goBack on *subsequent* updates
+  /**
+   * Go back when services array becomes empty (after initial mount)
+   */
   useEffect(() => {
     if (didMountRef.current) {
       if (services.length === 0) {
@@ -94,7 +117,7 @@ const OrderScreen = () => {
   }, [services, navigation]);
 
   /**
-   * 2) Recalculate totals when services or offers change
+   * Recalculate totals when services or offers change
    */
   useEffect(() => {
     let tempTotal = 0;
@@ -112,16 +135,17 @@ const OrderScreen = () => {
   }, [services]);
 
   /**
-   * 3) Fetch offers from backend on screen focus
+   * Fetch offers from backend on screen focus
    */
   useFocusEffect(
     useCallback(() => {
       const fetchOffers = async () => {
         try {
+          setLoading(true);
+          setError(null);
           const token = await EncryptedStorage.getItem('cs_token');
           if (!token) return;
 
-          // Example endpoint to fetch offers
           const response = await axios.get(
             'https://backend.clicksolver.com/api/user/offers',
             {headers: {Authorization: `Bearer ${token}`}},
@@ -129,7 +153,10 @@ const OrderScreen = () => {
           const {offers: fetchedOffers} = response.data;
           setOffers(fetchedOffers);
         } catch (error) {
-          // console.log('Error fetching offers:', error);
+          console.error('Error fetching offers:', error);
+          setError(error);
+        } finally {
+          setLoading(false);
         }
       };
       fetchOffers();
@@ -137,7 +164,8 @@ const OrderScreen = () => {
   );
 
   /**
-   * 4) Adjust quantity logic
+   * Increment service quantity
+   * @param {number} index - Index of service in array
    */
   const incrementQuantity = index => {
     setServices(prev => {
@@ -149,16 +177,18 @@ const OrderScreen = () => {
     });
   };
 
-  // 4) Adjust quantity logic
+  /**
+   * Decrement service quantity
+   * Remove service if quantity reaches zero
+   * @param {number} index - Index of service in array
+   */
   const decrementQuantity = index => {
     setServices(prev => {
       const updated = [...prev];
-      // drop quantity down to zero...
       updated[index].quantity = Math.max(0, updated[index].quantity - 1);
       updated[index].totalCost =
         updated[index].baseCost * updated[index].quantity;
 
-      // ...then remove any zero-qty items
       if (updated[index].quantity === 0) {
         updated.splice(index, 1);
       }
@@ -168,10 +198,13 @@ const OrderScreen = () => {
   };
 
   /**
-   * 5) Validate & Apply Offer
+   * Validate and apply offer code
+   * @param {string} offerCode - Offer code to validate
+   * @param {number} currentTotal - Current cart total
    */
   const validateAndApplyOffer = async (offerCode, currentTotal) => {
     try {
+      setLoading(true);
       const token = await EncryptedStorage.getItem('cs_token');
       if (!token) {
         showErrorModal(
@@ -181,7 +214,6 @@ const OrderScreen = () => {
         return;
       }
 
-      // Example endpoint to validate the offer
       const response = await axios.post(
         'https://backend.clicksolver.com/api/user/validate-offer',
         {offer_code: offerCode, totalAmount: currentTotal},
@@ -209,21 +241,23 @@ const OrderScreen = () => {
         t('error') || 'Error',
         t('offer_validation_error') || 'Unable to validate offer at this time.',
       );
+    } finally {
+      setLoading(false);
     }
   };
 
   /**
-   * 6) Handle Offer Button Click
+   * Handle offer button click
+   * Toggle offer application
+   * @param {string} offerCode - Offer code to apply/remove
    */
   const handleApplyOffer = async offerCode => {
-    // If the same offer is tapped, unapply it
     if (appliedOffer === offerCode) {
       setAppliedOffer(null);
       setDiscountedPrice(totalPrice);
       setSavings(0);
       return;
     }
-    // Otherwise, validate & apply
     await validateAndApplyOffer(offerCode, totalPrice);
   };
 
@@ -232,7 +266,7 @@ const OrderScreen = () => {
   const finalPriceWithTip = finalPrice + selectedTip;
 
   /**
-   * 7) Address Handling
+   * Navigate to address selection screen
    */
   const addAddress = async () => {
     try {
@@ -258,10 +292,17 @@ const OrderScreen = () => {
     }
   };
 
-  // Navigation: Back button
+  /**
+   * Navigate back to previous screen
+   */
   const handleBackPress = () => {
     navigation.goBack();
   };
+
+  // Show loading state while fetching offers initially
+  if (loading && offers.length === 0) {
+    return <LoadingState message={t('loading_offers') || 'Loading offers...'} />;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -271,7 +312,7 @@ const OrderScreen = () => {
           <Icon
             name="arrow-back"
             size={24}
-            color={isDarkMode ? '#fff' : '#333'}
+            color={theme.colors.text.primary}
           />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('my_cart') || 'My Cart'}</Text>
@@ -289,11 +330,12 @@ const OrderScreen = () => {
               />
               <View style={styles.itemInfoContainer}>
                 <Text style={styles.itemName}>
-                  {' '}
                   {t(`singleService_${service.main_service_id}`) ||
                     service.serviceName}
                 </Text>
-                <Text style={styles.itemPrice}>₹{service.totalCost}</Text>
+                <Text style={styles.itemPrice}>
+                  {formatCurrency(service.totalCost)}
+                </Text>
               </View>
               <View style={styles.quantityPriceContainer}>
                 <View style={styles.quantityControls}>
@@ -343,7 +385,7 @@ const OrderScreen = () => {
           <Entypo
             name={showCoupons ? 'chevron-up' : 'chevron-down'}
             size={20}
-            color={isDarkMode ? '#fff' : '#333'}
+            color={theme.colors.text.primary}
           />
         </TouchableOpacity>
 
@@ -352,7 +394,6 @@ const OrderScreen = () => {
             {offers.length > 0 ? (
               offers.map(offer => (
                 <View key={offer.offer_code} style={styles.couponRow}>
-                  {/* Coupon Text Container */}
                   <View style={styles.couponTextContainer}>
                     <Text style={styles.couponLabel}>{offer.title}</Text>
                     <Text style={styles.couponDescription}>
@@ -414,7 +455,7 @@ const OrderScreen = () => {
                     styles.tipOptionText,
                     selectedTip === amount && styles.tipOptionTextSelected,
                   ]}>
-                  ₹{amount}
+                  {formatCurrency(amount)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -436,11 +477,15 @@ const OrderScreen = () => {
             </Text>
             {appliedOffer && savings > 0 ? (
               <Text style={styles.summaryValue}>
-                <Text style={styles.strikeThrough}>₹{totalPrice}</Text> ₹
-                {finalPrice}
+                <Text style={styles.strikeThrough}>
+                  {formatCurrency(totalPrice)}
+                </Text>{' '}
+                {formatCurrency(finalPrice)}
               </Text>
             ) : (
-              <Text style={styles.summaryValue}>₹{totalPrice}</Text>
+              <Text style={styles.summaryValue}>
+                {formatCurrency(totalPrice)}
+              </Text>
             )}
           </View>
 
@@ -449,13 +494,15 @@ const OrderScreen = () => {
             <Text style={styles.summaryLabel}>
               {t('taxes_and_fee') || 'Taxes and Fee'}
             </Text>
-            <Text style={styles.summaryValue}>₹0</Text>
+            <Text style={styles.summaryValue}>{formatCurrency(0)}</Text>
           </View>
 
           {/* Tip */}
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>{t('tip') || 'Tip'}</Text>
-            <Text style={styles.summaryValue}>₹{selectedTip}</Text>
+            <Text style={styles.summaryValue}>
+              {formatCurrency(selectedTip)}
+            </Text>
           </View>
 
           {/* Total Amount */}
@@ -463,7 +510,9 @@ const OrderScreen = () => {
             <Text style={styles.summaryLabel}>
               {t('total_amount') || 'Total amount'}
             </Text>
-            <Text style={styles.summaryValue}>₹{finalPriceWithTip}</Text>
+            <Text style={styles.summaryValue}>
+              {formatCurrency(finalPriceWithTip)}
+            </Text>
           </View>
 
           {/* Amount to Pay */}
@@ -471,13 +520,15 @@ const OrderScreen = () => {
             <Text style={styles.summaryLabel}>
               {t('amount_to_pay') || 'Amount to pay'}
             </Text>
-            <Text style={styles.summaryValue}>₹{finalPriceWithTip}</Text>
+            <Text style={styles.summaryValue}>
+              {formatCurrency(finalPriceWithTip)}
+            </Text>
           </View>
 
           {/* Savings */}
           {appliedOffer && savings > 0 && (
             <Text style={styles.savingsText}>
-              {t('you_saved') || 'You saved'} ₹{savings}{' '}
+              {t('you_saved') || 'You saved'} {formatCurrency(savings)}{' '}
               {t('on_this_order') || 'on this order!'}
             </Text>
           )}
@@ -496,7 +547,9 @@ const OrderScreen = () => {
 
       {/* Bottom Bar */}
       <View style={styles.bottomBar}>
-        <Text style={styles.bottomBarTotal}>₹{finalPriceWithTip}</Text>
+        <Text style={styles.bottomBarTotal}>
+          {formatCurrency(finalPriceWithTip)}
+        </Text>
         <TouchableOpacity style={styles.bottomBarButton} onPress={addAddress}>
           <Text style={styles.bottomBarButtonText}>
             {t('add_address') || 'Add Address'}
@@ -530,14 +583,18 @@ const OrderScreen = () => {
 export default OrderScreen;
 
 /**
- * Dynamic styles
+ * Dynamic styles based on screen width and theme
+ * @param {number} width - Screen width
+ * @param {boolean} isDarkMode - Whether dark mode is active
+ * @param {object} theme - Theme object with colors
+ * @returns {object} StyleSheet object
  */
-const dynamicStyles = (width, isDarkMode) => {
+const dynamicStyles = (width, isDarkMode, theme) => {
   const isTablet = width >= 600;
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDarkMode ? '#121212' : '#fff',
+      backgroundColor: theme.colors.background.primary,
     },
     contentContainer: {
       paddingBottom: 80,
@@ -547,7 +604,7 @@ const dynamicStyles = (width, isDarkMode) => {
       alignItems: 'center',
       paddingHorizontal: 16,
       paddingVertical: 14,
-      backgroundColor: isDarkMode ? '#121212' : '#fff',
+      backgroundColor: theme.colors.background.primary,
     },
     backArrow: {
       marginRight: 12,
@@ -555,15 +612,15 @@ const dynamicStyles = (width, isDarkMode) => {
     headerTitle: {
       fontSize: isTablet ? 22 : 20,
       fontWeight: '600',
-      color: isDarkMode ? '#fff' : '#212121',
+      color: theme.colors.text.primary,
     },
     sectionDivider: {
       height: 8,
-      backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
+      backgroundColor: theme.colors.background.secondary,
       width: '100%',
     },
     addMoreContainer: {
-      backgroundColor: isDarkMode ? '#121212' : '#fff',
+      backgroundColor: theme.colors.background.primary,
       paddingHorizontal: 16,
       paddingVertical: 12,
     },
@@ -577,7 +634,7 @@ const dynamicStyles = (width, isDarkMode) => {
       alignItems: 'center',
       paddingHorizontal: 16,
       paddingVertical: 14,
-      backgroundColor: isDarkMode ? '#121212' : '#fff',
+      backgroundColor: theme.colors.background.primary,
     },
     itemImage: {
       width: 60,
@@ -592,13 +649,13 @@ const dynamicStyles = (width, isDarkMode) => {
     itemName: {
       fontSize: isTablet ? 18 : 16,
       fontWeight: '500',
-      color: isDarkMode ? '#fff' : '#212121',
+      color: theme.colors.text.primary,
       marginBottom: 4,
     },
     itemPrice: {
       fontSize: isTablet ? 16 : 14,
       fontWeight: '600',
-      color: isDarkMode ? '#fff' : '#000',
+      color: theme.colors.text.primary,
     },
     quantityPriceContainer: {
       alignItems: 'flex-end',
@@ -610,7 +667,7 @@ const dynamicStyles = (width, isDarkMode) => {
       marginBottom: 6,
     },
     quantityBtn: {
-      backgroundColor: isDarkMode ? '#444' : '#e0e0e0',
+      backgroundColor: theme.colors.background.secondary,
       borderRadius: 6,
       paddingHorizontal: 10,
       paddingVertical: 4,
@@ -618,19 +675,19 @@ const dynamicStyles = (width, isDarkMode) => {
     quantityBtnText: {
       fontSize: isTablet ? 18 : 16,
       fontWeight: 'bold',
-      color: isDarkMode ? '#fff' : '#333',
+      color: theme.colors.text.primary,
     },
     quantityValue: {
       marginHorizontal: 8,
       fontSize: isTablet ? 16 : 14,
       fontWeight: '600',
-      color: isDarkMode ? '#fff' : '#333',
+      color: theme.colors.text.primary,
     },
     applyCouponHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      backgroundColor: isDarkMode ? '#121212' : '#fff',
+      backgroundColor: theme.colors.background.primary,
       paddingHorizontal: 16,
       paddingVertical: 14,
     },
@@ -647,10 +704,10 @@ const dynamicStyles = (width, isDarkMode) => {
     applyCouponText: {
       fontSize: isTablet ? 16 : 14,
       fontWeight: '700',
-      color: isDarkMode ? '#fff' : '#333',
+      color: theme.colors.text.primary,
     },
     couponListContainer: {
-      backgroundColor: isDarkMode ? '#121212' : '#fff',
+      backgroundColor: theme.colors.background.primary,
       paddingHorizontal: 16,
       paddingBottom: 12,
     },
@@ -667,11 +724,11 @@ const dynamicStyles = (width, isDarkMode) => {
     couponLabel: {
       fontSize: isTablet ? 15 : 13,
       fontWeight: '600',
-      color: isDarkMode ? '#fff' : '#333',
+      color: theme.colors.text.primary,
     },
     couponDescription: {
       fontSize: isTablet ? 13 : 11,
-      color: isDarkMode ? '#ccc' : '#777',
+      color: theme.colors.text.secondary,
       marginBottom: 8,
       marginTop: 2,
     },
@@ -702,14 +759,14 @@ const dynamicStyles = (width, isDarkMode) => {
       fontWeight: '600',
     },
     tipContainer: {
-      backgroundColor: isDarkMode ? '#121212' : '#fff',
+      backgroundColor: theme.colors.background.primary,
       paddingHorizontal: 16,
       paddingVertical: 14,
     },
     tipTitle: {
       fontSize: isTablet ? 16 : 14,
       fontWeight: '700',
-      color: isDarkMode ? '#fff' : '#333',
+      color: theme.colors.text.primary,
       marginBottom: 10,
     },
     tipOptions: {
@@ -717,7 +774,7 @@ const dynamicStyles = (width, isDarkMode) => {
       flexWrap: 'wrap',
     },
     tipOption: {
-      backgroundColor: isDarkMode ? '#444' : '#f1f1f1',
+      backgroundColor: theme.colors.background.secondary,
       paddingVertical: 6,
       paddingHorizontal: 12,
       borderRadius: 6,
@@ -725,7 +782,7 @@ const dynamicStyles = (width, isDarkMode) => {
       marginBottom: 8,
     },
     tipOptionText: {
-      color: isDarkMode ? '#fff' : '#333',
+      color: theme.colors.text.primary,
       fontSize: isTablet ? 14 : 12,
       fontWeight: '600',
     },
@@ -736,14 +793,14 @@ const dynamicStyles = (width, isDarkMode) => {
       color: '#fff',
     },
     paymentSummaryContainer: {
-      backgroundColor: isDarkMode ? '#121212' : '#fff',
+      backgroundColor: theme.colors.background.primary,
       paddingHorizontal: 16,
       paddingVertical: 14,
     },
     paymentSummaryTitle: {
       fontSize: isTablet ? 17 : 15,
       fontWeight: '700',
-      color: isDarkMode ? '#fff' : '#333',
+      color: theme.colors.text.primary,
       marginBottom: 10,
     },
     summaryRow: {
@@ -753,16 +810,16 @@ const dynamicStyles = (width, isDarkMode) => {
     },
     summaryLabel: {
       fontSize: isTablet ? 15 : 13,
-      color: isDarkMode ? '#ccc' : '#555',
+      color: theme.colors.text.secondary,
     },
     summaryValue: {
       fontSize: isTablet ? 15 : 13,
       fontWeight: '700',
-      color: isDarkMode ? '#fff' : '#333',
+      color: theme.colors.text.primary,
     },
     strikeThrough: {
       textDecorationLine: 'line-through',
-      color: isDarkMode ? '#aaa' : '#888',
+      color: theme.colors.text.disabled,
     },
     savingsText: {
       marginTop: 6,
@@ -771,14 +828,14 @@ const dynamicStyles = (width, isDarkMode) => {
       fontWeight: '600',
     },
     addressSection: {
-      backgroundColor: isDarkMode ? '#121212' : '#fff',
+      backgroundColor: theme.colors.background.primary,
       paddingHorizontal: 16,
       paddingVertical: 14,
     },
     addressQuestion: {
       fontSize: isTablet ? 15 : 13,
       fontWeight: '600',
-      color: isDarkMode ? '#fff' : '#333',
+      color: theme.colors.text.primary,
       marginBottom: 10,
     },
     bottomBar: {
@@ -789,16 +846,16 @@ const dynamicStyles = (width, isDarkMode) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: isDarkMode ? '#121212' : '#fff',
+      backgroundColor: theme.colors.background.primary,
       paddingVertical: 14,
       paddingHorizontal: 16,
       borderTopWidth: 1,
-      borderTopColor: isDarkMode ? '#333' : '#f5f5f5',
+      borderTopColor: theme.colors.border.light,
     },
     bottomBarTotal: {
       fontSize: isTablet ? 18 : 16,
       fontWeight: '700',
-      color: isDarkMode ? '#fff' : '#333',
+      color: theme.colors.text.primary,
     },
     bottomBarButton: {
       backgroundColor: '#ff6f00',
@@ -818,7 +875,7 @@ const dynamicStyles = (width, isDarkMode) => {
       alignItems: 'center',
     },
     modalContent: {
-      backgroundColor: isDarkMode ? '#333' : '#fff',
+      backgroundColor: theme.colors.background.primary,
       padding: 20,
       borderRadius: 8,
       width: '80%',
@@ -828,13 +885,13 @@ const dynamicStyles = (width, isDarkMode) => {
       fontSize: isTablet ? 18 : 16,
       fontWeight: 'bold',
       marginBottom: 10,
-      color: isDarkMode ? '#fff' : '#000',
+      color: theme.colors.text.primary,
     },
     modalMessage: {
       fontSize: isTablet ? 16 : 14,
       textAlign: 'center',
       marginBottom: 20,
-      color: isDarkMode ? '#ccc' : '#000',
+      color: theme.colors.text.primary,
     },
     modalButton: {
       backgroundColor: '#ff6f00',

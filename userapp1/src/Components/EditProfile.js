@@ -1,3 +1,11 @@
+/**
+ * EditProfile Component
+ * Allows users to edit their profile information including name, email, and phone
+ * Features: validation, error handling, confirmation modal, and API integration
+ *
+ * @module EditProfile
+ */
+
 import React, {useEffect, useState} from 'react';
 import {
   View,
@@ -11,15 +19,33 @@ import {
   useWindowDimensions,
   Modal,
   ScrollView,
+  Alert,
 } from 'react-native';
 import {useRoute, useNavigation, CommonActions} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import axios from 'axios';
-import EncryptedStorage from 'react-native-encrypted-storage';
+
+// Theme and utilities
 import {useTheme} from '../context/ThemeContext';
-// Import translation hook
 import {useTranslation} from 'react-i18next';
 
+// State components
+import LoadingState from '../Components/molecules/LoadingState';
+import ErrorState from '../Components/molecules/ErrorState';
+
+// API services
+import {updateUserProfile} from '../api/services/user.service';
+
+// Store
+import useUserStore from '../store/userStore';
+
+// Validators and formatters
+import {validateEmail, validatePhone, validateName} from '../utils/validators';
+import {formatPhoneNumber} from '../utils/formatters';
+
+/**
+ * EditProfile Component
+ * @returns {JSX.Element} Edit profile form with validation
+ */
 const EditProfile = () => {
   const {width, height} = useWindowDimensions();
   const isTablet = width >= 600;
@@ -28,61 +54,117 @@ const EditProfile = () => {
 
   const navigation = useNavigation();
   const {t} = useTranslation();
+  const route = useRoute();
 
+  // State
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [updateLoading, setUpdateLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [errors, setErrors] = useState({});
 
-  const route = useRoute();
+  // User store
+  const {setProfile} = useUserStore();
 
+  /**
+   * Fetch profile details from route params
+   */
   const fetchProfileDetails = async () => {
-    const {details} = route.params;
-    setEmail(details.email);
-    setPhone(details.phoneNumber);
-    setFullName(details.name);
+    try {
+      const {details} = route.params;
+      if (details) {
+        setEmail(details.email || '');
+        setPhone(details.phoneNumber || '');
+        setFullName(details.name || '');
+      }
+    } catch (error) {
+      console.error('Error fetching profile details:', error);
+    }
   };
 
-  // Function to update the profile
+  /**
+   * Validate form fields
+   * @returns {boolean} - Whether form is valid
+   */
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Validate name
+    if (!fullName.trim()) {
+      newErrors.fullName = t('name_required') || 'Name is required';
+    } else if (!validateName(fullName)) {
+      newErrors.fullName = t('invalid_name') || 'Invalid name format';
+    }
+
+    // Validate email
+    if (!email.trim()) {
+      newErrors.email = t('email_required') || 'Email is required';
+    } else if (!validateEmail(email)) {
+      newErrors.email = t('invalid_email') || 'Invalid email format';
+    }
+
+    // Validate phone (optional since it's disabled)
+    if (phone && !validatePhone(phone)) {
+      newErrors.phone = t('invalid_phone') || 'Invalid phone format';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  /**
+   * Update user profile
+   * @async
+   */
   const updateProfile = async () => {
     try {
       setUpdateLoading(true);
-      const jwtToken = await EncryptedStorage.getItem('cs_token');
-      if (!jwtToken) {
-        console.error('No JWT token found');
-        return;
-      }
-      const response = await axios.post(
-        `https://backend.clicksolver.com/api/user/details/update`,
-        {name: fullName, email, phone},
-        {
-          headers: {Authorization: `Bearer ${jwtToken}`},
-        },
+
+      // Use API service
+      await updateUserProfile({
+        name: fullName.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+      });
+
+      // Update store
+      setProfile({
+        name: fullName.trim(),
+        email: email.trim(),
+        phoneNumber: phone.trim(),
+      });
+
+      // Navigate back to profile screen
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{name: 'Tabs', state: {routes: [{name: 'Account'}]}}],
+        }),
       );
-      if (response.status === 200) {
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{name: 'Tabs', state: {routes: [{name: 'Account'}]}}],
-          }),
-        );
-      } else {
-        console.error('Failed to update profile. Status: ', response.status);
-      }
     } catch (error) {
-      console.error('Error response: ', error.response?.data || error.message);
+      console.error('Error updating profile:', error);
+      Alert.alert(
+        t('error') || 'Error',
+        error.response?.data?.message || t('update_failed') || 'Failed to update profile. Please try again.',
+      );
     } finally {
       setUpdateLoading(false);
     }
   };
 
-  // Open the confirmation modal when Update Profile is pressed
+  /**
+   * Open confirmation modal
+   */
   const openConfirmationModal = () => {
-    setModalVisible(true);
+    if (validateForm()) {
+      setModalVisible(true);
+    }
   };
 
-  // Close modal and proceed with update
+  /**
+   * Handle update confirmation
+   */
   const handleUpdate = () => {
     setModalVisible(false);
     updateProfile();
@@ -94,17 +176,6 @@ const EditProfile = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* <View style={styles.header}>
-        <Icon
-          name="arrow-back"
-          size={24}
-          color={isDarkMode ? '#fff' : '#000'}
-          onPress={() => navigation.goBack()}
-        />
-        <Text style={styles.headerText}>
-          {t('edit_profile') || 'Edit Profile'}
-        </Text>
-      </View> */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -124,33 +195,58 @@ const EditProfile = () => {
           {t('edit_profile') || 'Edit Profile'}
         </Text>
       </View>
+
       <ScrollView>
         <View style={styles.form}>
+          {/* Full Name Field */}
           <View>
             <Text style={styles.label}>{t('full_name') || 'Full Name'}</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.fullName && styles.inputError]}
               value={fullName}
-              onChangeText={setFullName}
+              onChangeText={(text) => {
+                setFullName(text);
+                if (errors.fullName) {
+                  setErrors({...errors, fullName: null});
+                }
+              }}
+              placeholder={t('enter_full_name') || 'Enter full name'}
+              placeholderTextColor={isDarkMode ? '#666' : '#999'}
               testID="fullName-input"
             />
+            {errors.fullName && (
+              <Text style={styles.errorText}>{errors.fullName}</Text>
+            )}
           </View>
 
+          {/* Email Field */}
           <View>
             <Text style={styles.label}>
               {t('email_address') || 'Email Address'}
             </Text>
-            <View style={styles.inputWithIcon}>
-              <Icon name="email" size={20} color="gray" />
+            <View style={[styles.inputWithIcon, errors.email && styles.inputError]}>
+              <Icon name="email" size={20} color={isDarkMode ? '#fff' : 'gray'} />
               <TextInput
                 style={styles.inputText}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errors.email) {
+                    setErrors({...errors, email: null});
+                  }
+                }}
                 keyboardType="email-address"
+                autoCapitalize="none"
+                placeholder={t('enter_email') || 'Enter email'}
+                placeholderTextColor={isDarkMode ? '#666' : '#999'}
               />
             </View>
+            {errors.email && (
+              <Text style={styles.errorText}>{errors.email}</Text>
+            )}
           </View>
 
+          {/* Phone Field */}
           <View>
             <Text style={styles.label}>
               {t('phone_number') || 'Phone Number'}
@@ -172,12 +268,16 @@ const EditProfile = () => {
                 selectTextOnFocus={false}
               />
             </View>
+            <Text style={styles.helperText}>
+              {t('phone_not_editable') || 'Phone number cannot be changed'}
+            </Text>
           </View>
         </View>
       </ScrollView>
+
       <View style={styles.bottomButtonContainer}>
         <TouchableOpacity
-          style={styles.button}
+          style={[styles.button, updateLoading && styles.buttonDisabled]}
           onPress={openConfirmationModal}
           disabled={updateLoading}>
           {updateLoading ? (
@@ -190,7 +290,7 @@ const EditProfile = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Modal for confirmation */}
+      {/* Confirmation Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -228,6 +328,13 @@ const EditProfile = () => {
   );
 };
 
+/**
+ * Dynamic styles based on theme and screen dimensions
+ * @param {number} width - Screen width
+ * @param {number} height - Screen height
+ * @param {boolean} isDarkMode - Whether dark mode is active
+ * @returns {object} StyleSheet object
+ */
 const dynamicStyles = (width, height, isDarkMode) => {
   const isTablet = width >= 600;
   return StyleSheet.create({
@@ -236,22 +343,13 @@ const dynamicStyles = (width, height, isDarkMode) => {
       backgroundColor: isDarkMode ? '#121212' : '#fff',
       paddingHorizontal: isTablet ? 30 : 20,
     },
-    // header: {
-    //   flexDirection: 'row',
-    //   alignItems: 'center',
-    //   marginVertical: isTablet ? 20 : 15,
-    // },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center', // Center everything
+      justifyContent: 'center',
       padding: isTablet ? 20 : 16,
       paddingBottom: isTablet ? 16 : 12,
       elevation: 2,
-      // shadowColor: isDarkMode ? '#000' : '#1D2951',
-      // shadowOffset: {width: 0, height: 2},
-      // shadowOpacity: 0.2,
-      // shadowRadius: 4,
       backgroundColor: isDarkMode ? '#121212' : '#ffffff',
       position: 'relative',
     },
@@ -285,6 +383,10 @@ const dynamicStyles = (width, height, isDarkMode) => {
       color: isDarkMode ? '#fff' : '#212121',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 18 : 16,
+    },
+    inputError: {
+      borderColor: '#EF4444',
+      borderWidth: 1.5,
     },
     inputWithIcon: {
       flexDirection: 'row',
@@ -326,9 +428,23 @@ const dynamicStyles = (width, height, isDarkMode) => {
     },
     phoneInput: {
       flex: 1,
-      color: isDarkMode ? '#fff' : '#212121',
+      color: isDarkMode ? '#666' : '#999',
       fontFamily: 'RobotoSlab-Regular',
       fontSize: isTablet ? 18 : 16,
+    },
+    errorText: {
+      color: '#EF4444',
+      fontSize: isTablet ? 13 : 12,
+      fontFamily: 'RobotoSlab-Regular',
+      marginTop: 4,
+      marginLeft: 4,
+    },
+    helperText: {
+      color: isDarkMode ? '#666' : '#999',
+      fontSize: isTablet ? 13 : 12,
+      fontFamily: 'RobotoSlab-Regular',
+      marginTop: 4,
+      marginLeft: 4,
     },
     bottomButtonContainer: {
       position: 'absolute',
@@ -342,6 +458,9 @@ const dynamicStyles = (width, height, isDarkMode) => {
       borderRadius: isTablet ? 27.5 : 25,
       justifyContent: 'center',
       alignItems: 'center',
+    },
+    buttonDisabled: {
+      opacity: 0.6,
     },
     buttonText: {
       color: '#fff',
