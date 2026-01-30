@@ -57,7 +57,7 @@ const NavigationCancellationConfirmationModal = ({
               {color: isDarkMode ? '#ccc' : '#666'},
             ]}>
             {t('confirmation_subtitle') ||
-              'Please avoid canceling – we're working to connect you with the best expert to solve your problem.'}
+              'Please avoid canceling - we\'re working to connect you with the best expert to solve your problem.'}
           </Text>
 
           {/* Warning Box */}

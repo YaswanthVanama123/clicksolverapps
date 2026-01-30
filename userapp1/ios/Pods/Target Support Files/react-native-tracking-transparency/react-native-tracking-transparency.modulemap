@@ -1,6 +1,0 @@
-framework module react_native_tracking_transparency {
-  umbrella header "react-native-tracking-transparency-umbrella.h"
-
-  export *
-  module * { export * }
-}

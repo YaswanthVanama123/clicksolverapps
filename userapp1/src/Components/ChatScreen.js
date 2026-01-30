@@ -217,7 +217,6 @@ const ChatScreen = ({ navigation, route }) => {
           <Image
             source={{ uri: profileImage }}
             style={styles.profileImage}
-            defaultSource={require('../assets/images/default-avatar.png')}
           />
         )}
         <Text style={styles.headerTitle} numberOfLines={1}>
