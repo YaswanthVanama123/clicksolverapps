@@ -17,7 +17,7 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import Mapbox from '@rnmapbox/maps';
+// import Mapbox from '@rnmapbox/maps';
 import {useTheme} from '../../context/ThemeContext';
 import {useTranslation} from 'react-i18next';
 import useUserStore from '../../store/userStore';
@@ -547,22 +547,25 @@ const AddressManagement = ({navigation}) => {
 
             {/* Map */}
             <View style={styles.mapContainer}>
-              <Mapbox.MapView
-                ref={mapRef}
-                style={styles.map}
-                styleURL="mapbox://styles/mapbox/streets-v11"
-                onPress={handleMapPress}>
-                {mapLocation && (
+              <TouchableOpacity
+                style={styles.mapPlaceholder}
+                onPress={handleMapPress}
+                activeOpacity={0.7}>
+                {mapLocation ? (
                   <>
-                    <Mapbox.Camera zoomLevel={16} centerCoordinate={mapLocation} />
-                    <Mapbox.PointAnnotation id="selectedLocation" coordinate={mapLocation}>
-                      <View style={styles.markerContainer}>
-                        <MaterialIcons name="location-on" size={40} color="#FF6B35" />
-                      </View>
-                    </Mapbox.PointAnnotation>
+                    <MaterialIcons name="location-on" size={60} color="#FF6B35" />
+                    <Text style={styles.mapPlaceholderText}>Map view temporarily unavailable</Text>
+                    <Text style={styles.locationCoords}>
+                      {mapLocation[1]?.toFixed(4)}, {mapLocation[0]?.toFixed(4)}
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <MaterialIcons name="map" size={60} color="#ccc" />
+                    <Text style={styles.mapPlaceholderText}>Tap to select location</Text>
                   </>
                 )}
-              </Mapbox.MapView>
+              </TouchableOpacity>
               {mapLoading && (
                 <View style={styles.mapLoadingOverlay}>
                   <ActivityIndicator size="large" color="#FF6B35" />
@@ -824,6 +827,26 @@ const dynamicStyles = isDarkMode =>
     markerContainer: {
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    mapPlaceholder: {
+      flex: 1,
+      backgroundColor: '#f5f5f5',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    mapPlaceholderText: {
+      marginTop: 15,
+      fontSize: 14,
+      color: '#666',
+      textAlign: 'center',
+      fontFamily: 'RobotoSlab-Regular',
+    },
+    locationCoords: {
+      marginTop: 8,
+      fontSize: 12,
+      color: '#999',
+      fontFamily: 'RobotoSlab-Regular',
     },
     mapLoadingOverlay: {
       ...StyleSheet.absoluteFillObject,

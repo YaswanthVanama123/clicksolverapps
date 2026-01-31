@@ -15,6 +15,9 @@ import { encode as btoa } from 'base-64';
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
 
+// Navigation ref
+import { navigationRef } from './navigationRef';
+
 // Shared Screens (accessible from anywhere)
 import ChatScreen from '../Components/ChatScreen';
 import HelpScreen from '../Components/HelpScreen';
@@ -35,7 +38,7 @@ const Stack = createNativeStackNavigator();
  * Root Navigator Component
  * Handles app-level navigation and authentication state
  */
-const RootNavigator = ({ navigationRef }) => {
+const RootNavigator = () => {
   const { isDarkMode } = useTheme();
   const { isAuthenticated, checkAuth } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);

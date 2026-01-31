@@ -64,7 +64,8 @@
       "Bash(osascript:*)",
       "Bash(npx react-native codegen)",
       "Bash(ln:*)",
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "Bash(git rm:*)"
     ]
   }
 }

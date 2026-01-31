@@ -91,17 +91,27 @@ const ServiceCard = ({
           ]}>
           {/* Image Container */}
           <View style={styles.imageContainer}>
-            <Image
-              source={
-                image
-                  ? typeof image === 'string'
+            {image ? (
+              <Image
+                source={
+                  typeof image === 'string'
                     ? {uri: image}
                     : image
-                  : require('../../assets/placeholder.png')
-              }
-              style={styles.image}
-              resizeMode="cover"
-            />
+                }
+                style={styles.image}
+                resizeMode="cover"
+              />
+            ) : (
+              <LinearGradient
+                colors={GRADIENTS.primaryGradient.colors}
+                start={{x: 0, y: 0}}
+                end={{x: 1, y: 1}}
+                style={styles.image}>
+                <View style={styles.placeholderContent}>
+                  <Icon name="image-outline" size={48} color="rgba(255,255,255,0.5)" />
+                </View>
+              </LinearGradient>
+            )}
 
             {/* Gradient Overlay */}
             <LinearGradient
@@ -205,6 +215,11 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
+  },
+  placeholderContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   imageOverlay: {
     position: 'absolute',

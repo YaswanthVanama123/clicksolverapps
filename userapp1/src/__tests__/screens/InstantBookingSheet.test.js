@@ -71,11 +71,11 @@ jest.mock('ola-maps', () => ({
     autocomplete: jest.fn(),
   })),
 }));
-jest.mock('@rnmapbox/maps', () => ({
-  MapView: 'MapView',
-  Camera: 'Camera',
-  PointAnnotation: 'PointAnnotation',
-}));
+// jest.mock('@rnmapbox/maps', () => ({
+//   MapView: 'MapView',
+//   Camera: 'Camera',
+//   PointAnnotation: 'PointAnnotation',
+// }));
 
 const mockNavigation = {
   navigate: jest.fn(),

@@ -51,7 +51,7 @@ const CancellationConfirmationModal = ({
           </Text>
           <Text style={[styles.confirmationSubtitle, {color: isDarkMode ? '#ccc' : '#666'}]}>
             {t('cancel_service_warning') ||
-              'Please avoid canceling – we're working to connect you with the best expert to solve your problem.'}
+              "Please avoid canceling - we're working to connect you with the best expert to solve your problem."}
           </Text>
 
           <TouchableOpacity style={styles.confirmButton} onPress={onConfirm}>

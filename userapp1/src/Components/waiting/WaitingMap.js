@@ -1,14 +1,11 @@
 import React from 'react';
-import {StyleSheet, View, Image} from 'react-native';
-import Mapbox from '@rnmapbox/maps';
-
-Mapbox.setAccessToken(
-  'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY20ybTMxdGh3MGZ6YTJxc2Zyd2twaWp2ZCJ9.uG0mVTipkeGVwKR49iJTbw',
-);
+import {StyleSheet, View, Text} from 'react-native';
+// import Mapbox from '@rnmapbox/maps';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 /**
- * WaitingMap Component
- * Displays map with user location marker during waiting
+ * WaitingMap Component - Placeholder
+ * Map functionality temporarily unavailable
  */
 const WaitingMap = ({location}) => {
   if (!location || location.length !== 2) {
@@ -16,28 +13,36 @@ const WaitingMap = ({location}) => {
   }
 
   return (
-    <Mapbox.MapView style={styles.map}>
-      <Mapbox.Camera zoomLevel={16} centerCoordinate={location} />
-      <Mapbox.MarkerView coordinate={location}>
-        <Image
-          source={{
-            uri: 'https://i.postimg.cc/ZRdQkj5d/Screenshot-2024-11-13-164652-removebg-preview.png',
-          }}
-          style={styles.markerImage}
-        />
-      </Mapbox.MarkerView>
-    </Mapbox.MapView>
+    <View style={styles.mapPlaceholder}>
+      <MaterialIcons name="location-on" size={50} color="#ccc" />
+      <Text style={styles.placeholderText}>Map view temporarily unavailable</Text>
+      <Text style={styles.locationText}>
+        Location: {location[1].toFixed(4)}, {location[0].toFixed(4)}
+      </Text>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  map: {
+  mapPlaceholder: {
     height: '60%',
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
-  markerImage: {
-    width: 25,
-    height: 50,
-    resizeMode: 'contain',
+  placeholderText: {
+    marginTop: 15,
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    fontFamily: 'RobotoSlab-Regular',
+  },
+  locationText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#666',
+    fontFamily: 'RobotoSlab-Regular',
   },
 });
 

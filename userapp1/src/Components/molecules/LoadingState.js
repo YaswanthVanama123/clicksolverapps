@@ -41,7 +41,7 @@ const LoadingState = ({
 
         <View style={styles.animationContainer}>
           <LottieView
-            source={require('../../assets/animations/loading-spinner.json')}
+            source={require('../../assets/waitingLoading.json')}
             autoPlay
             loop
             style={styles.lottieAnimation}

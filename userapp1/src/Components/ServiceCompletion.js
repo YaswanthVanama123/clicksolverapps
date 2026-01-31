@@ -9,7 +9,7 @@ import {
   BackHandler,
 } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
-import Mapbox from '@rnmapbox/maps';
+// import Mapbox from '@rnmapbox/maps';
 import Octicons from 'react-native-vector-icons/Octicons';
 import axios from 'axios';
 import {
@@ -22,9 +22,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // import Config from 'react-native-config';
 
 // Set Mapbox access token
-Mapbox.setAccessToken(
-  'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY2x5Ymw5MXZpMWZseDJqcTJ3NXFlZnRnYyJ9._E8mIoaIlyGrgdeu71StDg',
-);
+// Mapbox.setAccessToken(
+//   'pk.eyJ1IjoieWFzd2FudGh2YW5hbWEiLCJhIjoiY2x5Ymw5MXZpMWZseDJqcTJ3NXFlZnRnYyJ9._E8mIoaIlyGrgdeu71StDg',
+// );
 
 const ServiceCompletion = () => {
   const {
@@ -137,14 +137,13 @@ const ServiceCompletion = () => {
           <Text style={styles.time}>5:45 PM</Text>
         </View>
 
-        <Mapbox.MapView style={styles.map}>
-          <Mapbox.Camera zoomLevel={17} centerCoordinate={center} />
-          <Mapbox.PointAnnotation id="current-location" coordinate={center}>
-            <View style={styles.markerContainer}>
-              <Octicons name="dot-fill" size={25} color="#0E52FB" />
-            </View>
-          </Mapbox.PointAnnotation>
-        </Mapbox.MapView>
+        {/* Map temporarily unavailable */}
+        <View style={styles.map}>
+          <View style={styles.mapPlaceholder}>
+            <Feather name="map-pin" size={40} color="#ccc" />
+            <Text style={styles.mapPlaceholderText}>Map view temporarily unavailable</Text>
+          </View>
+        </View>
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.doneButton} onPress={onBackPress}>
@@ -247,6 +246,18 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 10,
     marginBottom: 20,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mapPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mapPlaceholderText: {
+    marginTop: 10,
+    color: '#999',
+    fontSize: 14,
   },
 });
 

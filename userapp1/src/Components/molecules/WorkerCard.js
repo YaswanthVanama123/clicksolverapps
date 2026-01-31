@@ -141,17 +141,21 @@ const WorkerCard = ({
                   end={{x: 1, y: 1}}
                   style={styles.avatarGradient}>
                   <View style={styles.avatarInner}>
-                    <Image
-                      source={
-                        avatar
-                          ? typeof avatar === 'string'
+                    {avatar ? (
+                      <Image
+                        source={
+                          typeof avatar === 'string'
                             ? {uri: avatar}
                             : avatar
-                          : require('../../assets/placeholder-user.png')
-                      }
-                      style={styles.avatar}
-                      resizeMode="cover"
-                    />
+                        }
+                        style={styles.avatar}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                        <Icon name="account" size={36} color="rgba(255,255,255,0.7)" />
+                      </View>
+                    )}
                   </View>
                 </LinearGradient>
 
@@ -342,6 +346,11 @@ const styles = StyleSheet.create({
   avatar: {
     width: '100%',
     height: '100%',
+  },
+  avatarPlaceholder: {
+    backgroundColor: '#E5E7EB',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   verifiedBadge: {
     position: 'absolute',

@@ -192,7 +192,7 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider>
         <NavigationContainer ref={navigationRef}>
-          <RootNavigator navigationRef={navigationRef} />
+          <RootNavigator />
         </NavigationContainer>
       </ThemeProvider>
     </ErrorBoundary>

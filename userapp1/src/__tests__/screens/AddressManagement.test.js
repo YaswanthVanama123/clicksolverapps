@@ -27,13 +27,13 @@ jest.mock('../../hooks/useLocation', () => ({
   }),
 }));
 jest.mock('react-native-linear-gradient', () => 'LinearGradient');
-jest.mock('@rnmapbox/maps', () => ({
-  MapView: 'MapView',
-  Camera: 'Camera',
-  PointAnnotation: 'PointAnnotation',
-  ShapeSource: 'ShapeSource',
-  FillLayer: 'FillLayer',
-}));
+// jest.mock('@rnmapbox/maps', () => ({
+//   MapView: 'MapView',
+//   Camera: 'Camera',
+//   PointAnnotation: 'PointAnnotation',
+//   ShapeSource: 'ShapeSource',
+//   FillLayer: 'FillLayer',
+// }));
 
 // Mock navigation
 const mockNavigation = {
