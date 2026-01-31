@@ -41,7 +41,30 @@
       "Bash(volta pin:*)",
       "Bash(volta install:*)",
       "Bash(timeout 5 node:*)",
-      "Bash(timeout 8 node app.js:*)"
+      "Bash(timeout 8 node app.js:*)",
+      "Bash(npm install)",
+      "WebFetch(domain:github.com)",
+      "Bash(npm view:*)",
+      "Bash(xcodebuild:*)",
+      "Bash(plutil:*)",
+      "Bash(pod install)",
+      "Bash(npx react-native run-ios)",
+      "Bash(lsof:*)",
+      "Bash(watchman watch-del-all:*)",
+      "Bash(npx react-native start --reset-cache)",
+      "Bash(npm install:*)",
+      "Bash(xcrun simctl list:*)",
+      "Bash(xcrun simctl install:*)",
+      "Bash(xcrun simctl launch:*)",
+      "Bash(npx react-native run-ios:*)",
+      "Bash(xcrun simctl terminate:*)",
+      "Bash(sudo lsof:*)",
+      "Bash(sudo xargs kill -9)",
+      "Bash(xcrun simctl openurl:*)",
+      "Bash(osascript:*)",
+      "Bash(npx react-native codegen)",
+      "Bash(ln:*)",
+      "Bash(tee:*)"
     ]
   }
 }
