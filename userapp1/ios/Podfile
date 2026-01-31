@@ -3,32 +3,41 @@ use_frameworks! :linkage => :static
 use_modular_headers!
 
 require_relative '../node_modules/react-native/scripts/react_native_pods'
-require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
 require_relative '../node_modules/react-native-permissions/scripts/setup'
 prepare_react_native_project!
 
 $RNFirebaseAsStaticFramework = true
 
 target 'userapp1' do
-  # Standard React-Native autolinking
-  config = use_native_modules!
-
   use_react_native!(
-    path:            config[:reactNativePath],
-    hermes_enabled:  false,
-    fabric_enabled:  false,
-    new_arch_enabled:false
+    :path => '../node_modules/react-native',
+    :hermes_enabled => false,
+    :fabric_enabled => false,
+    # An absolute path to your application root.
+    :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
   # Extra pods
-  pod 'rnmapbox-maps',
-      podspec: '../node_modules/@rnmapbox/maps/rnmapbox-maps.podspec'
-
   pod 'react-native-image-picker',
       path: '../node_modules/react-native-image-picker'
 
   pod 'RNCPushNotificationIOS',
       path: '../node_modules/@react-native-community/push-notification-ios'
+
+  # Firebase
+  pod 'RNFBApp', :path => '../node_modules/@react-native-firebase/app'
+  pod 'RNFBAuth', :path => '../node_modules/@react-native-firebase/auth'
+  pod 'RNFBMessaging', :path => '../node_modules/@react-native-firebase/messaging'
+
+  # React Navigation dependencies
+  pod 'RNScreens', :path => '../node_modules/react-native-screens'
+  pod 'react-native-safe-area-context', :path => '../node_modules/react-native-safe-area-context'
+
+  # Other dependencies
+  pod 'lottie-react-native', :path => '../node_modules/lottie-react-native'
+  pod 'RNCPicker', :path => '../node_modules/@react-native-picker/picker'
+  pod 'react-native-encrypted-storage', :path => '../node_modules/react-native-encrypted-storage'
+  pod 'CodePush', :path => '../node_modules/react-native-code-push'
 
   # React-Native-Permissions — only subspecs you need.
   # ⬇︎ This automatically pulls the umbrella RNPermissions pod.
@@ -46,7 +55,11 @@ target 'userapp1' do
   end
 
   post_install do |installer|
-    react_native_post_install(installer, config[:reactNativePath])
+    react_native_post_install(
+      installer,
+      '../node_modules/react-native',
+      :mac_catalyst_enabled => false
+    )
 
     # ❌ DO NOT delete the RNPermissions target any more!
     installer.pods_project.targets.each do |tgt|
